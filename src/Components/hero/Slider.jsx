@@ -3,7 +3,7 @@ import Carousel from 'react-bootstrap/Carousel';
 import slidimg1 from '../../assest/1 (1).jpg';
 import slidimg2 from '../../assest/1 (2).jpg';
 import slidimg3 from '../../assest/1 (1).jpg';
-import '../../Style/Slider.css'; // Create or use your CSS file
+import '../../Style/Slider.css'; // Ensure you have the correct path to your CSS file
 
 const Slider = () => {
   const [index, setIndex] = useState(0);

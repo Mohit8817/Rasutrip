@@ -1,15 +1,11 @@
-
-
-
-.Header_logo{
-    width: 5rem;
-    height: auto;
-    margin: 0 0 0 2rem;
+.Header_logo {
+  width: 5rem;
+  height: auto;
+  margin-left: 2rem;
 }
 
-
 .header_navbar {
-  position: absolute;
+  position: fixed !important;
   top: 0;
   left: 0;
   width: 100%;
@@ -17,6 +13,11 @@
   z-index: 1000;
   transition: background-color 0.3s ease;
 }
+
+/* .header_navbar .navbar-collapse,
+.header_navbar .offcanvas {
+  background: transparent !important;
+} */
 
 .nav-item-link {
   font-size: 14px;

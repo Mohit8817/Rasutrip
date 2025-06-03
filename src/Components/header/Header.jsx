@@ -8,7 +8,7 @@ import Userlogin from './Userlogin';
 
 const Header = () => {
     return (
-        <Navbar expand="lg" variant=" light" className="mb-3 header_navbar">
+        <Navbar expand="lg" className="mb-3 header_navbar">
             <Container fluid>
                 <Navbar.Brand href="#">
                     <img
@@ -17,9 +17,6 @@ const Header = () => {
                         className="Header_logo"
                     />
                 </Navbar.Brand>
-
-
-
                 <Navbar.Toggle aria-controls="offcanvasNavbar" />
                 <Navbar.Offcanvas
                     id="offcanvasNavbar"
