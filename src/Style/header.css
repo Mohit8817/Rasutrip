@@ -1,0 +1,23 @@
+.header_navbar{
+    background-color: #ffffff;
+    box-shadow: 2px 2px 5px rgba(161, 161, 161, 0.1);
+}
+
+
+.nav-item-link {
+  font-size: 14px;
+  font-weight: 400 !important;
+  padding: 8px 20px !important;
+   font-family: 'Roboto', sans-serif;
+  color: #000000 !important;
+  transition: all 0.3s ease;
+  position: relative;
+  text-transform: capitalize;
+}
+
+
+.Header_logo{
+    width: 5rem;
+    height: auto;
+    margin: 0 0 0 2rem;
+}
