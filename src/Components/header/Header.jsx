@@ -8,7 +8,7 @@ import Userlogin from './Userlogin';
 
 const Header = () => {
     return (
-        <Navbar expand="lg" variant="light" className="mb-3 header_navbar">
+        <Navbar expand="lg" variant=" light" className="mb-3 header_navbar">
             <Container fluid>
                 <Navbar.Brand href="#">
                     <img
