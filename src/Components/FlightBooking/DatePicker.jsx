@@ -20,7 +20,7 @@ const DatePicker = () => {
         date?.toLocaleDateString("en-GB", { weekday: "long" });
 
     return (
-        <div className="d-flex gap-3 flex-wrap align-items-start custom-date-picker">
+        <div className="d-flex flex-wrap align-items-start custom-date-picker">
             {/* Depart */}
             <div className="date-button-wrapper position-relative">
                 <div

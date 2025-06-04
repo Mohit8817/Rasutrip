@@ -179,3 +179,52 @@ body {
 .custom-date-picker .calendar-popup {
   z-index: 1000;
 }
+
+
+
+
+
+
+
+
+
+
+/* FareTypeSelector */
+
+
+
+.fare-type-container .form-check-input:checked {
+  background-color: #cb0d26;
+  border-color: #cb0d26;
+}
+
+.fare-type-container .form-check-label {
+  font-weight: 500;
+  color: #333;
+}
+
+
+
+/* PassengerClass css  */
+
+
+.passenger-class-box {
+  width: 310px; /* Adjust based on your layout */
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
