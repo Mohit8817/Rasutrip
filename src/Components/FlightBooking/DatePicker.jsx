@@ -22,7 +22,7 @@ const DatePicker = () => {
     return (
         <div className="d-flex flex-wrap align-items-start custom-date-picker">
             {/* Depart */}
-            <div className="date-button-wrapper position-relative">
+            <div className="date-button-wrapper position-relative Depart">
                 <div
                     className="date-button"
                     onClick={() =>
@@ -48,7 +48,7 @@ const DatePicker = () => {
             </div>
 
             {/* Return */}
-            <div className="date-button-wrapper position-relative">
+            <div className="date-button-wrapper position-relative Return">
                 <div
                     className="date-button"
                     onClick={() =>
