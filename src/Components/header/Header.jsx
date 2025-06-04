@@ -16,6 +16,7 @@ const Header = () => {
                         alt="Logo"
                         className="Header_logo"
                     />
+
                 </Navbar.Brand>
                 <Navbar.Toggle aria-controls="offcanvasNavbar" />
                 <Navbar.Offcanvas
@@ -23,6 +24,7 @@ const Header = () => {
                     aria-labelledby="offcanvasNavbarLabel"
                     placement="start"
                 >
+                
                     <Offcanvas.Header closeButton>
                         <Offcanvas.Title id="offcanvasNavbarLabel">LOGO</Offcanvas.Title>
                     </Offcanvas.Header>
