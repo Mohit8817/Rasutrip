@@ -1,6 +1,7 @@
 import { Container, Row, Col } from 'react-bootstrap';
 import TripTypeSelector from './TripTypeSelector';
 import '../../Style/FlightBooking.css'; // Make sure this path is correct
+import LocationInput from './LocationInput';
 
 const FlightBooking = () => {
   return (
@@ -17,6 +18,15 @@ const FlightBooking = () => {
               Millions of cheap flights. One simple search
             </p>
           </Col>
+        </Row>
+
+
+        <Row className='mt-2'>
+            <Col lg={4}>
+                <LocationInput/>
+            </Col>
+            <Col lg={4}></Col>
+            <Col lg={4}></Col>
         </Row>
       </Container>
     </div>

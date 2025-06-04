@@ -1,3 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+body {
+  font-family: 'Roboto', sans-serif;
+}
 
 
 .tripselector {
@@ -8,17 +13,9 @@
 .flight-tagline {
   font-size: 18px;
   font-weight: 600;
-  color: #212121;
+  color: #131313;
   margin: 0;
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -55,8 +52,74 @@
 }
 
 .trip-type-input:checked + label.trip-type-tab {
-  background-color: #6a1b9a; /* Purple like in your screenshot */
+  background-color: #cb0d26; /* Purple like in your screenshot */
   color: white;
-  border-color: #6a1b9a;
-  box-shadow: 0 0 8px rgba(106, 27, 154, 0.4);
+  border-color: #cb0d26;
+  box-shadow: 0 0 5px #ac2b3c;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* LocationInput css             Component for 'From' and 'To' input fields */
+
+
+
+.location-card {
+  border-radius: 12px;
+  padding: 15px 10px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
+  background-color: #fff;
+}
+
+.location-box {
+  padding: 0 12px;
+  text-align: left;
+}
+
+.location-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #2b2b2b;
+  text-transform: uppercase;
+}
+
+.location-city {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000;
+}
+
+.location-airport {
+  font-size: 13px;
+  color: #2b2b2b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.switch-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.switch-icon {
+  background: #e5d8f5;
+  color: #cb0d26;
+  border-radius: 50%;
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
