@@ -1,0 +1,62 @@
+
+
+.tripselector {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.flight-tagline {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212121;
+  margin: 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* Trip type Selector css  */
+
+/* trip tab css Oneway / Round Trip / Multi City */
+.trip-type-tab-wrapper {
+  display: flex;
+  gap: 10px;
+  background: #fff;
+  border-radius: 40px;
+  padding: 6px;
+  justify-content: center;
+  align-items: center;
+  width: fit-content;
+  margin: auto;
+}
+
+.trip-type-input {
+  display: none;
+}
+
+.trip-type-tab {
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-size: 14px;
+  background-color: white;
+  color: black;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  transition: all 0.3s ease;
+}
+
+.trip-type-input:checked + label.trip-type-tab {
+  background-color: #6a1b9a; /* Purple like in your screenshot */
+  color: white;
+  border-color: #6a1b9a;
+  box-shadow: 0 0 8px rgba(106, 27, 154, 0.4);
+}
