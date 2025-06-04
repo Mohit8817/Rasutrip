@@ -5,12 +5,12 @@ import '../../Style/FlightBooking.css'; // Optional custom styles
 
 const PassengerClass = () => {
   return (
-    <Card className="passenger-class-box border rounded-4">
+    <Card className="passenger-class-box border rounded-4 p-0">
       <Card.Body className="">
-        <div className="text-uppercase small fw-semibold text-secondary">
+        <div className="passenger-label">
           Travellers & Class
         </div>
-        <div className="fw-bold fs-6">2 Passenger</div>
+        <div className="fw-bold fs-5">2 Passenger</div> 
         <div className="text-muted small">Any</div>
       </Card.Body>
     </Card>

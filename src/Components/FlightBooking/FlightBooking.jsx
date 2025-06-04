@@ -5,6 +5,7 @@ import LocationInput from './LocationInput';
 import DatePicker from './DatePicker';
 import FareTypeSelector from './FareTypeSelector';
 import PassengerClass from './PassengerClass';
+import SearchButton from './SearchButton';
 
 const FlightBooking = () => {
     return (
@@ -31,11 +32,11 @@ const FlightBooking = () => {
                     <Col lg={3}>
                         <DatePicker />
                     </Col>
-                    <Col lg={2}>
+                    <Col lg={3}>
                         <PassengerClass />
                     </Col>
-                    <Col lg={2}>
-
+                    <Col lg={1}>
+                        <SearchButton/>
                     </Col>
                 </Row>
 
