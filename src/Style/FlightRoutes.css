@@ -1,0 +1,78 @@
+.flight-routes-section {
+    padding: 50px 30px;
+
+}
+
+.routes-title {
+    font-size: 2rem;
+    font-weight: 500;
+    text-align: left;
+    margin-bottom: 30px;
+}
+
+.routes-title span {
+    color: #000;
+    font-weight: 700;
+}
+
+.routes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 25px;
+}
+
+.route-card {
+    background-color: #fff;
+    border-radius: 50px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    border: 0.2px solid 
+    rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.056);
+    transition: all 0.3s ease-in-out;
+}
+
+.route-card:hover {
+    transform: translateY(-5px);
+     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.route-image-wrapper {
+    border: 3px solid #cb0d26;
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    overflow: hidden;
+    margin-right: 10px;
+    /* padding: 5px; */
+    flex-shrink: 0;
+}
+
+.route-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.route-info {
+    flex-grow: 1;
+}
+
+.route-main {
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.route-code {
+    font-weight: 600;
+    color: #cb0d26;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.plane {
+    margin: 0 5px;
+    font-size: 1.1rem;
+}
