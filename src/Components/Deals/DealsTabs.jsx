@@ -34,7 +34,7 @@ const DealsTabs = ({ activeTab, onTabChange }) => {
             <Button variant="light" className="rounded-circle">
               <span>&larr;</span>
             </Button>
-            <Button variant="primary" className="rounded-circle">
+            <Button variant="primary" className="rounded-circle bg-danger">
               <span>&rarr;</span>
             </Button>
           </div>
