@@ -36,7 +36,7 @@ const FlightBooking = () => {
                         <PassengerClass />
                     </Col>
                     <Col lg={1}>
-                        <SearchButton/>
+                        <SearchButton />
                     </Col>
                 </Row>
 

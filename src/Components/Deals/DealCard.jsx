@@ -1,4 +1,4 @@
-import { Card, Button, Badge, Row, Col, Container } from 'react-bootstrap';
+import { Card, Button, Row, Col, Container } from 'react-bootstrap';
 import '../../Style/Dealsection.css';
 
 const DealCard = ({ ...deal }) => {
@@ -16,9 +16,11 @@ const DealCard = ({ ...deal }) => {
                             />
                         </div>
                         <div className="deal-content">
-                            <div className="deal-badge-wrapper">
-                                <Badge className="deal-badge">{type}</Badge>
-                            </div>
+
+                           <div className='deal-badge-wrapper'>
+                             <div className="deal-badge">{type}</div>
+                           </div>
+
                             <h5 className="deal-title">{title}</h5>
                             <p className="deal-subtitle">{subtitle}</p>
                             <div className="deal-button-wrapper">
