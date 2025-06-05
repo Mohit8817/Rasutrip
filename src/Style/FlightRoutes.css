@@ -1,5 +1,5 @@
 .flight-routes-section {
-    padding: 50px 30px;
+    padding: 60px 30px;
 
 }
 
@@ -41,8 +41,8 @@
 .route-image-wrapper {
     border: 3px solid #cb0d26;
     border-radius: 50%;
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     overflow: hidden;
     margin-right: 10px;
     /* padding: 5px; */
