@@ -73,16 +73,14 @@ const Footer = () => {
                 </Row>
 
 
-              
+
             </Container>
 
             <Container className='bootomstrip'>
-                  <Row>
+                <Row>
                     <Col>
                         <div className='Copyright'>
-
                             Copyright © 2025 rasutrip. All Rights Reserved
-
                         </div>
                     </Col>
 
