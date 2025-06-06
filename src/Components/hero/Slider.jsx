@@ -26,7 +26,7 @@ const Slider = () => {
         return <HotelSearchForm />;
       case 'bus':
         // return <div>Bus Booking Component Coming Soon</div>;
-        return <div> <BusBooking/> </div>;
+        return <div> <BusBooking /> </div>;
       default:
         return null;
     }
@@ -35,10 +35,10 @@ const Slider = () => {
   return (
     <div className="slider-container">
       {/* White box for your components */}
-        {/* Three tabs */}
+      {/* Three tabs */}
       <div className="overlay-box">
         <div className="travel-tabs">
-          <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} className=""/>
+          <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} className="" />
         </div>
 
         {/* Conditionally show active component */}

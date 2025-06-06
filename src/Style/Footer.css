@@ -1,57 +1,37 @@
-.footer-section {
-  background-color: #fff;
-  color: #343a40;
-  border-top: 1px solid #eee;
-}
-
-.footer-logo {
-  width: 150px;
-}
-
-.footer-contact {
-  margin-top: 20px;
-}
-
-.icon-text {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 15px;
-}
-
-.icon {
-  background-color: #f0f0f0;
-  border-radius: 50%;
-  padding: 10px;
-  margin-right: 10px;
-  font-size: 18px;
+.footer {
+  font-size: 15px;
   color: #343a40;
 }
 
-.label {
-  font-weight: 500;
-  margin-bottom: 2px;
+.footerlogo{
+  width: 8rem;
+  margin: 0 0 0 0;
 }
-
-.text {
-  margin: 0;
-  color: #343a40;
-}
-
-.footer-title {
-  font-weight: 700;
+.footer .footer-heading {
+  font-weight: bold;
+  text-align: left;
   margin-bottom: 10px;
-  border-bottom: 2px solid #5f3b98;
-  display: inline-block;
-  padding-bottom: 3px;
+  position: relative;
 }
 
-.footer-list {
-  list-style: none;
-  padding: 0;
+.footer .footer-heading::after {
+  content: '';
+  display: block;
+  width: 45px;
+  height: 2.5px;
+  background-color: #cb0d26;
+  margin-top: 5px;
 }
 
-.footer-list li {
-  margin-bottom: 10px;
-  color: #5f5f5f;
-  cursor: pointer;
+.footer-icon {
+  color: #cb0d26;
+}
+
+.bootomstrip{
+  background-color: #cb0d26;
+}
+
+.Copyright{
+  color: white;
+  padding: 15px 18px;
 }
