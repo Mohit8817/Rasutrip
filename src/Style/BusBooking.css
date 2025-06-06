@@ -1,0 +1,14 @@
+.single-date-picker {
+    width: fit-content;
+    cursor: pointer;
+    width: 520px !important;
+   
+}
+
+.single-date-picker .date-button {
+    min-width: 300px; /* Adjust width as needed */
+}
+
+.single-date-picker .calendar-popup {
+    z-index: 20;
+}

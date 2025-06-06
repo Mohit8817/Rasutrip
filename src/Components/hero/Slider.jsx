@@ -7,6 +7,7 @@ import '../../Style/Slider.css'; // Make sure path is correct
 import FlightBooking from '../FlightBooking/FlightBooking';
 import TravelTabs from '../FlightBooking/TravelTabs';
 import HotelSearchForm from '../HotelSearchForm/HotelSearchForm';
+import BusBooking from '../Busbooking/BusBooking';
 
 const Slider = () => {
   const [index, setIndex] = useState(0);
@@ -24,7 +25,8 @@ const Slider = () => {
       case 'hotel':
         return <HotelSearchForm />;
       case 'bus':
-        return <div>Bus Booking Component Coming Soon</div>;
+        // return <div>Bus Booking Component Coming Soon</div>;
+        return <div> <BusBooking/> </div>;
       default:
         return null;
     }
@@ -35,7 +37,7 @@ const Slider = () => {
       {/* White box for your components */}
       <div className="overlay-box">
         {/* Three tabs */}
-        <div className="travel-tabs">
+        <div className="travel-tabs ">
           <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
 
