@@ -6,6 +6,7 @@ import slidimg3 from '../../assest/1 (1).jpg';
 import '../../Style/Slider.css'; // Make sure path is correct
 import FlightBooking from '../FlightBooking/FlightBooking';
 import TravelTabs from '../FlightBooking/TravelTabs';
+import HotelSearchForm from '../HotelSearchForm/HotelSearchForm';
 
 const Slider = () => {
   const [index, setIndex] = useState(0);
@@ -19,11 +20,13 @@ const Slider = () => {
       {/* White box for your components */}
       <div className="overlay-box">
 
+        {/* three tabs  */}
         <div className='travel-tabs'>
           <TravelTabs />
         </div>
 
         <FlightBooking />
+        <HotelSearchForm />
         {/* Add more components here */}
       </div>
 

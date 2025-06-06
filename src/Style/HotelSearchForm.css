@@ -1,0 +1,103 @@
+/* City Selector -------------------------- */
+
+
+.city_box {
+    border-radius: 12px;
+    padding: 24px 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
+    background-color: #fff;
+    border: 1px solid #d4d4d4;
+}
+
+.City_label{
+        font-size: 13px;
+    font-weight: 500;
+    float: left;
+
+    color: #2b2b2b;
+    text-transform: uppercase;
+}
+
+.city-input {
+    font-size: 20px;
+    padding: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+.city-input::placeholder {
+    font-weight: bold;
+    color: #000000;
+}
+
+.city-input:focus {
+    box-shadow: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* guest room css  ------------------------------*/
+
+
+.guest-room-box {
+    width: 280px;
+    /* Adjust based on your layout */
+    text-align: left;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: 12px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
+    background-color: #fff;
+}
+
+.guest-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #2b2b2b;
+    text-transform: uppercase;
+}
+
+
+
+
+
+
+
+
+/* CountrySelector css----------------------- */
+
+.country-card {
+    width: 180px;
+    /* Adjust based on your layout */
+    text-align: left;
+    padding: 19px 10px;
+    cursor: pointer;
+    border-radius: 12px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
+    background-color: #fff;
+}
+
+.country-select {
+    font-size: 20px;
+    background-color: transparent;
+    box-shadow: none !important;
+    appearance: none;
+    /* Optional: Remove native arrow if you want */
+}
+
+.country-select:focus {
+    box-shadow: none;
+}
+
+.country-select option {
+    font-weight: normal;
+}
