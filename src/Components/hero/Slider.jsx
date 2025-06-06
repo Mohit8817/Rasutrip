@@ -10,24 +10,37 @@ import HotelSearchForm from '../HotelSearchForm/HotelSearchForm';
 
 const Slider = () => {
   const [index, setIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState('flight'); // Add activeTab state
 
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
+  };
+
+  // Function to render tab content
+  const renderActiveTabContent = () => {
+    switch (activeTab) {
+      case 'flight':
+        return <FlightBooking />;
+      case 'hotel':
+        return <HotelSearchForm />;
+      case 'bus':
+        return <div>Bus Booking Component Coming Soon</div>;
+      default:
+        return null;
+    }
   };
 
   return (
     <div className="slider-container">
       {/* White box for your components */}
       <div className="overlay-box">
-
-        {/* three tabs  */}
-        <div className='travel-tabs'>
-          <TravelTabs />
+        {/* Three tabs */}
+        <div className="travel-tabs">
+          <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
 
-        <FlightBooking />
-        <HotelSearchForm />
-        {/* Add more components here */}
+        {/* Conditionally show active component */}
+        {renderActiveTabContent()}
       </div>
 
       <Carousel activeIndex={index} onSelect={handleSelect} className="slider">
