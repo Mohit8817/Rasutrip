@@ -6,7 +6,7 @@ import '../../Style/BusBooking.css'; // Your custom styles
 
 const TravelDate = () => {
 
-     const [travelDate, setTravelDate] = useState(new Date());
+    const [travelDate, setTravelDate] = useState(new Date());
     const [showCalendar, setShowCalendar] = useState(false);
 
     const formatDate = (date) =>
@@ -15,35 +15,35 @@ const TravelDate = () => {
             month: "short",
             year: "numeric",
         });
-  return (
-    <div>
+    return (
+        <div>
 
-       <div className="single-date-picker position-relative text-start">
-            <div
-                className="date-button p-3"
-                onClick={() => setShowCalendar((prev) => !prev)}
-            >
-                <span className="label d-block small">TRAVEL DATE</span>
-                <span className="date d-block fs-4 fw-bold">{formatDate(travelDate)}</span>
+            <div className="single-date-picker position-relative text-start">
+                <div
+                    className="date-button p-3"
+                    onClick={() => setShowCalendar((prev) => !prev)}
+                >
+                    <span className="label d-block small">TRAVEL DATE</span>
+                    <span className="date d-block fs-4 fw-bold">{formatDate(travelDate)}</span>
+                </div>
+
+                {showCalendar && (
+                    <div className="calendar-popup position-absolute bg-white mt-2 shadow rounded">
+                        <DayPicker
+                            mode="single"
+                            selected={travelDate}
+                            onSelect={(date) => {
+                                setTravelDate(date);
+                                setShowCalendar(false);
+                            }}
+                        />
+                    </div>
+                )}
             </div>
 
-            {showCalendar && (
-                <div className="calendar-popup position-absolute bg-white mt-2 shadow rounded">
-                    <DayPicker
-                        mode="single"
-                        selected={travelDate}
-                        onSelect={(date) => {
-                            setTravelDate(date);
-                            setShowCalendar(false);
-                        }}
-                    />
-                </div>
-            )}
+
         </div>
-
-
-    </div>
-  )
+    )
 }
 
 export default TravelDate

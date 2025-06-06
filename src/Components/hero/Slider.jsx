@@ -35,10 +35,10 @@ const Slider = () => {
   return (
     <div className="slider-container">
       {/* White box for your components */}
-      <div className="overlay-box">
         {/* Three tabs */}
-        <div className="travel-tabs ">
-          <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div className="overlay-box">
+        <div className="travel-tabs">
+          <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} className=""/>
         </div>
 
         {/* Conditionally show active component */}

@@ -9,7 +9,7 @@ import SearchButton from './SearchButton';
 
 const FlightBooking = () => {
     return (
-        <div className="booking-container">
+        <div className="booking-container pt-0 mt-0">
             <Container>
                 <Row className="align-items-center">
                     <Col lg={6}>
