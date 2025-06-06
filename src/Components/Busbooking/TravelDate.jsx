@@ -20,7 +20,7 @@ const TravelDate = () => {
 
        <div className="single-date-picker position-relative text-start">
             <div
-                className="date-button border rounded p-3"
+                className="date-button p-3"
                 onClick={() => setShowCalendar((prev) => !prev)}
             >
                 <span className="label d-block small">TRAVEL DATE</span>
