@@ -20,6 +20,40 @@ body {
 
 
 
+/* tabs system */
+.tab-box {
+  background-color: #fff;
+  color: #4c4c4c;
+  border-radius: 12px;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 4px 8px #0000001a;
+  transition: all 0.3s ease;
+  width: 70% !important;
+ 
+}
+
+.tab-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.tab-box.active-tab {
+  background-color: #cb0d26; /* Purple background */
+  color: #fff;
+}
+
+.tab-box.active-tab svg {
+  color: #fff; /* White icon when active */
+}
+
+.tab-box svg {
+  color: #cb0d26; /* Purple icon */
+}
+
+
+
+
 /* Trip type Selector css  */
 
 /* trip tab css Oneway / Round Trip / Multi City */

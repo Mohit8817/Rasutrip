@@ -10,7 +10,7 @@ const PassengerClass = () => {
         <div className="passenger-label">
           Travellers & Class
         </div>
-        <div className="fw-bold fs-5">2 Passenger</div> 
+        <div className="fw-bold fs-5">2 Passenger</div>
         <div className="cabin-text">Any</div>
       </Card.Body>
     </Card>

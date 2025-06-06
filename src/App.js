@@ -3,6 +3,7 @@ import DealsSection from './Components/Deals/DealsSection';
 import Header from './Components/header/Header';
 import Slider from './Components/hero/Slider';
 import FlightRoutes from './Components/PopularFlight/FlightRoutes';
+import SubscribeSection from './Components/SubscribeSection/SubscribeSection';
 import TravelBenefits from './Components/TravelBenefits/TravelBenefits';
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
       <DealsSection />
       <TravelBenefits/>
       <FlightRoutes/>
+      <SubscribeSection/>
     </div>
   );
 }
