@@ -1,7 +1,16 @@
+// HotelCard.js
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "./HotelCard.css";
 
 const HotelCard = ({ hotel }) => {
+  const navigate = useNavigate();
+
+  const handleBookClick = () => {
+    // Navigate to hotel detail page with the hotel's id or unique identifier
+    navigate(`/hotels/${hotel.id}`, { state: { hotel } });
+  };
+
   return (
     <div className="hotel-card">
       <img src={hotel.image} alt={hotel.name} className="hotel-img" />
@@ -13,7 +22,7 @@ const HotelCard = ({ hotel }) => {
       <div className="hotel-price">
         <p>₹ {hotel.price}</p>
         <span>Per Night</span>
-        <button>Book</button>
+        <button onClick={handleBookClick}>Book</button>
       </div>
     </div>
   );
