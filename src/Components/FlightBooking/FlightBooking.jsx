@@ -7,14 +7,17 @@ import FareTypeSelector from './FareTypeSelector';
 import PassengerClass from './PassengerClass';
 import SearchButton from './SearchButton';
 
+import React, { useState } from 'react';
+
 const FlightBooking = () => {
+     const [tripType, setTripType] = useState('oneway');
     return (
         <div className="booking-container pt-0 mt-0">
             <Container>
                 <Row className="align-items-center">
                     <Col lg={6}>
                         <div className="tripselector">
-                            <TripTypeSelector />
+                          <TripTypeSelector tripType={tripType} setTripType={setTripType} />
                         </div>
                     </Col>
                     <Col lg={6} className="text-end">
@@ -30,7 +33,7 @@ const FlightBooking = () => {
                         <LocationInput />
                     </Col>
                     <Col lg={3}>
-                        <DatePicker />
+                         <DatePicker tripType={tripType} setTripType={setTripType} />
                     </Col>
                     <Col lg={3}>
                         <PassengerClass />

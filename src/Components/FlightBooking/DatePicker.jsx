@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import '../../Style/FlightBooking.css'; // Your custom styles
+import '../../Style/FlightBooking.css';
 
-const DatePicker = () => {
+const DatePicker = ({ tripType, setTripType }) => {
     const [departDate, setDepartDate] = useState(new Date());
     const [returnDate, setReturnDate] = useState(new Date());
-    const [activeCalendar, setActiveCalendar] = useState(null); // 'depart' or 'return'
+    const [activeCalendar, setActiveCalendar] = useState(null);
 
     const formatDate = (date) =>
         date?.toLocaleDateString("en-GB", {
@@ -18,6 +18,7 @@ const DatePicker = () => {
 
     const getDayName = (date) =>
         date?.toLocaleDateString("en-GB", { weekday: "long" });
+
 
     return (
         <div className="d-flex flex-wrap align-items-start custom-date-picker">
@@ -51,15 +52,30 @@ const DatePicker = () => {
             <div className="date-button-wrapper position-relative Return">
                 <div
                     className="date-button"
-                    onClick={() =>
-                        setActiveCalendar((prev) => (prev === "return" ? null : "return"))
-                    }
+                    onClick={() => {
+                        if (tripType === 'oneway') {
+                            setTripType('roundtrip');
+                            setTimeout(() => {
+                                setActiveCalendar("return");
+                            }, 0);
+                        } else {
+                            setActiveCalendar((prev) => (prev === "return" ? null : "return"));
+                        }
+                    }}
                 >
                     <span className="label">RETURN</span>
-                    <span className="date">{formatDate(returnDate)}</span>
-                    <span className="day">{getDayName(returnDate)}</span>
+
+                    {/* Always render these spans to keep structure consistent */}
+                    <span className="date">
+                        {tripType !== 'oneway' ? formatDate(returnDate) : ' --/--/----'}
+                    </span>
+                    <span className="day">
+                        {tripType !== 'oneway' ? getDayName(returnDate) : 'Book a round trip..'}
+                    </span>
                 </div>
-                {activeCalendar === "return" && (
+
+
+                {activeCalendar === "return" && (tripType === 'roundtrip' || tripType === 'multicity') && (
                     <div className="calendar-popup position-absolute bg-white mt-2 shadow rounded">
                         <DayPicker
                             mode="single"
@@ -72,6 +88,7 @@ const DatePicker = () => {
                     </div>
                 )}
             </div>
+
         </div>
     );
 };
