@@ -1,0 +1,36 @@
+.hotel-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+  padding: 15px;
+  background: white;
+}
+.hotel-img {
+  width: 150px;
+  height: 100px;
+  object-fit: cover;
+  margin-right: 15px;
+}
+.hotel-info {
+  flex: 2;
+}
+.stars {
+  color: gold;
+}
+.hotel-price {
+  text-align: right;
+}
+.hotel-price p {
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
+}
+.hotel-price button {
+  margin-top: 5px;
+  padding: 5px 10px;
+  background-color: #662d91;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
