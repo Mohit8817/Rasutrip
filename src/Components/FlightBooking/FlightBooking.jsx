@@ -8,6 +8,8 @@ import PassengerClass from './PassengerClass';
 import SearchButton from './SearchButton';
 
 import React, { useState } from 'react';
+import CitySegment from './MultiCity/CitySegment';
+import DateSelect from './MultiCity/DateSelect';
 
 const FlightBooking = () => {
     const [tripType, setTripType] = useState('oneway');
@@ -48,14 +50,16 @@ const FlightBooking = () => {
                 {tripType === 'multicity' && (
                     <Row className='mt-2'>
                         <Col lg={5}>
-                            <LocationInput />
+                            <CitySegment />
                         </Col>
                         <Col lg={3}>
-                            <DatePicker />
+                            <DateSelect />
                         </Col>
                         <Col lg={3}>
+                            <PassengerClass />
                         </Col>
                         <Col lg={1}>
+                            <SearchButton />
                         </Col>
                     </Row>
                 )}

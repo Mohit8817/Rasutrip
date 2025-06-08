@@ -257,7 +257,7 @@ body {
 
 .custom-date-picker .label {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   color: #2b2b2b;
 }
 
@@ -310,7 +310,6 @@ body {
   padding: 0;
   cursor: pointer;
   border-radius: 12px;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
   background-color: #fff;
 }
 
@@ -332,21 +331,12 @@ body {
 
 
 
-
-
-
-
-
 .passenger-class-wrapper {
   position: relative;
   width: 300px;
 }
 
-.passenger-class-box {
-  border-radius: 15px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+
 
 
 
