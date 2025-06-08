@@ -25,7 +25,7 @@ const DateSelect = () => {
                         onClick={() => setShowCalendar((prev) => !prev)}
                     >
                         <span className="Date_label d-block">TRAVEL DATE</span>
-                        <span className="date d-block fs-4 fw-bold">{formatDate(travelDate)}</span>
+                        <span className="date d-block fs-5">{formatDate(travelDate)}</span>
                     </div>
 
                     {showCalendar && (

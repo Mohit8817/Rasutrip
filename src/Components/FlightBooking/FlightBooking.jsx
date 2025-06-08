@@ -12,11 +12,12 @@ import CitySegment from './MultiCity/CitySegment';
 import DateSelect from './MultiCity/DateSelect';
 import MultiCityForm from './MultiCity/MultiCityForm';
 import AddCityButton from './MultiCity/AddCityButton';
+import SecondDateSelecter from './MultiCity/SecondDateSelecter';
 
 const FlightBooking = () => {
     const [tripType, setTripType] = useState('oneway');
 
-
+    // for data pass input fields 
     const [toCityFromCitySegment, setToCityFromCitySegment] = useState('');
 
     return (
@@ -35,7 +36,7 @@ const FlightBooking = () => {
                     </Col>
                 </Row>
 
-
+                {/* One way trip components  */}
                 {tripType !== 'multicity' && (
                     <Row className='mt-2'>
                         <Col lg={5}>
@@ -53,7 +54,7 @@ const FlightBooking = () => {
                     </Row>
                 )}
 
-
+                {/* Multicity Component show  */}
                 {/* this Row only show when i click multi city tab */}
                 {tripType === 'multicity' && (
                     <Container className='p-0 m-0'>
@@ -77,7 +78,7 @@ const FlightBooking = () => {
                                 <MultiCityForm fromCityProp={toCityFromCitySegment} />
                             </Col>
                             <Col lg={3}>
-                                <DateSelect />
+                            <SecondDateSelecter/>
                             </Col>
 
                             <Col lg={2}>
@@ -88,11 +89,6 @@ const FlightBooking = () => {
                         </Row>
                     </Container>
                 )}
-
-
-
-
-
                 <Row>
                     <Col>
                         <FareTypeSelector />

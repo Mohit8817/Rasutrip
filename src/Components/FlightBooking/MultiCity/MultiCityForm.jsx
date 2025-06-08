@@ -85,15 +85,6 @@ const MultiCityForm = ({ fromCityProp }) => {
         }
     }, [fromCityProp]);
 
-
-
-
-
-
-
-
-
-
     return (
         <div>
             <Card className="location-card position-relative">
@@ -135,7 +126,7 @@ const MultiCityForm = ({ fromCityProp }) => {
                         <span className="location-label">TO Airport</span>
                         <input
                             type="text"
-                            className={`location-city form-control border-0 p-0 ${!toCity ? 'text-muted' : ''}`}
+                            className={`location-city form-control fs-5 border-0 p-0 ${!toCity ? 'text-muted' : ''}`}
                             value={toCity}
                             placeholder="Destination"
                             onClick={handleToInputClick}

@@ -5,18 +5,9 @@
 
 }
 
-.location-city::placeholder {
-    color: #6c757d; 
-}
-
-.location-city.text-muted {
-    color: #6c757d !important;
-}
-
-
 .multi-city-date-picker .multi-city-date-button {
     min-width: 278px;
-    padding: 22px 10px;
+    padding: 26px 10px;
     background-color: #fff;
     border: 1px solid #c1c1c1;
     border-radius: 12px;
@@ -29,11 +20,25 @@
     text-transform: uppercase;
 }
 
+.date {
+    font-weight: 600 !important;
+}
+
 .multi-city-date-picker .multi-city-calendar-popup {
     z-index: 20;
 }
 
+
 /* location css (unchanged) */
+
+.location-city::placeholder {
+    color: #6c757d;
+}
+
+.location-city.text-muted {
+    color: #6c757d !important;
+}
+
 
 .city-wrapper {
     border-radius: 15px;
@@ -82,4 +87,23 @@
     font-weight: bold;
     box-shadow: 6px 6px 10px rgba(37, 37, 37, 0.1);
     border: none;
+}
+
+
+
+
+
+/* secondDateSelector   css */
+
+.sec-multi-city-date-button {
+    min-width: 278px;
+    padding: 27px 10px;
+    background-color: #fff;
+    border: 1px solid #c1c1c1;
+    border-radius: 12px;
+}
+
+.sec-multi-city-date-button .date.text-muted {
+    color: #6c757d !important;
+    font-weight: 600 !important;
 }
