@@ -133,6 +133,10 @@ body {
   text-transform: uppercase;
 }
 
+.location-city:focus {
+    box-shadow: none;
+    outline: none;
+}
 .location-city {
   font-size: 18px;
   font-weight: 600;
