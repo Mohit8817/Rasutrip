@@ -1,11 +1,13 @@
-/* HotelCard.css */
 .hotel-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #eee;
-  padding: 15px 0;
+  padding: 20px;
   background: white;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .hotel-card:last-child {
@@ -13,60 +15,71 @@
 }
 
 .hotel-img {
-  width: 150px;
-  height: 100px;
+  width: 200px;
+  height: 130px;
   object-fit: cover;
-  margin-right: 15px;
-  border-radius: 4px;
+  margin-right: 25px;
+  border-radius: 6px;
 }
 
 .hotel-info {
-  flex: 2;
+  flex: 3;
+  padding-right: 20px;
 }
 
 .hotel-info h3 {
-  margin: 0 0 8px 0;
-  font-size: 18px;
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .hotel-info p {
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   color: #666;
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 1.4;
 }
 
 .stars {
   color: gold;
-  font-size: 16px;
+  font-size: 18px;
+  margin-top: 5px;
 }
 
 .hotel-price {
   text-align: right;
+  flex: 1;
+  min-width: 150px;
 }
 
 .hotel-price p {
   margin: 0;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: bold;
   color: #333;
 }
 
 .hotel-price span {
-  font-size: 12px;
+  display: block;
+  font-size: 14px;
   color: #666;
+  margin: 5px 0 15px 0;
 }
 
 .hotel-price button {
-  margin-top: 8px;
-  padding: 8px 16px;
-  background-color: #662d91;
+  padding: 10px 20px;
+  background-color: #cb0d26;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
+  font-size: 16px;
+  width: 100%;
+  max-width: 120px;
+  transition: background-color 0.3s;
 }
 
 .hotel-price button:hover {
-  background-color: #5a257d;
+  background-color: #a00b1f;
 }

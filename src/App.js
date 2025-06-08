@@ -15,6 +15,7 @@ import RoomCard from "./Components/Hotel/RoomCard";
 import HotelDetails from './Components/Hotel/HotelDetails';
 import HotelImages from './Components/Hotel/HotelImages';
 import BookingInfo from './Components/Hotel/BookingInfo';
+import HotelSummary from "./Components/Hotel/HotelSummary";
 
 // Home page component
 const Home = () => (
@@ -30,7 +31,7 @@ const Home = () => (
 const Hotels = () => (
   <>
     <FilterSidebar />
-    {/* <HotelCard /> */}
+    <HotelCard />
     <HotelList />
   </>
 );
@@ -55,7 +56,11 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/hotels" element={<Hotels />} />
           <Route path="/hoteldetails" element={<HotelDetail/>}/>
-          <Route path="/info" element={<HotelDetails/>}/>
+          <Route path="/filter" element={<FilterSidebar/>}/>
+          <Route path="/hotelcard" element={<HotelList/>}/>
+          <Route path="/booking" element={<BookingInfo/>}/>
+          <Route path="/hotelsummary" element ={<HotelSummary/>}/>
+          
 
           {/* Add more routes as needed */}
         </Routes>
