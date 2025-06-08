@@ -331,6 +331,54 @@ body {
 
 
 
+
+
+
+
+
+
+.passenger-class-wrapper {
+  position: relative;
+  width: 300px;
+}
+
+.passenger-class-box {
+  border-radius: 15px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+
+
+.dropdown-box {
+  position: absolute;
+  z-index: 10;
+  width: 100%;
+  border-radius: 15px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.circle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-weight: bold;
+  padding: 0;
+  text-align: center;
+}
+
+
+
+
+
+
+
+
+
+
 /* Search button css 
 
 */
