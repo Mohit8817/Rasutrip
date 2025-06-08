@@ -57,7 +57,7 @@ const PassengerClass = () => {
               };
               return (
                 <div key={idx} className="d-flex justify-content-between align-items-center mb-3">
-                  <div>
+                  <div className='text-start ' >
                     <div className="fw-semibold">{labels[type]}</div>
                     <div className="text-muted small">{ages[type]}</div>
                   </div>
@@ -69,20 +69,14 @@ const PassengerClass = () => {
                 </div>
               );
             })}
-            <div className="fw-semibold mt-3">Cabin Class</div>
-            {['ANY', 'ECONOMY', 'BUSINESS', 'FIRST'].map(option => (
-              <div key={option} className="form-check">
-                <input
-                  className="form-check-input"
-                  type="radio"
-                  name="cabinClass"
-                  value={option}
-                  checked={cabinClass === option}
-                  onChange={(e) => setCabinClass(e.target.value)}
-                />
-                <label className="form-check-label">{option}</label>
+            <div className="fw-bold mb-3 mt-2 text-start">Cabin Class</div>
+            {['ANY', 'ECONOMY', 'BUSINESS', 'PREMIUM ECONOMY', 'PREMIUM BUSINESS', 'FIRST'].map(option => (
+              <div key={option} className="cabin-option" onClick={() => setCabinClass(option)}>
+                <div className={`custom-radio ${cabinClass === option ? 'checked' : ''}`} />
+                <div className="cabin-label">{option}</div>
               </div>
             ))}
+
           </Card.Body>
         </Card>
       )}

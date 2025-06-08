@@ -365,9 +365,53 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  font-weight: bold;
+  background-color: #e8e8e8;
+  color: #cb0d26;
+  font-weight: 400;
   padding: 0;
   text-align: center;
+}
+
+
+.cabin-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 12px;
+}
+
+.custom-radio {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #999;
+    border-radius: 50%;
+    margin-right: 10px;
+    position: relative;
+    transition: border-color 0.2s ease;
+}
+
+.custom-radio.checked {
+    border-color: #cb0d26; /* purple color */
+}
+
+.custom-radio.checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background-color: #cb0d26;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.cabin-label {
+    text-transform: uppercase;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    user-select: none;
 }
 
 
