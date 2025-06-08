@@ -10,6 +10,8 @@ import SearchButton from './SearchButton';
 import React, { useState } from 'react';
 import CitySegment from './MultiCity/CitySegment';
 import DateSelect from './MultiCity/DateSelect';
+import MultiCityForm from './MultiCity/MultiCityForm';
+import AddCityButton from './MultiCity/AddCityButton';
 
 const FlightBooking = () => {
     const [tripType, setTripType] = useState('oneway');
@@ -48,20 +50,37 @@ const FlightBooking = () => {
 
                 {/* this Row only show when i click multi city tab */}
                 {tripType === 'multicity' && (
-                    <Row className='mt-2'>
-                        <Col lg={5}>
-                            <CitySegment />
-                        </Col>
-                        <Col lg={3}>
-                            <DateSelect />
-                        </Col>
-                        <Col lg={3}>
-                            <PassengerClass />
-                        </Col>
-                        <Col lg={1}>
-                            <SearchButton />
-                        </Col>
-                    </Row>
+                    <Container className='p-0 m-0'>
+                        <Row className='mt-2'>
+                            <Col lg={5}>
+                                <CitySegment />
+                            </Col>
+                            <Col lg={3}>
+                                <DateSelect />
+                            </Col>
+                            <Col lg={3}>
+                                <PassengerClass />
+                            </Col>
+                            <Col lg={1}>
+                                <SearchButton />
+                            </Col>
+                        </Row>
+                        {/* Add city row  */}
+                        <Row className='mt-2'>
+                            <Col lg={5}>
+                                <MultiCityForm />
+                            </Col>
+                            <Col lg={3}>
+                                <DateSelect />
+                            </Col>
+
+                            <Col lg={2}>
+                                <AddCityButton />
+                            </Col>
+                            <Col lg={2}>
+                            </Col>
+                        </Row>
+                    </Container>
                 )}
 
 

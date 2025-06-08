@@ -24,7 +24,7 @@ const DateSelect = () => {
                         className="multi-city-date-button"
                         onClick={() => setShowCalendar((prev) => !prev)}
                     >
-                        <span className="label d-block small">TRAVEL DATE</span>
+                        <span className="Date_label d-block">TRAVEL DATE</span>
                         <span className="date d-block fs-4 fw-bold">{formatDate(travelDate)}</span>
                     </div>
 
