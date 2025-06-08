@@ -10,14 +10,14 @@ import SearchButton from './SearchButton';
 import React, { useState } from 'react';
 
 const FlightBooking = () => {
-     const [tripType, setTripType] = useState('oneway');
+    const [tripType, setTripType] = useState('oneway');
     return (
         <div className="booking-container pt-0 mt-0">
             <Container>
                 <Row className="align-items-center">
                     <Col lg={6}>
                         <div className="tripselector">
-                          <TripTypeSelector tripType={tripType} setTripType={setTripType} />
+                            <TripTypeSelector tripType={tripType} setTripType={setTripType} />
                         </div>
                     </Col>
                     <Col lg={6} className="text-end">
@@ -33,7 +33,7 @@ const FlightBooking = () => {
                         <LocationInput />
                     </Col>
                     <Col lg={3}>
-                         <DatePicker tripType={tripType} setTripType={setTripType} />
+                        <DatePicker tripType={tripType} setTripType={setTripType} />
                     </Col>
                     <Col lg={3}>
                         <PassengerClass />
@@ -42,6 +42,26 @@ const FlightBooking = () => {
                         <SearchButton />
                     </Col>
                 </Row>
+
+
+                {/* this Row only show when i click multi city tab */}
+                {tripType === 'multicity' && (
+                    <Row className='mt-2'>
+                        <Col lg={5}>
+                            <LocationInput />
+                        </Col>
+                        <Col lg={3}>
+                            <DatePicker />
+                        </Col>
+                        <Col lg={3}>
+                        </Col>
+                        <Col lg={1}>
+                        </Col>
+                    </Row>
+                )}
+
+
+
 
 
                 <Row>
