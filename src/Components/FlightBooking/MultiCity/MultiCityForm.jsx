@@ -13,11 +13,11 @@ const cityList = [
     { city: 'Goa In', airport: 'Dabolim Arpt', code: 'GOI', flag: '🇮🇳' },
 ];
 
-const MultiCityForm = () => {
+const MultiCityForm = ({ fromCityProp }) => {
 
-    const [fromCity, setFromCity] = useState('Delhi');
+   const [fromCity, setFromCity] = useState(fromCityProp || 'Mumbai');
     const [toCity, setToCity] = useState(''); // initially empty
-    const [fromAirport, setFromAirport] = useState('Delhi Indira Gandhi Intl');
+    const [fromAirport, setFromAirport] = useState('Chhatrapati Shivaji');
     const [toAirport, setToAirport] = useState('');
 
     const [showFromDropdown, setShowFromDropdown] = useState(false);
@@ -35,6 +35,7 @@ const MultiCityForm = () => {
             setToCity(cityObj.city);
             setToAirport(cityObj.airport);
             setShowToDropdown(false);
+
         }
     };
 
@@ -69,6 +70,29 @@ const MultiCityForm = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+
+      useEffect(() => {
+        // Jab bhi parent se fromCityProp update ho, use fromCity me set karo
+        if (fromCityProp) {
+            setFromCity(fromCityProp);
+
+            // Optionally, set airport name bhi update kar sakte ho
+            const selectedCityObj = cityList.find(cityObj => cityObj.city === fromCityProp);
+            if (selectedCityObj) {
+                setFromAirport(selectedCityObj.airport);
+            }
+        }
+    }, [fromCityProp]);
+
+
+
+
+
+
+
+
+
 
     return (
         <div>

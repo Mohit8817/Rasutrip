@@ -15,6 +15,10 @@ import AddCityButton from './MultiCity/AddCityButton';
 
 const FlightBooking = () => {
     const [tripType, setTripType] = useState('oneway');
+
+
+     const [toCityFromCitySegment, setToCityFromCitySegment] = useState('');
+
     return (
         <div className="booking-container pt-0 mt-0">
             <Container>
@@ -53,7 +57,7 @@ const FlightBooking = () => {
                     <Container className='p-0 m-0'>
                         <Row className='mt-2'>
                             <Col lg={5}>
-                                <CitySegment />
+                                  <CitySegment onToCityChange={setToCityFromCitySegment} />
                             </Col>
                             <Col lg={3}>
                                 <DateSelect />
@@ -68,7 +72,7 @@ const FlightBooking = () => {
                         {/* Add city row  */}
                         <Row className='mt-2'>
                             <Col lg={5}>
-                                <MultiCityForm />
+                                <MultiCityForm fromCityProp={toCityFromCitySegment} />
                             </Col>
                             <Col lg={3}>
                                 <DateSelect />

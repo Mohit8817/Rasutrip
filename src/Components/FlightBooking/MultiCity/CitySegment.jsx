@@ -13,7 +13,7 @@ const cityList = [
     { city: 'Goa In', airport: 'Dabolim Arpt', code: 'GOI', flag: '🇮🇳' },
 ];
 
-const CitySegment = () => {
+const CitySegment = ({ onToCityChange }) => {
 
 
     const [fromCity, setFromCity] = useState('Delhi');
@@ -43,6 +43,10 @@ const CitySegment = () => {
             setToCity(cityObj.city);
             setToAirport(cityObj.airport);
             setShowToDropdown(false);
+
+               if (onToCityChange) {
+                onToCityChange(cityObj.city);
+            }
         }
     };
 
