@@ -13,21 +13,18 @@ const cityList = [
     { city: 'Goa In', airport: 'Dabolim Arpt', code: 'GOI', flag: '🇮🇳' },
 ];
 
-
 const MultiCityForm = () => {
 
     const [fromCity, setFromCity] = useState('Delhi');
-    const [toCity, setToCity] = useState('Mumbai');
+    const [toCity, setToCity] = useState(''); // initially empty
     const [fromAirport, setFromAirport] = useState('Delhi Indira Gandhi Intl');
-    const [toAirport, setToAirport] = useState('Chhatrapati Shivaji');
+    const [toAirport, setToAirport] = useState('');
 
     const [showFromDropdown, setShowFromDropdown] = useState(false);
     const [showToDropdown, setShowToDropdown] = useState(false);
 
     const fromRef = useRef(null);
     const toRef = useRef(null);
-
-
 
     const handleCitySelect = (cityObj, type) => {
         if (type === 'from') {
@@ -85,9 +82,11 @@ const MultiCityForm = () => {
                             className="location-city form-control border-0 p-0"
                             value={fromCity}
                             onClick={handleFromInputClick}
-                            onChange={(e) => setFromCity(e.target.value)}   // Added this line
+                            onChange={(e) => setFromCity(e.target.value)}
                         />
-                        <div className="location-airport">[{fromCity === 'Delhi' ? 'DEL' : fromCity === 'Mumbai' ? 'BOM' : 'XXX'}] {fromAirport}</div>
+                        <div className="location-airport">
+                            [{fromCity === 'Delhi' ? 'DEL' : fromCity === 'Mumbai' ? 'BOM' : 'XXX'}] {fromAirport}
+                        </div>
 
                         {showFromDropdown && (
                             <div className="dropdown-list">
@@ -107,20 +106,20 @@ const MultiCityForm = () => {
                         )}
                     </Col>
 
-
-                   
-
                     {/* TO */}
                     <Col xs={6} className="location-box position-relative" ref={toRef}>
                         <span className="location-label">TO Airport</span>
                         <input
                             type="text"
-                            className="location-city form-control border-0 p-0"
+                            className={`location-city form-control border-0 p-0 ${!toCity ? 'text-muted' : ''}`}
                             value={toCity}
+                            placeholder="Destination"
                             onClick={handleToInputClick}
-                            onChange={(e) => setToCity(e.target.value)}    // Added this line
+                            onChange={(e) => setToCity(e.target.value)}
                         />
-                        <div className="location-airport">[{toCity === 'Delhi' ? 'DEL' : toCity === 'Mumbai' ? 'BOM' : 'XXX'}] {toAirport}</div>
+                        <div className="location-airport">
+                            {toCity && `[${toCity === 'Delhi' ? 'DEL' : toCity === 'Mumbai' ? 'BOM' : 'XXX'}] ${toAirport}`}
+                        </div>
 
                         {showToDropdown && (
                             <div className="dropdown-list">
@@ -139,13 +138,10 @@ const MultiCityForm = () => {
                             </div>
                         )}
                     </Col>
-
                 </Row>
             </Card>
-
-
         </div>
-    )
-}
+    );
+};
 
-export default MultiCityForm
+export default MultiCityForm;

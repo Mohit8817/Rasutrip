@@ -1,8 +1,18 @@
+/* Date select css  */
 .multi-city-date-picker {
     width: fit-content;
     cursor: pointer;
- 
+
 }
+
+.location-city::placeholder {
+    color: #6c757d; 
+}
+
+.location-city.text-muted {
+    color: #6c757d !important;
+}
+
 
 .multi-city-date-picker .multi-city-date-button {
     min-width: 278px;
@@ -11,12 +21,14 @@
     border: 1px solid #c1c1c1;
     border-radius: 12px;
 }
-.Date_label{
-     font-size: 12px;
-  font-weight: 500;
-  color: #2b2b2b;
-  text-transform: uppercase;
+
+.Date_label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #2b2b2b;
+    text-transform: uppercase;
 }
+
 .multi-city-date-picker .multi-city-calendar-popup {
     z-index: 20;
 }
@@ -61,13 +73,13 @@
  */
 
 
- .Citybutton {
-  background-color: #cb0d26;
-  color: white;
-  width: 280px !important;
-  border-radius: 18px;
-  padding: 38px 28px;
-  font-weight: bold;
-  box-shadow: 6px 6px 10px rgba(37, 37, 37, 0.1);
-  border: none;
+.Citybutton {
+    background-color: #cb0d26;
+    color: white;
+    width: 280px !important;
+    border-radius: 18px;
+    padding: 38px 28px;
+    font-weight: bold;
+    box-shadow: 6px 6px 10px rgba(37, 37, 37, 0.1);
+    border: none;
 }
