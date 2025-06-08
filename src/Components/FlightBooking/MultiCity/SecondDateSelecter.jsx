@@ -42,18 +42,14 @@ const SecondDateSelecter = () => {
         <div>
             <div
                 className="multi-city-date-picker position-relative text-start"
-                ref={calendarRef} // Apply the ref here
-            >
+                ref={calendarRef}>
                 <div
                     className="sec-multi-city-date-button"
-                    onClick={() => setShowCalendar((prev) => !prev)}
-                >
+                    onClick={() => setShowCalendar((prev) => !prev)}>
                     <span className="Date_label d-block">TRAVEL DATE</span>
                     <span
-                        className={`date d-block fs-5 fw-bold ${
-                            !travelDate ? "text-muted" : ""
-                        }`}
-                    >
+                        className={`date d-block fs-5 fw-bold ${!travelDate ? "text-muted" : ""
+                            }`}>
                         {travelDate ? formatDate(travelDate) : "Depart date"}
                     </span>
                 </div>
