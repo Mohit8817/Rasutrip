@@ -17,7 +17,7 @@ const FlightBooking = () => {
     const [tripType, setTripType] = useState('oneway');
 
 
-     const [toCityFromCitySegment, setToCityFromCitySegment] = useState('');
+    const [toCityFromCitySegment, setToCityFromCitySegment] = useState('');
 
     return (
         <div className="booking-container pt-0 mt-0">
@@ -36,20 +36,22 @@ const FlightBooking = () => {
                 </Row>
 
 
-                <Row className='mt-2'>
-                    <Col lg={5}>
-                        <LocationInput />
-                    </Col>
-                    <Col lg={3}>
-                        <DatePicker tripType={tripType} setTripType={setTripType} />
-                    </Col>
-                    <Col lg={3}>
-                        <PassengerClass />
-                    </Col>
-                    <Col lg={1}>
-                        <SearchButton />
-                    </Col>
-                </Row>
+                {tripType !== 'multicity' && (
+                    <Row className='mt-2'>
+                        <Col lg={5}>
+                            <LocationInput />
+                        </Col>
+                        <Col lg={3}>
+                            <DatePicker tripType={tripType} setTripType={setTripType} />
+                        </Col>
+                        <Col lg={3}>
+                            <PassengerClass />
+                        </Col>
+                        <Col lg={1}>
+                            <SearchButton />
+                        </Col>
+                    </Row>
+                )}
 
 
                 {/* this Row only show when i click multi city tab */}
@@ -57,7 +59,7 @@ const FlightBooking = () => {
                     <Container className='p-0 m-0'>
                         <Row className='mt-2'>
                             <Col lg={5}>
-                                  <CitySegment onToCityChange={setToCityFromCitySegment} />
+                                <CitySegment onToCityChange={setToCityFromCitySegment} />
                             </Col>
                             <Col lg={3}>
                                 <DateSelect />
