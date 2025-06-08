@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card } from 'react-bootstrap';
 import { ArrowLeftRight } from 'react-bootstrap-icons'; // Icon from react-bootstrap-icons
 import { FaPlane } from 'react-icons/fa'; // Plane icon
@@ -22,6 +22,9 @@ const LocationInput = () => {
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
 
+  const fromRef = useRef(null);
+  const toRef = useRef(null);
+
   const handleSwitch = () => {
     setFromCity(toCity);
     setToCity(fromCity);
@@ -43,26 +46,48 @@ const LocationInput = () => {
 
   const handleFromInputClick = () => {
     setShowFromDropdown(true);
-    setShowToDropdown(false); // Close TO dropdown
+    setShowToDropdown(false);
   };
 
   const handleToInputClick = () => {
     setShowToDropdown(true);
-    setShowFromDropdown(false); // Close FROM dropdown
+    setShowFromDropdown(false);
   };
+
+  // Click outside close logic
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        fromRef.current &&
+        !fromRef.current.contains(event.target) &&
+        toRef.current &&
+        !toRef.current.contains(event.target)
+      ) {
+        // Clicked outside both FROM and TO dropdown
+        setShowFromDropdown(false);
+        setShowToDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <Card className="location-card position-relative">
       <Row className="g-0 align-items-center">
         {/* FROM */}
-        <Col xs={5} className="location-box position-relative">
+        <Col xs={5} className="location-box position-relative" ref={fromRef}>
           <span className="location-label">FROM</span>
           <input
             type="text"
             className="location-city form-control border-0 p-0"
             value={fromCity}
             onClick={handleFromInputClick}
-            readOnly
+            onChange={(e) => setFromCity(e.target.value)}   // Added this line
           />
           <div className="location-airport">[{fromCity === 'Delhi' ? 'DEL' : fromCity === 'Mumbai' ? 'BOM' : 'XXX'}] {fromAirport}</div>
 
@@ -84,6 +109,7 @@ const LocationInput = () => {
           )}
         </Col>
 
+
         {/* ICON */}
         <Col xs={2} className="text-center switch-icon-wrapper">
           <div className="switch-icon" style={{ cursor: 'pointer' }} onClick={handleSwitch}>
@@ -91,35 +117,36 @@ const LocationInput = () => {
           </div>
         </Col>
 
-        {/* TO */}
-        <Col xs={5} className="location-box position-relative">
-          <span className="location-label">TO</span>
-          <input
-            type="text"
-            className="location-city form-control border-0 p-0"
-            value={toCity}
-            onClick={handleToInputClick}
-            readOnly
-          />
-          <div className="location-airport">[{toCity === 'Delhi' ? 'DEL' : toCity === 'Mumbai' ? 'BOM' : 'XXX'}] {toAirport}</div>
+     {/* TO */}
+<Col xs={5} className="location-box position-relative" ref={toRef}>
+  <span className="location-label">TO</span>
+  <input
+    type="text"
+    className="location-city form-control border-0 p-0"
+    value={toCity}
+    onClick={handleToInputClick}
+    onChange={(e) => setToCity(e.target.value)}    // Added this line
+  />
+  <div className="location-airport">[{toCity === 'Delhi' ? 'DEL' : toCity === 'Mumbai' ? 'BOM' : 'XXX'}] {toAirport}</div>
 
-          {showToDropdown && (
-            <div className="dropdown-list">
-              {cityList.map((cityObj, index) => (
-                <div
-                  key={index}
-                  className="dropdown-item"
-                  onClick={() => handleCitySelect(cityObj, 'to')}
-                >
-                  <FaPlane className="me-2" />
-                  <strong>{cityObj.city}</strong> &nbsp;
-                  <span>({cityObj.airport})</span> &nbsp;
-                  <span className="ms-auto">[{cityObj.code}] {cityObj.flag}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Col>
+  {showToDropdown && (
+    <div className="dropdown-list">
+      {cityList.map((cityObj, index) => (
+        <div
+          key={index}
+          className="dropdown-item"
+          onClick={() => handleCitySelect(cityObj, 'to')}
+        >
+          <FaPlane className="me-2" />
+          <strong>{cityObj.city}</strong> &nbsp;
+          <span>({cityObj.airport})</span> &nbsp;
+          <span className="ms-auto">[{cityObj.code}] {cityObj.flag}</span>
+        </div>
+      ))}
+    </div>
+  )}
+</Col>
+
       </Row>
     </Card>
   );
