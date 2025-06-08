@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, Dropdown, Form, Button } from 'react-bootstrap';
+import { Card, Form } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import '../../Style/FlightBooking.css'; // Your custom styles
+import '../../Style/FlightBooking.css'; // You can add additional custom styles here
 
 const GuestRoomSelector = () => {
     const [showPopup, setShowPopup] = useState(false);
-    const [starRating, setStarRating] = useState('3 Star or less');
-    const [adults, setAdults] = useState(3);
-    const [children, setChildren] = useState(2);
-    const [childAge, setChildAge] = useState(1);
+    const [starRating, setStarRating] = useState('2 Star or More');
+    const [adults, setAdults] = useState(2);
+    const [children, setChildren] = useState(0);
     const popupRef = useRef();
 
     // Close popup when clicking outside
@@ -32,7 +31,7 @@ const GuestRoomSelector = () => {
                 style={{ cursor: 'pointer' }}
             >
                 <Card.Body>
-                    <div className="guest-label text-muted">Rooms & Guests</div>
+                    <div className="guest-label">Rooms & Guests</div>
                     <div className="fw-bold fs-5">
                         {adults + children} Guest, 1 Rooms
                     </div>
@@ -40,13 +39,23 @@ const GuestRoomSelector = () => {
             </Card>
 
             {showPopup && (
-                <Card className="position-absolute mt-2 p-3 shadow" style={{ width: '300px', zIndex: 999 }}>
+                <Card
+                    className="position-absolute rounded"
+                    style={{
+                        width: '300px',
+                        zIndex: 999,
+                        borderRadius: '12px',
+                        backgroundColor: '#fff',
+                        border: '1px solid #e0e0e0',
+                    }}
+                >
                     <Form.Group className="mb-3">
                         <Form.Label className="fw-bold">Star Rating</Form.Label>
                         <Form.Select
                             value={starRating}
                             onChange={(e) => setStarRating(e.target.value)}
                         >
+                            <option>2 Star or More</option>
                             <option>3 Star or less</option>
                             <option>4 Star</option>
                             <option>5 Star</option>
@@ -58,40 +67,46 @@ const GuestRoomSelector = () => {
                     <div className="fw-bold text-primary mb-2">Room 1</div>
 
                     <Form.Group className="mb-3">
-                        <Form.Label className="fw-bold">Adults <div className="text-muted small">12y +</div></Form.Label>
+                        <Form.Label className="fw-bold">
+                            Adults <div className="text-muted small">12y +</div>
+                        </Form.Label>
                         <Form.Select
                             value={adults}
                             onChange={(e) => setAdults(parseInt(e.target.value))}
                         >
                             {[1, 2, 3, 4, 5].map((num) => (
-                                <option key={num} value={num}>{num}</option>
+                                <option key={num} value={num}>
+                                    {num}
+                                </option>
                             ))}
                         </Form.Select>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                        <Form.Label className="fw-bold">Children <div className="text-muted small">Age 12y and below</div></Form.Label>
+                        <Form.Label className="fw-bold">
+                            Children <div className="text-muted small">Age 12y and below</div>
+                        </Form.Label>
                         <Form.Select
                             value={children}
                             onChange={(e) => setChildren(parseInt(e.target.value))}
                         >
                             {[0, 1, 2, 3, 4].map((num) => (
-                                <option key={num} value={num}>{num}</option>
+                                <option key={num} value={num}>
+                                    {num}
+                                </option>
                             ))}
                         </Form.Select>
                     </Form.Group>
 
-                    <Form.Group className="mb-3">
-                        <Form.Label className="fw-bold">Age</Form.Label>
-                        <Form.Select
-                            value={childAge}
-                            onChange={(e) => setChildAge(parseInt(e.target.value))}
-                        >
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
-                                <option key={num} value={num}>{num}</option>
-                            ))}
-                        </Form.Select>
-                    </Form.Group>
+                    <hr />
+
+                    <div
+                        className="text-success fw-bold"
+                        style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                        onClick={() => alert('Add Room Clicked')} // You can handle add room functionality here
+                    >
+                        Add Room
+                    </div>
                 </Card>
             )}
         </div>

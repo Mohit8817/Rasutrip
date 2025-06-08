@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -8,6 +8,23 @@ const DateSelector = () => {
   const [departDate, setDepartDate] = useState(new Date());
   const [returnDate, setReturnDate] = useState(new Date());
   const [activeCalendar, setActiveCalendar] = useState(null); // 'depart' or 'return'
+
+  const wrapperRef = useRef();
+
+  // close calendar on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setActiveCalendar(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const formatDate = (date) =>
     date?.toLocaleDateString("en-GB", {
@@ -20,16 +37,20 @@ const DateSelector = () => {
     date?.toLocaleDateString("en-GB", { weekday: "long" });
 
   return (
-    <div className="d-flex flex-wrap align-items-start custom-date-picker">
+    <div
+      className="d-flex flex-wrap align-items-start custom-date-picker"
+      ref={wrapperRef}
+    >
       {/* Depart */}
       <div className="date-button-wrapper position-relative Depart">
         <div
           className="date-button"
-          onClick={() =>
-            setActiveCalendar((prev) => (prev === "depart" ? null : "depart"))
-          }
+          onClick={(e) => {
+            e.stopPropagation(); // stop bubbling
+            setActiveCalendar((prev) => (prev === "depart" ? null : "depart"));
+          }}
         >
-          <span className="label">Check-In</span>
+          <span className="date_label">Check-In</span>
           <span className="date">{formatDate(departDate)}</span>
           <span className="day">{getDayName(departDate)}</span>
         </div>
@@ -51,11 +72,12 @@ const DateSelector = () => {
       <div className="date-button-wrapper position-relative Return">
         <div
           className="date-button"
-          onClick={() =>
-            setActiveCalendar((prev) => (prev === "return" ? null : "return"))
-          }
+          onClick={(e) => {
+            e.stopPropagation(); // stop bubbling
+            setActiveCalendar((prev) => (prev === "return" ? null : "return"));
+          }}
         >
-          <span className="label">Check-Out</span>
+          <span className="date_label">Check-Out</span>
           <span className="date">{formatDate(returnDate)}</span>
           <span className="day">{getDayName(returnDate)}</span>
         </div>

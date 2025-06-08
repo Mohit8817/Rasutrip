@@ -9,7 +9,7 @@ const CountrySelector = () => {
     return (
         <Card className="country-card   ">
             <Form.Group controlId="countrySelect">
-                <Form.Label className="small mb-1">COUNTRY</Form.Label>
+                <Form.Label className="country_label">COUNTRY</Form.Label>
                 <Form.Select
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
