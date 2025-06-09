@@ -1,13 +1,10 @@
 import React from "react";
 import "./FilterSidebar.css";
-import { FiFilter } from "react-icons/fi"; // Importing filter icon from react-icons
 
 const FilterSidebar = () => {
   return (
     <div className="sidebar">
-      <h3 className="sidebar-header">
-        <FiFilter className="filter-icon" /> Filter Results
-      </h3>
+      <h3>Filter Results</h3>
       <div className="filter-section">
         <label>Price</label>
         <input type="range" min="4422.66" max="8254.23" />
@@ -21,13 +18,6 @@ const FilterSidebar = () => {
         <div className="rating-options">
           <label><input type="checkbox" /> ★★★★★</label>
           <label><input type="checkbox" /> ★★★★☆</label>
-          <label><input type="checkbox" /> ★★★☆☆</label>
-        </div>
-      </div>
-      <div className="filter-section">
-        <label>Location</label>
-        <div className="rating-options">
-          <label><input type="checkbox" /> None</label>
         </div>
       </div>
     </div>
