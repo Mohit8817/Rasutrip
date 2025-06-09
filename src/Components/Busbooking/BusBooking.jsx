@@ -1,7 +1,7 @@
 import { Container, Row, Col } from 'react-bootstrap';
 import TravelDate from './TravelDate'
-import SearchButton from '../FlightBooking/SearchButton'
 import Location from './Location';
+import SearchButton from '../Common/SearchButton';
 
 const BusBooking = () => {
     return (

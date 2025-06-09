@@ -5,7 +5,7 @@ import LocationInput from './LocationInput';
 import DatePicker from './DatePicker';
 import FareTypeSelector from './FareTypeSelector';
 import PassengerClass from './PassengerClass';
-import SearchButton from './SearchButton';
+import SearchButton from '../Common/SearchButton';
 
 import React, { useState } from 'react';
 import CitySegment from './MultiCity/CitySegment';

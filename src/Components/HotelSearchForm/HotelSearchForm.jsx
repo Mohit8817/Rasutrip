@@ -4,7 +4,7 @@ import CitySelector from './CitySelector'
 import DateSelector from './DateSelector'
 import GuestRoomSelector from './GuestRoomSelector'
 import CountrySelector from './CountrySelector'
-import SearchButton from '../FlightBooking/SearchButton'
+import SearchButton from '../Common/SearchButton'
 
 const HotelSearchForm = () => {
     return (
@@ -36,7 +36,7 @@ const HotelSearchForm = () => {
                     </Col>
                 </Row>
             </Container>
-        </div>
+        </div>  
     )
 }
 
