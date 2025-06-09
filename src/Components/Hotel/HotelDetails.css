@@ -1,0 +1,84 @@
+.hotel-details {
+  font-family: 'Segoe UI', sans-serif;
+  padding: 20px;
+  background: #f7f9fc;
+}
+
+.hotel-header h2 {
+  margin-bottom: 4px;
+  font-size: 24px;
+}
+
+.location {
+  font-size: 14px;
+  color: #555;
+}
+
+.stars {
+  color: gold;
+  font-size: 18px;
+  margin-top: 4px;
+}
+
+.hotel-body {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  gap: 20px;
+}
+
+.image-section {
+  flex: 2;
+}
+
+.main-img {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.thumbnails {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.thumbnail {
+  height: 70px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.thumbnail.active {
+  border-color: red;
+}
+
+.booking-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.info-box {
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.info-box h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.info-box p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
