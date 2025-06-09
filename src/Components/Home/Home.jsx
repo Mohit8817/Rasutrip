@@ -15,9 +15,7 @@ const Home = () => {
             <DealsSection />
             <TravelBenefits />
             <FlightRoutes />
-            <Footer/>
-
-
+            <Footer />
 
         </div>
     )
