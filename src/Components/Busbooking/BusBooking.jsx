@@ -9,16 +9,16 @@ const BusBooking = () => {
             <Container>
                 <Row className="align-items-center">
                     <Col lg={6}>
-                    <Location/>
+                        <Location />
                     </Col>
                     <Col lg={4}>
                         <TravelDate />
                     </Col>
                     <Col lg={2}>
-                    <div className='mt-4'>
-                        <SearchButton />
-                    </div>
-                        
+                        <div className='mt-4'>
+                            <SearchButton />
+                        </div>
+
                     </Col>
                 </Row>
 
