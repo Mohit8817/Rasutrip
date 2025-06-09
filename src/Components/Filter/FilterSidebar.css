@@ -1,28 +1,18 @@
+/* FilterSidebar.css */
 .sidebar {
-  width: 300px; /* Increased from 250px to 300px */
+  width: 250px;
   padding: 20px;
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin-right: 20px;
-  position: fixed;
-  left: 0;
-  top: 20px; /* Adjust this value based on your layout */
 }
 
 .filter-section {
   margin-bottom: 20px;
 }
 
-.sidebar-header {
-  display: flex;
-  align-items: center;
+.sidebar h3 {
   margin-bottom: 20px;
-}
-
-.filter-icon {
-  margin-right: 10px;
-  font-size: 1.2em;
 }
 
 .sidebar label {

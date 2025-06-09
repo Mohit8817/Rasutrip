@@ -1,25 +1,31 @@
-import React from 'react';
-import './HotelList.css';
+// HotelCard.js
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import "./HotelCard.css";
 
 const HotelCard = ({ hotel }) => {
-  if (!hotel) return null; // prevents undefined access
+  const navigate = useNavigate();
+
+  const handleBookClick = () => {
+    // Navigate to hotel detail page with the hotel's id or unique identifier
+    navigate(`/hotels/${hotel.id}`, { state: { hotel } });
+  };
 
   return (
     <div className="hotel-card">
-      <img src={hotel.image} alt={hotel.name} className="hotel-image" />
+      <img src={hotel.image} alt={hotel.name} className="hotel-img" />
       <div className="hotel-info">
-        <h3 className="hotel-name">{hotel.name}</h3>
-        <p className="hotel-location">{hotel.location}</p>
-        <div className="hotel-rating">{'⭐'.repeat(hotel.rating)}</div>
+        <h3>{hotel.name}</h3>
+        <p>{hotel.location}</p>
+        <div className="stars">{'★'.repeat(hotel.rating)}</div>
       </div>
-      <div className="hotel-booking">
-        <h3 className="hotel-price">₹ {hotel.price.toFixed(2)}</h3>
-        <p className="hotel-tax">+ ₹ {hotel.tax.toFixed(2)} taxes & fees</p>
-        <button className="book-button">Book</button>
+      <div className="hotel-price">
+        <p>₹ {hotel.price}</p>
+        <span>Per Night</span>
+        <button onClick={handleBookClick}>Book</button>
       </div>
     </div>
   );
 };
-
 
 export default HotelCard;
