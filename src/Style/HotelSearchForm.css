@@ -13,7 +13,6 @@
     font-size: 13px;
     font-weight: 500;
     float: left;
-
     color: #2b2b2b;
     text-transform: uppercase;
 }
@@ -38,7 +37,18 @@
 
 
 
+/* Date Selector css 
 
+*/
+
+
+.date_label {
+    font-size: 13px;
+    font-weight: 500;
+    /* float: left; */
+    color: #2b2b2b;
+    text-transform: uppercase;
+}
 
 
 
@@ -50,9 +60,8 @@
 
 .guest-room-box {
     width: 280px;
-    /* Adjust based on your layout */
-    text-align: left;
-    padding: 10px 10px;
+        text-align: left;
+    padding: 9px 10px;
     cursor: pointer;
     border-radius: 12px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
@@ -60,10 +69,25 @@
 }
 
 .guest-label {
-    font-size: 12px;
+       font-size: 13px;
     font-weight: 500;
+    /* float: left; */
     color: #2b2b2b;
     text-transform: uppercase;
+}
+
+
+
+.guest-room-box {
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    background-color: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease-in-out;
+}
+
+.guest-room-box:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 
@@ -79,19 +103,26 @@
     width: 180px;
     /* Adjust based on your layout */
     text-align: left;
-    padding: 21px 10px;
+    padding: 20px 10px;
     cursor: pointer;
     border-radius: 12px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
     background-color: #fff;
 }
 
+.country_label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #2b2b2b !important;
+    text-transform: uppercase;
+}
+
 .country-select {
-    font-size: 20px;
+    font-size: 18px;
     background-color: transparent;
     box-shadow: none !important;
     appearance: none;
-    /* Optional: Remove native arrow if you want */
+    
 }
 
 .country-select:focus {

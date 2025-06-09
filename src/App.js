@@ -8,7 +8,6 @@ import DealsSection from './Components/Deals/DealsSection';
 import TravelBenefits from './Components/TravelBenefits/TravelBenefits';
 import FlightRoutes from './Components/PopularFlight/FlightRoutes';
 import FilterSidebar from './Components/Filter/FilterSidebar';
-import HotelCard from './Components/Hotel/HotelCard';
 import HotelList from './Components/Hotel/HotelList';
 
 import RoomCard from "./Components/Hotel/RoomCard";
@@ -36,13 +35,13 @@ const Hotels = () => (
   </>
 );
 
-const HotelDetail=()=>(
+const HotelDetail = () => (
   <>
-  <HotelDetails/>
-  <HotelImages/>
-  <RoomCard/>
-  <BookingInfo/>
-  {/* <HotelCard/> */}
+    <HotelDetails />
+    <HotelImages />
+    <RoomCard />
+    <BookingInfo />
+    {/* <HotelCard/> */}
   </>
 )
 
@@ -51,16 +50,20 @@ function App() {
     <Router>
       <div className="App">
         <Header />
-        
+
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/hotels" element={<Hotels />} />
+
           <Route path="/hoteldetails" element={<HotelDetail/>}/>
           <Route path="/filter" element={<FilterSidebar/>}/>
           <Route path="/hotelcard" element={<HotelList/>}/>
           <Route path="/booking" element={<BookingInfo/>}/>
           <Route path="/hotelsummary" element ={<HotelSummary/>}/>
           
+
+          <Route path="/info" element={<HotelDetails />} />
+
 
           {/* Add more routes as needed */}
         </Routes>
