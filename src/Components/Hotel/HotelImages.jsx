@@ -1,14 +1,11 @@
 import React from 'react';
 import './HotelImages.css';
-import devilla from "../../assest/devilla.jpg";
-import desmall from "../../assest/desmall.jpg";
-import des from "../../assest/des.jpg";
 
 const images = [
-  devilla,
-  desmall,
-  des,
-  
+  "/images/bathroom1.jpg",
+  "/images/bathroom2.jpg",
+  "/images/bathroom3.jpg",
+  "/images/bathroom4.jpg",
 ];
 
 const HotelImages = () => {
