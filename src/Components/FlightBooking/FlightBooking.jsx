@@ -13,6 +13,7 @@ import DateSelect from './MultiCity/DateSelect';
 import MultiCityForm from './MultiCity/MultiCityForm';
 import AddCityButton from './MultiCity/AddCityButton';
 import SecondDateSelecter from './MultiCity/SecondDateSelecter';
+import AddMorecity from './MultiCity/AddMorecity';
 
 const FlightBooking = () => {
     const [tripType, setTripType] = useState('oneway');
@@ -78,11 +79,27 @@ const FlightBooking = () => {
                                 <MultiCityForm fromCityProp={toCityFromCitySegment} />
                             </Col>
                             <Col lg={3}>
-                            <SecondDateSelecter/>
+                                <SecondDateSelecter />
                             </Col>
 
                             <Col lg={2}>
                                 <AddCityButton />
+                            </Col>
+                            <Col lg={2}>
+                            </Col>
+                        </Row>
+
+                        {/* Add more city components  */}
+                        <Row className='mt-2'>
+                            <Col lg={5}>
+                                <AddMorecity />
+                            </Col>
+                            <Col lg={3}>
+
+                            </Col>
+
+                            <Col lg={2}>
+
                             </Col>
                             <Col lg={2}>
                             </Col>

@@ -91,7 +91,7 @@ const MultiCityForm = ({ fromCityProp }) => {
                 <Row className="g-0 align-items-center">
                     {/* FROM */}
                     <Col xs={6} className="location-box position-relative" ref={fromRef}>
-                        <span className="location-label">From Airport</span>
+                        <span className="location-label">From Airportz</span>
                         <input
                             type="text"
                             className="location-city form-control border-0 p-0"

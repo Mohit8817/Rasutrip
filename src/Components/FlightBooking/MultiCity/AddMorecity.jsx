@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Card } from 'react-bootstrap';
-import { FaPlane } from 'react-icons/fa'; // Plane icon
-import '../../../Style/FlightBooking.css'; // Add your custom styles
+import { FaPlane } from 'react-icons/fa';
+import '../../../Style/FlightBooking.css'; // Your CSS
 
 const cityList = [
     { city: 'Delhi', airport: 'Delhi Indira Gandhi Intl', code: 'DEL', flag: '🇮🇳' },
@@ -12,13 +12,9 @@ const cityList = [
     { city: 'Goa In', airport: 'Dabolim Arpt', code: 'GOI', flag: '🇮🇳' },
 ];
 
-const CitySegment = ({ onToCityChange }) => {
-
-
-    const [fromCity, setFromCity] = useState('Delhi');
-    const [toCity, setToCity] = useState('Mumbai');
-    const [fromAirport, setFromAirport] = useState('Delhi Indira Gandhi Intl');
-    const [toAirport, setToAirport] = useState('Chhatrapati Shivaji');
+const AddMorecity = ({ onToCityChange }) => {
+    const [fromCity, setFromCity] = useState('Origin');
+    const [toCity, setToCity] = useState('Destination');
 
     const [showFromDropdown, setShowFromDropdown] = useState(false);
     const [showToDropdown, setShowToDropdown] = useState(false);
@@ -26,21 +22,12 @@ const CitySegment = ({ onToCityChange }) => {
     const fromRef = useRef(null);
     const toRef = useRef(null);
 
-    // const handleSwitch = () => {
-    //     setFromCity(toCity);
-    //     setToCity(fromCity);
-    //     setFromAirport(toAirport);
-    //     setToAirport(fromAirport);
-    // };
-
     const handleCitySelect = (cityObj, type) => {
         if (type === 'from') {
             setFromCity(cityObj.city);
-            setFromAirport(cityObj.airport);
             setShowFromDropdown(false);
         } else {
             setToCity(cityObj.city);
-            setToAirport(cityObj.airport);
             setShowToDropdown(false);
 
             if (onToCityChange) {
@@ -59,7 +46,6 @@ const CitySegment = ({ onToCityChange }) => {
         setShowFromDropdown(false);
     };
 
-    // Click outside close logic
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (
@@ -68,7 +54,6 @@ const CitySegment = ({ onToCityChange }) => {
                 toRef.current &&
                 !toRef.current.contains(event.target)
             ) {
-                // Clicked outside both FROM and TO dropdown
                 setShowFromDropdown(false);
                 setShowToDropdown(false);
             }
@@ -81,26 +66,20 @@ const CitySegment = ({ onToCityChange }) => {
         };
     }, []);
 
-
-
-
-
     return (
         <div>
-
             <Card className="location-card position-relative">
                 <Row className="g-0 align-items-center">
+
                     {/* FROM */}
                     <Col xs={6} className="location-box position-relative" ref={fromRef}>
                         <span className="location-label">From Airport</span>
-                        <input
-                            type="text"
-                            className="location-city form-control border-0 p-0"
-                            value={fromCity}
+                        <div
+                            className={`location-city-text ${fromCity === 'Origin' ? 'default' : 'selected'}`}
                             onClick={handleFromInputClick}
-                            onChange={(e) => setFromCity(e.target.value)}   // Added this line
-                        />
-                        <div className="location-airport">[{fromCity === 'Delhi' ? 'DEL' : fromCity === 'Mumbai' ? 'BOM' : 'XXX'}] {fromAirport}</div>
+                        >
+                            {fromCity}
+                        </div>
 
                         {showFromDropdown && (
                             <div className="dropdown-list">
@@ -120,25 +99,15 @@ const CitySegment = ({ onToCityChange }) => {
                         )}
                     </Col>
 
-
-                    {/* ICON */}
-                    {/* <Col xs={2} className="text-center switch-icon-wrapper">
-                        <div className="switch-icon" style={{ cursor: 'pointer' }} onClick={handleSwitch}>
-                            <ArrowLeftRight size={20} />
-                        </div>
-                    </Col> */}
-
                     {/* TO */}
                     <Col xs={6} className="location-box position-relative" ref={toRef}>
-                        <span className="location-label">TO Airportdf</span>
-                        <input
-                            type="text"
-                            className="location-city form-control border-0 p-0"
-                            value={toCity}
+                        <span className="location-label">To Airport</span>
+                        <div
+                            className={`location-city-text ${toCity === 'Destination' ? 'default' : 'selected'}`}
                             onClick={handleToInputClick}
-                            onChange={(e) => setToCity(e.target.value)}    // Added this line
-                        />
-                        <div className="location-airport">[{toCity === 'Delhi' ? 'DEL' : toCity === 'Mumbai' ? 'BOM' : 'XXX'}] {toAirport}</div>
+                        >
+                            {toCity}
+                        </div>
 
                         {showToDropdown && (
                             <div className="dropdown-list">
@@ -160,9 +129,8 @@ const CitySegment = ({ onToCityChange }) => {
 
                 </Row>
             </Card>
-
         </div>
-    )
-}
+    );
+};
 
-export default CitySegment
+export default AddMorecity;

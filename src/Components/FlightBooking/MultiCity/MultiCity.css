@@ -107,3 +107,48 @@
     color: #6c757d !important;
     font-weight: 600 !important;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* add morecity component */
+
+.location-label {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+.location-city-text {
+    font-weight: bold;
+    font-size: 20px;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 5px 0;
+}
+
+.location-city-text.default {
+    font-weight: bold;
+    font-size: 20px;
+    color: #6c757d; /* light gray for "Origin" and "Destination" */
+    cursor: pointer;
+    padding: 5px 0;
+}
+
+.location-city-text.selected {
+    font-weight: bold;
+    font-size: 20px;
+    color: #212529; /* dark text for selected city */
+    cursor: pointer;
+    padding: 5px 0;
+}
