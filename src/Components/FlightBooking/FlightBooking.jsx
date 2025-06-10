@@ -115,7 +115,9 @@ const FlightBooking = () => {
                                 <Col lg={5}>
                                     <AddMorecity />
                                 </Col>
-                                <Col lg={3}></Col>
+                                <Col lg={3}>
+                                    <SecondDateSelecter />
+                                </Col>
                                 <Col lg={1}>
                                     {/* Remove button */}
                                     <div>
