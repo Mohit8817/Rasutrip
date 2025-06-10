@@ -14,6 +14,7 @@ import MultiCityForm from './MultiCity/MultiCityForm';
 import AddCityButton from './MultiCity/AddCityButton';
 import SecondDateSelecter from './MultiCity/SecondDateSelecter';
 import AddMorecity from './MultiCity/AddMorecity';
+import AddMorecitydatapick from './MultiCity/AddMorecitydatapick';
 
 const FlightBooking = () => {
     const [tripType, setTripType] = useState('oneway');
@@ -116,7 +117,7 @@ const FlightBooking = () => {
                                     <AddMorecity />
                                 </Col>
                                 <Col lg={3}>
-                                    <SecondDateSelecter />
+                                    <AddMorecitydatapick />
                                 </Col>
                                 <Col lg={1}>
                                     {/* Remove button */}

@@ -4,7 +4,8 @@ import "react-day-picker/dist/style.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import './MultiCity.css'; // Your custom styles
 
-const SecondDateSelecter = () => {
+
+const AddMorecitydatapick = () => {
 
     const [travelDate, setTravelDate] = useState(null); // Initially no date selected
     const [showCalendar, setShowCalendar] = useState(false);
@@ -37,14 +38,13 @@ const SecondDateSelecter = () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [showCalendar]);
-
     return (
         <div>
             <div
                 className="multi-city-date-picker position-relative text-start "
                 ref={calendarRef}>
                 <div
-                    className="sec-multi-city-date-button "
+                    className="sec-multi-city-date-button p-3"
                     onClick={() => setShowCalendar((prev) => !prev)}>
                     <span className="Date_label d-block">TRAVEL DATE</span>
                     <span
@@ -68,7 +68,7 @@ const SecondDateSelecter = () => {
                 )}
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default SecondDateSelecter;
+export default AddMorecitydatapick
