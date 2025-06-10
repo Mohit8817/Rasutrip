@@ -21,6 +21,13 @@ const FlightBooking = () => {
     // for data pass input fields 
     const [toCityFromCitySegment, setToCityFromCitySegment] = useState('');
 
+
+    const [showAddCity, setShowAddCity] = useState(false);
+
+    const handleAddCityClick = () => {
+        setShowAddCity(true);
+    };
+
     return (
         <div className="booking-container pt-0 mt-0">
             <Container>
@@ -83,27 +90,24 @@ const FlightBooking = () => {
                             </Col>
 
                             <Col lg={2}>
-                                <AddCityButton />
+                                <AddCityButton onClick={handleAddCityClick} />
                             </Col>
                             <Col lg={2}>
                             </Col>
                         </Row>
 
-                        {/* Add more city components  */}
-                        <Row className='mt-2'>
-                            <Col lg={5}>
-                                <AddMorecity />
-                            </Col>
-                            <Col lg={3}>
+                        {/* Show only if button clicked */}
 
-                            </Col>
-
-                            <Col lg={2}>
-
-                            </Col>
-                            <Col lg={2}>
-                            </Col>
-                        </Row>
+                        {showAddCity && (
+                            <Row className='mt-2'>
+                                <Col lg={5}>
+                                    <AddMorecity />
+                                </Col>
+                                <Col lg={3}></Col>
+                                <Col lg={2}> X </Col>
+                                <Col lg={2}></Col>
+                            </Row>
+                        )}
                     </Container>
                 )}
                 <Row>
