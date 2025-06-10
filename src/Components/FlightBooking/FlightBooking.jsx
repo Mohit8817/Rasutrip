@@ -22,11 +22,24 @@ const FlightBooking = () => {
     const [toCityFromCitySegment, setToCityFromCitySegment] = useState('');
 
 
-    const [showAddCity, setShowAddCity] = useState(false);
+
+
+    const [cityComponents, setCityComponents] = useState([]);
 
     const handleAddCityClick = () => {
-        setShowAddCity(true);
+        if (cityComponents.length < 2) {
+            // Add a unique ID (you can also use Date.now(), uuid, etc.)
+            const newCity = { id: Date.now() };
+            setCityComponents([...cityComponents, newCity]);
+        }
     };
+
+    const handleRemoveCity = (id) => {
+        // Filter out the component with this id
+        const updatedComponents = cityComponents.filter((city) => city.id !== id);
+        setCityComponents(updatedComponents);
+    };
+
 
     return (
         <div className="booking-container pt-0 mt-0">
@@ -96,18 +109,27 @@ const FlightBooking = () => {
                             </Col>
                         </Row>
 
-                        {/* Show only if button clicked */}
-
-                        {showAddCity && (
-                            <Row className='mt-2'>
+                        {/* Render each AddMorecity row */}
+                        {cityComponents.map((city, index) => (
+                            <Row className='mt-2' key={index}>
                                 <Col lg={5}>
                                     <AddMorecity />
                                 </Col>
                                 <Col lg={3}></Col>
-                                <Col lg={2}> X </Col>
-                                <Col lg={2}></Col>
+                                <Col lg={1}>
+                                    {/* Remove button */}
+                                    <div>
+                                        <button
+                                            className='btn btn-secondary'
+                                            onClick={() => handleRemoveCity(city.id)}
+                                        >
+                                            X
+                                        </button>
+                                    </div>
+                                </Col>
+                                <Col lg={3}></Col>
                             </Row>
-                        )}
+                        ))}
                     </Container>
                 )}
                 <Row>
