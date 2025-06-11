@@ -1,5 +1,5 @@
 import { Container, Row, Col } from 'react-bootstrap';
-import FlightSearchBar from '../../Components/FlightSearchBar/FlightSearchBar'
+import FlightSearchBar from '../../Components/FlightOneWay/FlightSearchBar/FlightSearchBar'
 
 const FlightResultsPage = () => {
     return (

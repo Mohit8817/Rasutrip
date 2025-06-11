@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Row, Col, Card } from 'react-bootstrap';
-import { ArrowLeftRight } from 'react-bootstrap-icons'; // Icon from react-bootstrap-icons
-import { FaPlane } from 'react-icons/fa'; // Plane icon
-import '../../Style/FlightBooking.css'; // Add your custom styles
+import { ArrowLeftRight } from 'react-bootstrap-icons';
+import { FaPlane } from 'react-icons/fa';
+import { LocationContext } from '../Context/LocationContext';
+import '../../Style/FlightBooking.css';
 
 const cityList = [
   { city: 'Delhi', airport: 'Delhi Indira Gandhi Intl', code: 'DEL', flag: '🇮🇳' },
@@ -14,10 +15,7 @@ const cityList = [
 ];
 
 const LocationInput = () => {
-  const [fromCity, setFromCity] = useState('Delhi');
-  const [toCity, setToCity] = useState('Mumbai');
-  const [fromAirport, setFromAirport] = useState('Delhi Indira Gandhi Intl');
-  const [toAirport, setToAirport] = useState('Chhatrapati Shivaji');
+  const { locationData, setLocationData } = useContext(LocationContext);
 
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
@@ -26,22 +24,25 @@ const LocationInput = () => {
   const toRef = useRef(null);
 
   const handleSwitch = () => {
-    setFromCity(toCity);
-    setToCity(fromCity);
-    setFromAirport(toAirport);
-    setToAirport(fromAirport);
+    setLocationData((prev) => ({
+      ...prev,
+      fromCity: prev.toCity,
+      toCity: prev.fromCity,
+      fromAirport: prev.toAirport,
+      toAirport: prev.fromAirport,
+    }));
   };
 
   const handleCitySelect = (cityObj, type) => {
-    if (type === 'from') {
-      setFromCity(cityObj.city);
-      setFromAirport(cityObj.airport);
-      setShowFromDropdown(false);
-    } else {
-      setToCity(cityObj.city);
-      setToAirport(cityObj.airport);
-      setShowToDropdown(false);
-    }
+    setLocationData((prev) => ({
+      ...prev,
+      ...(type === 'from'
+        ? { fromCity: cityObj.city, fromAirport: cityObj.airport }
+        : { toCity: cityObj.city, toAirport: cityObj.airport }),
+    }));
+
+    if (type === 'from') setShowFromDropdown(false);
+    else setShowToDropdown(false);
   };
 
   const handleFromInputClick = () => {
@@ -54,27 +55,25 @@ const LocationInput = () => {
     setShowFromDropdown(false);
   };
 
-  // Click outside close logic
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        fromRef.current &&
-        !fromRef.current.contains(event.target) &&
-        toRef.current &&
-        !toRef.current.contains(event.target)
+        fromRef.current && !fromRef.current.contains(event.target) &&
+        toRef.current && !toRef.current.contains(event.target)
       ) {
-        // Clicked outside both FROM and TO dropdown
         setShowFromDropdown(false);
         setShowToDropdown(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const getIATACode = (city) => {
+    const found = cityList.find(c => c.city === city);
+    return found ? found.code : 'XXX';
+  };
 
   return (
     <Card className="location-card position-relative">
@@ -85,11 +84,18 @@ const LocationInput = () => {
           <input
             type="text"
             className="location-city form-control border-0 p-0"
-            value={fromCity}
+            value={locationData.fromCity}
             onClick={handleFromInputClick}
-            onChange={(e) => setFromCity(e.target.value)}   // Added this line
+            onChange={(e) =>
+              setLocationData((prev) => ({
+                ...prev,
+                fromCity: e.target.value,
+              }))
+            }
           />
-          <div className="location-airport">[{fromCity === 'Delhi' ? 'DEL' : fromCity === 'Mumbai' ? 'BOM' : 'XXX'}] {fromAirport}</div>
+          <div className="location-airport">
+            [{getIATACode(locationData.fromCity)}] {locationData.fromAirport}
+          </div>
 
           {showFromDropdown && (
             <div className="dropdown-list">
@@ -109,8 +115,7 @@ const LocationInput = () => {
           )}
         </Col>
 
-
-        {/* ICON */}
+        {/* Switch Icon */}
         <Col xs={2} className="text-center switch-icon-wrapper">
           <div className="switch-icon" style={{ cursor: 'pointer' }} onClick={handleSwitch}>
             <ArrowLeftRight size={20} />
@@ -123,11 +128,18 @@ const LocationInput = () => {
           <input
             type="text"
             className="location-city form-control border-0 p-0"
-            value={toCity}
+            value={locationData.toCity}
             onClick={handleToInputClick}
-            onChange={(e) => setToCity(e.target.value)}    // Added this line
+            onChange={(e) =>
+              setLocationData((prev) => ({
+                ...prev,
+                toCity: e.target.value,
+              }))
+            }
           />
-          <div className="location-airport">[{toCity === 'Delhi' ? 'DEL' : toCity === 'Mumbai' ? 'BOM' : 'XXX'}] {toAirport}</div>
+          <div className="location-airport">
+            [{getIATACode(locationData.toCity)}] {locationData.toAirport}
+          </div>
 
           {showToDropdown && (
             <div className="dropdown-list">
@@ -146,7 +158,6 @@ const LocationInput = () => {
             </div>
           )}
         </Col>
-
       </Row>
     </Card>
   );
