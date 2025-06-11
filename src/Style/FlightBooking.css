@@ -111,7 +111,7 @@ body {
 
 /* LocationInput css             Component for 'From' and 'To' input fields */
 
-
+/* 
 
 .location-card {
   border-radius: 12px;
@@ -129,7 +129,7 @@ body {
 .location-label {
   font-size: 12px;
   font-weight: 500;
-  color: #2b2b2b;
+  color: #2b2b2b; 
   text-transform: uppercase;
 }
 
@@ -205,7 +205,93 @@ body {
 
 
 
+ */
 
+
+ .location-card {
+  border-radius: 12px !important;
+  padding: 15px 10px !important;
+
+  background-color: #fff !important;
+}
+
+.location-box {
+  padding: 0 12px !important;
+  text-align: left !important;
+  position: relative !important;
+}
+
+.location-label {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #2b2b2b !important;
+  text-transform: uppercase !important;
+}
+
+.location-city:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.location-city {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #000 !important;
+}
+
+.location-airport {
+  font-size: 13px !important;
+  color: #2b2b2b !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.switch-icon-wrapper {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.switch-icon {
+  background: #e5d8f5 !important;
+  color: #cb0d26 !important;
+  border-radius: 50% !important;
+  padding: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+}
+
+.dropdown-list {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  background-color: white !important;
+  border: 1px solid #ddd !important;
+  max-height: 280px !important;
+  overflow-y: auto !important;
+  width: 450px !important;
+  z-index: 10 !important;
+  border-radius: 8px !important;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1) !important;
+  margin-top: 5px !important;
+}
+
+.dropdown-item {
+  display: flex !important;
+  align-items: center !important;
+  padding: 10px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+}
+
+.dropdown-item:hover {
+  background-color: #b9192e !important;
+  color: #fff !important;
+}
 
 
 

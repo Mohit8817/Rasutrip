@@ -1,4 +1,4 @@
-/* Optional: for better spacing on small devices */
+/* 
 @media (max-width: 768px) {
     .flight-search-row>div {
         margin-bottom: 10px;
@@ -20,4 +20,4 @@
 .ModifyButton:focus {
     background-color: #ca0f2e;
     outline: none;
-}
+} */

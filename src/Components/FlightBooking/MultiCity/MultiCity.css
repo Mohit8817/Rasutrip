@@ -7,10 +7,10 @@
 
 .multi-city-date-picker .multi-city-date-button {
     min-width: 278px;
-    padding: 26px 10px;
+    padding: 24.5px 10px;
     background-color: #fff;
-    border: 1px solid #c1c1c1;
-    border-radius: 12px;
+    border: 1px solid #c5c5c5;
+    border-radius: 8px;
 }
 
 .Date_label {
@@ -20,8 +20,8 @@
     text-transform: uppercase;
 }
 
-.date {
-    font-weight: 600 !important;
+.multidate {
+    font-weight: bold ;
 }
 
 .multi-city-date-picker .multi-city-calendar-popup {

@@ -117,35 +117,35 @@ const LocationInput = () => {
           </div>
         </Col>
 
-     {/* TO */}
-<Col xs={5} className="location-box position-relative" ref={toRef}>
-  <span className="location-label">TO</span>
-  <input
-    type="text"
-    className="location-city form-control border-0 p-0"
-    value={toCity}
-    onClick={handleToInputClick}
-    onChange={(e) => setToCity(e.target.value)}    // Added this line
-  />
-  <div className="location-airport">[{toCity === 'Delhi' ? 'DEL' : toCity === 'Mumbai' ? 'BOM' : 'XXX'}] {toAirport}</div>
+        {/* TO */}
+        <Col xs={5} className="location-box position-relative" ref={toRef}>
+          <span className="location-label">TO</span>
+          <input
+            type="text"
+            className="location-city form-control border-0 p-0"
+            value={toCity}
+            onClick={handleToInputClick}
+            onChange={(e) => setToCity(e.target.value)}    // Added this line
+          />
+          <div className="location-airport">[{toCity === 'Delhi' ? 'DEL' : toCity === 'Mumbai' ? 'BOM' : 'XXX'}] {toAirport}</div>
 
-  {showToDropdown && (
-    <div className="dropdown-list">
-      {cityList.map((cityObj, index) => (
-        <div
-          key={index}
-          className="dropdown-item"
-          onClick={() => handleCitySelect(cityObj, 'to')}
-        >
-          <FaPlane className="me-2" />
-          <strong>{cityObj.city}</strong> &nbsp;
-          <span>({cityObj.airport})</span> &nbsp;
-          <span className="ms-auto">[{cityObj.code}] {cityObj.flag}</span>
-        </div>
-      ))}
-    </div>
-  )}
-</Col>
+          {showToDropdown && (
+            <div className="dropdown-list">
+              {cityList.map((cityObj, index) => (
+                <div
+                  key={index}
+                  className="dropdown-item"
+                  onClick={() => handleCitySelect(cityObj, 'to')}
+                >
+                  <FaPlane className="me-2" />
+                  <strong>{cityObj.city}</strong> &nbsp;
+                  <span>({cityObj.airport})</span> &nbsp;
+                  <span className="ms-auto">[{cityObj.code}] {cityObj.flag}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Col>
 
       </Row>
     </Card>
