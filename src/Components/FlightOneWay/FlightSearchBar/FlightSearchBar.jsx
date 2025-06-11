@@ -38,12 +38,12 @@ const FlightSearchBar = () => {
           <div className="text-muted small">{toCity}</div>
         </Col>
 
-        <Col md={3} xs={6}>
+        <Col md={2} xs={6}>
           <div><strong>Departure date</strong></div>
           <div className="text-muted small">{formattedDate}</div>
         </Col>
 
-        <Col md={1} xs={6}>
+        <Col md={2} xs={6}>
           <div><strong>Travellers</strong></div>
           <div className="text-muted small">3</div>
         </Col>
@@ -54,7 +54,7 @@ const FlightSearchBar = () => {
         </Col>
 
         <Col md={1} xs={12} className="text-end">
-          <Button variant="primary" style={{ background: '#6A1B9A', border: 'none' }}>
+          <Button variant="primary" className='ModifyButton'>
             Modify
           </Button>
         </Col>

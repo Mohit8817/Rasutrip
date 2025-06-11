@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LocationContext } from '../Context/LocationContext';
 import '../../Style/FlightBooking.css';
@@ -6,7 +6,6 @@ import '../../Style/FlightBooking.css';
 const SearchButton = ({ type }) => {
     const navigate = useNavigate();
     const { locationData } = useContext(LocationContext);
-    const [departDate] = useState(new Date()); // default date, you can lift state here if needed
 
     const handleSearchClick = () => {
         switch (type) {
@@ -14,7 +13,7 @@ const SearchButton = ({ type }) => {
                 navigate('/flight-results', {
                     state: {
                         ...locationData,
-                        departDate: departDate?.toISOString(), // 🔥 Inject here
+                        departDate: locationData.departDate || new Date().toISOString(), // ✅ Use context date
                     },
                 });
                 break;
