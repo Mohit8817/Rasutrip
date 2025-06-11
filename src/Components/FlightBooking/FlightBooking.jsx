@@ -71,7 +71,7 @@ const FlightBooking = () => {
                             <PassengerClass />
                         </Col>
                         <Col lg={1}>
-                            <SearchButton />
+                            <SearchButton type="flight" />
                         </Col>
                     </Row>
                 )}

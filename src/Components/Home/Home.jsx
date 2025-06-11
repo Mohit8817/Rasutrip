@@ -1,6 +1,6 @@
 import React from 'react'
-import Header from '../header/Header'
-import Footer from '../Footer/Footer';
+// import Header from '../header/Header'
+// import Footer from '../Footer/Footer';
 import Slider from '../hero/Slider'
 import DealsSection from '../Deals/DealsSection'
 import TravelBenefits from '../TravelBenefits/TravelBenefits'
@@ -10,12 +10,12 @@ const Home = () => {
     return (
         <div>
 
-            <Header />
+            {/* <Header /> */}
             <Slider />
             <DealsSection />
             <TravelBenefits />
             <FlightRoutes />
-            <Footer />
+            {/* <Footer /> */}
 
         </div>
     )
