@@ -124,7 +124,7 @@
 
 .location-label {
     display: block;
-    font-size: 12px;
+    font-size: 8px;
     color: #6c757d;
     margin-bottom: 5px;
 }
@@ -134,21 +134,20 @@
     font-size: 20px;
     color: #6c757d;
     cursor: pointer;
-    padding: 5px 0;
 }
 
 .location-city-text.default {
     font-weight: bold;
-    font-size: 20px;
-    color: #6c757d; /* light gray for "Origin" and "Destination" */
+    font-size: 18px;
+    color: #6c757d; 
     cursor: pointer;
-    padding: 5px 0;
+    padding: 3px 0;
 }
 
 .location-city-text.selected {
     font-weight: bold;
     font-size: 20px;
-    color: #212529; /* dark text for selected city */
+    color: #212529;
     cursor: pointer;
     padding: 5px 0;
 }

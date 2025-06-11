@@ -44,7 +44,7 @@ const AddMorecitydatapick = () => {
                 className="multi-city-date-picker position-relative text-start "
                 ref={calendarRef}>
                 <div
-                    className="sec-multi-city-date-button p-3"
+                    className="sec-multi-city-date-button p-2"
                     onClick={() => setShowCalendar((prev) => !prev)}>
                     <span className="Date_label d-block">TRAVEL DATE</span>
                     <span

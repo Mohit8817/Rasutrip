@@ -10,7 +10,7 @@ const Header = () => {
     return (
         <Navbar expand="lg" className="mb-3 header_navbar">
             <Container fluid>
-                <Navbar.Brand href="#">
+                <Navbar.Brand href="/">
                     <img
                         src={logo}
                         alt="Logo"

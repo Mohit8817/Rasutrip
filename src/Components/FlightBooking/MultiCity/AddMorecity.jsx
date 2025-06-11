@@ -68,7 +68,7 @@ const AddMorecity = ({ onToCityChange }) => {
 
     return (
         <div>
-            <Card className="location-card position-relative p-2">
+            <Card className="location-card position-relative p-1">
                 <Row className="g-0 align-items-center">
 
                     {/* FROM */}

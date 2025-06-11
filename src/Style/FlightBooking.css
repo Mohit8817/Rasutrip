@@ -211,7 +211,6 @@ body {
  .location-card {
   border-radius: 12px !important;
   padding: 15px 10px !important;
-
   background-color: #fff !important;
 }
 
@@ -235,7 +234,7 @@ body {
 
 .location-city {
   font-size: 18px !important;
-  font-weight: 600 !important;
+  font-weight: bold !important;
   color: #000 !important;
 }
 

@@ -5,13 +5,13 @@ const FlightResultsPage = () => {
     return (
         <div>
 
-            {/* <Container className='mt-5 pt-5'>
+            <Container className='mt-5 pt-5'>
                 <Row>
                     <Col>
                         <FlightSearchBar />
                     </Col>
                 </Row>
-            </Container> */}
+            </Container>
 
         </div>
     )

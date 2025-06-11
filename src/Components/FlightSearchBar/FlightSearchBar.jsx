@@ -1,5 +1,6 @@
 import React from 'react';
 import { Container, Row, Col, Button } from 'react-bootstrap';
+import '../../Style/Pagescss/FlightResultsPage.css'
 
 const FlightSearchBar = () => {
   return (
@@ -36,7 +37,7 @@ const FlightSearchBar = () => {
         </Col>
 
         <Col md={1} xs={12} className="text-end">
-          <Button variant="primary" style={{ background: '#6A1B9A', border: 'none' }}>
+          <Button className='ModifyButton'>
             Modify
           </Button>
         </Col>
