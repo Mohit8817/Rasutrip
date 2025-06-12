@@ -29,7 +29,7 @@ const FlightSearchBar = () => {
     : 'Not selected';
 
   return (
-    <Container className="p-3 bg-white shadow-sm rounded border mt-3">
+    <Container className="p-3 bg-white shadow-sm rounded border mt-5">
       <Row className="align-items-center text-center text-md-start">
         <Col md={2} xs={6}>
           <strong>{fromAirport}</strong>

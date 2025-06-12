@@ -3,17 +3,39 @@
   height: auto;
   margin-left: 2rem;
 }
-
+/* Navbar default: visible and transparent */
 .header_navbar {
-  position: absolute !important;
-  /* position: fixed !important; */
-  top: 0;
-  left: 0;
+  position: fixed;
   width: 100%;
-  background: transparent !important;
-  z-index: 1000;
-  transition: background-color 0.3s ease;
+  top: 0;
+  z-index: 999;
+  background-color: transparent;
+  transition: 
+    background-color 0.15s ease-in, 
+    box-shadow 0.2s ease-in, 
+    transform 0.3s ease-in;
+  will-change: background-color, box-shadow, transform;
+  transform: translateY(0); /* Show initially */
 }
+
+/* Scrolled: white + slide down */
+.header_navbar.scrolled {
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.31);
+ 
+}
+
+/* Nav links */
+.header_navbar .nav-item-link {
+  color: #ffffff !important;
+  transition: color 0.2s ease-in;
+}
+
+.header_navbar.scrolled .nav-item-link {
+  color: #000000 !important;
+}
+
+
 
 /* .header_navbar .navbar-collapse,
 .header_navbar .offcanvas {
