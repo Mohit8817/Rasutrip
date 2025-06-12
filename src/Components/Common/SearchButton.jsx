@@ -1,3 +1,4 @@
+// SearchButton.js
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LocationContext } from '../Context/LocationContext';
@@ -8,21 +9,39 @@ const SearchButton = ({ type }) => {
     const { locationData } = useContext(LocationContext);
 
     const handleSearchClick = () => {
+        const {
+            fromCity,
+            toCity,
+            fromAirport,
+            toAirport,
+            departDate,
+            passengers,
+            cabinClass
+        } = locationData;
+
         switch (type) {
             case 'flight':
                 navigate('/flight-results', {
                     state: {
-                        ...locationData,
-                        departDate: locationData.departDate || new Date().toISOString(), // ✅ Use context date
-                    },
+                        fromCity,
+                        toCity,
+                        fromAirport,
+                        toAirport,
+                        departDate: departDate || new Date().toISOString(),
+                        passengers,
+                        cabinClass
+                    }
                 });
                 break;
+
             case 'bus':
                 navigate('/bus-results');
                 break;
+
             case 'hotel':
                 navigate('/hotel-results');
                 break;
+
             default:
                 console.warn('Unknown search type:', type);
         }

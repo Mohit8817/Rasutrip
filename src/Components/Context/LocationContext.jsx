@@ -9,7 +9,9 @@ export const LocationProvider = ({ children }) => {
     toCity: 'Mumbai',
     fromAirport: 'DEL',
     toAirport: 'BOM',
-    departDate: null, // ⬅️ Add departDate here
+    departDate: null,
+    passengers: { adults: 1, children: 0, infants: 0 },
+    cabinClass: 'ANY'
   });
 
   return (

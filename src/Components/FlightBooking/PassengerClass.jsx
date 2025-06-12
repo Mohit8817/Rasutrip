@@ -1,12 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useContext } from 'react';
 import { Card, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../../Style/FlightBooking.css';
+import { LocationContext } from '../Context/LocationContext'; // Adjust the path as needed
 
 const PassengerClass = () => {
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [passengers, setPassengers] = useState({ adults: 1, children: 0, infants: 0 });
-  const [cabinClass, setCabinClass] = useState("ANY");
+  const [showDropdown, setShowDropdown] = React.useState(false);
+  const { locationData, setLocationData } = useContext(LocationContext);
+
+  const { passengers, cabinClass } = locationData;
+
   const ref = useRef();
 
   const toggleDropdown = () => setShowDropdown(!showDropdown);
@@ -23,9 +26,19 @@ const PassengerClass = () => {
   }, []);
 
   const updateCount = (type, change) => {
-    setPassengers(prev => ({
+    setLocationData(prev => ({
       ...prev,
-      [type]: Math.max(0, prev[type] + change)
+      passengers: {
+        ...prev.passengers,
+        [type]: Math.max(0, prev.passengers[type] + change)
+      }
+    }));
+  };
+
+  const handleCabinChange = (option) => {
+    setLocationData(prev => ({
+      ...prev,
+      cabinClass: option
     }));
   };
 
@@ -57,7 +70,7 @@ const PassengerClass = () => {
               };
               return (
                 <div key={idx} className="d-flex justify-content-between align-items-center mb-3">
-                  <div className='text-start ' >
+                  <div className='text-start'>
                     <div className="fw-semibold">{labels[type]}</div>
                     <div className="text-muted small">{ages[type]}</div>
                   </div>
@@ -69,14 +82,14 @@ const PassengerClass = () => {
                 </div>
               );
             })}
+
             <div className="fw-bold mb-3 mt-2 text-start">Cabin Class</div>
             {['ANY', 'ECONOMY', 'BUSINESS', 'PREMIUM ECONOMY', 'PREMIUM BUSINESS', 'FIRST'].map(option => (
-              <div key={option} className="cabin-option" onClick={() => setCabinClass(option)}>
+              <div key={option} className="cabin-option" onClick={() => handleCabinChange(option)}>
                 <div className={`custom-radio ${cabinClass === option ? 'checked' : ''}`} />
                 <div className="cabin-label">{option}</div>
               </div>
             ))}
-
           </Card.Body>
         </Card>
       )}
