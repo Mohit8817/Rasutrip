@@ -20,12 +20,12 @@ const FlightSearchBar = () => {
 
   const formattedDate = departDate
     ? new Date(departDate).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }) +
-      ', ' +
-      new Date(departDate).toLocaleDateString('en-GB', { weekday: 'long' })
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }) +
+    ', ' +
+    new Date(departDate).toLocaleDateString('en-GB', { weekday: 'long' })
     : 'Not selected';
 
   return (

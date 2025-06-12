@@ -21,3 +21,87 @@
     background-color: #ca0f2e;
     outline: none;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+/* Sidebar filter components  */
+
+
+.filter-sidebar {
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+
+.filter_label{
+    font-size: 1rem;
+    font-weight: 500;
+    color: #000;
+    margin-bottom: 10px;
+}
+.reset-link {
+  color: #6c757d;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.form-range {
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 5px;
+  outline: none;
+  appearance: none;
+}
+
+.form-range::-webkit-slider-thumb {
+  background-color: #000;
+  border: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  appearance: none;
+  cursor: pointer;
+}
+
+.form-range::-moz-range-thumb {
+  background-color: #000;
+  border: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+
+
+
+/* Flight card css here  */
+
+.flight-card {
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  background-color: #fff;
+}
+
+.airline-logo img {
+  max-height: 24px;
+}
+
+.seats-left {
+  font-size: 0.85rem;
+}
+
+.flight-details-toggle {
+  font-size: 0.9rem;
+  cursor: pointer;
+}
