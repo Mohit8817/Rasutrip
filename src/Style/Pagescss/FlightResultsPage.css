@@ -55,6 +55,8 @@
     font-size: 0.9rem;
 }
 
+
+
 .form-range {
     height: 8px;
     background-color: #e9ecef;
@@ -82,6 +84,16 @@
     cursor: pointer;
 }
 
+.selected-time {
+    background-color: #ffd7dd !important;
+    border-color: #ffa8b7 !important;
+    box-shadow: 0 0 0 2px #caa9ff44;
+}
+
+
+.filter_day_night_btn{
+    font-size: 0.9rem;
+}
 
 
 
@@ -99,11 +111,12 @@
 }
 
 
-.seats-left{
+.seats-left {
     font-size: 0.9rem;
     color: #6c757d;
     margin-top: 5px;
 }
+
 .flight-details-toggle {
     font-size: 0.9rem;
     cursor: pointer;
@@ -116,7 +129,7 @@
     margin-top: 5px;
 }
 
-.card-button{
+.card-button {
     background-color: #ca0f2e;
     color: white;
     border: none;
