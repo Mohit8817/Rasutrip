@@ -1,7 +1,15 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { LocationContext } from '../Context/LocationContext'; // ⬅️ Add this line
 import '../../Style/FlightBooking.css';
 
 const TripTypeSelector = ({ tripType, setTripType }) => {
+    const { setLocationData } = useContext(LocationContext); // ⬅️ Access context
+
+    const handleTripTypeChange = (type) => {
+        setTripType(type);
+        setLocationData(prev => ({ ...prev, tripType: type }));
+    };
+
     return (
         <div className="trip-type-container">
             <div className="trip-type-tab-wrapper">
@@ -12,7 +20,7 @@ const TripTypeSelector = ({ tripType, setTripType }) => {
                     id="oneway"
                     className="trip-type-input"
                     checked={tripType === 'oneway'}
-                    onChange={(e) => setTripType(e.target.value)}
+                    onChange={(e) => handleTripTypeChange(e.target.value)}
                 />
                 <label htmlFor="oneway" className="trip-type-tab">Oneway</label>
 
@@ -23,7 +31,7 @@ const TripTypeSelector = ({ tripType, setTripType }) => {
                     id="roundtrip"
                     className="trip-type-input"
                     checked={tripType === 'roundtrip'}
-                    onChange={(e) => setTripType(e.target.value)}
+                    onChange={(e) => handleTripTypeChange(e.target.value)}
                 />
                 <label htmlFor="roundtrip" className="trip-type-tab">Round Trip</label>
 
@@ -34,7 +42,7 @@ const TripTypeSelector = ({ tripType, setTripType }) => {
                     id="multicity"
                     className="trip-type-input"
                     checked={tripType === 'multicity'}
-                    onChange={(e) => setTripType(e.target.value)}
+                    onChange={(e) => handleTripTypeChange(e.target.value)}
                 />
                 <label htmlFor="multicity" className="trip-type-tab">Multi City</label>
             </div>

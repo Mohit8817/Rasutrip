@@ -28,6 +28,7 @@ const SearchButton = ({ type }) => {
                         fromAirport,
                         toAirport,
                         departDate: departDate || new Date().toISOString(),
+                        ...locationData,
                         passengers,
                         cabinClass
                     }

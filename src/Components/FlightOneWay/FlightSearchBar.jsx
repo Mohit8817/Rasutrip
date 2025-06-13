@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { Container, Row, Col, Button } from 'react-bootstrap';
-import '../../../Style/Pagescss/FlightResultsPage.css';
+import '../../Style/Pagescss/FlightResultsPage.css';
 
 const FlightSearchBar = () => {
   const { state } = useLocation();

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Button, Row, Col } from 'react-bootstrap';
-import '../../../Style/Pagescss/FlightResultsPage.css';
+import '../../Style/Pagescss/FlightResultsPage.css';
 
 const FlightCard = ({ flight }) => {
     return (

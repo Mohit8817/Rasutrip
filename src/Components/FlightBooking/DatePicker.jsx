@@ -9,7 +9,7 @@ const DatePicker = ({ tripType, setTripType }) => {
     const [departDate, setDepartDate] = useState(new Date());
     const [returnDate, setReturnDate] = useState(new Date());
     const [activeCalendar, setActiveCalendar] = useState(null);
-   const { setLocationData } = useContext(LocationContext);
+    const { setLocationData } = useContext(LocationContext);
 
     // refs for both date picker wrappers
     const departRef = useRef(null);
@@ -63,7 +63,7 @@ const DatePicker = ({ tripType, setTripType }) => {
                     <span className="day">{getDayName(departDate)}</span>
                 </div>
                 {activeCalendar === "depart" && (
-                   <div className="calendar-popup position-absolute bg-white mt-2 shadow rounded">
+                    <div className="calendar-popup position-absolute bg-white mt-2 shadow rounded">
                         <DayPicker
                             mode="single"
                             selected={departDate}
@@ -114,9 +114,15 @@ const DatePicker = ({ tripType, setTripType }) => {
                             selected={returnDate}
                             onSelect={(date) => {
                                 setReturnDate(date);
+                                setLocationData(prev => ({
+                                    ...prev,
+                                    returnDate: date, // ✅ store in context
+                                }));
                                 setActiveCalendar(null);
                             }}
                         />
+
+
                     </div>
                 )}
             </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Form, Button, Row, Col } from 'react-bootstrap';
-import '../../../Style/Pagescss/FlightResultsPage.css';
+import '../../Style/Pagescss/FlightResultsPage.css';
 
 const FlightSidebar = () => {
     const [priceRange, setPriceRange] = useState([29617.58, 130327]);

@@ -1,13 +1,11 @@
 import React from 'react'
 
-const SearchForm = () => {
+const RoundTripCard = () => {
   return (
     <div>
-     
-
-     
+    
     </div>
   )
 }
 
-export default SearchForm
+export default RoundTripCard
