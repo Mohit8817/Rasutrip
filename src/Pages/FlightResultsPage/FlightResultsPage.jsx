@@ -4,6 +4,7 @@ import FlightSearchBar from '../../Components/FlightOneWay/FlightSearchBar';
 import FlightSidebar from '../../Components/FlightOneWay/FlightSidebar';
 import FlightList from '../../Components/FlightOneWay/FlightList';
 import RoundsearchBar from '../../Components/FlightRoundTrip.jsx/RoundsearchBar';
+import RoundTripCardList from '../../Components/FlightRoundTrip.jsx/RoundTripCardList';
 
 const FlightResultsPage = () => {
     const { state } = useLocation();
@@ -45,6 +46,7 @@ const FlightResultsPage = () => {
                         <Col lg={9}>
                             {/* Add roundtrip flight list here if needed */}
                             <p>Roundtrip flights list goes here</p>
+                            <RoundTripCardList/>
                         </Col>
                     </Row>
                 </Container>

@@ -29,7 +29,7 @@ const SearchButton = ({ type }) => {
                         fromAirport,
                         toAirport,
                         departDate: departDate || new Date().toISOString(),
-                         ...locationData, 
+                        ...locationData,
                         passengers,
                         cabinClass,
                         tripType: tripType || 'oneway' // ✅ default fallback

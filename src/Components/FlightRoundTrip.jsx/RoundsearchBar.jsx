@@ -53,7 +53,7 @@ const RoundsearchBar = () => {
                         <div className="text-muted small">{toCity}</div>
                     </Col>
 
-                    <Col style={{ minWidth: '150px' }}>
+                    <Col style={{ minWidth: '150px' }} className='text-start'>
                         <div><strong>Departure</strong></div>
                         <div className="text-muted small">{formattedDepartDate}</div>
                     </Col>
