@@ -22,9 +22,6 @@ const FlightBooking = () => {
     // for data pass input fields 
     const [toCityFromCitySegment, setToCityFromCitySegment] = useState('');
 
-
-
-
     const [cityComponents, setCityComponents] = useState([]);
 
     const handleAddCityClick = () => {

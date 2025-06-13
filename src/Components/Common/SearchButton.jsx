@@ -16,7 +16,8 @@ const SearchButton = ({ type }) => {
             toAirport,
             departDate,
             passengers,
-            cabinClass
+            cabinClass,
+            tripType // ✅ make sure tripType is included
         } = locationData;
 
         switch (type) {
@@ -28,9 +29,10 @@ const SearchButton = ({ type }) => {
                         fromAirport,
                         toAirport,
                         departDate: departDate || new Date().toISOString(),
-                        ...locationData,
+                         ...locationData, 
                         passengers,
-                        cabinClass
+                        cabinClass,
+                        tripType: tripType || 'oneway' // ✅ default fallback
                     }
                 });
                 break;

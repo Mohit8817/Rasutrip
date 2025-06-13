@@ -10,7 +10,7 @@ export const LocationProvider = ({ children }) => {
     fromAirport: 'DEL',
     toAirport: 'BOM',
     departDate: null,
-    returnDate: '',
+    returnDate: null,
     passengers: { adults: 1, children: 0, infants: 0 },
     cabinClass: 'ANY',
     tripType: 'oneway',
