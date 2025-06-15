@@ -1,6 +1,6 @@
 import React from "react";
 import HotelCard from "./HotelCard";
-import "./HotelList.css";
+import "./HotelListingPage.css";
 
 const hotels = [
   {
