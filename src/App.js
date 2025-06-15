@@ -7,6 +7,7 @@ import FlightResultsPage from './Pages/FlightResultsPage/FlightResultsPage';
 import Header from './Components/header/Header';
 import Footer from './Components/Footer/Footer';
 import HotelResultsPage from './Pages/HotelResultsPage/HotelResultsPage';
+import HotelDetailsPage from './Components/HotelDetails/HotelDetailsPage';
 
 
 function App() {
@@ -16,7 +17,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/flight-results" element={<FlightResultsPage />} />
+
+        {/* Hotel Results Page */}
         <Route path="/hotel-results" element={<HotelResultsPage />} />
+        <Route path="/HotelDetailsPage/:id" element={<HotelDetailsPage />} />
         ...
       </Routes>
       <Footer />

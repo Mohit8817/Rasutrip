@@ -10,7 +10,7 @@ import AboutHotel from "./AboutHotel";
 
 const HotelDetailsPage = () => {
   return (
-    <div className="hotel-details-container">
+    <div className="hotel-details-container mt-5 pt-5">
       {/* Heading */}
       <Heading />
 
