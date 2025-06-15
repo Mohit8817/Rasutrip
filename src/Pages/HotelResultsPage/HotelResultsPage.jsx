@@ -5,6 +5,7 @@ import SearchSummary from '../../Components/Hotel/SearchSummary';
 import SortBar from '../../Components/Hotel/SortBar';
 import HotelCard from '../../Components/Hotel/HotelCard';
 import Card1 from "../../assest/crd1.jpeg";
+import HotelList from '../../Components/Hotel/HotelList';
 
 const HotelResultsPage = () => {
   const hotels = [
@@ -34,6 +35,10 @@ const HotelResultsPage = () => {
           {hotels.map((hotel, index) => (
             <HotelCard key={index} {...hotel} />
           ))}
+
+          <div>
+            <HotelList/>
+          </div>
         </div>
       </div>
     </div>

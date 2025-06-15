@@ -1,28 +1,35 @@
-// HotelCard.js
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import "./HotelListingPage.css";
-import HotelDetailsPage from "../HotelDetails/HotelDetailsPage";
 
 const HotelCard = ({ hotel }) => {
   const navigate = useNavigate();
 
+  // Guard clause: skip rendering if hotel is not defined
+  if (!hotel) return null;
+
   const handleBookClick = () => {
-    // Navigate to hotel detail page with the hotel's id or unique identifier
     navigate(`/HotelDetailsPage/${hotel.id}`, { state: { hotel } });
   };
 
   return (
     <div className="hotel-card">
-      <img src={hotel.image} alt={hotel.name} className="hotel-img" />
+      <img
+        src={hotel.image || "https://via.placeholder.com/300x200?text=No+Image"}
+        alt={hotel.name || "Hotel"}
+        className="hotel-img"
+      />
 
       <div className="hotel-info">
-        <h3>{hotel.name}</h3>
-        <p>{hotel.location}</p>
-        <div className="stars">{'★'.repeat(hotel.rating)}</div>
+        <h3>{hotel.name || "Hotel Name"}</h3>
+        <p>{hotel.location || "Unknown Location"}</p>
+        <div className="stars">
+          {'★'.repeat(hotel.rating || 0)}
+        </div>
       </div>
+
       <div className="hotel-price">
-        <p>₹ {hotel.price}</p>
+        <p>₹ {hotel.price || "N/A"}</p>
         <span>Per Night</span>
         <button onClick={handleBookClick}>Book</button>
       </div>

@@ -32,7 +32,7 @@ const HotelSearchForm = () => {
                     </Col>
                     <Col lg={1}>
 
-                        <SearchButton />
+                        <SearchButton  type="hotel" />
                     </Col>
                 </Row>
             </Container>
