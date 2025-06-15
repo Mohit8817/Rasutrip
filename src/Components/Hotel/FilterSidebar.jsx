@@ -1,5 +1,5 @@
 import React from "react";
-import "./FilterSidebar.css";
+import "./HotelListingPage.css";
 
 const FilterSidebar = () => {
   return (
@@ -18,6 +18,7 @@ const FilterSidebar = () => {
         <div className="rating-options">
           <label><input type="checkbox" /> ★★★★★</label>
           <label><input type="checkbox" /> ★★★★☆</label>
+          <label><input type="checkbox" /> ★★★☆</label>
         </div>
       </div>
     </div>
