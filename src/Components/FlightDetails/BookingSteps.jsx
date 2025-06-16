@@ -1,14 +1,25 @@
 import React from 'react';
+import { FaPlaneDeparture, FaUser, FaClipboardCheck, FaReceipt, FaCreditCard } from 'react-icons/fa';
+import '../../Style/Pagescss/FlightResultsPage.css'; // CSS file we'll define below
 
-const steps = ['Flight Details', 'Traveller Details', 'Addons', 'Review', 'Payment'];
+const steps = [
+    { label: 'Flight Details', icon: <FaPlaneDeparture /> },
+    { label: 'Traveller Details', icon: <FaUser /> },
+    { label: 'Addons', icon: <FaClipboardCheck /> },
+    { label: 'Review', icon: <FaReceipt /> },
+    { label: 'Payment', icon: <FaCreditCard /> }
+];
 
 const BookingSteps = ({ activeIndex = 0 }) => {
     return (
-        <div className="step-progress d-flex justify-content-between align-items-center mt-5 pt-5">
+        <div className="booking-steps-container container">
             {steps.map((step, index) => (
-                <div key={index} className={`step ${index === activeIndex ? 'active' : ''}`}>
-                    <div className="circle">{index + 1}</div>
-                    <div className="label">{step}</div>
+                <div key={index} className={`step-item ${index === activeIndex ? 'active' : ''}`}>
+                    <div className="step-icon">
+                        <span className="icon">{step.icon}</span>
+                    </div>
+                    <div className="step-label">{step.label}</div>
+                    {index < steps.length -1 && <div className="step-line" />}
                 </div>
             ))}
         </div>

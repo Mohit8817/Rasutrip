@@ -1,48 +1,125 @@
 import React from 'react';
+import { Card, Row, Col, Button, Badge } from 'react-bootstrap';
+import { FaArrowRight } from 'react-icons/fa';
+import '../../Style/Pagescss/FlightResultsPage.css';
 
 const FlightInfo = () => {
-  return (
-    <div>
-      <div className="review-header bg-light p-3 mb-3">
-        <h5>Review Your Flight Details</h5>
-      </div>
+    return (
+        <div className="container">
 
-      <div className="flight-route bg-white p-3 mb-3 border position-relative">
-        <strong className="text-success">Depart</strong> Delhi → <strong>Mumbai</strong><br />
-        <small>Delhi | 0 Stops | 2 h 15 m</small>
-        <button className="btn btn-sm btn-outline-primary position-absolute end-0 top-0 m-3">Fare Rules</button>
-      </div>
+            {/* Header */}
+            <Card className="mb-3 shadow-sm">
+                <Card.Body className="d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0 fw-bold">Review Your Flight Details</h5>
+                    <Button variant="" size="sm">Back To Search</Button>
+                </Card.Body>
+            </Card>
 
-      <div className="flight-card border p-3 bg-white">
-        <div className="d-flex align-items-center mb-2">
-          <img src="/spicejet-logo.png" alt="Spicejet" width="30" />
-          <div className="ms-2">
-            <strong>Spicejet</strong> | SG-8157 | Economy | <span className="text-success">Refundable</span>
-          </div>
+            {/* Route Info */}
+            <Card className="mb-3 shadow-sm position-relative">
+                <Card.Body>
+                    <div>
+                        <span className="text-success fw-semibold">Depart </span>
+                        <span className="fw-bold">Delhi</span> → <span className="fw-bold">Mumbai</span>
+                        <div className="text-muted small">Delhi | 0 Stops | 2 h 15 m</div>
+                    </div>
+                    <Button variant="outline-danger" size="sm" className="position-absolute top-50 end-0 translate-middle-y me-3">Fare Rules</Button>
+                </Card.Body>
+            </Card>
+
+            {/* Flight Detail Card */}
+            <Card className="shadow-sm mb-3 flight-card-custom">
+                <Card.Body>
+
+                    {/* Top summary row */}
+                    <Row className="align-items-center mb-3 justify-content-between">
+                        <Col md="auto">
+                            <img src="/spicejet-logo.png" alt="SpiceJet" width={40} />
+                        </Col>
+
+                        <Col md={4}>
+                            <div>
+                                <strong>Delhi</strong> → <strong>Mumbai</strong> Spicejet SG - 8157 | Economy
+                            </div>
+                        </Col>
+
+                        <Col md="auto" className="text-center">
+                            <div><strong>06:10</strong></div>
+                            <div className="text-muted small">20 Jun</div>
+                        </Col>
+
+                        <Col md="auto" className="text-center">
+                            <FaArrowRight />
+                        </Col>
+
+                        <Col md="auto" className="text-center">
+                            <div><strong>08:25</strong></div>
+                            <div className="text-muted small">20 Jun</div>
+                        </Col>
+
+                        <Col md="auto" className="text-center">
+                            <div className="small text-muted">2 h 15 m</div>
+                            <div className="small text-muted">0 Stops</div>
+                        </Col>
+                    </Row>
+
+                    <hr />
+
+                    {/* Bottom details row */}
+                    <Row>
+                        {/* Left: Timeline info */}
+                        <Col md={8}>
+                            <Row>
+                                {/* Departure Time */}
+                                <Col xs={2} className="text-center">
+                                    <div><strong>06:10</strong></div>
+                                </Col>
+
+                                {/* Departure Airport Info */}
+                                <Col xs={10}>
+                                    <div><strong>Delhi</strong></div>
+                                    <div className="text-muted small">Delhi indira gandhi intl</div>
+                                    <div className="text-muted small">Terminal 3</div>
+                                </Col>
+
+                                {/* Vertical Dotted Line (Timeline) */}
+                                <Col xs={2} className="d-flex justify-content-center">
+                                    <div className="flight-dot-line"></div>
+                                </Col>
+
+                                {/* Duration Badge */}
+                                <Col xs={10} className="d-flex align-items-center">
+                                    <Badge bg="light" text="dark">2 h 15 m</Badge>
+                                </Col>
+
+                                {/* Arrival Time */}
+                                <Col xs={2} className="text-center mt-2">
+                                    <div><strong>08:25</strong></div>
+                                </Col>
+
+                                {/* Arrival Airport Info */}
+                                <Col xs={10} className="mt-2">
+                                    <div><strong>Mumbai</strong></div>
+                                    <div className="text-muted small">Chhatrapati shivaji maharaj international airport</div>
+                                    <div className="text-muted small">Terminal 1</div>
+                                </Col>
+                            </Row>
+
+                        </Col>
+
+                        {/* Right: Baggage info */}
+                        <Col md={4} className="text-md-end text-start mt-3 mt-md-0 small">
+                            <div><strong>(Adult)</strong> Check-In : 15 Kg</div>
+                            <div><strong>Child</strong> : 7 Kg, <strong>Infant</strong>: 7 Kg</div>
+                            <div><strong>Fare Class</strong> : DD, <strong>Aircraft</strong> : 737</div>
+                        </Col>
+                    </Row>
+
+                </Card.Body>
+            </Card>
+
         </div>
-
-        <div className="time-info d-flex justify-content-between">
-          <div>
-            <strong>06:10</strong><br />
-            <small>20 Jun<br />Delhi (T3)</small>
-          </div>
-          <div className="text-center">
-            <span>2 h 15 m</span><br />
-            <span className="text-muted">0 Stops</span>
-          </div>
-          <div>
-            <strong>08:25</strong><br />
-            <small>20 Jun<br />Mumbai (T1)</small>
-          </div>
-        </div>
-
-        <div className="mt-3">
-          <strong>(Adult) Check-In:</strong> 15 Kg | <strong>Child:</strong> 7 Kg | <strong>Infant:</strong> 7 Kg<br />
-          <strong>Fare Class:</strong> RS, <strong>Aircraft:</strong> 737
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default FlightInfo;

@@ -1,4 +1,5 @@
 import React from 'react'
+import { Container, Row, Col } from 'react-bootstrap';
 import BookingSteps from './BookingSteps'
 import FlightInfo from './FlightInfo'
 import ContinueBookingButton from './ContinueBookingButton'
@@ -9,23 +10,31 @@ import PromoCodeBox from './PromoCodeBox'
 const FlightDetails = () => {
     return (
         <div>
-            <div className="container my-4 mt-5 pt-5">
-                <BookingSteps activeIndex={0} />
-                <div className="d-flex flex-wrap gap-4">
-                    <div style={{ flex: 2 }}>
-                        <FlightInfo />
-                        <ContinueBookingButton />
-                    </div>
 
-                    <div style={{ flex: 1 }}>
-                        <FareSummary />
-                        <PromoCodeBox />
+            <Container style={{ marginTop: '8rem'}}>
+                <Row>
+                    <div>
+                        <BookingSteps activeIndex={0} />
                     </div>
-                </div>
+                </Row>
+                <Row>
+                    <Col lg={9}>
+                        <div >
+                            <FlightInfo />
+                            <ContinueBookingButton />
+                        </div>
+
+                    </Col>
+                    <Col lg={3}>
+
+                        <div>
+                            <FareSummary />
+                            <PromoCodeBox />
+                        </div>
+                    </Col>
+                </Row>
+            </Container>
             </div>
-
-
-        </div>
     )
 }
 

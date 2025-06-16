@@ -1,10 +1,10 @@
 import React from 'react';
-
+import { Button } from 'react-bootstrap';
 const ContinueBookingButton = () => {
     return (
-        <div className="mt-4">
-            <button className="btn btn-danger w-100">Continue Booking</button>
-        </div>
+        <div className="text-start mx-3 my-4">
+        <Button variant="primary" className="btn-red">Continue Booking</Button>
+      </div>
     );
 };
 

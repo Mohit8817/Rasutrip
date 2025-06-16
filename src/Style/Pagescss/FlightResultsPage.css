@@ -224,3 +224,154 @@
     margin: 0 5px;
     vertical-align: middle;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Flight Details  page css  */
+
+/* Booking step components css  */
+.booking-steps-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+ 
+  position: relative;
+  margin: 20px 0;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+.step-icon {
+  background-color: #888;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  font-size: 16px;
+}
+
+.step-item.active .step-icon {
+  background-color: #ca0f2e;
+  border: 2px solid #f58c9e;
+  box-shadow: 0 0 0 2px white;
+}
+
+.step-label {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #888;
+}
+
+.step-item.active .step-label {
+  font-weight: bold;
+  color: #000;
+}
+
+.step-line {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background-color: #ccc;
+  z-index: 1;
+}
+
+.step-item:last-child .step-line {
+  display: none;
+}
+
+
+
+
+/* Flight info css  */
+
+.flight-dot-line {
+  height: 100px;
+  border-left: 2px dotted #999;
+  margin: 0 auto;
+  position: relative;
+}
+.flight-dot-line::before,
+.flight-dot-line::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  background: green;
+  border-radius: 50%;
+}
+.flight-dot-line::before {
+  top: 0;
+}
+.flight-dot-line::after {
+  bottom: 0;
+}
+
+.flight-card-custom .badge {
+  font-size: 0.75rem;
+  padding: 0.4em 0.7em;
+  border-radius: 0.25rem;
+  background-color: #cbcbcb;
+}
+
+.flight-card-custom hr {
+  margin: 0.5rem 0 1rem;
+  border-top: 1px solid #ddd;
+}
+
+
+.btn-red {
+  background-color: #ca0f2e;
+  color: #fff;
+  font-weight: 500;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+}
+.btn-red:hover {
+  background-color: #ca0f2e;
+}
+
+/* Fare summary card css  */
+
+.fare-summary-card {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.fare-row {
+  border-bottom: 1px dotted #ccc;
+  margin: 0;
+}
+

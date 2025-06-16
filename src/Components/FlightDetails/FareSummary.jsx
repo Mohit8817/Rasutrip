@@ -1,21 +1,47 @@
 import React from 'react';
+import { Card, Row, Col } from 'react-bootstrap';
+import '../../Style/Pagescss/FlightResultsPage.css';// Update path as per your structure
 
 const FareSummary = () => {
-  return (
-    <div className="fare-summary border p-3 bg-white mb-3">
-      <h5>Fare Summary</h5>
-      <hr />
-      <div className="d-flex justify-content-between"><span>Base Fare</span><span>₹ 6616</span></div>
-      <div className="d-flex justify-content-between"><span>Taxes</span><span>₹ 1028</span></div>
-      <div className="d-flex justify-content-between"><span>Service Charges</span><span>₹ 0</span></div>
-      <div className="d-flex justify-content-between"><span>GST (+)</span><span>₹ 0</span></div>
-      <div className="d-flex justify-content-between"><span>Meal (+)</span><span>₹ 0</span></div>
-      <div className="d-flex justify-content-between"><span>Baggage (+)</span><span>₹ 0</span></div>
-      <div className="d-flex justify-content-between"><span>Seat (+)</span><span>₹ 0</span></div>
-      <hr />
-      <div className="d-flex justify-content-between fw-bold"><span>Pay Amount</span><span>₹ 7644</span></div>
-    </div>
-  );
+    return (
+        <Card className="fare-summary-card mb-3">
+            <Card.Header className="bg-light fw-bold">Fare Summary</Card.Header>
+            <Card.Body className="px-3 py-2">
+                <Row className="fare-row py-1">
+                    <Col>Base Fare</Col>
+                    <Col className="text-end">₹ 6466</Col>
+                </Row>
+                <Row className="fare-row py-1">
+                    <Col>Taxes</Col>
+                    <Col className="text-end">₹ 1020</Col>
+                </Row>
+                <Row className="fare-row py-1">
+                    <Col>Service Charges</Col>
+                    <Col className="text-end">₹ 0</Col>
+                </Row>
+                <Row className="fare-row py-1">
+                    <Col>GST (+)</Col>
+                    <Col className="text-end">₹ 0</Col>
+                </Row>
+                <Row className="fare-row py-1">
+                    <Col>Meal (+)</Col>
+                    <Col className="text-end">₹ 0</Col>
+                </Row>
+                <Row className="fare-row py-1">
+                    <Col>Baggage (+)</Col>
+                    <Col className="text-end">₹ 0</Col>
+                </Row>
+                <Row className="fare-row py-1">
+                    <Col>Seat (+)</Col>
+                    <Col className="text-end">₹ 0</Col>
+                </Row>
+            </Card.Body>
+            <Card.Footer className="bg-light fw-bold d-flex justify-content-between">
+                <span>Pay Amount</span>
+                <span>₹ 7486</span>
+            </Card.Footer>
+        </Card>
+    );
 };
 
 export default FareSummary;
