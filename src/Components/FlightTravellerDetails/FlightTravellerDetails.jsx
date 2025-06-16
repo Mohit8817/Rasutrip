@@ -1,25 +1,26 @@
 import React from 'react'
 import { Container, Row, Col } from 'react-bootstrap';
-import BookingSteps from './BookingSteps'
-import FlightInfo from './FlightInfo'
-import FareSummary from './FareSummary'
-import PromoCodeBox from './PromoCodeBox'
+import BookingSteps from '../FlightDetails/BookingSteps';
+import FareSummary from '../FlightDetails/FareSummary';
+import PromoCodeBox from '../FlightDetails/PromoCodeBox';
+import TravellerInfo from './TravellerInfo';
 
 
-const FlightDetails = () => {
+const FlightTravellerDetails = () => {
     return (
         <div>
-
             <Container style={{ marginTop: '8rem' }}>
+          
                 <Row>
                     <div>
-                        <BookingSteps activeIndex={0} />
+                        <BookingSteps activeIndex={1} />
                     </div>
                 </Row>
                 <Row>
                     <Col lg={9}>
                         <div >
-                            <FlightInfo />
+                            {/* <FlightInfo /> */}
+                            <TravellerInfo />
                         </div>
 
                     </Col>
@@ -27,6 +28,7 @@ const FlightDetails = () => {
                         <div>
                             <FareSummary />
                             <PromoCodeBox />
+
                         </div>
                     </Col>
                 </Row>
@@ -35,4 +37,4 @@ const FlightDetails = () => {
     )
 }
 
-export default FlightDetails
+export default FlightTravellerDetails

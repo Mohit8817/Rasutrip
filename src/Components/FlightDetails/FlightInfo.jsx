@@ -2,8 +2,16 @@ import React from 'react';
 import { Card, Row, Col, Button, Badge } from 'react-bootstrap';
 import { FaArrowRight } from 'react-icons/fa';
 import '../../Style/Pagescss/FlightResultsPage.css';
+import { useNavigate } from 'react-router-dom';
 
 const FlightInfo = () => {
+
+    const navigate = useNavigate();
+
+    const handleContinue = () => {
+        navigate('/traveller-details');
+    };
+
     return (
         <div className="container">
 
@@ -116,7 +124,13 @@ const FlightInfo = () => {
                     </Row>
 
                 </Card.Body>
+
             </Card>
+            <div className="text-start">
+                <Button variant="primary" className="btn-red" onClick={handleContinue}>
+                    Continue Booking
+                </Button>
+            </div>
 
         </div>
     );
