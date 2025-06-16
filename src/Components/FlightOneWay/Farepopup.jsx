@@ -1,8 +1,16 @@
 // src/Components/FarePopup.js
 import React from 'react';
 import { Modal, Row, Col, Card, Button, Badge } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 
 const FarePopup = ({ show, onClose, fares = [] }) => {
+  const navigate = useNavigate();
+
+  const handleBook = () => {
+    onClose(); // Close the modal
+    navigate('/flight-details'); // Navigate to booking details page
+  };
+
   return (
     <Modal show={show} onHide={onClose} size="lg" centered>
       <Modal.Header closeButton>
@@ -33,9 +41,15 @@ const FarePopup = ({ show, onClose, fares = [] }) => {
                   <p className="mb-2 text-danger">✖ Date change fees apply</p>
 
                   <h6>Seats & More</h6>
-                  <p className="text-success">✔ Free Seat Selection</p>
+                  <p className="text-success">✔ Free Seat Selection</p>  
 
-                  <Button variant="primary" className="w-100 mt-2">Book Now</Button>
+                  <Button
+                    variant="danger"
+                    className="w-100 mt-2"
+                    onClick={handleBook}
+                  >
+                    Book Now
+                  </Button>
                 </Card.Body>
               </Card>
             </Col>

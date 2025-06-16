@@ -8,6 +8,7 @@ import Header from './Components/header/Header';
 import Footer from './Components/Footer/Footer';
 import HotelResultsPage from './Pages/HotelResultsPage/HotelResultsPage';
 import HotelDetailsPage from './Components/HotelDetails/HotelDetailsPage';
+import FlightDetails from './Components/FlightDetails/FlightDetails';
 
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/flight-results" element={<FlightResultsPage />} />
+        <Route path="/flight-details" element={<FlightDetails />} />
 
         {/* Hotel Results Page */}
         <Route path="/hotel-results" element={<HotelResultsPage />} />
