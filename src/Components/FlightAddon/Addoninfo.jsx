@@ -8,7 +8,7 @@ const Addoninfo = () => {
     const navigate = useNavigate();
 
     const handleContinue = () => {
-        navigate('/');
+        navigate('/review');
     };
     return (
         <div>
@@ -50,7 +50,7 @@ const Addoninfo = () => {
                             <p>Charges : Rs. 6450</p>
                         </Col>
                     </Row>
-{/* 
+                    {/* 
                     <div className="bg-light p-3 mt-3">
                         <button className="btn btn-primary px-4">Departure : BOM-DEL</button>
                     </div> */}
