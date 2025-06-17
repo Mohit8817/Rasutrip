@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const FlightInfo = () => {
 
     const navigate = useNavigate();
-
+    
     const handleContinue = () => {
         navigate('/traveller-details');
     };

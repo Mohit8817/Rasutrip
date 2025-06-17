@@ -12,6 +12,7 @@ import FlightDetails from './Components/FlightDetails/FlightDetails';
 import FlightTravellerDetails from './Components/FlightTravellerDetails/FlightTravellerDetails';
 import FlightAddon from './Components/FlightAddon/FlightAddon';
 import FlightReview from './Components/FlightReview/FlightReview';
+import FlightPayment from './Components/FlightPayment/FlightPayment';
 
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         <Route path="/traveller-details" element={<FlightTravellerDetails />} />
         <Route path="/addons" element={<FlightAddon />} />
         <Route path="/review" element={<FlightReview />} />
+        <Route path="/Payment" element={< FlightPayment/>} />
 
         {/* Hotel Results Page */}
         <Route path="/hotel-results" element={<HotelResultsPage />} />

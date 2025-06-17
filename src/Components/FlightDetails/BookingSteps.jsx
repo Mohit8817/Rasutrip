@@ -8,7 +8,7 @@ const steps = [
     { label: 'Traveller Details', icon: <FaUser />, path: '/traveller-details' },
     { label: 'Addons', icon: <FaClipboardCheck />, path: '/addons' },
     { label: 'Review', icon: <FaReceipt />, path: '/review' },
-    { label: 'Payment', icon: <FaCreditCard />, path: '/payment' }
+    { label: 'Payment', icon: <FaCreditCard />, path: '/Payment' }
 ];
 
 const BookingSteps = () => {

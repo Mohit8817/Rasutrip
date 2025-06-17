@@ -13,7 +13,7 @@ const PromoCodeBox = () => {
         value={promoCode}
         onChange={(e) => setPromoCode(e.target.value)}
       />
-      <button className="btn btn-outline-primary w-100">Apply</button>
+      <button className="btn-red w-100">Apply</button>
     </div>
   );
 };

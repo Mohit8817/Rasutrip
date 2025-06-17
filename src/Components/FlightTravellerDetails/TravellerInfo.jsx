@@ -10,6 +10,8 @@ const TravellerInfo = () => {
     const handleContinue = () => {
         navigate('/addons');
     };
+
+
     return (
         <div>
 

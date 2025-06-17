@@ -6,10 +6,13 @@ import React, { useState } from 'react';
 
 import { FaInfoCircle, FaPen } from 'react-icons/fa';
 import '../../Style/Pagescss/FlightResultsPage.css';
+import { useNavigate } from 'react-router-dom';
 
-
-const ReviewInfo = ({ handleContinue }) => {
-
+const ReviewInfo = () => {
+    const navigate = useNavigate();
+    const handleContinue = () => {
+        navigate('/Payment');
+    };
     const [acceptedTerms, setAcceptedTerms] = useState(true);
     return (
         <div className="container">
