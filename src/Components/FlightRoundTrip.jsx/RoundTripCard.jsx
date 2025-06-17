@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Row, Col, Button, Form, Container } from 'react-bootstrap';
+import { Card, Row, Col, Form, Container } from 'react-bootstrap';
 import '../../Style/Pagescss/FlightResultsPage.css';
 
 const RoundTripCard = () => {
@@ -13,7 +13,7 @@ const RoundTripCard = () => {
                             <Col md={12}>
                                 <Row className="align-items-center">
                                     <Col md={2} className="text-center">
-                                        <img src='' />
+                                        {/* <img src='' /> */}
                                         <div className="fw-bold mt-1">Air India</div>
                                         <div className="text-muted small">AI-441</div>
                                     </Col>
@@ -83,7 +83,7 @@ const RoundTripCard = () => {
                             <Col md={12}>
                                 <Row className="align-items-center">
                                     <Col md={2} className="text-center">
-                                         <img src="" />
+                                         {/* <img src="" /> */}
                                         <div className="fw-bold mt-1">Spicejet</div>
                                         <div className="text-muted small">SG-710</div>
                                     </Col>

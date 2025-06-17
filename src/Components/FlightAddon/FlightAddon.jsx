@@ -3,26 +3,31 @@ import { Container, Row, Col } from 'react-bootstrap';
 import BookingSteps from '../FlightDetails/BookingSteps';
 import FareSummary from '../FlightDetails/FareSummary';
 import PromoCodeBox from '../FlightDetails/PromoCodeBox';
-import TravellerInfo from './TravellerInfo';
+
 
 import '../../Style/Pagescss/FlightResultsPage.css';
+import Addoninfo from './Addoninfo';
 
 
-const FlightTravellerDetails = () => {
+const FlightAddon = () => {
+
+    
     return (
         <div>
+
+
             <Container style={{ marginTop: '8rem' }}>
-          
+
                 <Row>
                     <div>
-                        <BookingSteps activeIndex={1} />
+                        <BookingSteps activeIndex={2} />
                     </div>
                 </Row>
                 <Row>
                     <Col lg={9}>
                         <div >
-                            {/* <FlightInfo /> */}
-                            <TravellerInfo />
+
+                        <Addoninfo/>
                         </div>
 
                     </Col>
@@ -39,4 +44,4 @@ const FlightTravellerDetails = () => {
     )
 }
 
-export default FlightTravellerDetails
+export default FlightAddon

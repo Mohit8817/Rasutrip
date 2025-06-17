@@ -1,8 +1,15 @@
 import React from 'react';
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
 import { FaEnvelope } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const TravellerInfo = () => {
+
+    const navigate = useNavigate();
+
+    const handleContinue = () => {
+        navigate('/addons');
+    };
     return (
         <div>
 
@@ -81,7 +88,7 @@ const TravellerInfo = () => {
                                 </p>
                             </Col>
                             <Col lg={3} className="text-end">
-                                <Button variant="primary" className="px-4">Add</Button>
+                                <Button variant="" className="px-4 btn-red">Add</Button>
                             </Col>
                         </Row>
                     </Card.Body>
@@ -89,7 +96,9 @@ const TravellerInfo = () => {
 
                 {/* Continue Button */}
                 <div className="text-start">
-                    <Button variant="primary" className="btn-purple px-4 py-2">Continue Booking</Button>
+                    <Button variant="primary" className="btn-red" onClick={handleContinue}>
+                        Continue Booking
+                    </Button>
                 </div>
             </div>
 
