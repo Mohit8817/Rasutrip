@@ -47,7 +47,7 @@ const HotelResultsPage = () => {
             <FilterSidebar />
           </Col>
           <Col lg={9}>
-            <div className="hotel-list-section">
+            <div className="">
               <SortBar />
               {hotels.map((hotel, index) => (
                 <HotelCard key={index} {...hotel} />

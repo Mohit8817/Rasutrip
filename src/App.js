@@ -13,7 +13,7 @@ import FlightTravellerDetails from './Components/FlightTravellerDetails/FlightTr
 import FlightAddon from './Components/FlightAddon/FlightAddon';
 import FlightReview from './Components/FlightReview/FlightReview';
 import FlightPayment from './Components/FlightPayment/FlightPayment';
-import BookingSummaryPage from './Components/Hotel/BookingSummaryPage/BookingSummaryPage';
+import HotelDetail from './Components/Hotel/BookingSummaryPage/HotelDetail/HotelDetail';
 
 
 function App() {
@@ -27,12 +27,13 @@ function App() {
         <Route path="/traveller-details" element={<FlightTravellerDetails />} />
         <Route path="/addons" element={<FlightAddon />} />
         <Route path="/review" element={<FlightReview />} />
-        <Route path="/Payment" element={< FlightPayment/>} />
+        <Route path="/Payment" element={< FlightPayment />} />
 
         {/* Hotel Results Page */}
         <Route path="/hotel-results" element={<HotelResultsPage />} />
         <Route path="/HotelDetailsPage/:id" element={<HotelDetailsPage />} />
-      <Route path="/booking-summary" element={<BookingSummaryPage />} />
+        {/* Steps pages  */}
+        <Route path="/HotelDetail" element={<HotelDetail />} />
         ...
       </Routes>
       <Footer />

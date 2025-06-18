@@ -7,7 +7,7 @@ const RoomCard = () => {
   const navigate = useNavigate();
 
   const handleBookNow = () => {
-    navigate("/booking-summary"); // Update path if different
+    navigate("/HotelDetail"); // Update path if different
   };
 
   return (
