@@ -1,4 +1,4 @@
-import React from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
 import './HotelResultsPage.css';
 import FilterSidebar from '../../Components/Hotel/FilterSidebar';
 import SearchSummary from '../../Components/Hotel/SearchSummary';
@@ -26,22 +26,42 @@ const HotelResultsPage = () => {
   ];
 
   return (
-    <div className="results-container">
-      <SearchSummary />
-      <div className="results-content">
-        <FilterSidebar />
-        <div className="hotel-list-section">
-          <SortBar />
-          {hotels.map((hotel, index) => (
-            <HotelCard key={index} {...hotel} />
-          ))}
+    <>
 
-          <div>
-            <HotelList/>
-          </div>
+      {/* <div className="results-container mt-5 pt-5">
+
+        <div className="results-content mt-3">
+
+
         </div>
-      </div>
-    </div>
+      </div> */}
+
+      <Container className='mt-5 pt-5'>
+        <Row>
+          <Col>
+            <SearchSummary />
+          </Col>
+        </Row>
+        <Row className='mt-4'>
+          <Col lg={3}>
+            <FilterSidebar />
+          </Col>
+          <Col lg={9}>
+            <div className="hotel-list-section">
+              <SortBar />
+              {hotels.map((hotel, index) => (
+                <HotelCard key={index} {...hotel} />
+              ))}
+
+              <div>
+                <HotelList />
+              </div>
+            </div>
+          </Col>
+        </Row>
+      </Container>
+    </>
+
   );
 };
 

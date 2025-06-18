@@ -158,41 +158,8 @@
   margin-bottom: 1rem;
 }
 
-/* SearchSummary.css */
-.search-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  background-color: #f9f9fb;
-  padding: 15px 20px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 14px;
-}
 
-.search-summary > div {
-  margin: 5px 10px;
-  font-weight: 500;
-  color: #333;
-}
 
-.modify-btn {
-  background-color: #6c63ff;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background-color 0.3s ease;
-}
-
-.modify-btn:hover {
-  background-color: #5548d9;
-}
 
 /* SortBAR */
 .sort-bar {

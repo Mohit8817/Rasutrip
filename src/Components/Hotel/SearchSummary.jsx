@@ -1,20 +1,44 @@
 import React from 'react';
+import { Container, Row, Col, Button } from 'react-bootstrap';
 import './HotelListingPage.css';
 
 const SearchSummary = () => {
   return (
-    <>
-      <div className='mt-4 pt-4'>
-        <div className="search-summary mt-5 pt-5 ">
-      <div><strong>📍 SAIPEM, GOA, INDIA</strong></div>
-      <div>Check-In <strong>16 Jun 25</strong></div>
-      <div>Nights <strong>1</strong></div>
-      <div>Check-Out <strong>17 Jun 25</strong></div>
-      <div>Rooms & Guests <strong>2 Guest, 1 Rooms</strong></div>
-      <button className="modify-btn">Modify Search</button>
-    </div>
-      </div>
-    </>
+    <Container className=" mt-5 p-3 bg-white shadow-sm rounded border overflow-auto">
+      <Row className="flex-nowrap align-items-center text-center text-md-start">
+        
+        <Col style={{ minWidth: '200px' }}>
+          <div><strong>📍 SAIPEM, GOA, INDIA</strong></div>
+        </Col>
+
+        <Col style={{ minWidth: '150px' }}>
+          <div><strong>Check-In</strong></div>
+          <div className="text-muted small">19 Jun 25</div>
+        </Col>
+
+        <Col style={{ minWidth: '100px' }}>
+          <div><strong>Nights</strong></div>
+          <div className="text-muted small">1</div>
+        </Col>
+
+        <Col style={{ minWidth: '150px' }}>
+          <div><strong>Check-Out</strong></div>
+          <div className="text-muted small">20 Jun 25</div>
+        </Col>
+
+        <Col style={{ minWidth: '180px' }}>
+          <div><strong>Rooms & Guests</strong></div>
+          <div className="text-muted small">2 Guest, 1 Rooms</div>
+        </Col>
+
+        <Col style={{ minWidth: '150px' }} className="text-end">
+          <Button  className="btn-red">
+            Modify Search
+          </Button>
+        </Col>
+
+      </Row>
+    </Container>
   );
 };
 
