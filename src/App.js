@@ -14,6 +14,7 @@ import FlightAddon from './Components/FlightAddon/FlightAddon';
 import FlightReview from './Components/FlightReview/FlightReview';
 import FlightPayment from './Components/FlightPayment/FlightPayment';
 import HotelDetail from './Components/Hotel/BookingSummaryPage/HotelDetail/HotelDetail';
+import GuestDetails from './Components/Hotel/BookingSummaryPage/GuestDetails/GuestDetails';
 
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
         <Route path="/HotelDetailsPage/:id" element={<HotelDetailsPage />} />
         {/* Steps pages  */}
         <Route path="/HotelDetail" element={<HotelDetail />} />
+        <Route path="/guest-details" element={<GuestDetails />} />
         ...
       </Routes>
       <Footer />
