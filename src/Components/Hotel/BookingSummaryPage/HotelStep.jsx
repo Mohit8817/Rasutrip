@@ -6,7 +6,7 @@ import { FaHotel, FaUser, FaClipboardList, FaCreditCard } from 'react-icons/fa';
 const steps = [
     { label: 'Hotel Details', icon: <FaHotel />, path: '/HotelDetail' },
     { label: 'Guest Details', icon: <FaUser />, path: '/guest-details' },
-    { label: 'Review', icon: <FaClipboardList />, path: '/review' },
+    { label: 'Review', icon: <FaClipboardList />, path: '/Hotelreview' },
     { label: 'Payment', icon: <FaCreditCard />, path: '/payment' }
 ];
 
