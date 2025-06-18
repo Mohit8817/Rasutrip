@@ -1,24 +1,11 @@
 import React from 'react';
-import './BookingSummaryPage.css';
-import StepNavigation from './StepNavigation';
-import HotelInfoCard from './HotelInfoCard';
-import FareSummaryCard from './FareSummaryCard';
-import PromoCodeCard from './PromoCodeCard';
+import HotelStep from './HotelStep';
 
 const BookingSummaryPage = () => {
   return (
-    <div className="booking-page-container">
-      <StepNavigation />
-      <div className="content-wrapper">
-        <HotelInfoCard />
-        <div className="side-panel">
-          <FareSummaryCard />
-          <PromoCodeCard />
-        </div>
-      </div>
-      {/* <div className="bottom-bar">
-        <button className="continue-btn">Continue Booking</button>
-      </div> */}
+    <div className="booking-page-container mt-5 pt-5 ">
+      <HotelStep />
+
     </div>
   );
 };
