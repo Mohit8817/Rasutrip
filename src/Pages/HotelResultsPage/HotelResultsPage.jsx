@@ -1,11 +1,11 @@
 import { Container, Row, Col } from 'react-bootstrap';
 import './HotelResultsPage.css';
-import FilterSidebar from '../../Components/Hotel/FilterSidebar';
-import SearchSummary from '../../Components/Hotel/SearchSummary';
-import SortBar from '../../Components/Hotel/SortBar';
-import HotelCard from '../../Components/Hotel/HotelCard';
+import FilterSidebar from '../../Components/Hotel/Hotelpage/FilterSidebar';
+import SearchSummary from '../../Components/Hotel/Hotelpage/SearchSummary';
+import SortBar from '../../Components/Hotel/Hotelpage/SortBar';
+import HotelCard from '../../Components/Hotel/Hotelpage/HotelCard';
 import Card1 from "../../assest/crd1.jpeg";
-import HotelList from '../../Components/Hotel/HotelList';
+import HotelList from '../../Components/Hotel/Hotelpage/HotelList';
 
 const HotelResultsPage = () => {
   const hotels = [

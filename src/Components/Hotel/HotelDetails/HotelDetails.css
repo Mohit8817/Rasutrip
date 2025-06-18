@@ -1,14 +1,8 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #f4f4f4;
-}
 
-.header {
+
+.summ_header {
   background: #fff;
   padding: 20px;
-  box-shadow: 0 0 5px rgba(0,0,0,0.1);
 }
 
 .main {
@@ -80,91 +74,7 @@ body {
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
-.room-card {
-  margin: 20px;
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-}
 
-.price {
-  font-size: 20px;
-  font-weight: bold;
-  color: #2a9d8f;
-}
-
-.book-btn {
-  padding: 10px 20px;
-  background: #6a1b9a;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.amenities {
-  padding: 20px;
-  background: white;
-  margin: 20px;
-  border-radius: 8px;
-}
-
-
-
-
-/* booking */
-.booking-card-container {
-  background-color: #f9fbff;
-  border: 1px solid #e5e8f0;
-  border-radius: 10px;
-  padding: 20px;
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  font-family: "Arial", sans-serif;
-}
-
-.booking-info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: white;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #eee;
-}
-
-.icon-text {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.icon-text img {
-  width: 28px;
-  height: 28px;
-}
-
-.label {
-  font-size: 14px;
-  color: #555;
-}
-
-.bold {
-  font-weight: bold;
-  font-size: 15px;
-  color: #111;
-}
-
-.subtext {
-  font-size: 13px;
-  color: #888;
-}
-
-.info-text {
-  text-align: right;
-}
 
 
 

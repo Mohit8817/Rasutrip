@@ -9,7 +9,7 @@ const Amenities = () => {
   ];
 
   return (
-    <div className="amenities-container">
+    <div className="amenities-container mt-3">
       <h3 className="amenities-title">Amenities & Info</h3>
       <div className="amenities-grid">
         {amenities.map((row, rowIndex) =>

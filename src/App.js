@@ -7,7 +7,7 @@ import FlightResultsPage from './Pages/FlightResultsPage/FlightResultsPage';
 import Header from './Components/header/Header';
 import Footer from './Components/Footer/Footer';
 import HotelResultsPage from './Pages/HotelResultsPage/HotelResultsPage';
-import HotelDetailsPage from './Components/HotelDetails/HotelDetailsPage';
+import HotelDetailsPage from './Components/Hotel/HotelDetails/HotelDetailsPage';
 import FlightDetails from './Components/FlightDetails/FlightDetails';
 import FlightTravellerDetails from './Components/FlightTravellerDetails/FlightTravellerDetails';
 import FlightAddon from './Components/FlightAddon/FlightAddon';

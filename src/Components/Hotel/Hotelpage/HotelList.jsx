@@ -2,7 +2,7 @@ import React from "react";
 import HotelCard from "./HotelCard";
 import "./HotelListingPage.css";
 
-import img1 from "../../assest/hotel1.jpg";
+import img1 from "../../../assest/hotel1.jpg";
 
 const hotels = [
   {

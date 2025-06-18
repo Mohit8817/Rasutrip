@@ -3,7 +3,7 @@ import "./HotelDetails.css";
 
 const AboutHotel = () => {
   return (
-    <div className="about-container">
+    <div className="about-container mt-3">
       <h3 className="about-title">About The Hotel</h3>
       <p className="about-text">
         Take time to pamper yourself with a visit to the full-service spa. Hindi, English
