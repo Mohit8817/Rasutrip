@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Row, Col, Button } from 'react-bootstrap';
 import "../../../Style/Pagescss/BusResultPage.css";
+import BusSeatSelect from './BusSeatSelect';
 
 const BusDetailsCard = ({ bus }) => {
+    const [showSeatModal, setShowSeatModal] = useState(false);
     return (
         <Card className="bus-card shadow-sm mb-3 border-0">
             <Row className="g-0">
@@ -41,9 +43,11 @@ const BusDetailsCard = ({ bus }) => {
                     <div className="text-center">
                         <div className="text-muted small">Starting at</div>
                         <div className="fs-5 fw-bold">{bus.price}</div>
-                        <Button className="btn-red mt-2">Show Seats</Button>
+                        <Button className="btn-red mt-2" onClick={() => setShowSeatModal(true)}>Show Seats</Button>
                     </div>
                 </Col>
+
+                <BusSeatSelect show={showSeatModal} onHide={() => setShowSeatModal(false)} bus={bus} />
             </Row>
         </Card>
     );

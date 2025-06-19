@@ -18,6 +18,7 @@ import GuestDetails from './Components/Hotel/BookingSummaryPage/GuestDetails/Gue
 import HotelReview from './Components/Hotel/BookingSummaryPage/HotelReview/HotelReview';
 import HotelPayment from './Components/Hotel/BookingSummaryPage/HotelPayment/HotelPayment';
 import BusResultPage from './Pages/BusResultsPage/BusResultPage';
+import BusDetail from './Components/Bus/BusDetail/BusDetail';
 
 
 function App() {
@@ -48,6 +49,9 @@ function App() {
         {/* Bus Result page  */}
 
          <Route path="/bus-results" element={<BusResultPage />} />
+         <Route path="/bus-detail" element={<BusDetail />} />
+
+
       </Routes>
       <Footer />
     </Router>
