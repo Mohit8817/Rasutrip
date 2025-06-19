@@ -51,7 +51,7 @@ const BusSidebarFilter = () => {
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <div className="fw-bold"><i className="bi bi-funnel-fill me-2" /> Filter Results</div>
-                <Button variant="link" className="p-0 text-decoration-none reset-link">Reset All</Button>
+                <Button variant="link" className="p-0 text-decoration-none  text-dark">Reset All</Button>
             </div>
 
             {/* Price Range */}

@@ -1,6 +1,7 @@
 import { Container, Row, Col } from 'react-bootstrap';
 import BusSearchSummary from '../../Components/Bus/BusPage/BusSearchSummary';
 import BusSidebarFilter from '../../Components/Bus/BusPage/BusSidebarFilter';
+import BusDetailsList from '../../Components/Bus/BusPage/BusDetailsList';
 
 const BusResultPage = () => {
     return (
@@ -16,6 +17,8 @@ const BusResultPage = () => {
                         <BusSidebarFilter />
                     </Col>
                     <Col lg={9}>
+
+                        <BusDetailsList />
                     </Col>
                 </Row>
             </Container>

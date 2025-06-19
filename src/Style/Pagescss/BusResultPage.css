@@ -1,39 +1,56 @@
 
 /* bus side bar  */
 
-
-.bus-filter-sidebar {
-  background-color: #ffffff;
-  border-radius: 8px;
-  max-height: 100%;
-  overflow-y: auto;
-}
-
 .filter-label {
   font-weight: 600;
   font-size: 14px;
-  color: #333;
+  color: #000;
 }
 
-.scroll-section {
-  max-height: 150px;
-  overflow-y: auto;
-  border: 1px solid #e3e3e3;
-  padding: 10px;
-  border-radius: 5px;
+
+/* bus Deatils list css  */
+
+
+.bus-list-container {
+  background-color: #f0f4fa;
+  padding: 1rem;
 }
 
-.scroll-section::-webkit-scrollbar {
-  width: 6px;
+.sort-header {
+  background-color: #e0e0e0;
+  border-radius: 6px;
+  font-weight: 500;
 }
 
-.scroll-section::-webkit-scrollbar-thumb {
-  background-color: #ccc;
-  border-radius: 3px;
+.bus-card {
+  border-radius: 10px;
 }
 
-.reset-link {
-  font-size: 13px;
-  color: #007bff;
-  cursor: pointer;
+.duration-box {
+  background-color: #f3f3f3;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 500;
 }
+
+
+
+
+.bus-card {
+    border-radius: 10px;
+}
+
+.duration-box {
+    background-color: #eaeaea;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: inline-block;
+    font-weight: 500;
+}
+
+.price-panel {
+    background-color: #e9e9eb;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
