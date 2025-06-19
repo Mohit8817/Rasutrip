@@ -16,6 +16,8 @@ import FlightPayment from './Components/FlightPayment/FlightPayment';
 import HotelDetail from './Components/Hotel/BookingSummaryPage/HotelDetail/HotelDetail';
 import GuestDetails from './Components/Hotel/BookingSummaryPage/GuestDetails/GuestDetails';
 import HotelReview from './Components/Hotel/BookingSummaryPage/HotelReview/HotelReview';
+import HotelPayment from './Components/Hotel/BookingSummaryPage/HotelPayment/HotelPayment';
+import BusResultPage from './Pages/BusResultsPage/BusResultPage';
 
 
 function App() {
@@ -38,8 +40,14 @@ function App() {
         <Route path="/HotelDetail" element={<HotelDetail />} />
         <Route path="/guest-details" element={<GuestDetails />} />
         <Route path="/Hotelreview" element={<HotelReview/>} />
-        {/* <Route path="/HotelPayment" element={<Hotelpayment/>} /> */}
-        ...
+        <Route path="/HotelPayment" element={<HotelPayment/>} />
+
+
+
+
+        {/* Bus Result page  */}
+
+         <Route path="/bus-results" element={<BusResultPage />} />
       </Routes>
       <Footer />
     </Router>

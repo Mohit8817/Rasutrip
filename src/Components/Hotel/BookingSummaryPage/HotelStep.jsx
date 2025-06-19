@@ -7,7 +7,7 @@ const steps = [
     { label: 'Hotel Details', icon: <FaHotel />, path: '/HotelDetail' },
     { label: 'Guest Details', icon: <FaUser />, path: '/guest-details' },
     { label: 'Review', icon: <FaClipboardList />, path: '/Hotelreview' },
-    { label: 'Payment', icon: <FaCreditCard />, path: '/payment' }
+    { label: 'Payment', icon: <FaCreditCard />, path: '/HotelPayment' }
 ];
 
 const HotelStep = () => {

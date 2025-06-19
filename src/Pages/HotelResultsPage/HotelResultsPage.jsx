@@ -28,13 +28,7 @@ const HotelResultsPage = () => {
   return (
     <>
 
-      {/* <div className="results-container mt-5 pt-5">
-
-        <div className="results-content mt-3">
-
-
-        </div>
-      </div> */}
+   
 
       <Container className='mt-5 pt-5'>
         <Row>

@@ -1,0 +1,39 @@
+
+/* bus side bar  */
+
+
+.bus-filter-sidebar {
+  background-color: #ffffff;
+  border-radius: 8px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.filter-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.scroll-section {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #e3e3e3;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.scroll-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-section::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 3px;
+}
+
+.reset-link {
+  font-size: 13px;
+  color: #007bff;
+  cursor: pointer;
+}
