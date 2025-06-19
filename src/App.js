@@ -19,6 +19,8 @@ import HotelReview from './Components/Hotel/BookingSummaryPage/HotelReview/Hotel
 import HotelPayment from './Components/Hotel/BookingSummaryPage/HotelPayment/HotelPayment';
 import BusResultPage from './Pages/BusResultsPage/BusResultPage';
 import BusDetail from './Components/Bus/BusDetail/BusDetail';
+import BusTravellerDetails from './Components/Bus/BusTravellerDetails/BusTravellerDetails';
+import BusReview from './Components/Bus/BusReview/BusReview';
 
 
 function App() {
@@ -50,6 +52,8 @@ function App() {
 
          <Route path="/bus-results" element={<BusResultPage />} />
          <Route path="/bus-detail" element={<BusDetail />} />
+         <Route path="/bus-traveller-details" element={<BusTravellerDetails />} />
+         <Route path="/bus-Review" element={<BusReview />} />
 
 
       </Routes>

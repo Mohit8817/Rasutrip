@@ -1,8 +1,16 @@
 import React from "react";
 import { Card, Row, Col, Button } from "react-bootstrap";
 import { FaClock, FaWheelchair, FaCity } from "react-icons/fa";
+import { useNavigate } from 'react-router-dom';
 
 const BusDetailinfo = () => {
+
+    const navigate = useNavigate();
+
+    const handleContinue = () => {
+        navigate('/bus-traveller-details');
+    };
+
     return (
         <div>
             <div className="bus-review-wrapper p-3 ">
@@ -65,8 +73,12 @@ const BusDetailinfo = () => {
                 </Card>
 
                 {/* Button */}
-                <div className="text-start mt-4">
-                    <Button variant="primary" className="btn-red">Continue Booking</Button>
+
+
+                <div className="text-start mt-2">
+                    <Button variant="primary" className="btn-red" onClick={handleContinue}>
+                        Continue Booking
+                    </Button>
                 </div>
             </div>
         </div>
