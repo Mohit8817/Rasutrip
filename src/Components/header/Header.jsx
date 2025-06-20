@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom'; // <-- import this
+
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import '../../Style/header.css';
 import logo from '../../assest/rasutrip.png';
-import Userlogin from './Userlogin';
+import Login from '../Login/Login';
 
 const Header = () => {
     const location = useLocation(); // <-- get current route
@@ -54,8 +55,9 @@ const Header = () => {
                     </Offcanvas.Body>
                 </Navbar.Offcanvas>
 
-                <div className="d-none d-lg-block ms-auto">
-                    <Userlogin />
+                <div className="">                
+
+                    <Login/>
                 </div>
             </Container>
         </Navbar>

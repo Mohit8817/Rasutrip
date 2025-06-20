@@ -21,6 +21,8 @@ import BusResultPage from './Pages/BusResultsPage/BusResultPage';
 import BusDetail from './Components/Bus/BusDetail/BusDetail';
 import BusTravellerDetails from './Components/Bus/BusTravellerDetails/BusTravellerDetails';
 import BusReview from './Components/Bus/BusReview/BusReview';
+import CustomerLogin from './Components/Login/CustomerLogin';
+import AgentLogin from './Components/Login/AgentLogin';
 
 
 function App() {
@@ -54,6 +56,13 @@ function App() {
          <Route path="/bus-detail" element={<BusDetail />} />
          <Route path="/bus-traveller-details" element={<BusTravellerDetails />} />
          <Route path="/bus-Review" element={<BusReview />} />
+
+
+         {/* Login Routes page  */}
+
+         <Route path="/login/customer" element={<CustomerLogin />} />
+         <Route path="/login/agent" element={<AgentLogin />} />
+
 
 
       </Routes>

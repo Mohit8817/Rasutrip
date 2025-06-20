@@ -1,37 +1,155 @@
 
+
+
+
+/* Hover dropdown */
+
+.login-dropdown-wrapper .dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+/* Custom button styling */
 .user-profile {
-  width: 100px;
-  height: 40px;
-  border-radius: 50px;
   cursor: pointer;
-  transition: 0.3s ease;
-  display: flex;
-  align-items: center;  
-  justify-content: center;
-  margin-right: 3rem;
+  padding: 6px 12px;
+  border-radius: 30px;
+  background-color: #ca0e27;
+  display: inline-flex;
+  align-items: center;
+  color: #fff;
 }
 
 .user-profile-inner {
-  width: 127px;
-  height: 40px;
-  border-radius: 50px;
-  background: #CA0F2EFF;
   display: flex;
   align-items: center;
-  justify-content: center;
-
-  gap: 15px;
-  color: #fff;
-  font-weight: 600;
+  gap: 10px;
 }
 
-.user-profile-inner p{
-    padding: 15px 0 0 0; ;
-    text-align: center;
-} 
-
+.user-profile p {
+  margin: 0;
+  font-weight: 500;
+}
 .user-profile-inner svg {
   width: 20px;
   height: 20px;
   fill: #fff;
+}
+
+/* Dropdown Styling */
+.login-dropdown-menu {
+  right: 0 !important;
+  left: auto !important;
+  transform: translateX(0) !important;
+}
+
+.dropdown-custom-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 10px;
+}
+
+.dropdown-custom-item div {
+  line-height: 1.1;
+}
+
+
+
+
+
+
+
+
+
+
+
+/* Customer login  */
+
+
+
+.login-wrapper {
+  background: #e9fcffee;
+  padding: 50px 0;
+  margin-top: 7rem;
+  min-height: 100vh;
+}
+
+.login-box {
+  max-width: 700px;
+  margin: auto;
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.left-panel {
+  background: #f8f9fa;
+}
+
+.benefits-title {
+  background-color: #ca0e27;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 25px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.benefits-list {
+  list-style: none;
+  padding-left: 0;
+  font-size: 15px;
+}
+
+.right-panel {
+  background: #ff0022;
+  color: #fff;
+  padding: 85px 18px 0 18px;
+}
+.login-title{
+  color: #fff;
+  font-weight: 700;
+  font-size: 28px;
+  text-align: center;
+  letter-spacing: 2px;
+
+  margin-bottom: 20px;
+}
+.custom-input label {
+  color: #fff;
+  font-weight: 600;
+}
+
+.custom-input input {
+  background-color: white;
+  border-radius: 8px;
+}
+
+.captcha-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.captcha-img {
+  height: 40px;
+}
+
+.refresh-link {
+  color: #fff;
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.label{
+  color: #fff;
+  font-weight: 600;
+}
+
+.login-btn {
+  background: #123867;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 0;
+  font-weight: bold;
 }
