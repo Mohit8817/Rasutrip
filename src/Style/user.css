@@ -66,13 +66,16 @@
 /* Customer login  */
 
 
-
 .login-wrapper {
-  background: #e9fcffee;
-  padding: 50px 0;
-  margin-top: 7rem;
+  background: url('../assest/bgimg.jpg') no-repeat center center;
+  background-size: cover;
+  padding: 40px 0;
+  margin-top: 6rem;
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
+
 
 .login-box {
   max-width: 700px;
