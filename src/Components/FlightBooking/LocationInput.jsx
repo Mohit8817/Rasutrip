@@ -4,24 +4,68 @@ import { ArrowLeftRight } from 'react-bootstrap-icons';
 import { FaPlane } from 'react-icons/fa';
 import { LocationContext } from '../Context/LocationContext';
 import '../../Style/FlightBooking.css';
-
-const cityList = [
-  { city: 'Delhi', airport: 'Delhi Indira Gandhi Intl', code: 'DEL', flag: '🇮🇳' },
-  { city: 'Mumbai', airport: 'Chhatrapati Shivaji', code: 'BOM', flag: '🇮🇳' },
-  { city: 'Kolkata', airport: 'Netaji Subhas Chandra Bose Intl', code: 'CCU', flag: '🇮🇳' },
-  { city: 'Bengaluru', airport: 'Bengaluru Intl Arpt', code: 'BLR', flag: '🇮🇳' },
-  { city: 'Chennai', airport: 'Chennai Arpt', code: 'MAA', flag: '🇮🇳' },
-  { city: 'Goa In', airport: 'Dabolim Arpt', code: 'GOI', flag: '🇮🇳' },
-];
+import axios from 'axios';
 
 const LocationInput = () => {
   const { locationData, setLocationData } = useContext(LocationContext);
 
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
+  const [cityList, setCityList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fromAirportData, setFromAirportData] = useState(null);
+  const [toAirportData, setToAirportData] = useState(null);
 
   const fromRef = useRef(null);
   const toRef = useRef(null);
+
+  // 🔁 Search API when user types
+  const fetchAirports = async (query) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `https://api.rasutrip.com/api/v1/airport/search-airport?name=${query}`
+      );
+      if (response.data && response.data.results) {
+        setCityList(response.data.results);
+      } else {
+        setCityList([]);
+      }
+    } catch (error) {
+      console.error('Error fetching airport data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🌐 Initial fetch for Delhi & Mumbai on load
+  useEffect(() => {
+    const fetchDefaultAirports = async () => {
+      try {
+        const fromRes = await axios.get(
+          `https://api.rasutrip.com/api/v1/airport/search-airport?name=${locationData.fromCity}`
+        );
+        if (fromRes.data?.results?.length) {
+          const airport = fromRes.data.results[0];
+          setFromAirportData(airport);
+          setLocationData((prev) => ({ ...prev, fromAirport: airport.name }));
+        }
+
+        const toRes = await axios.get(
+          `https://api.rasutrip.com/api/v1/airport/search-airport?name=${locationData.toCity}`
+        );
+        if (toRes.data?.results?.length) {
+          const airport = toRes.data.results[0];
+          setToAirportData(airport);
+          setLocationData((prev) => ({ ...prev, toAirport: airport.name }));
+        }
+      } catch (error) {
+        console.error('Error fetching default airport data:', error);
+      }
+    };
+
+    fetchDefaultAirports();
+  },);
 
   const handleSwitch = () => {
     setLocationData((prev) => ({
@@ -31,48 +75,67 @@ const LocationInput = () => {
       fromAirport: prev.toAirport,
       toAirport: prev.fromAirport,
     }));
+    const temp = fromAirportData;
+    setFromAirportData(toAirportData);
+    setToAirportData(temp);
   };
 
   const handleCitySelect = (cityObj, type) => {
     setLocationData((prev) => ({
       ...prev,
       ...(type === 'from'
-        ? { fromCity: cityObj.city, fromAirport: cityObj.airport }
-        : { toCity: cityObj.city, toAirport: cityObj.airport }),
+        ? { fromCity: cityObj.city_name, fromAirport: cityObj.name }
+        : { toCity: cityObj.city_name, toAirport: cityObj.name }),
     }));
 
-    if (type === 'from') setShowFromDropdown(false);
-    else setShowToDropdown(false);
+    if (type === 'from') {
+      setFromAirportData(cityObj);
+      setShowFromDropdown(false);
+    } else {
+      setToAirportData(cityObj);
+      setShowToDropdown(false);
+    }
   };
 
   const handleFromInputClick = () => {
     setShowFromDropdown(true);
     setShowToDropdown(false);
+    if (locationData.fromCity) fetchAirports(locationData.fromCity);
   };
 
   const handleToInputClick = () => {
     setShowToDropdown(true);
     setShowFromDropdown(false);
+    if (locationData.toCity) fetchAirports(locationData.toCity);
+  };
+
+  const handleClickOutside = (event) => {
+    if (
+      fromRef.current && !fromRef.current.contains(event.target) &&
+      toRef.current && !toRef.current.contains(event.target)
+    ) {
+      setShowFromDropdown(false);
+      setShowToDropdown(false);
+    }
   };
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        fromRef.current && !fromRef.current.contains(event.target) &&
-        toRef.current && !toRef.current.contains(event.target)
-      ) {
-        setShowFromDropdown(false);
-        setShowToDropdown(false);
-      }
-    };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getIATACode = (city) => {
-    const found = cityList.find(c => c.city === city);
-    return found ? found.code : 'XXX';
+  const handleInputChange = (e, type) => {
+    const value = e.target.value;
+    setLocationData((prev) => ({
+      ...prev,
+      ...(type === 'from' ? { fromCity: value } : { toCity: value }),
+    }));
+
+    if (value.length >= 2) {
+      fetchAirports(value);
+    } else {
+      setCityList([]);
+    }
   };
 
   return (
@@ -86,31 +149,32 @@ const LocationInput = () => {
             className="location-city form-control border-0 p-0"
             value={locationData.fromCity}
             onClick={handleFromInputClick}
-            onChange={(e) =>
-              setLocationData((prev) => ({
-                ...prev,
-                fromCity: e.target.value,
-              }))
-            }
+            onChange={(e) => handleInputChange(e, 'from')}
           />
           <div className="location-airport">
-            [{getIATACode(locationData.fromCity)}] {locationData.fromAirport}
+            [{fromAirportData?.code || 'XXX'}] {locationData.fromAirport}
           </div>
 
           {showFromDropdown && (
             <div className="dropdown-list">
-              {cityList.map((cityObj, index) => (
-                <div
-                  key={index}
-                  className="dropdown-item"
-                  onClick={() => handleCitySelect(cityObj, 'from')}
-                >
-                  <FaPlane className="me-2" />
-                  <strong>{cityObj.city}</strong> &nbsp;
-                  <span>({cityObj.airport})</span> &nbsp;
-                  <span className="ms-auto">[{cityObj.code}] {cityObj.flag}</span>
-                </div>
-              ))}
+              {loading ? (
+                <div className="dropdown-item text-muted">Loading...</div>
+              ) : cityList.length === 0 ? (
+                <div className="dropdown-item text-muted">No results found.</div>
+              ) : (
+                cityList.map((cityObj, index) => (
+                  <div
+                    key={index}
+                    className="dropdown-item"
+                    onClick={() => handleCitySelect(cityObj, 'from')}
+                  >
+                    <FaPlane className="me-2" />
+                    <strong>{cityObj.city_name}</strong> &nbsp;
+                    <span>({cityObj.name})</span> &nbsp;
+                    <span className="ms-auto">[{cityObj.code}]</span>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </Col>
@@ -130,31 +194,32 @@ const LocationInput = () => {
             className="location-city form-control border-0 p-0"
             value={locationData.toCity}
             onClick={handleToInputClick}
-            onChange={(e) =>
-              setLocationData((prev) => ({
-                ...prev,
-                toCity: e.target.value,
-              }))
-            }
+            onChange={(e) => handleInputChange(e, 'to')}
           />
           <div className="location-airport">
-            [{getIATACode(locationData.toCity)}] {locationData.toAirport}
+            [{toAirportData?.code || 'XXX'}] {locationData.toAirport}
           </div>
 
           {showToDropdown && (
             <div className="dropdown-list">
-              {cityList.map((cityObj, index) => (
-                <div
-                  key={index}
-                  className="dropdown-item"
-                  onClick={() => handleCitySelect(cityObj, 'to')}
-                >
-                  <FaPlane className="me-2" />
-                  <strong>{cityObj.city}</strong> &nbsp;
-                  <span>({cityObj.airport})</span> &nbsp;
-                  <span className="ms-auto">[{cityObj.code}] {cityObj.flag}</span>
-                </div>
-              ))}
+              {loading ? (
+                <div className="dropdown-item text-muted">Loading...</div>
+              ) : cityList.length === 0 ? (
+                <div className="dropdown-item text-muted">No results found.</div>
+              ) : (
+                cityList.map((cityObj, index) => (
+                  <div
+                    key={index}
+                    className="dropdown-item"
+                    onClick={() => handleCitySelect(cityObj, 'to')}
+                  >
+                    <FaPlane className="me-2" />
+                    <strong>{cityObj.city_name}</strong> &nbsp;
+                    <span>({cityObj.name})</span> &nbsp;
+                    <span className="ms-auto">[{cityObj.code}]</span>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </Col>
