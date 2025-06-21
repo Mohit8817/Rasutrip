@@ -1,7 +1,3 @@
-
-
-
-
 /* Hover dropdown */
 
 .login-dropdown-wrapper .dropdown:hover .dropdown-menu {
@@ -29,6 +25,7 @@
   margin: 0;
   font-weight: 500;
 }
+
 .user-profile-inner svg {
   width: 20px;
   height: 20px;
@@ -109,7 +106,8 @@
   color: #fff;
   padding: 85px 18px 0 18px;
 }
-.login-title{
+
+.login-title {
   color: #fff;
   font-weight: 700;
   font-size: 28px;
@@ -118,6 +116,7 @@
 
   margin-bottom: 20px;
 }
+
 .custom-input label {
   color: #fff;
   font-weight: 600;
@@ -144,7 +143,7 @@
   text-decoration: underline;
 }
 
-.label{
+.label {
   color: #fff;
   font-weight: 600;
 }
@@ -155,4 +154,112 @@
   border-radius: 10px;
   padding: 10px 0;
   font-weight: bold;
+}
+
+
+
+
+
+/* Agent Form CSS  */
+
+.agent-login-container {
+  background: url('../assest/agentimgbg.webp') no-repeat center center;
+  background-size: cover;
+  padding: 40px 0;
+  margin-top: 6rem;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+.agent-login-card {
+  max-width: 1000px !important;
+  margin: auto;
+  background: #f8f9fb;
+  border-radius: 14px;
+  overflow: hidden;
+  padding: 20px;
+
+}
+
+
+.agent-login-card h2 {
+  font-size: 20px;
+  color: #000;
+}
+
+.agent-login-card p {
+  font-size: 12 px;
+  color: #000;
+  margin-bottom: 30px;
+}
+
+
+.form-section-box {
+  border: 0.1px solid #ca0e279f;
+  border-radius: 5px;
+  padding: 25px 10px 0 10px;
+  margin-bottom: 15px;
+  background: #fff;
+  position: relative;
+}
+
+.section-header {
+  background-color: #ca0e27;
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 8px 15px;
+  border-radius: 5px;
+  position: absolute;
+  top: -18px;
+  left: 20px;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #000;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.form-control {
+  border-radius: 8px;
+  font-size: 14px;
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.form-control:focus {
+  border-color: #ca0e27;
+  box-shadow: 0 0 0 0.2rem rgba(193, 66, 66, 0.25);
+}
+
+.text-danger.small {
+  font-size: 12px;
+}
+
+.terms-text {
+  font-size: 13px;
+  color: #333;
+}
+
+.terms-text a {
+  color: #ca0e27;
+  text-decoration: underline;
+}
+
+.login-link {
+  font-size: 14px;
+}
+
+.login-link a {
+  color: #ca0e27;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
 }
