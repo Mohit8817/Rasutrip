@@ -224,7 +224,7 @@
 }
 
 .form-control {
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 14px;
   padding: 10px 12px;
   border: 1px solid #ced4da;
@@ -233,7 +233,7 @@
 
 .form-control:focus {
   border-color: #ca0e27;
-  box-shadow: 0 0 0 0.2rem rgba(193, 66, 66, 0.25);
+  box-shadow: 0 0 0 0.1rem rgba(193, 66, 66, 0.111);
 }
 
 .text-danger.small {
