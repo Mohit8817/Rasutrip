@@ -130,7 +130,7 @@ const CitySegment = ({ onToCityChange }) => {
 
                     {/* TO */}
                     <Col xs={6} className="location-box position-relative" ref={toRef}>
-                        <span className="location-label">TO Airportdf</span>
+                        <span className="location-label">TO Airport</span>
                         <input
                             type="text"
                             className="location-city form-control border-0 p-0"

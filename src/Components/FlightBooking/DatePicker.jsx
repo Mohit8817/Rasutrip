@@ -11,23 +11,24 @@ const DatePicker = ({ tripType, setTripType }) => {
     const [activeCalendar, setActiveCalendar] = useState(null);
     const { setLocationData } = useContext(LocationContext);
 
-    // refs for both date picker wrappers
     const departRef = useRef(null);
     const returnRef = useRef(null);
 
-    const formatDate = (date) =>
-        date?.toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
+    const formatDate = (date) => {
+        // console.log("Raw JS Date:", date); // Log original date
+        return date?.toLocaleDateString("en-GB", {
             year: "numeric",
-        });
+            month: "short",
+            day: "2-digit",
+        },[]);
+
+    };
 
     const getDayName = (date) =>
         date?.toLocaleDateString("en-GB", { weekday: "long" });
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // Check if click is outside depart and return refs
             if (
                 departRef.current && !departRef.current.contains(event.target) &&
                 returnRef.current && !returnRef.current.contains(event.target)
@@ -36,14 +37,16 @@ const DatePicker = ({ tripType, setTripType }) => {
             }
         };
 
-        // Attach listener
         document.addEventListener("mousedown", handleClickOutside);
-
         return () => {
-            // Cleanup listener on unmount
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+    const formatToPreferredTime = (date) => {
+        const formatted = date.toISOString().split("T")[0] + "T00:00:00";
+        return { PreferredTime: formatted };
+    };
 
     return (
         <div className="d-flex flex-wrap align-items-start custom-date-picker">
@@ -62,6 +65,7 @@ const DatePicker = ({ tripType, setTripType }) => {
                     <span className="date">{formatDate(departDate)}</span>
                     <span className="day">{getDayName(departDate)}</span>
                 </div>
+
                 {activeCalendar === "depart" && (
                     <div className="calendar-popup position-absolute bg-white mt-2 shadow rounded">
                         <DayPicker
@@ -69,9 +73,11 @@ const DatePicker = ({ tripType, setTripType }) => {
                             selected={departDate}
                             onSelect={(date) => {
                                 setDepartDate(date);
+                                const preferredTimeObj = formatToPreferredTime(date);
+                                console.log("Depart PreferredTime Object:", preferredTimeObj);
                                 setLocationData(prev => ({
                                     ...prev,
-                                    departDate: date, // ✅ store in context
+                                    departDate: preferredTimeObj,
                                 }));
                                 setActiveCalendar(null);
                             }}
@@ -114,15 +120,15 @@ const DatePicker = ({ tripType, setTripType }) => {
                             selected={returnDate}
                             onSelect={(date) => {
                                 setReturnDate(date);
+                                const preferredTimeObj = formatToPreferredTime(date);
+                                console.log("Return PreferredTime Object:", preferredTimeObj);
                                 setLocationData(prev => ({
                                     ...prev,
-                                    returnDate: date, // ✅ store in context
+                                    returnDate: preferredTimeObj,
                                 }));
                                 setActiveCalendar(null);
                             }}
                         />
-
-
                     </div>
                 )}
             </div>

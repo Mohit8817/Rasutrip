@@ -1,31 +1,33 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useContext } from 'react';
 import { Container, Row, Col, Button } from 'react-bootstrap';
+import { LocationContext } from '../Context/LocationContext'; 
 import '../../Style/Pagescss/FlightResultsPage.css';
 
 const FlightSearchBar = () => {
-  const { state } = useLocation();
+  const { locationData } = useContext(LocationContext); // ✅ access context
 
   const {
-    fromCity = 'Delhi',
-    toCity = 'Mumbai',
-    fromAirport = 'DEL',
-    toAirport = 'BOM',
+    fromCity = '',
+    toCity = '',
+    fromAirport = '',
+    toAirport = '',
     departDate,
     passengers = { adults: 1, children: 0, infants: 0 },
-    cabinClass = 'ANY',
-  } = state || {};
+    cabinClass = 2,
+  } = locationData || {};
 
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;
 
-  const formattedDate = departDate
-    ? new Date(departDate).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }) +
-    ', ' +
-    new Date(departDate).toLocaleDateString('en-GB', { weekday: 'long' })
+  const formattedDate = departDate?.PreferredTime
+    ? new Date(departDate.PreferredTime).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }) +
+      ', ' +
+      new Date(departDate.PreferredTime).toLocaleDateString('en-GB', {
+        weekday: 'long',
+      })
     : 'Not selected';
 
   return (

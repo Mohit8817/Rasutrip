@@ -84,12 +84,14 @@ const PassengerClass = () => {
             })}
 
             <div className="fw-bold mb-3 mt-2 text-start">Cabin Class</div>
-            {['ANY', 'ECONOMY', 'BUSINESS', 'PREMIUM ECONOMY', 'PREMIUM BUSINESS', 'FIRST'].map(option => (
+            {['2', 'ECONOMY', 'BUSINESS', 'PREMIUM ECONOMY', 'PREMIUM BUSINESS', 'FIRST'].map(option => (
               <div key={option} className="cabin-option" onClick={() => handleCabinChange(option)}>
                 <div className={`custom-radio ${cabinClass === option ? 'checked' : ''}`} />
                 <div className="cabin-label">{option}</div>
               </div>
             ))}
+
+
           </Card.Body>
         </Card>
       )}

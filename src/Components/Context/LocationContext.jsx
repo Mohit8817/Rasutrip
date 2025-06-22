@@ -6,13 +6,15 @@ export const LocationContext = createContext();
 export const LocationProvider = ({ children }) => {
   const [locationData, setLocationData] = useState({
     fromCity: 'Delhi',
-    toCity: 'Mumbai',
+    toCity: 'London',
     fromAirport: 'DEL',
-    toAirport: 'BOM',
+    toAirport: 'LON',
+    fromCode: 'DEL',    // ✅ added
+    toCode: 'LON',      // ✅ added
     departDate: null,
     returnDate: null,
     passengers: { adults: 1, children: 0, infants: 0 },
-    cabinClass: 'ANY',
+    cabinClass: 2,
     tripType: 'oneway',
   });
 

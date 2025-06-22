@@ -3,7 +3,7 @@ import { Row, Col, Card } from 'react-bootstrap';
 import { ArrowLeftRight } from 'react-bootstrap-icons';
 import { FaPlane } from 'react-icons/fa';
 import { LocationContext } from '../Context/LocationContext';
-import { fetchLocationData } from '../FlightApi/FlightApi'; // ✅ use your shared API function
+import { fetchLocationData } from '../FlightApi/FlightApi';
 import '../../Style/FlightBooking.css';
 
 const LocationInput = () => {
@@ -39,14 +39,22 @@ const LocationInput = () => {
         if (fromRes?.results?.length) {
           const airport = fromRes.results[0];
           setFromAirportData(airport);
-          setLocationData((prev) => ({ ...prev, fromAirport: airport.name }));
+          setLocationData((prev) => ({
+            ...prev,
+            fromAirport: airport.name,
+            fromCode: airport.code, // ✅ Save city code
+          }));
         }
 
         const toRes = await fetchLocationData(locationData.toCity);
         if (toRes?.results?.length) {
           const airport = toRes.results[0];
           setToAirportData(airport);
-          setLocationData((prev) => ({ ...prev, toAirport: airport.name }));
+          setLocationData((prev) => ({
+            ...prev,
+            toAirport: airport.name,
+            toCode: airport.code, // ✅ Save city code
+          }));
         }
       } catch (error) {
         console.error('Error fetching default airport data:', error);
@@ -63,6 +71,8 @@ const LocationInput = () => {
       toCity: prev.fromCity,
       fromAirport: prev.toAirport,
       toAirport: prev.fromAirport,
+      fromCode: prev.toCode, // ✅ Switch codes
+      toCode: prev.fromCode,
     }));
     const temp = fromAirportData;
     setFromAirportData(toAirportData);
@@ -70,11 +80,21 @@ const LocationInput = () => {
   };
 
   const handleCitySelect = (cityObj, type) => {
+    const formattedValue = `${cityObj.city_name}`;
+
     setLocationData((prev) => ({
       ...prev,
       ...(type === 'from'
-        ? { fromCity: cityObj.city_name, fromAirport: cityObj.name }
-        : { toCity: cityObj.city_name, toAirport: cityObj.name }),
+        ? {
+            fromCity: formattedValue,
+            fromAirport: cityObj.name,
+            fromCode: cityObj.code, // ✅ Save code
+          }
+        : {
+            toCity: formattedValue,
+            toAirport: cityObj.name,
+            toCode: cityObj.code, // ✅ Save code
+          }),
     }));
 
     if (type === 'from') {
@@ -117,7 +137,9 @@ const LocationInput = () => {
     const value = e.target.value;
     setLocationData((prev) => ({
       ...prev,
-      ...(type === 'from' ? { fromCity: value } : { toCity: value }),
+      ...(type === 'from'
+        ? { fromCity: value, fromAirport: '', fromCode: '' }
+        : { toCity: value, toAirport: '', toCode: '' }),
     }));
 
     if (value.length >= 2) {
@@ -139,9 +161,10 @@ const LocationInput = () => {
             value={locationData.fromCity}
             onClick={handleFromInputClick}
             onChange={(e) => handleInputChange(e, 'from')}
+            placeholder="Enter departure city"
           />
           <div className="location-airport">
-            [{fromAirportData?.code || 'XXX'}] {locationData.fromAirport}
+            [{locationData.fromCode || fromAirportData?.code || '---'}] {locationData.fromAirport}
           </div>
 
           {showFromDropdown && (
@@ -184,9 +207,10 @@ const LocationInput = () => {
             value={locationData.toCity}
             onClick={handleToInputClick}
             onChange={(e) => handleInputChange(e, 'to')}
+            placeholder="Enter arrival city"
           />
           <div className="location-airport">
-            [{toAirportData?.code || 'XXX'}] {locationData.toAirport}
+            [{locationData.toCode || toAirportData?.code || '---'}] {locationData.toAirport}
           </div>
 
           {showToDropdown && (
