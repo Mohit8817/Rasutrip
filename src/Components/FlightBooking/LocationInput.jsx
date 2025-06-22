@@ -62,7 +62,7 @@ const LocationInput = () => {
     };
 
     fetchDefaultAirports();
-  },);
+  },[]);
 
   const handleSwitch = () => {
     setLocationData((prev) => ({

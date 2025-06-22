@@ -26,7 +26,7 @@ const FlightResultsPage = () => {
       : dateObj.toISOString().split('T')[0];
   };
 
-  const safeDate = getSafeDate(state?.departDate);
+//   const safeDate = getSafeDate(state?.departDate);
     return (
         <div>
             {/* One-way Flights */}
@@ -43,12 +43,11 @@ const FlightResultsPage = () => {
                         </Col>
                         <Col lg={9}>
                             <FlightList
-
-                                origin={state?.fromAirport}
-                                destination={state?.toAirport}
-                                departureDate={safeDate}
-                                passengers={state?.passengers}
-                                cabinClass={state?.cabinClass}
+                                // origin={state?.fromAirport}
+                                // destination={state?.toAirport}
+                                // departureDate={safeDate}
+                                // passengers={state?.passengers}
+                                // cabinClass={state?.cabinClass}
                             />
                         </Col>
                     </Row>

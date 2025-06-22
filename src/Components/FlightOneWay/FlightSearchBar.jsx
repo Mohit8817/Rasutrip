@@ -1,10 +1,10 @@
 import React, { useContext } from 'react';
 import { Container, Row, Col, Button } from 'react-bootstrap';
-import { LocationContext } from '../Context/LocationContext'; 
+import { LocationContext } from '../Context/LocationContext';
 import '../../Style/Pagescss/FlightResultsPage.css';
 
 const FlightSearchBar = () => {
-  const { locationData } = useContext(LocationContext); // ✅ access context
+  const { locationData } = useContext(LocationContext);
 
   const {
     fromCity = '',
@@ -18,17 +18,22 @@ const FlightSearchBar = () => {
 
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;
 
-  const formattedDate = departDate?.PreferredTime
-    ? new Date(departDate.PreferredTime).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }) +
-      ', ' +
-      new Date(departDate.PreferredTime).toLocaleDateString('en-GB', {
-        weekday: 'long',
-      })
-    : 'Not selected';
+  let formattedDate = 'Not selected';
+  if (departDate?.PreferredTime) {
+    const jsDate = new Date(departDate.PreferredTime);
+    if (!isNaN(jsDate.getTime())) {
+      formattedDate =
+        jsDate.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }) +
+        ', ' +
+        jsDate.toLocaleDateString('en-GB', {
+          weekday: 'long',
+        });
+    }
+  }
 
   return (
     <Container className="p-3 bg-white shadow-sm rounded border mt-5">
