@@ -3,8 +3,8 @@ import { Row, Col, Card } from 'react-bootstrap';
 import { ArrowLeftRight } from 'react-bootstrap-icons';
 import { FaPlane } from 'react-icons/fa';
 import { LocationContext } from '../Context/LocationContext';
+import { fetchLocationData } from '../FlightApi/FlightApi'; // ✅ use your shared API function
 import '../../Style/FlightBooking.css';
-import axios from 'axios';
 
 const LocationInput = () => {
   const { locationData, setLocationData } = useContext(LocationContext);
@@ -19,43 +19,32 @@ const LocationInput = () => {
   const fromRef = useRef(null);
   const toRef = useRef(null);
 
-  // 🔁 Search API when user types
   const fetchAirports = async (query) => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `https://api.rasutrip.com/api/v1/airport/search-airport?name=${query}`
-      );
-      if (response.data && response.data.results) {
-        setCityList(response.data.results);
-      } else {
-        setCityList([]);
-      }
+      const response = await fetchLocationData(query);
+      setCityList(response?.results || []);
     } catch (error) {
       console.error('Error fetching airport data:', error);
+      setCityList([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🌐 Initial fetch for Delhi & Mumbai on load
   useEffect(() => {
     const fetchDefaultAirports = async () => {
       try {
-        const fromRes = await axios.get(
-          `https://api.rasutrip.com/api/v1/airport/search-airport?name=${locationData.fromCity}`
-        );
-        if (fromRes.data?.results?.length) {
-          const airport = fromRes.data.results[0];
+        const fromRes = await fetchLocationData(locationData.fromCity);
+        if (fromRes?.results?.length) {
+          const airport = fromRes.results[0];
           setFromAirportData(airport);
           setLocationData((prev) => ({ ...prev, fromAirport: airport.name }));
         }
 
-        const toRes = await axios.get(
-          `https://api.rasutrip.com/api/v1/airport/search-airport?name=${locationData.toCity}`
-        );
-        if (toRes.data?.results?.length) {
-          const airport = toRes.data.results[0];
+        const toRes = await fetchLocationData(locationData.toCity);
+        if (toRes?.results?.length) {
+          const airport = toRes.results[0];
           setToAirportData(airport);
           setLocationData((prev) => ({ ...prev, toAirport: airport.name }));
         }
