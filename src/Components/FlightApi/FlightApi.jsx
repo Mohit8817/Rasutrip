@@ -1,17 +1,17 @@
-  import axios from 'axios';
-  import baseURL from '../../Services/Config';
+import axios from 'axios';
+import baseURL from '../../Services/Config';
 
-  export const Services = {
-    fetchLocation: `${baseURL}/airport/search-airport`,
+export const Services = {
+  fetchLocation: `${baseURL}/airport/search-airport`,
 
-    fetchFlights: `${baseURL}/airservice/search`,
-  };
+  fetchFlights: `${baseURL}/airservice/search`,
+};
 
-  // Location Search API
-  export const fetchLocationData = async (query) => {
-    const response = await axios.get(`${Services.fetchLocation}?name=${query}`);
-    return response.data;
-  };
+// Location Search API
+export const fetchLocationData = async (query) => {
+  const response = await axios.get(`${Services.fetchLocation}?name=${query}`);
+  return response.data;
+};
 
 // flightApis.js
 export const fetchFlightData = async (payload) => {

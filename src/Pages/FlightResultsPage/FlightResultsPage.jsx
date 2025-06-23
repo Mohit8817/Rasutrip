@@ -12,21 +12,7 @@ const FlightResultsPage = () => {
      const { state } = useLocation();
   const tripType = state?.tripType || 'oneway';
 
-  // Safely format date
-  const getSafeDate = (inputDate) => {
-    if (!inputDate) return null;
 
-    const dateObj =
-      typeof inputDate === 'string'
-        ? new Date(inputDate)
-        : new Date(inputDate?.PreferredTime || inputDate);
-
-    return isNaN(dateObj.getTime())
-      ? null
-      : dateObj.toISOString().split('T')[0];
-  };
-
-//   const safeDate = getSafeDate(state?.departDate);
     return (
         <div>
             {/* One-way Flights */}
@@ -42,13 +28,7 @@ const FlightResultsPage = () => {
                             <FlightSidebar />
                         </Col>
                         <Col lg={9}>
-                            <FlightList
-                                // origin={state?.fromAirport}
-                                // destination={state?.toAirport}
-                                // departureDate={safeDate}
-                                // passengers={state?.passengers}
-                                // cabinClass={state?.cabinClass}
-                            />
+                            <FlightList/>
                         </Col>
                     </Row>
                 </Container>

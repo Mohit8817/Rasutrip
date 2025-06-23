@@ -14,9 +14,10 @@ const SearchButton = ({ type }) => {
       toCity,
       fromAirport,
       toAirport,
-      fromCode, // ✅ Added
-      toCode,   // ✅ Added
+      fromCode,
+      toCode,
       departDate,
+      returnDate, // ✅ include returnDate
       passengers,
       cabinClass,
       tripType
@@ -30,9 +31,10 @@ const SearchButton = ({ type }) => {
             toCity,
             fromAirport,
             toAirport,
-            fromCode,      // ✅ Pass code
-            toCode,        // ✅ Pass code
-            departDate: departDate || new Date().toISOString(),
+            fromCode,
+            toCode,
+            departDate: departDate || { PreferredTime: new Date().toISOString() },
+            returnDate: returnDate || null, // ✅ Pass returnDate if exists
             passengers,
             cabinClass,
             tripType: tripType || 'oneway'

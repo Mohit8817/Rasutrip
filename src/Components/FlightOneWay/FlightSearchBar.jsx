@@ -13,7 +13,7 @@ const FlightSearchBar = () => {
     toAirport = '',
     departDate,
     passengers = { adults: 1, children: 0, infants: 0 },
-    cabinClass = 2,
+    cabinClass = '',
   } = locationData || {};
 
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;

@@ -12,7 +12,7 @@ const FlightList = () => {
     toCode = 'BOM',
     departDate = new Date(),
     passengers = { adults: 1, children: 0, infants: 0 },
-    cabinClass = 2,
+    cabinClass = '',
   } = state || {};
 
   const [flights, setFlights] = useState([]);

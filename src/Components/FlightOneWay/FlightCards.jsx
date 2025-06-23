@@ -95,18 +95,10 @@ const FlightCard = ({ flight }) => {
                         <div className="flight-tab-box mt-4 border rounded p-3 bg-light-gray">
                             <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
                                 <Nav variant="tabs" className="mb-3">
-                                    <Nav.Item>
-                                        <Nav.Link eventKey="flight">Flight Details</Nav.Link>
-                                    </Nav.Item>
-                                    <Nav.Item>
-                                        <Nav.Link eventKey="fare">Fare Details</Nav.Link>
-                                    </Nav.Item>
-                                    <Nav.Item>
-                                        <Nav.Link eventKey="rules">Fare Rules</Nav.Link>
-                                    </Nav.Item>
-                                    <Nav.Item>
-                                        <Nav.Link eventKey="baggage">Baggage</Nav.Link>
-                                    </Nav.Item>
+                                    <Nav.Item><Nav.Link eventKey="flight">Flight Details</Nav.Link></Nav.Item>
+                                    <Nav.Item><Nav.Link eventKey="fare">Fare Details</Nav.Link></Nav.Item>
+                                    <Nav.Item><Nav.Link eventKey="rules">Fare Rules</Nav.Link></Nav.Item>
+                                    <Nav.Item><Nav.Link eventKey="baggage">Baggage</Nav.Link></Nav.Item>
                                 </Nav>
 
                                 <Tab.Content>
@@ -124,16 +116,18 @@ const FlightCard = ({ flight }) => {
                                                     <div>{flight.arriveTime}</div>
                                                 </Col>
                                             </Row>
-                                            <p className="mt-3">Duration: {flight.duration}, {flight.classType}, {flight.seatsLeft} seats left</p>
+                                            <p className="mt-3">
+                                                Duration: {flight.duration}, {flight.classType}, {flight.seatsLeft} seats left
+                                            </p>
                                         </div>
                                     </Tab.Pane>
 
                                     <Tab.Pane eventKey="fare">
                                         <div className="p-3">
                                             <h6>Fare Details</h6>
-                                            <p>Base Fare: ₹9293 x 2</p>
-                                            <p>Taxes: ₹1318 x 2</p>
-                                            <p>Service Charge: ₹1868</p>
+                                            <p>Base Fare: ₹{(flight.price * 0.8).toFixed(0)}</p>
+                                            <p>Taxes: ₹{(flight.price * 0.15).toFixed(0)}</p>
+                                            <p>Service Charge: ₹{(flight.price * 0.05).toFixed(0)}</p>
                                             <p className="fw-bold">Total: ₹{flight.price}</p>
                                         </div>
                                     </Tab.Pane>
@@ -141,8 +135,8 @@ const FlightCard = ({ flight }) => {
                                     <Tab.Pane eventKey="rules">
                                         <div className="p-3">
                                             <h6>Fare Rules</h6>
-                                            <p>Cancellation Fee: ₹3920 + ₹50</p>
-                                            <p>Date Change: ₹2800 + Fare Difference</p>
+                                            <p>Cancellation Fee: ₹{Math.round(flight.price * 0.4)}</p>
+                                            <p>Date Change: ₹{Math.round(flight.price * 0.3)} + Fare Difference</p>
                                             <p>No Show: Only taxes refunded</p>
                                         </div>
                                     </Tab.Pane>

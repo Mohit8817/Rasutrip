@@ -11,69 +11,76 @@ const RoundsearchBar = () => {
         toCity = 'Mumbai',
         fromAirport = 'DEL',
         toAirport = 'BOM',
-        departDate,
-        returnDate,
+        departDate: departObj,
+        returnDate: returnObj,
         passengers = { adults: 1, children: 0, infants: 0 },
-        cabinClass = 'ANY',
+        cabinClass = '',
     } = state || {};
 
+    // Extract PreferredTime from context-saved objects
+    const departDate = departObj?.PreferredTime || null;
+    const returnDate = returnObj?.PreferredTime || null;
+
+    // Calculate total passenger count
     const totalPassengers = passengers.adults + passengers.children + passengers.infants;
 
-    const formattedDepartDate = departDate
-        ? new Date(departDate).toLocaleDateString('en-GB', {
+    // Date formatter
+    const formatDate = (dateStr) => {
+        if (!dateStr) return null;
+        const date = new Date(dateStr);
+        const formatted = date.toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
-        }) + ', ' + new Date(departDate).toLocaleDateString('en-GB', { weekday: 'long' })
-        : 'Not selected';
+        });
+        const dayName = date.toLocaleDateString('en-GB', {
+            weekday: 'long',
+        });
+        return `${formatted}, ${dayName}`;
+    };
 
-    const formattedReturnDate = returnDate
-        ? new Date(returnDate).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-        }) + ', ' + new Date(returnDate).toLocaleDateString('en-GB', { weekday: 'long' })
-        : '--/--/----';
+    const formattedDepartDate = formatDate(departDate) || 'Not selected';
+    const formattedReturnDate = formatDate(returnDate) || 'Not selected';
 
     return (
         <div>
             <Container className="p-3 bg-white shadow-sm rounded border mt-5 overflow-auto">
                 <Row className="flex-nowrap align-items-center text-center text-md-start">
-                    <Col style={{ minWidth: '40px' }}>
+                    <Col style={{ minWidth: '200px' }}>
                         <strong>{fromAirport}</strong>
                         <div className="text-muted small">{fromCity}</div>
                     </Col>
 
-                    <Col style={{ minWidth: '40px' }}>
+                    <Col style={{ minWidth: '10px' }} className='text-center'>
                         <div style={{ fontSize: '20px' }}>→</div>
                     </Col>
 
-                    <Col style={{ minWidth: '40x' }}>
+                    <Col style={{ minWidth: '200px' }}>
                         <strong>{toAirport}</strong>
                         <div className="text-muted small">{toCity}</div>
                     </Col>
 
-                    <Col style={{ minWidth: '150px' }} className='text-start'>
+                    <Col style={{ minWidth: '180px' }} className="text-start">
                         <div><strong>Departure</strong></div>
                         <div className="text-muted small">{formattedDepartDate}</div>
                     </Col>
 
-                    <Col style={{ minWidth: '150px' }}>
+                    <Col style={{ minWidth: '180px' }}>
                         <div><strong>Return</strong></div>
                         <div className="text-muted small">{formattedReturnDate}</div>
                     </Col>
 
-                    <Col style={{ minWidth: '120px' }}>
+                    <Col style={{ minWidth: '20px' }}>
                         <div><strong>Travellers</strong></div>
                         <div className="text-muted small">{totalPassengers}</div>
                     </Col>
 
-                    <Col style={{ minWidth: '120px' }}>
+                    <Col style={{ minWidth: '20px' }}>
                         <div><strong>Travel Class</strong></div>
                         <div className="text-muted small">{cabinClass}</div>
                     </Col>
 
-                    <Col style={{ minWidth: '100px' }} className="text-end">
+                    <Col style={{ minWidth: '20px' }} className="text-end">
                         <Button variant="primary" className="ModifyButton">
                             Modify
                         </Button>
@@ -82,6 +89,6 @@ const RoundsearchBar = () => {
             </Container>
         </div>
     );
-}
+};
 
 export default RoundsearchBar;

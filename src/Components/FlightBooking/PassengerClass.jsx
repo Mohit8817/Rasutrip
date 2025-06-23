@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useContext } from 'react';
 import { Card, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../../Style/FlightBooking.css';
-import { LocationContext } from '../Context/LocationContext'; // Adjust the path as needed
+import { LocationContext } from '../Context/LocationContext';
 
 const PassengerClass = () => {
   const [showDropdown, setShowDropdown] = React.useState(false);
@@ -35,14 +35,25 @@ const PassengerClass = () => {
     }));
   };
 
-  const handleCabinChange = (option) => {
+  const handleCabinChange = (value) => {
     setLocationData(prev => ({
       ...prev,
-      cabinClass: option
+      cabinClass: value
     }));
   };
 
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;
+
+  const cabinOptions = [
+
+    { label: 'Any', value: 0 },
+    { label: 'Economy', value: 1 },
+    { label: 'Premium Economy', value: 2 },
+    { label: 'Premium Business', value: 4 },
+    { label: 'First', value: 5 },
+  ];
+
+  const selectedCabinLabel = cabinOptions.find(opt => opt.value === cabinClass)?.label || 'Select';
 
   return (
     <div className="passenger-class-wrapper" ref={ref}>
@@ -50,7 +61,7 @@ const PassengerClass = () => {
         <Card.Body>
           <div className="passenger-label">Travellers & Class</div>
           <div className="fw-bold fs-5">{totalPassengers} Passenger</div>
-          <div className="cabin-text">{cabinClass}</div>
+          <div className="cabin-text">{selectedCabinLabel}</div>
         </Card.Body>
       </Card>
 
@@ -84,14 +95,16 @@ const PassengerClass = () => {
             })}
 
             <div className="fw-bold mb-3 mt-2 text-start">Cabin Class</div>
-            {['2', 'ECONOMY', 'BUSINESS', 'PREMIUM ECONOMY', 'PREMIUM BUSINESS', 'FIRST'].map(option => (
-              <div key={option} className="cabin-option" onClick={() => handleCabinChange(option)}>
-                <div className={`custom-radio ${cabinClass === option ? 'checked' : ''}`} />
-                <div className="cabin-label">{option}</div>
+            {cabinOptions.map(option => (
+              <div
+                key={option.value}
+                className="cabin-option"
+                onClick={() => handleCabinChange(option.value)}
+              >
+                <div className={`custom-radio ${cabinClass === option.value ? 'checked' : ''}`} />
+                <div className="cabin-label">{option.label}</div>
               </div>
             ))}
-
-
           </Card.Body>
         </Card>
       )}
