@@ -3,6 +3,11 @@ import { Card, Row, Col, Form, Container } from 'react-bootstrap';
 import '../../Style/Pagescss/FlightResultsPage.css';
 
 const RoundTripCard = ({ flight }) => {
+    const { Segments, FareList, MinPublishedPrice } = flight
+    
+    console.log("Dtaaa", Segments, FareList, MinPublishedPrice)
+
+
     return (
         <Container className="mb-4">
             <Row>
@@ -44,7 +49,7 @@ const RoundTripCard = ({ flight }) => {
                                 <div className="text-muted">Airline Remark: {flight.airlineRemark}</div>
 
                                 <div className="fare-options mt-2">
-                                    {flight.fareOptions.map((fare, i) => (
+                                    {flight?.fareOptions?.map((fare, i) => (
                                         <div key={i} className="d-flex align-items-center justify-content-between py-2 border-bottom">
                                             <Form.Check
                                                 type="radio"
@@ -110,7 +115,7 @@ const RoundTripCard = ({ flight }) => {
                                 <div className="text-muted">Airline Remark: {flight.airlineRemark}</div>
 
                                 <div className="fare-options mt-2">
-                                    {flight.fareOptions.map((fare, i) => (
+                                    {flight?.fareOptions?.map((fare, i) => (
                                         <div key={i} className="d-flex align-items-center justify-content-between py-2 border-bottom">
                                             <Form.Check
                                                 type="radio"

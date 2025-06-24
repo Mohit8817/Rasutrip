@@ -9,8 +9,8 @@ import RoundsearchBar from '../../Components/FlightRoundTrip.jsx/RoundsearchBar'
 import RoundTripCardList from '../../Components/FlightRoundTrip.jsx/RoundTripCardList';
 
 const FlightResultsPage = () => {
-     const { state } = useLocation();
-  const tripType = state?.tripType || 'oneway';
+    const { state } = useLocation();
+    const tripType = state?.tripType || 'oneway';
 
 
     return (
@@ -28,7 +28,7 @@ const FlightResultsPage = () => {
                             <FlightSidebar />
                         </Col>
                         <Col lg={9}>
-                            <FlightList/>
+                            <FlightList />
                         </Col>
                     </Row>
                 </Container>
