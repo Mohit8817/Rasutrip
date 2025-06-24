@@ -5,7 +5,7 @@ import moment from 'moment';
 
 const RoundTripCard = ({ flight }) => {
     const onwardSegment = flight?.Segments?.[0]?.[0];
-    const returnSegment = flight?.Segments?.[1]?.[0];
+    // const returnSegment = flight?.Segments?.[1]?.[0];
 
     return (
         <Container className="mb-4">

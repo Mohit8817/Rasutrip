@@ -67,7 +67,8 @@ const RoundTripCardList = () => {
         };
 
         getFlights();
-    }, [fromCode, toCode, departDate, returnDate, passengers, cabinClass]);
+    // }, [fromCode, toCode, departDate, returnDate, passengers, cabinClass]);
+      },);
 
     if (loading) return <div className="text-center my-4">Loading flights...</div>;
     if (error) return <div className="text-danger text-center my-4">{error}</div>;
