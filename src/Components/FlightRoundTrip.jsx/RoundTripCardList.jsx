@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import moment from 'moment';
 import RoundTripCard from './RoundTripCard';
 import { fetchFlightData } from '../../Components/FlightApi/FlightApi';
+import { Row, Col } from 'react-bootstrap'; 
 
 const RoundTripCardList = () => {
     const { state } = useLocation();
@@ -72,25 +73,29 @@ const RoundTripCardList = () => {
     if (error) return <div className="text-danger text-center my-4">{error}</div>;
 
     return (
-        <div className="px-4">
-            {flights?.length > 0 ? (
-                <>
-                    {Array.isArray(flights[0]) &&
-                        flights[0].map((flight, index) => (
-                            <RoundTripCard key={`f0-${index}`} flight={flight} />
-                        ))
-                        
-                        }
+      <div className="px-4">
+  {flights?.length > 0 ? (
+    <Row>
+      {/* Onward Flights - Left Column */}
+      <Col md={6}>
+        {Array.isArray(flights[0]) &&
+          flights[0].map((flight, index) => (
+            <RoundTripCard key={`f0-${index}`} flight={flight} type="onward" />
+          ))}
+      </Col>
 
-                    {Array.isArray(flights[1]) &&
-                        flights[1].map((flight, index) => (
-                            <RoundTripCard key={`f1-${index}`} flight={flight} />
-                        ))}
-                </>
-            ) : (
-                <div className="text-center text-muted">No flights found for this round trip.</div>
-            )}
-        </div>
+      {/* Return Flights - Right Column */}
+      <Col md={6}>
+        {Array.isArray(flights[1]) &&
+          flights[1].map((flight, index) => (
+            <RoundTripCard key={`f1-${index}`} flight={flight} type="return" />
+          ))}
+      </Col>
+    </Row>
+  ) : (
+    <div className="text-center text-muted">No flights found for this round trip.</div>
+  )}
+</div>
 
     );
 };
