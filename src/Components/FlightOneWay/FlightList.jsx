@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState, useContext } from 'react';
 import moment from 'moment';
 import FlightCard from './FlightCards';
 import { fetchFlightData } from '../../Components/FlightApi/FlightApi';
+import { LocationContext } from '../../Components/Context/LocationContext';
 
 const FlightList = () => {
-  const { state } = useLocation();
+  const { locationData } = useContext(LocationContext);
 
   const {
     fromCode = 'DEL',
@@ -13,13 +13,13 @@ const FlightList = () => {
     departDate = new Date(),
     passengers = { adults: 1, children: 0, infants: 0 },
     cabinClass = '',
-  } = state || {};
+  } = locationData || {};
 
   const [flights, setFlights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ✅ Format the departure date (same as FlightSearchBar)
+  // Format departure date for display
   let displayDate = 'Not selected';
   try {
     const jsDate = new Date(
@@ -42,6 +42,17 @@ const FlightList = () => {
   }
 
   useEffect(() => {
+    const cabinMap = {
+      "Economy": 1,
+      "Premium Economy": 2,
+      "Business": 4,
+      "First": 5
+    };
+
+    const normalizedCabin = typeof cabinClass === 'number'
+      ? cabinClass
+      : cabinMap[cabinClass] || 1;
+
     const requestPayload = {
       UserIp: "27.60.0.238",
       Adult: passengers.adults || 1,
@@ -50,7 +61,7 @@ const FlightList = () => {
       DirectFlight: false,
       JourneyType: 1,
       PreferredCarriers: null,
-      CabinClass: cabinClass,
+      CabinClass: normalizedCabin,
       AirSegments: [
         {
           Origin: fromCode,

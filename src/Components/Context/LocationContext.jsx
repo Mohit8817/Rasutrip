@@ -14,7 +14,7 @@ export const LocationProvider = ({ children }) => {
     departDate: null,
     returnDate: null,
     passengers: { adults: 1, children: 0, infants: 0 },
-    cabinClass: 0,
+    cabinClass: 1,
     tripType: 'oneway',
   });
 

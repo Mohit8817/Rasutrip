@@ -35,6 +35,16 @@ const FlightCard = ({ flight }) => {
         },
     ];
 
+    // Cabin class map
+    const cabinMap = {
+        1: 'Economy',
+        2: 'Premium Economy',
+        4: 'Business',
+        5: 'First'
+    };
+
+    const cabinLabel = cabinMap[flight.classType] || flight.classType || 'Class Not Available';
+
     return (
         <>
             <Card className="flight-card mb-3">
@@ -73,7 +83,7 @@ const FlightCard = ({ flight }) => {
                                 <span className="badge bg-light text-dark">{flight.tag}</span>
                             )}
                             <div className="text-muted small">
-                                Business, <span className="text-success">Refundable</span>
+                                {cabinLabel}, <span className="text-success">{flight.refund}</span>
                             </div>
                         </Col>
 
@@ -87,7 +97,6 @@ const FlightCard = ({ flight }) => {
                             >
                                 {showDetails ? 'Hide Details -' : 'Flight Details +'}
                             </div>
-
                         </Col>
                     </Row>
 
@@ -117,7 +126,7 @@ const FlightCard = ({ flight }) => {
                                                 </Col>
                                             </Row>
                                             <p className="mt-3">
-                                                Duration: {flight.duration}, {flight.classType}, {flight.seatsLeft} seats left
+                                                Duration: {flight.duration}, {cabinLabel}, {flight.seatsLeft} seats left
                                             </p>
                                         </div>
                                     </Tab.Pane>

@@ -1,14 +1,14 @@
-import React, { useRef, useEffect, useContext } from 'react';
+import React, { useRef, useEffect, useContext, useState } from 'react';
 import { Card, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../../Style/FlightBooking.css';
 import { LocationContext } from '../Context/LocationContext';
 
 const PassengerClass = () => {
-  const [showDropdown, setShowDropdown] = React.useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const { locationData, setLocationData } = useContext(LocationContext);
 
-  const { passengers, cabinClass } = locationData;
+  const { passengers = { adults: 1, children: 0, infants: 0 }, cabinClass } = locationData;
 
   const ref = useRef();
 
@@ -30,10 +30,20 @@ const PassengerClass = () => {
       ...prev,
       passengers: {
         ...prev.passengers,
-        [type]: Math.max(0, prev.passengers[type] + change)
+        [type]: Math.max(0, prev.passengers[type] + change),
       }
     }));
   };
+
+  // Set default cabin class to Economy if not set
+  useEffect(() => {
+    if (!locationData.cabinClass) {
+      setLocationData(prev => ({
+        ...prev,
+        cabinClass: 1
+      }));
+    }
+  }, [locationData]);
 
   const handleCabinChange = (value) => {
     setLocationData(prev => ({
@@ -45,11 +55,9 @@ const PassengerClass = () => {
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;
 
   const cabinOptions = [
-
-    { label: 'Any', value: 0 },
     { label: 'Economy', value: 1 },
     { label: 'Premium Economy', value: 2 },
-    { label: 'Premium Business', value: 4 },
+    { label: 'Business', value: 4 },
     { label: 'First', value: 5 },
   ];
 
@@ -72,12 +80,12 @@ const PassengerClass = () => {
               const labels = {
                 adults: 'Adults',
                 children: 'Children',
-                infants: 'Infant',
+                infants: 'Infants',
               };
               const ages = {
                 adults: '12+ Years',
                 children: '2y - 12y',
-                infants: 'below 2y',
+                infants: 'Below 2y',
               };
               return (
                 <div key={idx} className="d-flex justify-content-between align-items-center mb-3">
@@ -86,9 +94,9 @@ const PassengerClass = () => {
                     <div className="text-muted small">{ages[type]}</div>
                   </div>
                   <div className="d-flex align-items-center">
-                    <Button variant="light" className="circle-btn" onClick={(e) => { e.stopPropagation(); updateCount(type, -1) }}>-</Button>
+                    <Button variant="light" className="circle-btn" onClick={(e) => { e.stopPropagation(); updateCount(type, -1); }}>-</Button>
                     <span className="mx-3">{passengers[type]}</span>
-                    <Button variant="light" className="circle-btn" onClick={(e) => { e.stopPropagation(); updateCount(type, 1) }}>+</Button>
+                    <Button variant="light" className="circle-btn" onClick={(e) => { e.stopPropagation(); updateCount(type, 1); }}>+</Button>
                   </div>
                 </div>
               );

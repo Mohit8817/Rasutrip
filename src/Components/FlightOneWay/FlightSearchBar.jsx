@@ -18,6 +18,7 @@ const FlightSearchBar = () => {
 
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;
 
+  // Format departure date
   let formattedDate = 'Not selected';
   if (departDate?.PreferredTime) {
     const jsDate = new Date(departDate.PreferredTime);
@@ -34,6 +35,14 @@ const FlightSearchBar = () => {
         });
     }
   }
+
+  // Cabin class map for showing name instead of number
+  const cabinClassMap = {
+    1: 'Economy',
+    2: 'Premium Economy',
+    4: 'Business',
+    5: 'First',
+  };
 
   return (
     <Container className="p-3 bg-white shadow-sm rounded border mt-5">
@@ -64,7 +73,7 @@ const FlightSearchBar = () => {
 
         <Col md={2} xs={6}>
           <div><strong>Travel Class</strong></div>
-          <div className="text-muted small">{cabinClass}</div>
+          <div className="text-muted small">{cabinClassMap[cabinClass] || 'Not selected'}</div>
         </Col>
 
         <Col md={1} xs={12} className="text-end">
