@@ -62,7 +62,7 @@ const LocationInput = () => {
     };
 
     fetchDefaultAirports();
-  },[ locationData.fromCity, locationData.toCity, setLocationData ]);
+  }, [locationData.fromCity, locationData.toCity, setLocationData]);
 
   const handleSwitch = () => {
     setLocationData((prev) => ({
@@ -86,15 +86,15 @@ const LocationInput = () => {
       ...prev,
       ...(type === 'from'
         ? {
-            fromCity: formattedValue,
-            fromAirport: cityObj.name,
-            fromCode: cityObj.code, // ✅ Save code
-          }
+          fromCity: formattedValue,
+          fromAirport: cityObj.name,
+          fromCode: cityObj.code, // ✅ Save code
+        }
         : {
-            toCity: formattedValue,
-            toAirport: cityObj.name,
-            toCode: cityObj.code, // ✅ Save code
-          }),
+          toCity: formattedValue,
+          toAirport: cityObj.name,
+          toCode: cityObj.code, // ✅ Save code
+        }),
     }));
 
     if (type === 'from') {
