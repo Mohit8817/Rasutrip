@@ -17,7 +17,7 @@ const SearchButton = ({ type }) => {
       fromCode,
       toCode,
       departDate,
-      returnDate, // ✅ include returnDate
+      returnDate,
       passengers,
       cabinClass,
       tripType
@@ -34,7 +34,7 @@ const SearchButton = ({ type }) => {
             fromCode,
             toCode,
             departDate: departDate || { PreferredTime: new Date().toISOString() },
-            returnDate: returnDate || null, // ✅ Pass returnDate if exists
+            returnDate: returnDate || null, 
             passengers,
             cabinClass,
             tripType: tripType || 'oneway'
