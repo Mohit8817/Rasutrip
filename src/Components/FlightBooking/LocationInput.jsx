@@ -128,6 +128,9 @@ const LocationInput = () => {
     }
   };
 
+
+  
+
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
