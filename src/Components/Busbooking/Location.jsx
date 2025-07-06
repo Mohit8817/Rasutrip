@@ -20,10 +20,14 @@ const Location = () => {
         ...prev,
         fromCity: 'Bangalore',
         toCity: 'Hyderabad',
+        // departDate: new Date().toISOString(), 
         bookingType: 'bus',
       }));
     }
   }, []);
+
+
+
 
   // Fetch FROM cities
   useEffect(() => {

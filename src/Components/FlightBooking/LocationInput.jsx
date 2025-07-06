@@ -25,7 +25,8 @@ const LocationInput = () => {
       ...prev,
       bookingType: 'flight',
       fromCity: 'Delhi',
-      toCity: 'Mumbai',
+      toCity: 'London',
+
     }));
   }, []);
 
@@ -221,6 +222,7 @@ const LocationInput = () => {
           <div className="location-airport">
             [{locationData.toCode || toAirportData?.code || '---'}] {locationData.toAirport}
           </div>
+
 
           {showToDropdown && (
             <div className="dropdown-list">
