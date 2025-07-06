@@ -3,7 +3,7 @@ import { Row, Col, Card } from 'react-bootstrap';
 import { ArrowLeftRight } from 'react-bootstrap-icons';
 import { FaPlane } from 'react-icons/fa';
 import { LocationContext } from '../Context/LocationContext';
-import { fetchLocationData } from '../FlightApi/FlightApi';
+import { fetchLocationData } from '../APIS/FlightApi/FlightApi';
 import '../../Style/FlightBooking.css';
 
 const LocationInput = () => {
@@ -95,15 +95,15 @@ const LocationInput = () => {
       ...prev,
       ...(type === 'from'
         ? {
-            fromCity: formattedValue,
-            fromAirport: cityObj.name,
-            fromCode: cityObj.code,
-          }
+          fromCity: formattedValue,
+          fromAirport: cityObj.name,
+          fromCode: cityObj.code,
+        }
         : {
-            toCity: formattedValue,
-            toAirport: cityObj.name,
-            toCode: cityObj.code,
-          }),
+          toCity: formattedValue,
+          toAirport: cityObj.name,
+          toCode: cityObj.code,
+        }),
     }));
 
     if (type === 'from') {

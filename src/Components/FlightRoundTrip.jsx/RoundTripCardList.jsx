@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import moment from 'moment';
 import RoundTripCard from './RoundTripCard';
-import { fetchFlightData } from '../../Components/FlightApi/FlightApi';
+import { fetchFlightData } from '../APIS/FlightApi/FlightApi';
 import { Row, Col } from 'react-bootstrap'; 
 
 const RoundTripCardList = () => {

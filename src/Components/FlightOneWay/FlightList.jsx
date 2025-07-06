@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import moment from 'moment';
 import FlightCard from './FlightCards';
-import { fetchFlightData } from '../../Components/FlightApi/FlightApi';
+import { fetchFlightData } from '../APIS/FlightApi/FlightApi'
 import { LocationContext } from '../../Components/Context/LocationContext';
 
 const FlightList = () => {

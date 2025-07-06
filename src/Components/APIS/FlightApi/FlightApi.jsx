@@ -1,5 +1,5 @@
 import axios from 'axios';
-import baseURL from '../../Services/Config';
+import baseURL from '../../../Services/Config';
 
 export const Services = {
   fetchLocation: `${baseURL}/airport/search-airport`,
