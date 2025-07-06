@@ -9,13 +9,11 @@ import RoundsearchBar from '../../Components/FlightRoundTrip.jsx/RoundsearchBar'
 import RoundTripCardList from '../../Components/FlightRoundTrip.jsx/RoundTripCardList';
 
 const FlightResultsPage = () => {
-    const { state } = useLocation();
-    const tripType = state?.tripType || 'oneway';
-
+    const { state } = useLocation()
+    const tripType = state?.tripType || 'oneway'
 
     return (
         <div>
-            {/* One-way Flights */}
             {tripType === 'oneway' && (
                 <Container className="mt-5 pt-5">
                     <Row>

@@ -9,8 +9,8 @@ export const LocationProvider = ({ children }) => {
     toCity: 'London',
     fromAirport: 'DEL',
     toAirport: 'LON',
-    fromCode: 'DEL',    // ✅ added
-    toCode: 'LON',      // ✅ added
+    fromCode: 'DEL',
+    toCode: 'LON',
     departDate: null,
     returnDate: null,
     passengers: { adults: 1, children: 0, infants: 0 },

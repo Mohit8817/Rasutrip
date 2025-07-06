@@ -1,11 +1,12 @@
 import React from "react";
 import { Card, Row, Col, Button } from "react-bootstrap";
 import { FaClock, FaWheelchair, FaCity } from "react-icons/fa";
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const BusDetailinfo = () => {
 
     const navigate = useNavigate();
+   
 
     const handleContinue = () => {
         navigate('/bus-traveller-details');
