@@ -6,65 +6,56 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "../../Style/BusBooking.css";
 
 const TravelDate = () => {
-  const { locationData, setLocationData } = useContext(LocationContext);
-  const [travelDate, setTravelDate] = useState(() => new Date());
-  const [showCalendar, setShowCalendar] = useState(false);
+    const { locationData, setLocationData } = useContext(LocationContext);
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [travelDate, setTravelDate] = useState(() => new Date());
 
-  useEffect(() => {
-    if (locationData?.departDate) {
-      const parsedDate = new Date(locationData.departDate);
-      if (!isNaN(parsedDate)) {
-        setTravelDate(parsedDate);
-      } else {
-        setTravelDate(new Date());
-      }
-    }
-  }, [locationData.departDate]);
+    useEffect(() => {
+        const parsed = new Date(locationData?.departDate);
+        const isValid = parsed instanceof Date && !isNaN(parsed);
 
-  const formatDate = (date) => {
-    if (!date || isNaN(date)) return "Invalid Date";
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
+        const date = isValid ? parsed : new Date();
+        setTravelDate(date);
 
-  const handleDateSelect = (date) => {
-    if (!date || isNaN(date)) return;
-    setTravelDate(date);
-    setShowCalendar(false);
+        if (!isValid) {
+            setLocationData((prev) => ({
+                ...prev,
+                departDate: date.toISOString(),
+            }));
+        }
+    }, [locationData?.departDate, setLocationData]);
 
-    // ✅ Set selected date in LocationContext
-    setLocationData((prev) => ({
-      ...prev,
-      departDate: date.toISOString(), // Store as ISO format
-    }));
-  };
+    const handleDateSelect = (date) => {
+        if (!date || isNaN(date)) return;
+        setTravelDate(date);
+        setShowCalendar(false);
+        setLocationData((prev) => ({
+            ...prev,
+            departDate: date.toISOString(),
+        }));
+    };
 
-  return (
-    <div className="single-date-picker position-relative text-start">
-      <div
-        className="date-button p-3"
-        onClick={() => setShowCalendar((prev) => !prev)}
-      >
-        <span className="city-label">TRAVEL DATE</span>
-        <span className="date d-block fs-4 fw-bold">
-          {formatDate(travelDate)}
-        </span>
-      </div>
+    const formatDate = (date) =>
+        date?.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        }) || "Invalid Date";
 
-      {showCalendar && (
-        <div className="calendar-popup position-absolute bg-white mt-2 shadow rounded">
-          <DayPicker
-            mode="single"
-            selected={travelDate}
-            onSelect={handleDateSelect}
-          />
+    return (
+        <div className="single-date-picker position-relative text-start">
+            <div className="date-button p-3" onClick={() => setShowCalendar((prev) => !prev)}>
+                <span className="city-label">TRAVEL DATE</span>
+                <span className="date d-block fs-4 fw-bold">{formatDate(travelDate)}</span>
+            </div>
+
+            {showCalendar && (
+                <div className="calendar-popup position-absolute bg-white mt-2 shadow rounded">
+                    <DayPicker mode="single" selected={travelDate} onSelect={handleDateSelect} />
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default TravelDate;

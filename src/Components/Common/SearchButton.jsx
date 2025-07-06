@@ -17,19 +17,11 @@ const SearchButton = ({ type }) => {
       fromCode,
       toCode,
       departDate,
-      returnDate,
+      returnDate, // ✅ include returnDate
       passengers,
       cabinClass,
       tripType
     } = locationData;
-
-    // Prevent search if cities are missing
-    if (!fromCity || !toCity) {
-      alert("Please select both From and To cities.");
-      return;
-    }
-
-    const defaultDate = new Date().toISOString();
 
     switch (type) {
       case 'flight':
@@ -41,10 +33,10 @@ const SearchButton = ({ type }) => {
             toAirport,
             fromCode,
             toCode,
-            departDate: departDate || { PreferredTime: defaultDate },
-            returnDate: returnDate || null,
-            passengers: passengers || 1,
-            cabinClass: cabinClass || 'Economy',
+            departDate: departDate || { PreferredTime: new Date().toISOString() },
+            returnDate: returnDate || null, // ✅ Pass returnDate if exists
+            passengers,
+            cabinClass,
             tripType: tripType || 'oneway'
           }
         });
@@ -55,7 +47,7 @@ const SearchButton = ({ type }) => {
           state: {
             fromCity,
             toCity,
-            departDate: departDate || defaultDate
+            departDate: departDate || new Date().toISOString()
           }
         });
         break;

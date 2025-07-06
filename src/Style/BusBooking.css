@@ -3,8 +3,6 @@
     cursor: pointer;
     margin-top: 2rem;
     /* width: 420px !important; */
-
-
 }
 
 .single-date-picker .date-button {
@@ -13,16 +11,11 @@
     background-color: #fff;
     border: 1px solid #dee2e6;
     border-radius: 12px;
-
 }
 
 .single-date-picker .calendar-popup {
     z-index: 20;
 }
-
-
-
-
 /* loaction cs */
 
 .city-wrapper {
