@@ -43,7 +43,13 @@ const SearchButton = ({ type }) => {
         break;
 
       case 'bus':
-        navigate('/bus-results');
+        navigate('/bus-results', {
+          state: {
+            fromCity,
+            toCity,
+            departDate: departDate || new Date().toISOString()
+          }
+        });
         break;
 
       case 'hotel':

@@ -19,6 +19,16 @@ const LocationInput = () => {
   const fromRef = useRef(null);
   const toRef = useRef(null);
 
+  // ✅ Force default for flight page
+  useEffect(() => {
+    setLocationData((prev) => ({
+      ...prev,
+      bookingType: 'flight',
+      fromCity: 'Delhi',
+      toCity: 'Mumbai',
+    }));
+  }, []);
+
   const fetchAirports = async (query) => {
     try {
       setLoading(true);
@@ -42,7 +52,7 @@ const LocationInput = () => {
           setLocationData((prev) => ({
             ...prev,
             fromAirport: airport.name,
-            fromCode: airport.code, // ✅ Save city code
+            fromCode: airport.code,
           }));
         }
 
@@ -53,7 +63,7 @@ const LocationInput = () => {
           setLocationData((prev) => ({
             ...prev,
             toAirport: airport.name,
-            toCode: airport.code, // ✅ Save city code
+            toCode: airport.code,
           }));
         }
       } catch (error) {
@@ -62,7 +72,7 @@ const LocationInput = () => {
     };
 
     fetchDefaultAirports();
-  },[ locationData.fromCity, locationData.toCity, setLocationData ]);
+  }, [locationData.fromCity, locationData.toCity]);
 
   const handleSwitch = () => {
     setLocationData((prev) => ({
@@ -71,7 +81,7 @@ const LocationInput = () => {
       toCity: prev.fromCity,
       fromAirport: prev.toAirport,
       toAirport: prev.fromAirport,
-      fromCode: prev.toCode, // ✅ Switch codes
+      fromCode: prev.toCode,
       toCode: prev.fromCode,
     }));
     const temp = fromAirportData;
@@ -81,19 +91,18 @@ const LocationInput = () => {
 
   const handleCitySelect = (cityObj, type) => {
     const formattedValue = `${cityObj.city_name}`;
-
     setLocationData((prev) => ({
       ...prev,
       ...(type === 'from'
         ? {
             fromCity: formattedValue,
             fromAirport: cityObj.name,
-            fromCode: cityObj.code, // ✅ Save code
+            fromCode: cityObj.code,
           }
         : {
             toCity: formattedValue,
             toAirport: cityObj.name,
-            toCode: cityObj.code, // ✅ Save code
+            toCode: cityObj.code,
           }),
     }));
 
