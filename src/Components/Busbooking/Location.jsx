@@ -19,15 +19,13 @@ const Location = () => {
       setLocationData((prev) => ({
         ...prev,
         fromCity: 'Bangalore',
+        fromCityId: 8463,
         toCity: 'Hyderabad',
-        // departDate: new Date().toISOString(), 
+        toCityId: 9573,
         bookingType: 'bus',
       }));
     }
   }, []);
-
-
-
 
   // Fetch FROM cities
   useEffect(() => {
@@ -52,16 +50,23 @@ const Location = () => {
   }, [toQuery]);
 
   const handleCitySelect = (field, city) => {
-    setLocationData({ ...locationData, [field]: city });
+    const updatedData = {
+      ...locationData,
+      [field]: city.city_name, // Set name
+      [`${field}Id`]: city.city_id, // Set city_id
+    };
+
+    setLocationData(updatedData);
 
     if (field === 'fromCity') {
-      setFromQuery(city);
+      setFromQuery(city.city_name);
       setShowFromDropdown(false);
     } else {
-      setToQuery(city);
+      setToQuery(city.city_name);
       setShowToDropdown(false);
     }
   };
+
 
   return (
     <Container>
@@ -89,15 +94,16 @@ const Location = () => {
                   <ul className="dropdown-list">
                     {busCities.map((city, idx) => (
                       <li
-                        key={idx}
+                        key={city._id}
                         className="dropdown-item"
-                        onClick={() => handleCitySelect('fromCity', city.city_name)}
+                        onClick={() => handleCitySelect('fromCity', city)}
                       >
                         {city.city_name}
                       </li>
                     ))}
                   </ul>
                 )}
+
               </Form.Group>
             </div>
           </Col>
@@ -123,15 +129,16 @@ const Location = () => {
                   <ul className="dropdown-list">
                     {busCities.map((city, idx) => (
                       <li
-                        key={idx}
+                        key={city._id}
                         className="dropdown-item"
-                        onClick={() => handleCitySelect('toCity', city.city_name)}
+                        onClick={() => handleCitySelect('toCity', city)}
                       >
                         {city.city_name}
                       </li>
                     ))}
                   </ul>
                 )}
+
               </Form.Group>
             </div>
           </Col>

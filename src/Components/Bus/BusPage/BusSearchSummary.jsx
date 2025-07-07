@@ -4,7 +4,7 @@ import { Container, Row, Col, Button } from 'react-bootstrap';
 
 const BusSearchSummary = () => {
   const { state } = useLocation();
-  const { fromCity, toCity, departDate } = state || {};
+  const { fromCity, toCity, departDate, fromCityId, toCityId, } = state || {};
 
   return (
     <Container className="mt-4 p-3 bg-white shadow-sm rounded border">

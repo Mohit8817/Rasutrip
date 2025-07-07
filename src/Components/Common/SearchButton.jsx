@@ -20,7 +20,10 @@ const SearchButton = ({ type }) => {
       returnDate, // ✅ include returnDate
       passengers,
       cabinClass,
-      tripType
+      tripType,
+      // bus data 
+      fromCityId,
+      toCityId,
     } = locationData;
 
     switch (type) {
@@ -47,6 +50,8 @@ const SearchButton = ({ type }) => {
           state: {
             fromCity,
             toCity,
+            fromCityId,
+            toCityId,
             departDate: departDate || new Date().toISOString()
           }
         });
