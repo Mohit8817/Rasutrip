@@ -3,8 +3,6 @@
     cursor: pointer;
     margin-top: 2rem;
     /* width: 420px !important; */
-
-
 }
 
 .single-date-picker .date-button {
@@ -13,16 +11,11 @@
     background-color: #fff;
     border: 1px solid #dee2e6;
     border-radius: 12px;
-
 }
 
 .single-date-picker .calendar-popup {
     z-index: 20;
 }
-
-
-
-
 /* loaction cs */
 
 .city-wrapper {
@@ -50,4 +43,73 @@
     font-weight: 600;
     outline: none;
     box-shadow: none;
+}
+
+
+.city-box {
+  position: relative;
+}
+
+.city-input {
+  cursor: pointer;
+  background-color: white;
+}
+
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  z-index: 10;
+  margin-top: 5px;
+  padding: 0;
+  list-style: none;
+}
+
+.dropdown-item {
+  padding: 10px 15px;
+  cursor: pointer;
+}
+
+
+
+
+
+
+/* Bus card details  */
+
+/* Cancellation box css */
+
+
+
+.cancellation-box {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.text-purple {
+  color: #ca0d26;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.table-bordered td,
+.table-bordered th {
+  border: 1px solid #dee2e6;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
 }

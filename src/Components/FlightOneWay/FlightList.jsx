@@ -1,106 +1,146 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState, useContext } from 'react';
 import moment from 'moment';
 import FlightCard from './FlightCards';
-import { fetchFlightData } from '../../Components/FlightApi/FlightApi';
+import { fetchFlightData } from '../APIS/FlightApi/FlightApi'
+import { LocationContext } from '../../Components/Context/LocationContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { setFlights } from "../../redux/Slices/flightSlices";
+
 
 const FlightList = () => {
-    const { state } = useLocation();
+  const dispatch = useDispatch();
+  const { locationData } = useContext(LocationContext);
+  const flightsData = useSelector((state) => state?.flight?.flights || []);
 
-    const {
-        // fromCity = 'Delhi',
-        // toCity = 'Mumbai',
-        // fromAirport = 'Delhi Airport',
-        // toAirport = 'Mumbai Airport',
-        fromCode = 'DEL', 
-        toCode = 'BOM',  
-        departDate = new Date(),
-        passengers = { adults: 1, children: 0, infants: 0 },
-        cabinClass = 2,
-    } = state || {};
+  const {
+    fromCode = 'DEL',
+    toCode = 'BOM',
+    departDate = new Date(),
+    passengers = { adults: 1, children: 0, infants: 0 },
+    cabinClass = '',
+  } = locationData || {};
 
-    const [flights, setFlights] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const [allFlights, setAllFlights] = useState(flightsData || []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const requestPayload = {
-            UserIp: "27.60.0.238",
-            Adult: passengers.adults || 1,
-            Child: passengers.children || 0,
-            Infant: passengers.infants || 0,
-            DirectFlight: false,
-            JourneyType: 1,
-            PreferredCarriers: null,
-            CabinClass: cabinClass,
-            AirSegments: [
-                {
-                    Origin: fromCode, // ✅ use city code
-                    Destination: toCode, // ✅ use city code
-                    PreferredTime: `${moment(departDate).format("YYYY-MM-DD")}T00:00:00`,
-                },
-            ],
-            Sources: null,
-        };
+  // Restore flights from localStorage on initial mount
+  useEffect(() => {
+    const savedFlights = localStorage.getItem('SearchedFlights');
+    if (savedFlights && flightsData.length === 0) {
+      const parsedFlights = JSON.parse(savedFlights);
+      dispatch(setFlights(parsedFlights));
+      setAllFlights(parsedFlights);
+      setLoading(false); // skip fetching
+    }
+  }, [dispatch, allFlights]);
 
-        console.log("Flight Search Request Payload:", requestPayload);
+  // Format departure date
+  let displayDate = 'Not selected';
+  try {
+    const rawDate =
+      typeof departDate === 'string'
+        ? departDate
+        : departDate?.PreferredTime ?? departDate ?? new Date();
 
-        const getFlights = async () => {
-            try {
-                const response = await fetchFlightData(requestPayload);
-                console.log("Flight API Response:", response);
+    const jsDate = new Date(rawDate);
 
-                const result = response?.Result?.[0] || [];
+    if (!isNaN(jsDate.getTime())) {
+      displayDate =
+        jsDate.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }) +
+        ', ' +
+        jsDate.toLocaleDateString('en-GB', {
+          weekday: 'long',
+        });
+    }
+  } catch (e) {
+    console.warn('Invalid departure date:', departDate);
+  }
 
-                const transformedFlights = result.map((flight) => {
-                    const segment = flight.Segments?.[0]?.[0];
-                    const fare = flight.FareList?.[0];
+  // Fetch flights from API
+  useEffect(() => {
+    const cabinMap = {
+      "Economy": 1,
+      "Premium Economy": 2,
+      "Business": 4,
+      "First": 5
+    };
 
-                    return {
-                        airline: segment?.Airline?.AirlineName || "Unknown Airline",
-                        flightNumber: `${segment?.Airline?.AirlineCode || ''}-${segment?.Airline?.FlightNumber || ''}`,
-                        departTime: moment(segment?.Origin?.DepartTime).format('HH:mm'),
-                        departDate: moment(segment?.Origin?.DepartTime).format('DD MMM'),
-                        departCity: segment?.Origin?.CityCode,
-                        arriveTime: moment(segment?.Destination?.ArrivalTime).format('HH:mm'),
-                        arriveDate: moment(segment?.Destination?.ArrivalTime).format('DD MMM'),
-                        arriveCity: segment?.Destination?.CityCode,
-                        duration: segment?.Duration
-                            ? `${Math.floor(segment.Duration / 60)} h ${segment.Duration % 60} m`
-                            : "N/A",
-                        price: fare?.OfferedPrice || 0,
-                        tag: fare?.FareType || '',
-                        classType: fare?.CabinClass || '',
-                        refund: fare?.IsRefundable ? 'Refundable' : 'Non-refundable',
-                        action: 'View Prices',
-                        seatsLeft: fare?.SeatBaggage?.[0]?.[0]?.NoOfSeatAvailable ?? 5,
-                        stop: 'Non Stop(s)',
-                    };
-                });
+    const normalizedCabin =
+      typeof cabinClass === 'number' ? cabinClass : cabinMap[cabinClass] || 1;
 
-                setFlights(transformedFlights);
-            } catch (err) {
-                console.error("Error fetching flights:", err);
-                setError("Failed to load flight data.");
-            } finally {
-                setLoading(false);
-            }
-        };
+    const requestPayload = {
+      // UserIp: "27.60.0.238",
+      UserIp:"122.161.64.143",
+      Adult: passengers.adults || 1,
+      Child: passengers.children || 0,
+      Infant: passengers.infants || 0,
+      DirectFlight: false,
+      JourneyType: 1,
+      PreferredCarriers: null,
+      CabinClass: normalizedCabin,
+      AirSegments: [
+        {
+          Origin: fromCode,
+          Destination: toCode,
+          PreferredTime: `${moment(
+            typeof departDate === 'object' && departDate?.PreferredTime
+              ? departDate.PreferredTime
+              : departDate
+          ).format("YYYY-MM-DD")}T00:00:00`,
+        },
+      ],
+      Sources: null,
+    };
 
-        getFlights();
-    }, [fromCode, toCode, departDate, passengers, cabinClass]);
+    const getFlights = async () => {
+      try {
+        const response = await fetchFlightData(requestPayload);
+        const result = response?.Result?.[0] || [];
+        console.log("searchToken",response?.SearchTokenId);
+        console.log("UserIp",response?.UserIp)
+        localStorage.setItem("searchToken",response?.SearchTokenId)
+        localStorage.setItem("UserIp",response?.UserIp)
+        setAllFlights(result || []);
+        dispatch(setFlights(result || []));
+      } catch (err) {
+        console.error("Error fetching flights:", err);
+        setError("Failed to load flight data.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (loading) return <div className="text-center my-4">Loading flights...</div>;
-    if (error) return <div className="text-danger text-center my-4">{error}</div>;
+    getFlights();
+  }, [fromCode, toCode, departDate, passengers, cabinClass, dispatch]);
 
-    return (
-        <div className="my-4">
-            <h5 className="mb-3">Showing {flights.length} Flights</h5>
-            {flights.map((flight, idx) => (
-                <FlightCard key={idx} flight={flight} />
-            ))}
-        </div>
-    );
+  // Save flights to localStorage when updated
+  useEffect(() => {
+    if (flightsData?.length) {
+      localStorage.setItem('SearchedFlights', JSON.stringify(flightsData));
+    }
+  }, [flightsData]);
+
+  if (loading) return <div className="text-center my-4">Loading flights...</div>;
+  if (error) return <div className="text-danger text-center my-4">{error}</div>;
+
+  return (
+ <div className="my-4 overflow-auto" style={{ maxHeight: '70vh' }}>
+  <h5 className="mb-2">Showing {allFlights?.length} Flights</h5>
+  <p className="text-muted">
+    Departure Date: <strong>{displayDate}</strong>
+  </p>
+
+  {allFlights?.map((flight, idx) => (
+    <FlightCard key={idx} flight={flight} />
+  ))}
+</div>
+
+  );
 };
 
 export default FlightList;

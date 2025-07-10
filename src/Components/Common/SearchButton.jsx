@@ -14,12 +14,16 @@ const SearchButton = ({ type }) => {
       toCity,
       fromAirport,
       toAirport,
-      fromCode, // ✅ Added
-      toCode,   // ✅ Added
+      fromCode,
+      toCode,
       departDate,
+      returnDate, // ✅ include returnDate
       passengers,
       cabinClass,
-      tripType
+      tripType,
+      // bus data 
+      fromCityId,
+      toCityId,
     } = locationData;
 
     switch (type) {
@@ -30,9 +34,10 @@ const SearchButton = ({ type }) => {
             toCity,
             fromAirport,
             toAirport,
-            fromCode,      // ✅ Pass code
-            toCode,        // ✅ Pass code
-            departDate: departDate || new Date().toISOString(),
+            fromCode,
+            toCode,
+            departDate: departDate || { PreferredTime: new Date().toISOString() },
+            returnDate: returnDate || null, // ✅ Pass returnDate if exists
             passengers,
             cabinClass,
             tripType: tripType || 'oneway'
@@ -41,7 +46,15 @@ const SearchButton = ({ type }) => {
         break;
 
       case 'bus':
-        navigate('/bus-results');
+        navigate('/bus-results', {
+          state: {
+            fromCity,
+            toCity,
+            fromCityId,
+            toCityId,
+            departDate: departDate || new Date().toISOString()
+          }
+        });
         break;
 
       case 'hotel':

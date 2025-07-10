@@ -1,4 +1,4 @@
-/* Hover dropdown */
+Hover dropdown
 
 .login-dropdown-wrapper .dropdown:hover .dropdown-menu {
   display: block;
@@ -194,7 +194,6 @@
   margin-bottom: 30px;
 }
 
-
 .form-section-box {
   border: 0.1px solid #ca0e279f;
   border-radius: 5px;
@@ -202,7 +201,7 @@
   margin-bottom: 15px;
   background: #fff;
   position: relative;
-}
+} 
 
 .section-header {
   background-color: #ca0e27;
@@ -223,18 +222,18 @@
   margin-bottom: 6px;
 }
 
-.form-control {
+/* .form-control {
   border-radius: 4px;
   font-size: 14px;
   padding: 10px 12px;
   border: 1px solid #ced4da;
   transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-}
+} */
 
-.form-control:focus {
+/* .form-control:focus {
   border-color: #ca0e27;
   box-shadow: 0 0 0 0.1rem rgba(193, 66, 66, 0.111);
-}
+} */
 
 .text-danger.small {
   font-size: 12px;

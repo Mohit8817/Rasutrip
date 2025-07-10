@@ -1,10 +1,10 @@
 import React, { useContext } from 'react';
 import { Container, Row, Col, Button } from 'react-bootstrap';
-import { LocationContext } from '../Context/LocationContext'; 
+import { LocationContext } from '../Context/LocationContext';
 import '../../Style/Pagescss/FlightResultsPage.css';
 
 const FlightSearchBar = () => {
-  const { locationData } = useContext(LocationContext); // ✅ access context
+  const { locationData } = useContext(LocationContext);
 
   const {
     fromCity = '',
@@ -13,22 +13,36 @@ const FlightSearchBar = () => {
     toAirport = '',
     departDate,
     passengers = { adults: 1, children: 0, infants: 0 },
-    cabinClass = 2,
+    cabinClass = '',
   } = locationData || {};
 
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;
 
-  const formattedDate = departDate?.PreferredTime
-    ? new Date(departDate.PreferredTime).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }) +
-      ', ' +
-      new Date(departDate.PreferredTime).toLocaleDateString('en-GB', {
-        weekday: 'long',
-      })
-    : 'Not selected';
+  // Format departure date
+  let formattedDate = 'Not selected';
+  if (departDate?.PreferredTime) {
+    const jsDate = new Date(departDate.PreferredTime);
+    if (!isNaN(jsDate.getTime())) {
+      formattedDate =
+        jsDate.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }) +
+        ', ' +
+        jsDate.toLocaleDateString('en-GB', {
+          weekday: 'long',
+        });
+    }
+  }
+
+  // Cabin class map for showing name instead of number
+  const cabinClassMap = {
+    1: 'Economy',
+    2: 'Premium Economy',
+    4: 'Business',
+    5: 'First',
+  };
 
   return (
     <Container className="p-3 bg-white shadow-sm rounded border mt-5">
@@ -59,7 +73,7 @@ const FlightSearchBar = () => {
 
         <Col md={2} xs={6}>
           <div><strong>Travel Class</strong></div>
-          <div className="text-muted small">{cabinClass}</div>
+          <div className="text-muted small">{cabinClassMap[cabinClass] || 'Not selected'}</div>
         </Col>
 
         <Col md={1} xs={12} className="text-end">

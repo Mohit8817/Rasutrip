@@ -3,7 +3,7 @@ import { Row, Col, Card } from 'react-bootstrap';
 import { ArrowLeftRight } from 'react-bootstrap-icons';
 import { FaPlane } from 'react-icons/fa';
 import { LocationContext } from '../Context/LocationContext';
-import { fetchLocationData } from '../FlightApi/FlightApi';
+import { fetchLocationData } from '../APIS/FlightApi/FlightApi';
 import '../../Style/FlightBooking.css';
 
 const LocationInput = () => {
@@ -15,9 +15,21 @@ const LocationInput = () => {
   const [loading, setLoading] = useState(false);
   const [fromAirportData, setFromAirportData] = useState(null);
   const [toAirportData, setToAirportData] = useState(null);
+  const [query, setQuery] = useState('');
 
   const fromRef = useRef(null);
   const toRef = useRef(null);
+
+  // ✅ Force default for flight page
+  useEffect(() => {
+    setLocationData((prev) => ({
+      ...prev,
+      bookingType: 'flight',
+      fromCity: 'Delhi',
+      toCity: 'London',
+
+    }));
+  }, []);
 
   const fetchAirports = async (query) => {
     try {
@@ -32,6 +44,19 @@ const LocationInput = () => {
     }
   };
 
+  // Debounced fetch on query change
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (query.trim().length >= 2) {
+        fetchAirports(query);
+      } else {
+        setCityList([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [query]);
+
   useEffect(() => {
     const fetchDefaultAirports = async () => {
       try {
@@ -42,7 +67,7 @@ const LocationInput = () => {
           setLocationData((prev) => ({
             ...prev,
             fromAirport: airport.name,
-            fromCode: airport.code, // ✅ Save city code
+            fromCode: airport.code,
           }));
         }
 
@@ -53,7 +78,7 @@ const LocationInput = () => {
           setLocationData((prev) => ({
             ...prev,
             toAirport: airport.name,
-            toCode: airport.code, // ✅ Save city code
+            toCode: airport.code,
           }));
         }
       } catch (error) {
@@ -62,7 +87,7 @@ const LocationInput = () => {
     };
 
     fetchDefaultAirports();
-  },);
+  }, [locationData.fromCity, locationData.toCity, setLocationData]);
 
   const handleSwitch = () => {
     setLocationData((prev) => ({
@@ -71,7 +96,7 @@ const LocationInput = () => {
       toCity: prev.fromCity,
       fromAirport: prev.toAirport,
       toAirport: prev.fromAirport,
-      fromCode: prev.toCode, // ✅ Switch codes
+      fromCode: prev.toCode,
       toCode: prev.fromCode,
     }));
     const temp = fromAirportData;
@@ -81,19 +106,18 @@ const LocationInput = () => {
 
   const handleCitySelect = (cityObj, type) => {
     const formattedValue = `${cityObj.city_name}`;
-
     setLocationData((prev) => ({
       ...prev,
       ...(type === 'from'
         ? {
             fromCity: formattedValue,
             fromAirport: cityObj.name,
-            fromCode: cityObj.code, // ✅ Save code
+            fromCode: cityObj.code,
           }
         : {
             toCity: formattedValue,
             toAirport: cityObj.name,
-            toCode: cityObj.code, // ✅ Save code
+            toCode: cityObj.code,
           }),
     }));
 
@@ -104,24 +128,28 @@ const LocationInput = () => {
       setToAirportData(cityObj);
       setShowToDropdown(false);
     }
+
+    setCityList([]);
   };
 
   const handleFromInputClick = () => {
     setShowFromDropdown(true);
     setShowToDropdown(false);
-    if (locationData.fromCity) fetchAirports(locationData.fromCity);
+    setQuery(locationData.fromCity);
   };
 
   const handleToInputClick = () => {
     setShowToDropdown(true);
     setShowFromDropdown(false);
-    if (locationData.toCity) fetchAirports(locationData.toCity);
+    setQuery(locationData.toCity);
   };
 
   const handleClickOutside = (event) => {
     if (
-      fromRef.current && !fromRef.current.contains(event.target) &&
-      toRef.current && !toRef.current.contains(event.target)
+      fromRef.current &&
+      !fromRef.current.contains(event.target) &&
+      toRef.current &&
+      !toRef.current.contains(event.target)
     ) {
       setShowFromDropdown(false);
       setShowToDropdown(false);
@@ -142,11 +170,7 @@ const LocationInput = () => {
         : { toCity: value, toAirport: '', toCode: '' }),
     }));
 
-    if (value.length >= 2) {
-      fetchAirports(value);
-    } else {
-      setCityList([]);
-    }
+    setQuery(value); // Set debounced query
   };
 
   return (
@@ -212,6 +236,7 @@ const LocationInput = () => {
           <div className="location-airport">
             [{locationData.toCode || toAirportData?.code || '---'}] {locationData.toAirport}
           </div>
+
 
           {showToDropdown && (
             <div className="dropdown-list">

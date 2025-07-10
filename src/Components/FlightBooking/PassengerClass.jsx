@@ -1,14 +1,16 @@
-import React, { useRef, useEffect, useContext } from 'react';
+import React, { useRef, useEffect, useContext, useState } from 'react';
 import { Card, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../../Style/FlightBooking.css';
-import { LocationContext } from '../Context/LocationContext'; // Adjust the path as needed
+import { LocationContext } from '../Context/LocationContext';
+import { useDispatch } from 'react-redux';
+
 
 const PassengerClass = () => {
-  const [showDropdown, setShowDropdown] = React.useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const { locationData, setLocationData } = useContext(LocationContext);
-
-  const { passengers, cabinClass } = locationData;
+  const dispatch = useDispatch();
+  const { passengers = { adults: 1, children: 0, infants: 0 }, cabinClass } = locationData;
 
   const ref = useRef();
 
@@ -30,19 +32,38 @@ const PassengerClass = () => {
       ...prev,
       passengers: {
         ...prev.passengers,
-        [type]: Math.max(0, prev.passengers[type] + change)
+        [type]: Math.max(0, prev.passengers[type] + change),
       }
     }));
   };
 
-  const handleCabinChange = (option) => {
+  // Set default cabin class to Economy if not set
+  useEffect(() => {
+    if (!locationData.cabinClass) {
+      setLocationData(prev => ({
+        ...prev,
+        cabinClass: 1
+      }));
+    }
+  }, [locationData]);
+
+  const handleCabinChange = (value) => {
     setLocationData(prev => ({
       ...prev,
-      cabinClass: option
+      cabinClass: value
     }));
   };
 
   const totalPassengers = passengers.adults + passengers.children + passengers.infants;
+
+  const cabinOptions = [
+    { label: 'Economy', value: 1 },
+    { label: 'Premium Economy', value: 2 },
+    { label: 'Business', value: 4 },
+    { label: 'First', value: 5 },
+  ];
+
+  const selectedCabinLabel = cabinOptions.find(opt => opt.value === cabinClass)?.label || 'Select';
 
   return (
     <div className="passenger-class-wrapper" ref={ref}>
@@ -50,7 +71,7 @@ const PassengerClass = () => {
         <Card.Body>
           <div className="passenger-label">Travellers & Class</div>
           <div className="fw-bold fs-5">{totalPassengers} Passenger</div>
-          <div className="cabin-text">{cabinClass}</div>
+          <div className="cabin-text">{selectedCabinLabel}</div>
         </Card.Body>
       </Card>
 
@@ -61,12 +82,12 @@ const PassengerClass = () => {
               const labels = {
                 adults: 'Adults',
                 children: 'Children',
-                infants: 'Infant',
+                infants: 'Infants',
               };
               const ages = {
                 adults: '12+ Years',
                 children: '2y - 12y',
-                infants: 'below 2y',
+                infants: 'Below 2y',
               };
               return (
                 <div key={idx} className="d-flex justify-content-between align-items-center mb-3">
@@ -75,23 +96,25 @@ const PassengerClass = () => {
                     <div className="text-muted small">{ages[type]}</div>
                   </div>
                   <div className="d-flex align-items-center">
-                    <Button variant="light" className="circle-btn" onClick={(e) => { e.stopPropagation(); updateCount(type, -1) }}>-</Button>
+                    <Button variant="light" className="circle-btn" onClick={(e) => { e.stopPropagation(); updateCount(type, -1); }}>-</Button>
                     <span className="mx-3">{passengers[type]}</span>
-                    <Button variant="light" className="circle-btn" onClick={(e) => { e.stopPropagation(); updateCount(type, 1) }}>+</Button>
+                    <Button variant="light" className="circle-btn" onClick={(e) => { e.stopPropagation(); updateCount(type, 1); }}>+</Button>
                   </div>
                 </div>
               );
             })}
 
             <div className="fw-bold mb-3 mt-2 text-start">Cabin Class</div>
-            {['2', 'ECONOMY', 'BUSINESS', 'PREMIUM ECONOMY', 'PREMIUM BUSINESS', 'FIRST'].map(option => (
-              <div key={option} className="cabin-option" onClick={() => handleCabinChange(option)}>
-                <div className={`custom-radio ${cabinClass === option ? 'checked' : ''}`} />
-                <div className="cabin-label">{option}</div>
+            {cabinOptions.map(option => (
+              <div
+                key={option.value}
+                className="cabin-option"
+                onClick={() => handleCabinChange(option.value)}
+              >
+                <div className={`custom-radio ${cabinClass === option.value ? 'checked' : ''}`} />
+                <div className="cabin-label">{option.label}</div>
               </div>
             ))}
-
-
           </Card.Body>
         </Card>
       )}

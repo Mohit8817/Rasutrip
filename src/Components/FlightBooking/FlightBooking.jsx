@@ -104,6 +104,7 @@ const FlightBooking = () => {
                                 <AddCityButton onClick={handleAddCityClick} />
                             </Col>
                             <Col lg={2}>
+
                             </Col>
                         </Row>
 

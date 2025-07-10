@@ -8,78 +8,64 @@ const FlightCard = ({ flight }) => {
     const [activeTab, setActiveTab] = useState('flight');
     const [showFarePopup, setShowFarePopup] = useState(false);
 
-    const fares = [
-        {
-            price: 34700,
-            type: 'Premium Economy',
-            subType: 'Premium Classic',
-            baggage: '15 Kilograms',
-            checkin: '7 Kg Cabin Baggage',
-            refundable: true,
-        },
-        {
-            price: 35160,
-            type: 'Premium Economy',
-            subType: 'SME',
-            baggage: '15 Kilograms',
-            checkin: '7 Kg Cabin Baggage',
-            refundable: true,
-        },
-        {
-            price: 41420,
-            type: 'Premium Economy',
-            subType: 'Premium Flex',
-            baggage: '25 Kilograms',
-            checkin: '7 Kg Cabin Baggage',
-            refundable: true,
-        },
-    ];
+    const segment = flight?.Segments[0][0];
+    const formatTime = (dateTimeStr) => {
+        const options = { hour: '2-digit', minute: '2-digit' };
+        return new Date(dateTimeStr).toLocaleTimeString([], options);
+    };  
+
+    const formatDate = (dateTimeStr) => {
+        const options = { day: 'numeric', month: 'short', year: 'numeric' };
+        return new Date(dateTimeStr).toLocaleDateString(undefined, options);
+    };
 
     return (
         <>
-            <Card className="flight-card mb-3">
+            <Card className="flight-card mb-3 w-full">
                 <Card.Body>
                     <Row className="align-items-center text-center">
                         <Col md={2}>
-                            <div className='align-items-center'>
-                                <div className="fw-semibold">{flight.airline}</div>
-                                <div className="text-muted small">{flight.flightNumber}</div>
-                            </div>
+                            <div className="fw-semibold">{segment.Airline.AirlineName}</div>
+                            <div className="text-muted small">{segment.Airline.FlightNumber}</div>
                             <div className="seats-left text-warning mt-2">
-                                Seats left: {flight.seatsLeft}
+                                Seats left: {flight.seatsLeft || 'N/A'}
                             </div>
                         </Col>
 
                         <Col md={2}>
-                            <div className="text-uppercase text-muted mt-1">{flight.departCity}</div>
-                            <div className="fw-bold">{flight.departTime}</div>
-                            <div className="text-muted small">{flight.departDate}</div>
+                            <div className="text-uppercase text-muted mt-1">{segment.Origin.CityName}</div>
+                            <div className="fw-bold">{formatTime(segment.Origin.DepartTime)}</div>
+                            <div className="text-muted small">{formatDate(segment.Origin.DepartTime)}</div>
                         </Col>
 
                         <Col md={2}>
                             <div className="text-muted small">Non Stop(s)</div>
-                            <div className="fw-medium">{flight.duration}</div>
+                            <div className="fw-medium">{Math.floor(segment.Duration / 60)}h {segment.Duration % 60}m</div>
                         </Col>
 
                         <Col md={2}>
-                            <div className="text-uppercase text-muted mt-1">{flight.arriveCity}</div>
-                            <div className="fw-bold">{flight.arriveTime}</div>
-                            <div className="text-muted small">{flight.arriveDate}</div>
+                            <div className="text-uppercase text-muted mt-1">{segment.Destination.CityName}</div>
+                            <div className="fw-bold">{formatTime(segment.Destination.ArrivalTime)}</div>
+                            <div className="text-muted small">{formatDate(segment.Destination.ArrivalTime)}</div>
                         </Col>
 
                         <Col md={2}>
-                            <div className="fw-bold text-dark">₹ {flight.price}</div>
+                            <div className="fw-bold text-dark">₹ {flight.MinPublishedPrice}</div>
                             {flight.tag && (
                                 <span className="badge bg-light text-dark">{flight.tag}</span>
                             )}
                             <div className="text-muted small">
-                                Business, <span className="text-success">Refundable</span>
+                                {flight.classType || 'Economy'}, {flight.refund || 'Refundable'}
                             </div>
                         </Col>
 
                         <Col md={2}>
-                            <Button variant="danger" className="w-100 card-button" onClick={() => setShowFarePopup(true)}>
-                                {flight.action || 'Book'}
+                            <Button
+                                variant="danger"
+                                className="w-100 card-button"
+                                onClick={() => setShowFarePopup(true)}
+                            >
+                                View Details
                             </Button>
                             <div
                                 className="flight-details-toggle mt-2 cursor-pointer"
@@ -87,7 +73,6 @@ const FlightCard = ({ flight }) => {
                             >
                                 {showDetails ? 'Hide Details -' : 'Flight Details +'}
                             </div>
-
                         </Col>
                     </Row>
 
@@ -95,54 +80,38 @@ const FlightCard = ({ flight }) => {
                         <div className="flight-tab-box mt-4 border rounded p-3 bg-light-gray">
                             <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
                                 <Nav variant="tabs" className="mb-3">
-                                    <Nav.Item>
-                                        <Nav.Link eventKey="flight">Flight Details</Nav.Link>
-                                    </Nav.Item>
-                                    <Nav.Item>
-                                        <Nav.Link eventKey="fare">Fare Details</Nav.Link>
-                                    </Nav.Item>
-                                    <Nav.Item>
-                                        <Nav.Link eventKey="rules">Fare Rules</Nav.Link>
-                                    </Nav.Item>
-                                    <Nav.Item>
-                                        <Nav.Link eventKey="baggage">Baggage</Nav.Link>
-                                    </Nav.Item>
+                                    <Nav.Item><Nav.Link eventKey="flight">Flight Details</Nav.Link></Nav.Item>
+                                    <Nav.Item><Nav.Link eventKey="rules">Fare Rules</Nav.Link></Nav.Item>
+                                    <Nav.Item><Nav.Link eventKey="baggage">Baggage</Nav.Link></Nav.Item>
                                 </Nav>
 
                                 <Tab.Content>
                                     <Tab.Pane eventKey="flight">
                                         <div className="p-3">
-                                            <strong>{flight.departCity} → {flight.arriveCity}</strong> &nbsp; <span>{flight.departDate}</span>
+                                            <strong>{segment.Origin.CityName} → {segment.Destination.CityName}</strong>
+                                            &nbsp; <span>{formatDate(segment.Origin.DepartTime)}</span>
                                             <Row className="mt-3">
                                                 <Col md={6}>
-                                                    <div>{flight.flightNumber}</div>
-                                                    <div>Delhi Indira Gandhi Intl, Terminal 3</div>
-                                                    <div>{flight.departTime}</div>
+                                                    <div>{segment.Airline.FlightNumber}</div>
+                                                    <div>{segment.Origin.AirportName}, Terminal {segment.Origin.Terminal}</div>
+                                                    <div>{formatTime(segment.Origin.DepartTime)}</div>
                                                 </Col>
                                                 <Col md={6}>
-                                                    <div>Chhatrapati Shivaji Maharaj Intl, Terminal 2</div>
-                                                    <div>{flight.arriveTime}</div>
+                                                    <div>{segment.Destination.AirportName}, Terminal {segment.Destination.Terminal}</div>
+                                                    <div>{formatTime(segment.Destination.ArrivalTime)}</div>
                                                 </Col>
                                             </Row>
-                                            <p className="mt-3">Duration: {flight.duration}, {flight.classType}, {flight.seatsLeft} seats left</p>
-                                        </div>
-                                    </Tab.Pane>
-
-                                    <Tab.Pane eventKey="fare">
-                                        <div className="p-3">
-                                            <h6>Fare Details</h6>
-                                            <p>Base Fare: ₹9293 x 2</p>
-                                            <p>Taxes: ₹1318 x 2</p>
-                                            <p>Service Charge: ₹1868</p>
-                                            <p className="fw-bold">Total: ₹{flight.price}</p>
+                                            <p className="mt-3">
+                                                Duration: {Math.floor(segment.Duration / 60)}h {segment.Duration % 60}m, {flight.classType}, {flight.seatsLeft || 'N/A'} seats left
+                                            </p>
                                         </div>
                                     </Tab.Pane>
 
                                     <Tab.Pane eventKey="rules">
                                         <div className="p-3">
                                             <h6>Fare Rules</h6>
-                                            <p>Cancellation Fee: ₹3920 + ₹50</p>
-                                            <p>Date Change: ₹2800 + Fare Difference</p>
+                                            <p>Cancellation Fee: ₹{Math.round(flight.price * 0.4)}</p>
+                                            <p>Date Change: ₹{Math.round(flight.price * 0.3)} + Fare Difference</p>
                                             <p>No Show: Only taxes refunded</p>
                                         </div>
                                     </Tab.Pane>
@@ -165,7 +134,7 @@ const FlightCard = ({ flight }) => {
             <FarePopup
                 show={showFarePopup}
                 onClose={() => setShowFarePopup(false)}
-                fares={fares}
+                fares={flight || []}
             />
         </>
     );
