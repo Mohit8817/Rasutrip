@@ -3,9 +3,14 @@ import moment from 'moment';
 import FlightCard from './FlightCards';
 import { fetchFlightData } from '../APIS/FlightApi/FlightApi'
 import { LocationContext } from '../../Components/Context/LocationContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { setFlights } from "../../redux/Slices/flightSlices";
+
 
 const FlightList = () => {
+  const dispatch = useDispatch();
   const { locationData } = useContext(LocationContext);
+  const flightsData = useSelector((state) => state?.flight?.flights || []);
 
   const {
     fromCode = 'DEL',
@@ -15,16 +20,31 @@ const FlightList = () => {
     cabinClass = '',
   } = locationData || {};
 
-  const [flights, setFlights] = useState([]);
+  const [allFlights, setAllFlights] = useState(flightsData || []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Format departure date for display
+  // Restore flights from localStorage on initial mount
+  useEffect(() => {
+    const savedFlights = localStorage.getItem('SearchedFlights');
+    if (savedFlights && flightsData.length === 0) {
+      const parsedFlights = JSON.parse(savedFlights);
+      dispatch(setFlights(parsedFlights));
+      setAllFlights(parsedFlights);
+      setLoading(false); // skip fetching
+    }
+  }, [dispatch, allFlights]);
+
+  // Format departure date
   let displayDate = 'Not selected';
   try {
-    const jsDate = new Date(
-      typeof departDate === 'string' ? departDate : departDate.PreferredTime || departDate
-    );
+    const rawDate =
+      typeof departDate === 'string'
+        ? departDate
+        : departDate?.PreferredTime ?? departDate ?? new Date();
+
+    const jsDate = new Date(rawDate);
+
     if (!isNaN(jsDate.getTime())) {
       displayDate =
         jsDate.toLocaleDateString('en-GB', {
@@ -41,6 +61,7 @@ const FlightList = () => {
     console.warn('Invalid departure date:', departDate);
   }
 
+  // Fetch flights from API
   useEffect(() => {
     const cabinMap = {
       "Economy": 1,
@@ -49,12 +70,12 @@ const FlightList = () => {
       "First": 5
     };
 
-    const normalizedCabin = typeof cabinClass === 'number'
-      ? cabinClass
-      : cabinMap[cabinClass] || 1;
+    const normalizedCabin =
+      typeof cabinClass === 'number' ? cabinClass : cabinMap[cabinClass] || 1;
 
     const requestPayload = {
-      UserIp: "27.60.0.238",
+      // UserIp: "27.60.0.238",
+      UserIp:"122.161.64.143",
       Adult: passengers.adults || 1,
       Child: passengers.children || 0,
       Infant: passengers.infants || 0,
@@ -67,7 +88,7 @@ const FlightList = () => {
           Origin: fromCode,
           Destination: toCode,
           PreferredTime: `${moment(
-            typeof departDate === 'object' && departDate.PreferredTime
+            typeof departDate === 'object' && departDate?.PreferredTime
               ? departDate.PreferredTime
               : departDate
           ).format("YYYY-MM-DD")}T00:00:00`,
@@ -80,34 +101,12 @@ const FlightList = () => {
       try {
         const response = await fetchFlightData(requestPayload);
         const result = response?.Result?.[0] || [];
-
-        const transformedFlights = result.map((flight) => {
-          const segment = flight.Segments?.[0]?.[0];
-          const fare = flight.FareList?.[0];
-
-          return {
-            airline: segment?.Airline?.AirlineName || "Unknown Airline",
-            flightNumber: `${segment?.Airline?.AirlineCode || ''}-${segment?.Airline?.FlightNumber || ''}`,
-            departTime: moment(segment?.Origin?.DepartTime).format('HH:mm'),
-            departDate: moment(segment?.Origin?.DepartTime).format('DD MMM'),
-            departCity: segment?.Origin?.CityCode,
-            arriveTime: moment(segment?.Destination?.ArrivalTime).format('HH:mm'),
-            arriveDate: moment(segment?.Destination?.ArrivalTime).format('DD MMM'),
-            arriveCity: segment?.Destination?.CityCode,
-            duration: segment?.Duration
-              ? `${Math.floor(segment.Duration / 60)} h ${segment.Duration % 60} m`
-              : "N/A",
-            price: fare?.OfferedPrice || 0,
-            tag: fare?.FareType || '',
-            classType: fare?.CabinClass || '',
-            refund: fare?.IsRefundable ? 'Refundable' : 'Non-refundable',
-            action: 'View Prices',
-            seatsLeft: fare?.SeatBaggage?.[0]?.[0]?.NoOfSeatAvailable ?? 5,
-            stop: 'Non Stop(s)',
-          };
-        });
-
-        setFlights(transformedFlights);
+        console.log("searchToken",response?.SearchTokenId);
+        console.log("UserIp",response?.UserIp)
+        localStorage.setItem("searchToken",response?.SearchTokenId)
+        localStorage.setItem("UserIp",response?.UserIp)
+        setAllFlights(result || []);
+        dispatch(setFlights(result || []));
       } catch (err) {
         console.error("Error fetching flights:", err);
         setError("Failed to load flight data.");
@@ -117,20 +116,30 @@ const FlightList = () => {
     };
 
     getFlights();
-  }, [fromCode, toCode, departDate, passengers, cabinClass]);
+  }, [fromCode, toCode, departDate, passengers, cabinClass, dispatch]);
+
+  // Save flights to localStorage when updated
+  useEffect(() => {
+    if (flightsData?.length) {
+      localStorage.setItem('SearchedFlights', JSON.stringify(flightsData));
+    }
+  }, [flightsData]);
 
   if (loading) return <div className="text-center my-4">Loading flights...</div>;
   if (error) return <div className="text-danger text-center my-4">{error}</div>;
 
   return (
-    <div className="my-4">
-      <h5 className="mb-2">Showing {flights.length} Flights</h5>
-      <p className="text-muted">Departure Date: <strong>{displayDate}</strong></p>
+ <div className="my-4 overflow-auto" style={{ maxHeight: '70vh' }}>
+  <h5 className="mb-2">Showing {allFlights?.length} Flights</h5>
+  <p className="text-muted">
+    Departure Date: <strong>{displayDate}</strong>
+  </p>
 
-      {flights.map((flight, idx) => (
-        <FlightCard key={idx} flight={flight} />
-      ))}
-    </div>
+  {allFlights?.map((flight, idx) => (
+    <FlightCard key={idx} flight={flight} />
+  ))}
+</div>
+
   );
 };
 

@@ -1,5 +1,5 @@
 // FlightResultsPage.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import { useLocation } from 'react-router-dom';
 import FlightSearchBar from '../../Components/FlightOneWay/FlightSearchBar';
@@ -7,15 +7,21 @@ import FlightSidebar from '../../Components/FlightOneWay/FlightSidebar';
 import FlightList from '../../Components/FlightOneWay/FlightList';
 import RoundsearchBar from '../../Components/FlightRoundTrip.jsx/RoundsearchBar';
 import RoundTripCardList from '../../Components/FlightRoundTrip.jsx/RoundTripCardList';
+import RoundTripBookingBar from '../../Components/FlightRoundTrip.jsx/RoundTripBookingBar';
+import { useDispatch } from 'react-redux';
+import { clearSelectedFlights } from '../../redux/Slices/SelectedFlight';
 
 const FlightResultsPage = () => {
-    const { state } = useLocation();
-    const tripType = state?.tripType || 'oneway';
+    const dispatch = useDispatch();
+    const { state } = useLocation()
+    const tripType = state?.tripType || 'oneway'
+    useEffect(() => {
 
+        dispatch(clearSelectedFlights())
+    }, [])
 
     return (
-        <div>
-            {/* One-way Flights */}
+        <div className='relative'>
             {tripType === 'oneway' && (
                 <Container className="mt-5 pt-5">
                     <Row>
@@ -36,7 +42,7 @@ const FlightResultsPage = () => {
 
             {/* Round Trip Flights */}
             {tripType === 'roundtrip' && (
-                <Container className="mt-5 pt-5">
+                <Container className="mt-5 pt-5 relative">
                     <Row>
                         <Col>
                             <RoundsearchBar />
@@ -50,8 +56,11 @@ const FlightResultsPage = () => {
                             <RoundTripCardList />
                         </Col>
                     </Row>
+
+
                 </Container>
             )}
+            <RoundTripBookingBar />
         </div>
     );
 };

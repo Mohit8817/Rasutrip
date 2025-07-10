@@ -16,7 +16,7 @@ const BookingSteps = () => {
 
     return (
         <div className="booking-steps-container container d-flex justify-content-between">
-            {steps.map((step, index) => {
+            {steps?.map((step, index) => {
                 const isActive = location.pathname.includes(step.path); // match by path
                 return (
                     <div key={index} className={`step-item text-center px-2 ${isActive ? 'active' : ''}`}>

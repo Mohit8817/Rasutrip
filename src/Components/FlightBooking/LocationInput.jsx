@@ -15,6 +15,7 @@ const LocationInput = () => {
   const [loading, setLoading] = useState(false);
   const [fromAirportData, setFromAirportData] = useState(null);
   const [toAirportData, setToAirportData] = useState(null);
+  const [query, setQuery] = useState('');
 
   const fromRef = useRef(null);
   const toRef = useRef(null);
@@ -42,6 +43,19 @@ const LocationInput = () => {
       setLoading(false);
     }
   };
+
+  // Debounced fetch on query change
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (query.trim().length >= 2) {
+        fetchAirports(query);
+      } else {
+        setCityList([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [query]);
 
   useEffect(() => {
     const fetchDefaultAirports = async () => {
@@ -73,7 +87,7 @@ const LocationInput = () => {
     };
 
     fetchDefaultAirports();
-  }, [locationData.fromCity, locationData.toCity]);
+  }, [locationData.fromCity, locationData.toCity, setLocationData]);
 
   const handleSwitch = () => {
     setLocationData((prev) => ({
@@ -96,15 +110,15 @@ const LocationInput = () => {
       ...prev,
       ...(type === 'from'
         ? {
-          fromCity: formattedValue,
-          fromAirport: cityObj.name,
-          fromCode: cityObj.code,
-        }
+            fromCity: formattedValue,
+            fromAirport: cityObj.name,
+            fromCode: cityObj.code,
+          }
         : {
-          toCity: formattedValue,
-          toAirport: cityObj.name,
-          toCode: cityObj.code,
-        }),
+            toCity: formattedValue,
+            toAirport: cityObj.name,
+            toCode: cityObj.code,
+          }),
     }));
 
     if (type === 'from') {
@@ -114,24 +128,28 @@ const LocationInput = () => {
       setToAirportData(cityObj);
       setShowToDropdown(false);
     }
+
+    setCityList([]);
   };
 
   const handleFromInputClick = () => {
     setShowFromDropdown(true);
     setShowToDropdown(false);
-    if (locationData.fromCity) fetchAirports(locationData.fromCity);
+    setQuery(locationData.fromCity);
   };
 
   const handleToInputClick = () => {
     setShowToDropdown(true);
     setShowFromDropdown(false);
-    if (locationData.toCity) fetchAirports(locationData.toCity);
+    setQuery(locationData.toCity);
   };
 
   const handleClickOutside = (event) => {
     if (
-      fromRef.current && !fromRef.current.contains(event.target) &&
-      toRef.current && !toRef.current.contains(event.target)
+      fromRef.current &&
+      !fromRef.current.contains(event.target) &&
+      toRef.current &&
+      !toRef.current.contains(event.target)
     ) {
       setShowFromDropdown(false);
       setShowToDropdown(false);
@@ -152,11 +170,7 @@ const LocationInput = () => {
         : { toCity: value, toAirport: '', toCode: '' }),
     }));
 
-    if (value.length >= 2) {
-      fetchAirports(value);
-    } else {
-      setCityList([]);
-    }
+    setQuery(value); // Set debounced query
   };
 
   return (

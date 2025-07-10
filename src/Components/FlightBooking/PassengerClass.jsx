@@ -3,11 +3,13 @@ import { Card, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../../Style/FlightBooking.css';
 import { LocationContext } from '../Context/LocationContext';
+import { useDispatch } from 'react-redux';
+
 
 const PassengerClass = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const { locationData, setLocationData } = useContext(LocationContext);
-
+  const dispatch = useDispatch();
   const { passengers = { adults: 1, children: 0, infants: 0 }, cabinClass } = locationData;
 
   const ref = useRef();

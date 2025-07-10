@@ -7,6 +7,7 @@ import PromoCodeBox from '../FlightDetails/PromoCodeBox';
 import '../../Style/Pagescss/FlightResultsPage.css';
 import ReviewInfo from './Reviewinfo';
 
+
 const FlightReview = () => {
     return (
         <div>
