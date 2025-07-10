@@ -60,6 +60,7 @@ const FlightResultsPage = () => {
 
                 </Container>
             )}
+            
             <RoundTripBookingBar />
         </div>
     );

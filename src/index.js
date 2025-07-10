@@ -7,7 +7,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import { LocationProvider } from './Components/Context/LocationContext';
-import ErrorBoundary from './Components/ErrorBoundray'; // Adjust path if needed
+// import ErrorBoundary from './Components/ErrorBoundray'; // Adjust path if needed
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
