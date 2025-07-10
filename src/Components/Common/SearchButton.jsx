@@ -20,7 +20,10 @@ const SearchButton = ({ type }) => {
       returnDate, // ✅ include returnDate
       passengers,
       cabinClass,
-      tripType
+      tripType,
+      // bus data 
+      fromCityId,
+      toCityId,
     } = locationData;
 
     switch (type) {
@@ -43,7 +46,15 @@ const SearchButton = ({ type }) => {
         break;
 
       case 'bus':
-        navigate('/bus-results');
+        navigate('/bus-results', {
+          state: {
+            fromCity,
+            toCity,
+            fromCityId,
+            toCityId,
+            departDate: departDate || new Date().toISOString()
+          }
+        });
         break;
 
       case 'hotel':

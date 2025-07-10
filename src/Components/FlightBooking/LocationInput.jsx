@@ -3,7 +3,7 @@ import { Row, Col, Card } from 'react-bootstrap';
 import { ArrowLeftRight } from 'react-bootstrap-icons';
 import { FaPlane } from 'react-icons/fa';
 import { LocationContext } from '../Context/LocationContext';
-import { fetchLocationData } from '../FlightApi/FlightApi';
+import { fetchLocationData } from '../APIS/FlightApi/FlightApi';
 import '../../Style/FlightBooking.css';
 
 const LocationInput = () => {
@@ -19,6 +19,17 @@ const LocationInput = () => {
 
   const fromRef = useRef(null);
   const toRef = useRef(null);
+
+  // ✅ Force default for flight page
+  useEffect(() => {
+    setLocationData((prev) => ({
+      ...prev,
+      bookingType: 'flight',
+      fromCity: 'Delhi',
+      toCity: 'London',
+
+    }));
+  }, []);
 
   const fetchAirports = async (query) => {
     try {
@@ -95,7 +106,6 @@ const LocationInput = () => {
 
   const handleCitySelect = (cityObj, type) => {
     const formattedValue = `${cityObj.city_name}`;
-
     setLocationData((prev) => ({
       ...prev,
       ...(type === 'from'
@@ -226,6 +236,7 @@ const LocationInput = () => {
           <div className="location-airport">
             [{locationData.toCode || toAirportData?.code || '---'}] {locationData.toAirport}
           </div>
+
 
           {showToDropdown && (
             <div className="dropdown-list">
