@@ -10,12 +10,20 @@ const Addoninfo = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { SSR } = location?.state || {};
+
   const passengersData = useSelector((state) => state.passengersData || []);
-  console.log("passenger",passengersData)
+  console.log("passenger", passengersData, "SSR", SSR)
   const mealOptions = SSR?.Meal?.[0] || [];
   const baggageOptions = SSR?.Baggage?.[0] || [];
-  const seatOptions = SSR?.Seats?.[0]?.[0]?.ul?.flat() || [];
+  const rawSeatData = SSR?.Seats?.[0]?.[0]?.ul;
+  const seatOptions = Array.isArray(rawSeatData)
+    ? rawSeatData.flat?.() || rawSeatData
+    : rawSeatData && typeof rawSeatData === 'object'
+      ? Object.values(rawSeatData).flat()
+      : [];
+
   const { Origin, Destination } = mealOptions;
+  console.log("rawSeatData", rawSeatData, "seatOptions", seatOptions)
 
   // Initialize state with passenger data or empty selections
   const [passengerSelections, setPassengerSelections] = useState([]);
@@ -35,15 +43,15 @@ const Addoninfo = () => {
   }, [passengersData]);
 
   const handleMealChange = (index, e) => {
-    console.log("index",index,"e",e.target.value)
+    console.log("index", index, "e", e.target.value)
     const selected = mealOptions.find((meal) => meal.Key === e.target.value);
-    console.log("slected",selected)
+    console.log("slected", selected)
     const updatedSelections = [...passengerSelections];
     updatedSelections[index].meal = selected;
-    console.log("updatedSelections",updatedSelections)
-    
+    console.log("updatedSelections", updatedSelections)
+
     setPassengerSelections(updatedSelections);
-    
+
     dispatch(updatePassengerAddons({
       passengerId: { index, type: passengersData[index].type },
       meal: selected
@@ -55,7 +63,7 @@ const Addoninfo = () => {
     const updatedSelections = [...passengerSelections];
     updatedSelections[index].baggage = selected;
     setPassengerSelections(updatedSelections);
-    
+
     dispatch(updatePassengerAddons({
       passengerId: { index, type: passengersData[index].type },
       baggage: selected
@@ -63,11 +71,11 @@ const Addoninfo = () => {
   };
 
   const handleSeatChange = (index, e) => {
-    const selected = seatOptions.find((seat) => seat.Key === e.target.value);
+    const selected = seatOptions?.find((seat) => seat.Key === e.target.value);
     const updatedSelections = [...passengerSelections];
     updatedSelections[index].seat = selected;
     setPassengerSelections(updatedSelections);
-    
+
     dispatch(updatePassengerAddons({
       passengerId: { index, type: passengersData[index].type },
       seat: selected
@@ -87,7 +95,7 @@ const Addoninfo = () => {
   const allSelectionsComplete = passengerSelections.every((selection, index) => {
     // Skip check for infants
     if (passengersData[index]?.type === 'INF') return true;
-    
+
     return selection.meal && selection.baggage && selection.seat;
   });
 
@@ -97,7 +105,7 @@ const Addoninfo = () => {
 
   return (
     <div className="container">
-      {passengersData.map((passenger, index) => {
+      {passengersData?.map((passenger, index) => {
         // Skip rendering for INFANT passengers
         if (passenger.type === 'INF') return null;
 
@@ -115,14 +123,14 @@ const Addoninfo = () => {
                 {passenger.type === 'ADT' ? 'ADULT' : 'CHILD'} {index + 1}
               </p>
               <hr />
-              
+
               <Row>
                 {/* Meal Section */}
                 <Col md={4}>
                   <h5 className="fw-bold">Meal</h5>
                   <p className="mb-1">{Origin} → {Destination}</p>
-                  <Form.Select 
-                    className="mb-2" 
+                  <Form.Select
+                    className="mb-2"
                     onChange={(e) => handleMealChange(index, e)}
                     value={passengerSelections[index]?.meal?.Key || ''}
                     aria-label="Select meal option"
@@ -146,8 +154,8 @@ const Addoninfo = () => {
                 <Col md={4}>
                   <h5 className="fw-bold">Baggage</h5>
                   <p className="mb-1">{Origin} → {Destination}</p>
-                  <Form.Select 
-                    className="mb-2" 
+                  <Form.Select
+                    className="mb-2"
                     onChange={(e) => handleBaggageChange(index, e)}
                     value={passengerSelections[index]?.baggage?.Key || ''}
                     aria-label="Select baggage option"
@@ -171,14 +179,14 @@ const Addoninfo = () => {
                 <Col md={4}>
                   <h5 className="fw-bold">Seat</h5>
                   <p className="mb-1">{Origin} → {Destination}</p>
-                  <Form.Select 
-                    className="mb-2" 
+                  <Form.Select
+                    className="mb-2"
                     onChange={(e) => handleSeatChange(index, e)}
                     value={passengerSelections[index]?.seat?.Key || ''}
                     aria-label="Select seat option"
                   >
                     <option value="">Select a seat</option>
-                    {seatOptions.map((seat) => (
+                    {seatOptions?.map((seat) => (
                       <option key={`seat-${seat.Key}`} value={seat.Key}>
                         {seat.Code} - Rs. {seat.Price}
                       </option>

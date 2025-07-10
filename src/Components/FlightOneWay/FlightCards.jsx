@@ -7,13 +7,12 @@ const FlightCard = ({ flight }) => {
     const [showDetails, setShowDetails] = useState(false);
     const [activeTab, setActiveTab] = useState('flight');
     const [showFarePopup, setShowFarePopup] = useState(false);
-    console.log("FlightCard",flight)
 
     const segment = flight?.Segments[0][0];
     const formatTime = (dateTimeStr) => {
         const options = { hour: '2-digit', minute: '2-digit' };
         return new Date(dateTimeStr).toLocaleTimeString([], options);
-    };
+    };  
 
     const formatDate = (dateTimeStr) => {
         const options = { day: 'numeric', month: 'short', year: 'numeric' };

@@ -1,6 +1,6 @@
 import React from 'react'
 
-const FlightMultipleCar = () => {
+const FlightMultipleCard = () => {
   return (
     <div>
       
@@ -8,4 +8,4 @@ const FlightMultipleCar = () => {
   )
 }
 
-export default FlightMultipleCar
+export default FlightMultipleCard
