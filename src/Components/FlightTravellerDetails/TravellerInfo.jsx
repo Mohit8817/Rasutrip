@@ -4,8 +4,9 @@ import { FaEnvelope } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPassengers, updatePassenger } from '../../redux/Slices/PassengersSlice';
-import { fetchSSR } from '../FlightApi/FlightApi';
+
 import { LocationContext } from '../Context/LocationContext';
+import { fetchSSR } from '../APIS/FlightApi/FlightApi';
 
 const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
     const { locationData } = useContext(LocationContext);

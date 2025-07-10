@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import moment from 'moment';
 import RoundTripCard from './RoundTripCard';
-import { fetchFlightData } from '../../Components/FlightApi/FlightApi';
+
 import { Row, Col } from 'react-bootstrap';
 import InterRoundtripCard from './InterRoundtripCard';
 import RoundTripBookingBar from './RoundTripBookingBar';
 import { useSelector, useDispatch } from 'react-redux';
 import { setOnwardFlight, setReturnFlight, setSelectedOnwardFare, setSelectedReturnFare } from './../../redux/Slices/SelectedFlight';
+import { fetchFlightData } from '../APIS/FlightApi/FlightApi';
 
 
 const RoundTripCardList = () => {

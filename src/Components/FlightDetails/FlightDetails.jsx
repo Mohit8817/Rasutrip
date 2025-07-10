@@ -6,7 +6,8 @@ import BookingSteps from './BookingSteps';
 import FlightInfo from './FlightInfo';
 import FareSummary from './FareSummary';
 import PromoCodeBox from './PromoCodeBox';
-import { fetchFareRules } from '../FlightApi/FlightApi';
+import { fetchFareRules } from '../APIS/FlightApi/FlightApi';
+
 
 const useFareRules = (fareId) => {
     const [fareRules, setFareRules] = useState([]);

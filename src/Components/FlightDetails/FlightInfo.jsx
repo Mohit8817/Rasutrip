@@ -5,7 +5,8 @@ import '../../Style/Pagescss/FlightResultsPage.css';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import { Modal } from 'react-bootstrap';
-import { fetchFareConfirmation } from '../FlightApi/FlightApi';
+import { fetchFareConfirmation } from '../APIS/FlightApi/FlightApi';
+
 
 
 

@@ -13,9 +13,7 @@ import { LocationContext } from '../Context/LocationContext';
 const FlightTravellerDetails = () => {
     const location = useLocation();
     const { locationData, setLocationData } = useContext(LocationContext);
-    console.log("location", locationData)
     const { SelectedFare, fareConfirm } = location?.state || {}
-    console.log("SelectedFare", SelectedFare, "fareConfirm", location?.state)
     return (
         <div>
             <Container style={{ marginTop: '8rem' }}>
