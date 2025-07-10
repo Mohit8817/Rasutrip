@@ -1,172 +1,146 @@
-import React from 'react';
+import React, { useEffect, useState, useContext } from 'react';
+import moment from 'moment';
 import FlightCard from './FlightCards';
+import { fetchFlightData } from '../APIS/FlightApi/FlightApi'
+import { LocationContext } from '../../Components/Context/LocationContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { setFlights } from "../../redux/Slices/flightSlices";
 
-const flights = [
-    {
-        logo: '',
-        airline: 'Vistara',
-        flightNumber: 'UK-802',
-        departTime: '14:25',
-        departDate: '28 Jun',
-        departCity: 'DEL',
-        duration: '2 h 15 m',
-        arriveTime: '16:40',
-        arriveDate: '28 Jun',
-        arriveCity: 'BOM',
-        price: 18500,
-        tag: 'Flexi Fare',
-        classType: 'Economy',
-        refund: 'Non-refundable',
-        action: 'View Prices',
-        seatsLeft: 3,
-        stop: 'Non Stop(s)',
-    },
-    {
-        logo: '',
-        airline: 'Ai Express',
-        flightNumber: 'IX-1163',
-        seatsLeft: 5,
-        departTime: '21:10',
-        departDate: '28 Jun',
-        departCity: 'DEL',
-        duration: '2 h 30 m',
-        arriveTime: '23:40',
-        arriveDate: '28 Jun',
-        arriveCity: 'BOM',
-        price: 19788,
-        tag: 'Xpress_Biz',
-        classType: 'Business',
-        refund: 'Refundable',
-        action: 'View Prices',
-        stop: 'Non Stop(s)',
-    },
-    {
-        logo: '',
-        airline: 'Indigo',
-        flightNumber: '6E-6218',
-        departTime: '06:00',
-        departDate: '28 Jun',
-        departCity: 'DEL',
-        duration: '2 h 10 m',
-        arriveTime: '08:10',
-        arriveDate: '28 Jun',
-        arriveCity: 'BOM',
-        price: 44050,
-        tag: 'STRETCH',
-        classType: 'Business',
-        refund: 'Refundable',
-        action: 'View Prices',
-        seatsLeft: 6,
-        stop: 'Non Stop(s)',
-    },
-    {
-        logo: '',
-        airline: 'Vistara',
-        flightNumber: 'UK-802',
-        departTime: '14:25',
-        departDate: '28 Jun',
-        departCity: 'DEL',
-        duration: '2 h 15 m',
-        arriveTime: '16:40',
-        arriveDate: '28 Jun',
-        arriveCity: 'BOM',
-        price: 18500,
-        tag: 'Flexi Fare',
-        classType: 'Economy',
-        refund: 'Non-refundable',
-        action: 'View Prices',
-        seatsLeft: 3,
-        stop: 'Non Stop(s)',
-    },
-    {
-        logo: '',
-        airline: 'AirAsia',
-        flightNumber: 'I5-1234',
-        departTime: '11:00',
-        departDate: '28 Jun',
-        departCity: 'DEL',
-        duration: '2 h 45 m',
-        arriveTime: '13:45',
-        arriveDate: '28 Jun',
-        arriveCity: 'BOM',
-        price: 15499,
-        tag: 'Saver',
-        classType: 'Economy',
-        refund: 'Non-refundable',
-        action: 'View Prices',
-        seatsLeft: 8,
-        stop: 'Non Stop(s)',
-    },
-    {
-        logo: '',
-        airline: 'SpiceJet',
-        flightNumber: 'SG-456',
-        departTime: '18:10',
-        departDate: '28 Jun',
-        departCity: 'DEL',
-        duration: '2 h 25 m',
-        arriveTime: '20:35',
-        arriveDate: '28 Jun',
-        arriveCity: 'BOM',
-        price: 17299,
-        tag: 'Hot Meals',
-        classType: 'Premium Economy',
-        refund: 'Refundable',
-        action: 'View Prices',
-        seatsLeft: 4,
-        stop: 'Non Stop(s)',
-    },
-
-    {
-        logo: '',
-        airline: 'Vistara',
-        flightNumber: 'UK-802',
-        departTime: '14:25',
-        departDate: '28 Jun',
-        departCity: 'DEL',
-        duration: '2 h 15 m',
-        arriveTime: '16:40',
-        arriveDate: '28 Jun',
-        arriveCity: 'BOM',
-        price: 18500,
-        tag: 'Flexi Fare',
-        classType: 'Economy',
-        refund: 'Non-refundable',
-        action: 'View Prices',
-        seatsLeft: 3,
-        stop: 'Non Stop(s)',
-    },
-
-    {
-        logo: '',
-        airline: 'Ai Express',
-        flightNumber: 'IX-1163',
-        seatsLeft: 5,
-        departTime: '21:10',
-        departDate: '28 Jun',
-        departCity: 'DEL',
-        duration: '2 h 30 m',
-        arriveTime: '23:40',
-        arriveDate: '28 Jun',
-        arriveCity: 'BOM',
-        price: 19788,
-        tag: 'Xpress_Biz',
-        classType: 'Business',
-        refund: 'Refundable',
-        action: 'BOOK',
-        stop: 'Non Stop(s)',
-    },
-];
 
 const FlightList = () => {
-    return (
-        <div className="my-4">
-            <h5 className="mb-3">Showing Result {flights.length} of 82 Flights</h5>
-            {flights.map((flight, idx) => (
-                <FlightCard key={idx} flight={flight} />
-            ))}
-        </div>
-    );
+  const dispatch = useDispatch();
+  const { locationData } = useContext(LocationContext);
+  const flightsData = useSelector((state) => state?.flight?.flights || []);
+
+  const {
+    fromCode = 'DEL',
+    toCode = 'BOM',
+    departDate = new Date(),
+    passengers = { adults: 1, children: 0, infants: 0 },
+    cabinClass = '',
+  } = locationData || {};
+
+  const [allFlights, setAllFlights] = useState(flightsData || []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Restore flights from localStorage on initial mount
+  useEffect(() => {
+    const savedFlights = localStorage.getItem('SearchedFlights');
+    if (savedFlights && flightsData.length === 0) {
+      const parsedFlights = JSON.parse(savedFlights);
+      dispatch(setFlights(parsedFlights));
+      setAllFlights(parsedFlights);
+      setLoading(false); // skip fetching
+    }
+  }, [dispatch, allFlights]);
+
+  // Format departure date
+  let displayDate = 'Not selected';
+  try {
+    const rawDate =
+      typeof departDate === 'string'
+        ? departDate
+        : departDate?.PreferredTime ?? departDate ?? new Date();
+
+    const jsDate = new Date(rawDate);
+
+    if (!isNaN(jsDate.getTime())) {
+      displayDate =
+        jsDate.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }) +
+        ', ' +
+        jsDate.toLocaleDateString('en-GB', {
+          weekday: 'long',
+        });
+    }
+  } catch (e) {
+    console.warn('Invalid departure date:', departDate);
+  }
+
+  // Fetch flights from API
+  useEffect(() => {
+    const cabinMap = {
+      "Economy": 1,
+      "Premium Economy": 2,
+      "Business": 4,
+      "First": 5
+    };
+
+    const normalizedCabin =
+      typeof cabinClass === 'number' ? cabinClass : cabinMap[cabinClass] || 1;
+
+    const requestPayload = {
+      // UserIp: "27.60.0.238",
+      UserIp:"122.161.64.143",
+      Adult: passengers.adults || 1,
+      Child: passengers.children || 0,
+      Infant: passengers.infants || 0,
+      DirectFlight: false,
+      JourneyType: 1,
+      PreferredCarriers: null,
+      CabinClass: normalizedCabin,
+      AirSegments: [
+        {
+          Origin: fromCode,
+          Destination: toCode,
+          PreferredTime: `${moment(
+            typeof departDate === 'object' && departDate?.PreferredTime
+              ? departDate.PreferredTime
+              : departDate
+          ).format("YYYY-MM-DD")}T00:00:00`,
+        },
+      ],
+      Sources: null,
+    };
+
+    const getFlights = async () => {
+      try {
+        const response = await fetchFlightData(requestPayload);
+        const result = response?.Result?.[0] || [];
+        console.log("searchToken",response?.SearchTokenId);
+        console.log("UserIp",response?.UserIp)
+        localStorage.setItem("searchToken",response?.SearchTokenId)
+        localStorage.setItem("UserIp",response?.UserIp)
+        setAllFlights(result || []);
+        dispatch(setFlights(result || []));
+      } catch (err) {
+        console.error("Error fetching flights:", err);
+        setError("Failed to load flight data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getFlights();
+  }, [fromCode, toCode, departDate, passengers, cabinClass, dispatch]);
+
+  // Save flights to localStorage when updated
+  useEffect(() => {
+    if (flightsData?.length) {
+      localStorage.setItem('SearchedFlights', JSON.stringify(flightsData));
+    }
+  }, [flightsData]);
+
+  if (loading) return <div className="text-center my-4">Loading flights...</div>;
+  if (error) return <div className="text-danger text-center my-4">{error}</div>;
+
+  return (
+ <div className="my-4 overflow-auto" style={{ maxHeight: '70vh' }}>
+  <h5 className="mb-2">Showing {allFlights?.length} Flights</h5>
+  <p className="text-muted">
+    Departure Date: <strong>{displayDate}</strong>
+  </p>
+
+  {allFlights?.map((flight, idx) => (
+    <FlightCard key={idx} flight={flight} />
+  ))}
+</div>
+
+  );
 };
 
 export default FlightList;
