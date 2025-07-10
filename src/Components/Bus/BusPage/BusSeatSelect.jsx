@@ -12,35 +12,39 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
   const [seatPositions, setSeatPositions] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // ────────────────────────────────────────────────────────────────────────────────
-  // Helpers
-  // ────────────────────────────────────────────────────────────────────────────────
-  const parsePositionsFromHTML = useCallback((html) => {
+  // Parse seat data from raw HTML
+  const parseSeatsFromHTML = useCallback((html) => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
-    const divs = doc.querySelectorAll(".nseat, .bseat");
+    const divs = doc.querySelectorAll(".seatcontainer div");
 
-    const positions = {};
+    const seatMap = {};
     divs.forEach((div) => {
+      const id = div.getAttribute("id");
+      const className = div.className;
       const onclickAttr = div.getAttribute("onclick");
-      const seatNumMatch = onclickAttr?.match(/'([A-Za-z0-9]+)'/);
-      const seatNum = seatNumMatch?.[1];
-      const { top, left } = div.style;
-      if (seatNum) positions[seatNum] = { top, left };
+      const seatMatch = onclickAttr?.match(/'([A-Za-z0-9]+)'/);
+      const fareMatch = onclickAttr?.match(/, *'([\d.]+)'/);
+
+      const seatName = seatMatch?.[1] || id;
+      const fare = fareMatch ? parseFloat(fareMatch[1]) : 0;
+
+      seatMap[seatName] = {
+        top: div.style.top || "0px",
+        left: div.style.left || "0px",
+        className,
+        fare,
+      };
     });
 
-    return positions;
+    return seatMap;
   }, []);
 
-  // ────────────────────────────────────────────────────────────────────────────────
-  // Seat layout loader
-  // ────────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const loadSeatLayout = async () => {
       if (!show || !bus?.SearchTokenId || !bus?.resultIndex) return;
 
       setLoading(true);
-
       try {
         const data = await fetchSeatLayout({
           SearchTokenId: bus.SearchTokenId,
@@ -52,7 +56,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
 
         const seats = data?.Result?.SeatLayout?.SeatDetails?.flat() ?? [];
         setSeatLayout(seats);
-        setSeatPositions(parsePositionsFromHTML(data?.Result?.HTMLLayout ?? ""));
+        setSeatPositions(parseSeatsFromHTML(data?.Result?.HTMLLayout ?? ""));
       } catch (err) {
         console.error("Error loading seat layout:", err);
       } finally {
@@ -62,18 +66,15 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
 
     loadSeatLayout();
   }, [
-    bus?.DestinationId,
-    bus?.OriginId,
-    bus?.SearchTokenId,
-    bus?.UserIp,
-    bus?.resultIndex,
-    parsePositionsFromHTML,
     show,
+    bus?.SearchTokenId,
+    bus?.resultIndex,
+    bus?.UserIp,
+    bus?.OriginId,
+    bus?.DestinationId,
+    parseSeatsFromHTML,
   ]);
 
-  // ────────────────────────────────────────────────────────────────────────────────
-  // Seat toggle
-  // ────────────────────────────────────────────────────────────────────────────────
   const toggleSeat = (seat) => {
     if (!seat.SeatStatus) return;
     setSelectedSeats((prev) =>
@@ -88,14 +89,11 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
     0
   );
 
-  // ────────────────────────────────────────────────────────────────────────────────
-  // JSX
-  // ────────────────────────────────────────────────────────────────────────────────
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
       <Modal.Body>
         <Row>
-          {/* Layout column */}
+          {/* Seat layout */}
           <Col md={6}>
             <h5 className="mb-4 fw-bold">Select Seats</h5>
             <div className="seat-layout-box border p-3" style={{ minHeight: 220 }}>
@@ -106,33 +104,31 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
               ) : seatLayout.length ? (
                 <div
                   className="seat-absolute-wrapper position-relative"
-                  style={{ height: 200, width: 280 }}
+                  style={{ height: 220, width: 300 }}
                 >
                   {seatLayout.map((seat) => {
-                    const { top = "0px", left = "0px" } =
-                      seatPositions[seat.SeatName] || {};
+                    const info = seatPositions[seat.SeatName] || {};
+                    const { top = "0px", left = "0px", className = "hseat" } = info;
+
                     const isSelected = selectedSeats.some(
                       (s) => s.SeatName === seat.SeatName
                     );
                     const isBooked = seat.SeatStatus === false;
 
-                    const classes = [
+                    const finalClass = [
                       "seat",
+                      className,
                       "position-absolute",
-                      isBooked
-                        ? "booked"
-                        : isSelected
-                        ? "selected"
-                        : "available",
+                      isSelected ? "selected" : "",
                     ].join(" ");
 
                     return (
                       <div
                         key={seat.SeatName}
-                        className={classes}
+                        className={finalClass}
                         style={{ top, left }}
-                        title={`Seat ${seat.SeatName}`}
-                        onClick={() => toggleSeat(seat)}
+                        title={`Seat: ${seat.SeatName} | ₹${info.fare || seat?.Price?.PublishedPrice || 450}`}
+                        onClick={() => !isBooked && toggleSeat(seat)}
                       >
                         <small>{seat.SeatName}</small>
                       </div>
@@ -145,17 +141,23 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
             </div>
           </Col>
 
-          {/* Legend */}
+          {/* Seat type legend */}
           <Col md={2} className="mt-5">
             <div className="legend d-flex flex-column gap-2">
               <div>
-                <span className="seat available" /> Available
+                <span className="seat hseat" /> Available
               </div>
               <div>
                 <span className="seat selected" /> Selected
               </div>
               <div>
-                <span className="seat booked" /> Booked
+                <span className="seat bhseat" /> Booked
+              </div>
+              <div>
+                <span className="seat rseat" /> Discounted
+              </div>
+              <div>
+                <span className="seat bseat" /> Empty Space
               </div>
             </div>
           </Col>
@@ -187,12 +189,12 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
               </Form.Group>
 
               <div className="mb-2">
-                <strong>Selected&nbsp;Seats:</strong>{" "}
+                <strong>Selected Seats:</strong>{" "}
                 {selectedSeats.map((s) => s.SeatName).join(", ") || "None"}
               </div>
 
               <div className="mb-3">
-                <strong>You&nbsp;Pay:</strong>{" "}
+                <strong>You Pay:</strong>{" "}
                 <span className="fs-5 fw-bold">₹ {totalPrice.toFixed(2)}</span>
               </div>
 
