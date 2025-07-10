@@ -3,7 +3,7 @@ import { createContext, useState, useEffect } from 'react';
 export const LocationContext = createContext();
 
 export const LocationProvider = ({ children }) => {
-  const [locationData, setLocationData] = useState({
+  const defaultLocation = {
     fromCity: 'Delhi',
     toCity: 'London',
     fromAirport: 'DEL',
