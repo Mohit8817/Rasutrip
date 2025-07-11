@@ -7,6 +7,7 @@ import BusSeatSelect from "./BusSeatSelect";
 import { fetchBusResults } from '../../APIS/BusApi/BusApis';
 
 import "../../../Style/Pagescss/BusResultPage.css";
+import Busloader from "../Busloader/Busloader";
 
 const USER_IP_FALLBACK = "122.161.64.143";
 
@@ -109,7 +110,9 @@ const BusDetailsList = () => {
 
       {loading ? (
         <div className="text-center py-5">
-          <Spinner animation="border" variant="primary" />
+          {/* <Spinner animation="border" variant="primary" />
+           */}
+           <Busloader/>
         </div>
       ) : busList.length ? (
         busList.map((bus, idx) => (

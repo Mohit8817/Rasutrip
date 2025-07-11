@@ -1,48 +1,49 @@
 .single-date-picker {
-    width: fit-content;
-    cursor: pointer;
-    margin-top: 2rem;
-    /* width: 420px !important; */
+  width: fit-content;
+  cursor: pointer;
+  margin-top: 2rem;
+  /* width: 420px !important; */
 }
 
 .single-date-picker .date-button {
-    min-width: 400px;
-    padding: 15px 10px;
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 12px;
+  min-width: 400px;
+  padding: 15px 10px;
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
 }
 
 .single-date-picker .calendar-popup {
-    z-index: 20;
+  z-index: 20;
 }
+
 /* loaction cs */
 
 .city-wrapper {
-    border-radius: 15px;
+  border-radius: 15px;
 }
 
 .city-box {
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 12px;
-    text-align: left;
-    padding: 22px 16px;
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  text-align: left;
+  padding: 22px 16px;
 }
 
 .city-label {
-    font-size: 12px;
-    color: #1c1c1d;
-    display: block;
-    margin-bottom: 4px;
-    font-weight: 500;
+  font-size: 12px;
+  color: #1c1c1d;
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
 }
 
 .city-input {
-    font-size: 18px;
-    font-weight: 600;
-    outline: none;
-    box-shadow: none;
+  font-size: 18px;
+  font-weight: 600;
+  outline: none;
+  box-shadow: none;
 }
 
 
@@ -144,3 +145,392 @@
   vertical-align: middle;
 }
 
+
+
+.upper-berth-container,
+.lower-berth-container {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.deck-label-vertical {
+  display: flex;
+  flex-direction: column;
+  margin-right: 10px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  font-size: 14px;
+  color: #444;
+}
+
+.seat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+.seat-icon-wrapper {
+  width: 50px;
+  height: 50px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.loader-wrapper {
+  position: relative;
+  z-index: 1;
+  height: 150px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.truck-wrapper {
+  height: 130px;
+  width: 130px;
+  border: 4px solid #ca0f2e;
+  background: white;
+  animation: bg 0.5s linear infinite;
+  border-radius: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* .truck-wrapper:after {
+  content: 'Bus Loading..';
+  font-size: 10px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  text-align: center;
+  width: 100%;
+  border-top: 1px solid #ca0f2e;
+  background: linear-gradient(to right, #cd4e63cc 0%, #d43a54 100%);
+  color: white;
+  padding: 5px 0;
+  animation: bg 3s linear infinite;
+} */
+
+.truck {
+  height: 55px;
+  width: 80px;
+  position: absolute;
+  bottom: 38px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.truck > .glases {
+  background: linear-gradient(135deg, #514f4f 0%, #514f4f 50%, #333131 52%, #333131 100%);
+  position: absolute;
+  height: 16px;
+  width: 90px;
+  border: 3px solid red;
+  border-bottom: none;
+  top: 20px;
+  left: -12px;
+  border-top-right-radius: 4px;
+  animation: updown-half 0.4s linear infinite;
+}
+
+.truck > .glases:after {
+  content: '';
+  background-color: red;
+  height: 4px;
+  width: 2px;
+  position: absolute;
+  right: -4px;
+  bottom: 0;
+  border-radius: 0 0 0 0;
+}
+
+.truck > .glases:before {
+  content: '';
+  background-color: red;
+  height: 18px;
+  width: 2px;
+  position: absolute;
+  left: 65px;
+  bottom: 0;
+}
+
+.truck > .bonet {
+  background-color: red;
+  position: absolute;
+  width: 92px;
+  height: 10px;
+  top: 38px;
+  left: -12px;
+  z-index: -1;
+  animation: updown 0.4s linear infinite;
+}
+
+.truck > .bonet:after {
+  content: '';
+  background: linear-gradient(135deg, #fff 0%, #f1f1f1 50%, #e1e1e1 51%, #f6f6f6 100%);
+  height: 7px;
+  width: 5px;
+  position: absolute;
+  right: 0;
+  bottom: 1px;
+  border-top-left-radius: 3px;
+}
+
+.truck > .base {
+  background-color: #445A64;
+  width: 80px;
+  height: 10px;
+  border-top-right-radius: 8px;
+  position: absolute;
+  top: 42px;
+  left: -10px;
+  animation: updown 0.4s linear infinite;
+}
+
+.truck > .base:before {
+  content: '';
+  background-color: #E54A18;
+  height: 14px;
+  width: 4px;
+  position: absolute;
+  left: -3px;
+  bottom: 0;
+  border-bottom-left-radius: 3px;
+}
+
+.truck > .base:after {
+  content: '';
+  background-color: #445A64;
+  height: 8px;
+  width: 16px;
+  position: absolute;
+  right: -12px;
+  bottom: 0;
+  border-bottom-right-radius: 3px;
+  z-index: -1;
+}
+
+.truck > .base-aux {
+  width: 2px;
+  height: 18px;
+  background-color: #FBD734;
+  position: absolute;
+  top: 24px;
+  left: 18px;
+  animation: updown-half 0.4s linear infinite;
+}
+
+.truck > .wheel-back {
+  left: 12px;
+}
+
+.truck > .wheel-front {
+  left: 60px;
+}
+
+.truck > .wheel-back,
+.truck > .wheel-front {
+  border-radius: 100%;
+  position: absolute;
+  background: linear-gradient(135deg, #546e7a 0%, #546e7a 49%, #445a64 52%, #445a64 100%);
+  top: 46px;
+  height: 14px;
+  width: 14px;
+  animation: spin 0.6s linear infinite;
+}
+
+.truck > .wheel-back:before,
+.truck > .wheel-front:before {
+  content: '';
+  border-radius: 100%;
+  left: 3px;
+  top: 3px;
+  position: absolute;
+  background: linear-gradient(135deg, #afbdc3 0%, #afbdc3 50%, #8fa3ad 51%, #8fa3ad 100%);
+  height: 8px;
+  width: 8px;
+}
+
+.truck > .smoke {
+  position: absolute;
+  background-color: #AFBDC3;
+  border-radius: 100%;
+  width: 6px;
+  height: 6px;
+  top: 55px;
+  left: 4px;
+  animation: fade 0.4s linear infinite;
+  opacity: 0;
+}
+
+.truck > .smoke:after {
+  content: '';
+  position: absolute;
+  background-color: #8fa3ad;
+  border-radius: 100%;
+  width: 4px;
+  height: 4px;
+  top: -3px;
+  left: 3px;
+}
+
+.truck > .smoke:before {
+  content: '';
+  position: absolute;
+  background-color: #8fa3ad;
+  border-radius: 100%;
+  width: 3px;
+  height: 3px;
+  top: -1px;
+  left: 0px;
+}
+
+/* Animations */
+@keyframes spin {
+  50% {
+    top: 47px;
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes updown {
+  50% {
+    transform: translateY(-20%);
+  }
+  70% {
+    transform: translateY(-10%);
+  }
+}
+
+@keyframes updown-half {
+  50% {
+    transform: translateY(-10%);
+  }
+  70% {
+    transform: translateY(-5%);
+  }
+}
+
+@keyframes fade {
+  30% {
+    opacity: 0.3;
+    left: 5px;
+  }
+  50% {
+    opacity: 0.5;
+    left: 4px;
+  }
+  70% {
+    opacity: 0.1;
+    left: 2px;
+  }
+  90% {
+    opacity: 0.4;
+    left: 1px;
+  }
+}
+
+@keyframes bg {
+  from {
+    background-position-x: 0px;
+  }
+  to {
+    background-position-x: -400px;
+  }
+}

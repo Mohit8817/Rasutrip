@@ -1,8 +1,9 @@
+// src/Components/BusFareSummary.jsx
 import React from "react";
 import { Card } from "react-bootstrap";
 import "../../Style/Pagescss/BusResultPage.css";
 
-const BusFareSummary = () => {
+const BusFareSummary = ({ totalPrice = 0 }) => {
   return (
     <div>
       <Card className="fare-card shadow-sm mt-3">
@@ -10,7 +11,7 @@ const BusFareSummary = () => {
         <Card.Body className="p-3">
           <div className="fare-row">
             <span>Base Fare</span>
-            <span>₹ 733.95</span>
+            <span>₹ {totalPrice.toFixed(2)}</span>
           </div>
           <div className="fare-row">
             <span>Taxes</span>
@@ -26,7 +27,7 @@ const BusFareSummary = () => {
           </div>
           <div className="fare-total">
             <span>Pay Amount</span>
-            <span>₹ 733.95</span>
+            <span>₹ {totalPrice.toFixed(2)}</span>
           </div>
         </Card.Body>
       </Card>

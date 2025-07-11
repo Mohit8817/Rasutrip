@@ -1,3 +1,4 @@
+// BusSeatSelect.jsx
 import React, { useEffect, useState } from "react";
 import { Modal, Button, Row, Col, Form, Card, Spinner } from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -25,7 +26,6 @@ const SvgUpperBerthIcon = ({ fill = "none", stroke = "#000" }) => (
 const BusSeatSelect = ({ show, onHide, bus }) => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const { fromCity, toCity, departDate } = location?.state || {};
 
   const [selectedSeats, setSelectedSeats] = useState([]);
@@ -90,8 +90,8 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
         fromCity,
         toCity,
         departDate,
-        departTime: bus?.departTime,  // ✅ added
-        arriveTime: bus?.arriveTime,  // ✅ added
+        departTime: bus?.departTime,
+        arriveTime: bus?.arriveTime,
       },
     });
   };
@@ -100,7 +100,6 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
     <Modal show={show} onHide={onHide} size="xl" centered>
       <Modal.Body>
         <Row>
-          {/* Seat layout */}
           <Col md={6}>
             <h5 className="mb-4 fw-bold">Select Seats</h5>
             <div className="seat-layout-box border p-3">
@@ -109,69 +108,133 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                   <Spinner animation="border" size="sm" />
                 </div>
               ) : seatLayout.length ? (
-                <div className="bus-layout-wrapper">
-                  <div className="deck-label">UPPER</div>
-                  <div className="seat-deck upper-deck d-flex flex-wrap gap-2 mb-4">
-                    {seatLayout
-                      .filter((seat) => seat.IsUpper)
-                      .map((seat) => {
-                        const isBooked = seat.SeatStatus === false;
-                        const isSelected = selectedSeats.some((s) => s.SeatName === seat.SeatName);
-
-                        return (
-                          <div
-                            key={seat.SeatName}
-                            className="seat-icon-wrapper"
-                            onClick={() => !isBooked && toggleSeat(seat)}
-                            style={{ cursor: isBooked ? "not-allowed" : "pointer" }}
-                          >
-                            <SvgUpperBerthIcon
-                              fill={
-                                isBooked
-                                  ? "#f2f2f2"
-                                  : isSelected
+                <>
+                  {/* UPPER Berth */}
+                  <div className="upper-berth-container d-flex mb-4">
+                    <div className="deck-label-vertical text-uppercase">
+                      {"UPPER".split("").map((char, index) => (
+                        <div key={index}>{char}</div>
+                      ))}
+                    </div>
+                    <div className="seat-grid">
+                      <div className="row">
+                        {seatLayout.filter((s, i) => s.IsUpper && i % 2 === 0).map((seat) => {
+                          const isBooked = seat.SeatStatus === false;
+                          const isSelected = selectedSeats.some((s) => s.SeatName === seat.SeatName);
+                          return (
+                            <div
+                              key={seat.SeatName}
+                              className="seat-icon-wrapper"
+                              onClick={() => !isBooked && toggleSeat(seat)}
+                              style={{ cursor: isBooked ? "not-allowed" : "pointer" }}
+                            >
+                              <SvgUpperBerthIcon
+                                fill={
+                                  isBooked
+                                    ? "#b8b8b8"
+                                    : isSelected
                                     ? "#6FA84F"
                                     : seat?.IsLadiesSeat
-                                      ? "#ff69b4"
-                                      : "#eaeaea"
-                              }
-                            />
-                          </div>
-                        );
-                      })}
-                  </div>
-
-                  <div className="deck-label">LOWER</div>
-                  <div className="seat-deck lower-deck d-flex flex-wrap gap-2">
-                    {seatLayout
-                      .filter((seat) => !seat.IsUpper)
-                      .map((seat) => {
-                        const isBooked = seat.SeatStatus === false;
-                        const isSelected = selectedSeats.some((s) => s.SeatName === seat.SeatName);
-
-                        return (
-                          <div
-                            key={seat.SeatName}
-                            className="seat-icon-wrapper"
-                            onClick={() => !isBooked && toggleSeat(seat)}
-                            style={{ cursor: isBooked ? "not-allowed" : "pointer" }}
-                          >
-                            <SvgSeatIcon
-                              fill={
-                                isBooked
-                                  ? "#B8B8B8"
-                                  : isSelected
+                                    ? "#ff69b4"
+                                    : "#fdfcfcff"
+                                }
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="row">
+                        {seatLayout.filter((s, i) => s.IsUpper && i % 2 !== 0).map((seat) => {
+                          const isBooked = seat.SeatStatus === false;
+                          const isSelected = selectedSeats.some((s) => s.SeatName === seat.SeatName);
+                          return (
+                            <div
+                              key={seat.SeatName}
+                              className="seat-icon-wrapper"
+                              onClick={() => !isBooked && toggleSeat(seat)}
+                              style={{ cursor: isBooked ? "not-allowed" : "pointer" }}
+                            >
+                              <SvgUpperBerthIcon
+                                fill={
+                                  isBooked
+                                    ? "#b8b8b8"
+                                    : isSelected
                                     ? "#6FA84F"
                                     : seat?.IsLadiesSeat
-                                      ? "#ff69b4"
-                                      : "#eaeaea"
-                              }
-                            />
-                          </div>
-                        );
-                      })}
+                                    ? "#ff69b4"
+                                    : "#fdfcfcff"
+                                }
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                </div>
+
+                  {/* LOWER Berth */}
+                  <div className="lower-berth-container d-flex">
+                    <div className="deck-label-vertical text-uppercase">
+                      {"LOWER".split("").map((char, index) => (
+                        <div key={index}>{char}</div>
+                      ))}
+                    </div>
+                    <div className="seat-grid">
+                      <div className="row">
+                        {seatLayout.filter((s, i) => !s.IsUpper && i % 2 === 0).map((seat) => {
+                          const isBooked = seat.SeatStatus === false;
+                          const isSelected = selectedSeats.some((s) => s.SeatName === seat.SeatName);
+                          return (
+                            <div
+                              key={seat.SeatName}
+                              className="seat-icon-wrapper"
+                              onClick={() => !isBooked && toggleSeat(seat)}
+                              style={{ cursor: isBooked ? "not-allowed" : "pointer" }}
+                            >
+                              <SvgSeatIcon
+                                fill={
+                                  isBooked
+                                    ? "#b8b8b8"
+                                    : isSelected
+                                    ? "#6FA84F"
+                                    : seat?.IsLadiesSeat
+                                    ? "#ff69b4"
+                                    : "#fdfcfcff"
+                                }
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="row">
+                        {seatLayout.filter((s, i) => !s.IsUpper && i % 2 !== 0).map((seat) => {
+                          const isBooked = seat.SeatStatus === false;
+                          const isSelected = selectedSeats.some((s) => s.SeatName === seat.SeatName);
+                          return (
+                            <div
+                              key={seat.SeatName}
+                              className="seat-icon-wrapper"
+                              onClick={() => !isBooked && toggleSeat(seat)}
+                              style={{ cursor: isBooked ? "not-allowed" : "pointer" }}
+                            >
+                              <SvgSeatIcon
+                                fill={
+                                  isBooked
+                                    ? "#b8b8b8"
+                                    : isSelected
+                                    ? "#6FA84F"
+                                    : seat?.IsLadiesSeat
+                                    ? "#ff69b4"
+                                    : "#fdfcfcff"
+                                }
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <div className="text-muted">No seat layout available.</div>
               )}
@@ -180,15 +243,15 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
 
           {/* Legend */}
           <Col md={2} className="mt-5">
-            <div className="legend d-flex flex-column gap-3">
-              <div><SvgSeatIcon fill="#eaeaea" /> Available seat</div>
+            <div className="legend d-flex flex-column gap-0">
+              <div><SvgSeatIcon fill="#fdfcfcff" /> Available seat</div>
               <div><SvgSeatIcon fill="#ff69b4" /> Reserved for ladies</div>
               <div><SvgSeatIcon fill="#6FA84F" /> Selected seat</div>
               <div><SvgSeatIcon fill="#B8B8B8" /> Booked seat</div>
             </div>
           </Col>
 
-          {/* Booking info */}
+          {/* Booking Info */}
           <Col md={4}>
             <Card className="p-3 shadow-sm mb-3">
               <h6 className="fw-bold">{bus?.operator}</h6>
@@ -221,13 +284,11 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
               </Form.Group>
 
               <div className="mb-2">
-                <strong>Selected Seats:</strong>{" "}
-                {selectedSeats.map((s) => s.SeatName).join(", ") || "None"}
+                <strong>Selected Seats:</strong> {selectedSeats.map((s) => s.SeatName).join(", ") || "None"}
               </div>
 
               <div className="mb-3">
-                <strong>You Pay:</strong>{" "}
-                <span className="fs-5 fw-bold">₹ {totalPrice.toFixed(2)}</span>
+                <strong>You Pay:</strong> <span className="fs-5 fw-bold">₹ {totalPrice.toFixed(2)}</span>
               </div>
 
               <Button className="btn-red w-100" onClick={handleContinue}>

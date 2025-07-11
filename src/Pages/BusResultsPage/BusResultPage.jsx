@@ -19,6 +19,7 @@ const BusResultPage = () => {
                     <Col lg={9}>
 
                         <BusDetailsList />
+
                     </Col>
                 </Row>
             </Container>
