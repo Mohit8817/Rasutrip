@@ -1,50 +1,48 @@
-// src/Components/Bus/BusPage/BusSeatSelect.jsx
 import React, { useEffect, useState, useCallback } from "react";
 import { Modal, Button, Row, Col, Form, Card, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import "../../../Style/Pagescss/BusResultPage.css";
 import { fetchSeatLayout } from "../../APIS/BusApi/BusApis";
 
+// 🪑 Lower Berth Icon
+const SvgSeatIcon = ({ fill = "none", stroke = "#000", label = "" }) => (
+  <svg width="30" height="40" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="10" width="25" height="40" rx="5" ry="5" fill={fill} stroke={stroke} strokeWidth="2" />
+    <rect x="30" y="10" width="18" height="10" rx="5" ry="5" fill={fill} stroke={stroke} strokeWidth="2" />
+    <rect x="45" y="10" width="10" height="40" rx="5" ry="5" fill={fill} stroke={stroke} strokeWidth="2" />
+    <rect x="30" y="40" width="18" height="10" rx="5" ry="5" fill={fill} stroke={stroke} strokeWidth="2" />
+    {/* {label && (
+      <text x="50%" y="58" textAnchor="middle" fontSize="10" fill={stroke} fontWeight="bold">
+        {label}
+      </text>
+    )} */}
+  </svg>
+);
+
+// 🛏️ Upper Berth Icon
+const SvgUpperBerthIcon = ({ fill = "none", stroke = "#000", label = "" }) => (
+  <svg width="55" height="50" viewBox="0 0 60 50" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="20" width="50" height="15" rx="3" ry="3" fill={fill} stroke={stroke} strokeWidth="2" />
+    <rect x="45" y="20" width="8" height="15" rx="2" ry="1" fill="white" stroke={stroke} strokeWidth="1.5" />
+    {/* {label && (
+      <text x="50%" y="55" textAnchor="middle" fontSize="10" fill={stroke} fontWeight="bold">
+        {label}
+      </text>
+    )} */}
+  </svg>
+);
+
 const BusSeatSelect = ({ show, onHide, bus }) => {
   const navigate = useNavigate();
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [seatLayout, setSeatLayout] = useState([]);
-  const [seatPositions, setSeatPositions] = useState({});
   const [loading, setLoading] = useState(false);
-
-  // Parse seat data from raw HTML
-  const parseSeatsFromHTML = useCallback((html) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    const divs = doc.querySelectorAll(".seatcontainer div");
-
-    const seatMap = {};
-    divs.forEach((div) => {
-      const id = div.getAttribute("id");
-      const className = div.className;
-      const onclickAttr = div.getAttribute("onclick");
-      const seatMatch = onclickAttr?.match(/'([A-Za-z0-9]+)'/);
-      const fareMatch = onclickAttr?.match(/, *'([\d.]+)'/);
-
-      const seatName = seatMatch?.[1] || id;
-      const fare = fareMatch ? parseFloat(fareMatch[1]) : 0;
-
-      seatMap[seatName] = {
-        top: div.style.top || "0px",
-        left: div.style.left || "0px",
-        className,
-        fare,
-      };
-    });
-
-    return seatMap;
-  }, []);
 
   useEffect(() => {
     const loadSeatLayout = async () => {
       if (!show || !bus?.SearchTokenId || !bus?.resultIndex) return;
-
       setLoading(true);
+
       try {
         const data = await fetchSeatLayout({
           SearchTokenId: bus.SearchTokenId,
@@ -56,7 +54,6 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
 
         const seats = data?.Result?.SeatLayout?.SeatDetails?.flat() ?? [];
         setSeatLayout(seats);
-        setSeatPositions(parseSeatsFromHTML(data?.Result?.HTMLLayout ?? ""));
       } catch (err) {
         console.error("Error loading seat layout:", err);
       } finally {
@@ -65,18 +62,11 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
     };
 
     loadSeatLayout();
-  }, [
-    show,
-    bus?.SearchTokenId,
-    bus?.resultIndex,
-    bus?.UserIp,
-    bus?.OriginId,
-    bus?.DestinationId,
-    parseSeatsFromHTML,
-  ]);
+  }, [show, bus]);
 
   const toggleSeat = (seat) => {
     if (!seat.SeatStatus) return;
+
     setSelectedSeats((prev) =>
       prev.some((s) => s.SeatName === seat.SeatName)
         ? prev.filter((s) => s.SeatName !== seat.SeatName)
@@ -96,44 +86,76 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
           {/* Seat layout */}
           <Col md={6}>
             <h5 className="mb-4 fw-bold">Select Seats</h5>
-            <div className="seat-layout-box border p-3" style={{ minHeight: 220 }}>
+            <div className="seat-layout-box border p-3">
               {loading ? (
                 <div className="text-center py-5">
                   <Spinner animation="border" size="sm" />
                 </div>
               ) : seatLayout.length ? (
-                <div
-                  className="seat-absolute-wrapper position-relative"
-                  style={{ height: 220, width: 300 }}
-                >
-                  {seatLayout.map((seat) => {
-                    const info = seatPositions[seat.SeatName] || {};
-                    const { top = "0px", left = "0px", className = "hseat" } = info;
+                <div className="bus-layout-wrapper">
+                  <div className="deck-label">UPPER</div>
+                  <div className="seat-deck upper-deck d-flex flex-wrap gap-2 mb-4">
+                    {seatLayout
+                      .filter((seat) => seat.IsUpper)
+                      .map((seat) => {
+                        const isBooked = seat.SeatStatus === false;
+                        const isSelected = selectedSeats.some((s) => s.SeatName === seat.SeatName);
 
-                    const isSelected = selectedSeats.some(
-                      (s) => s.SeatName === seat.SeatName
-                    );
-                    const isBooked = seat.SeatStatus === false;
+                        return (
+                          <div
+                            key={seat.SeatName}
+                            className="seat-icon-wrapper"
+                            onClick={() => !isBooked && toggleSeat(seat)}
+                            style={{ cursor: isBooked ? "not-allowed" : "pointer" }}
+                          >
+                            <SvgUpperBerthIcon
+                              fill={
+                                isBooked
+                                  ? "#f2f2f2"
+                                  : isSelected
+                                    ? "#6FA84F"
+                                    : seat?.IsLadiesSeat
+                                      ? "#ff69b4"
+                                      : "#eaeaea"
+                              }
+                              label={seat.SeatName}
+                            />
+                          </div>
+                        );
+                      })}
+                  </div>
 
-                    const finalClass = [
-                      "seat",
-                      className,
-                      "position-absolute",
-                      isSelected ? "selected" : "",
-                    ].join(" ");
+                  <div className="deck-label">LOWER</div>
+                  <div className="seat-deck lower-deck d-flex flex-wrap gap-2">
+                    {seatLayout
+                      .filter((seat) => !seat.IsUpper)
+                      .map((seat) => {
+                        const isBooked = seat.SeatStatus === false;
+                        const isSelected = selectedSeats.some((s) => s.SeatName === seat.SeatName);
 
-                    return (
-                      <div
-                        key={seat.SeatName}
-                        className={finalClass}
-                        style={{ top, left }}
-                        title={`Seat: ${seat.SeatName} | ₹${info.fare || seat?.Price?.PublishedPrice || 450}`}
-                        onClick={() => !isBooked && toggleSeat(seat)}
-                      >
-                        <small>{seat.SeatName}</small>
-                      </div>
-                    );
-                  })}
+                        return (
+                          <div
+                            key={seat.SeatName}
+                            className="seat-icon-wrapper"
+                            onClick={() => !isBooked && toggleSeat(seat)}
+                            style={{ cursor: isBooked ? "not-allowed" : "pointer" }}
+                          >
+                            <SvgSeatIcon
+                              fill={
+                                isBooked
+                                  ? "#B8B8B8"
+                                  : isSelected
+                                    ? "#6FA84F"
+                                    : seat?.IsLadiesSeat
+                                      ? "#ff69b4"
+                                      : "#eaeaea"
+                              }
+                              label={seat.SeatName}
+                            />
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-muted">No seat layout available.</div>
@@ -141,24 +163,13 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
             </div>
           </Col>
 
-          {/* Seat type legend */}
+          {/* Legend */}
           <Col md={2} className="mt-5">
-            <div className="legend d-flex flex-column gap-2">
-              <div>
-                <span className="seat hseat" /> Available
-              </div>
-              <div>
-                <span className="seat selected" /> Selected
-              </div>
-              <div>
-                <span className="seat bhseat" /> Booked
-              </div>
-              <div>
-                <span className="seat rseat" /> Discounted
-              </div>
-              <div>
-                <span className="seat bseat" /> Empty Space
-              </div>
+            <div className="legend d-flex flex-column gap-3">
+              <div><SvgSeatIcon fill="#eaeaea" /> Available seat</div>
+              <div><SvgSeatIcon fill="#ff69b4" /> Reserved for ladies</div>
+              <div><SvgSeatIcon fill="#6FA84F" /> Selected seat</div>
+              <div><SvgSeatIcon fill="#B8B8B8" /> Booked seat</div>
             </div>
           </Col>
 
@@ -174,7 +185,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                 <Form.Label>Boarding Point</Form.Label>
                 <Form.Select>
                   {bus?.BoardingPointsDetails.map((p, i) => (
-                    <option key={i}>{p.CityPointName}</option>
+                    <option key={i}>{p.CityPointName}</option>  
                   ))}
                 </Form.Select>
               </Form.Group>

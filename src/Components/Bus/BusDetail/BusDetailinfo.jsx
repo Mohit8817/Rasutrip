@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 const BusDetailinfo = () => {
 
     const navigate = useNavigate();
-   
+
 
     const handleContinue = () => {
         navigate('/bus-traveller-details');

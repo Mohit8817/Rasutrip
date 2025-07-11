@@ -117,38 +117,30 @@
 
 /* seat selection comp  */
 
-.seat {
-  width: 30px;
-  height: 30px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  background-color: #fff;
-  cursor: pointer;
+.deck-label {
+  font-weight: bold;
+  letter-spacing: 4px;
+  margin: 5px 0 5px;
+}
+
+.seat-deck {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 15px;
 }
 
-.seat.selected {
-  background-color: #92d050;
+.seat-icon-wrapper {
+  cursor: pointer;
+  transition: transform 0.2s;
 }
 
-.seat.bhseat, .seat.booked {
-  background-color: #bbb;
-  cursor: not-allowed;
+.seat-icon-wrapper:hover {
+  transform: scale(1.05);
 }
 
-.seat.rseat {
-  background-color: pink;
-}
-
-.legend span.seat {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  margin-right: 8px;
+.legend svg {
+  margin-right: 4px;
   vertical-align: middle;
-  border: 1px solid #aaa;
 }
 
