@@ -1,42 +1,38 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal, Button, Row, Col, Form, Card, Spinner } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../../../Style/Pagescss/BusResultPage.css";
 import { fetchSeatLayout } from "../../APIS/BusApi/BusApis";
 
-// 🪑 Lower Berth Icon
-const SvgSeatIcon = ({ fill = "none", stroke = "#000", label = "" }) => (
+// Lower Berth Icon
+const SvgSeatIcon = ({ fill = "none", stroke = "#000" }) => (
   <svg width="30" height="40" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
     <rect x="10" y="10" width="25" height="40" rx="5" ry="5" fill={fill} stroke={stroke} strokeWidth="2" />
     <rect x="30" y="10" width="18" height="10" rx="5" ry="5" fill={fill} stroke={stroke} strokeWidth="2" />
     <rect x="45" y="10" width="10" height="40" rx="5" ry="5" fill={fill} stroke={stroke} strokeWidth="2" />
     <rect x="30" y="40" width="18" height="10" rx="5" ry="5" fill={fill} stroke={stroke} strokeWidth="2" />
-    {/* {label && (
-      <text x="50%" y="58" textAnchor="middle" fontSize="10" fill={stroke} fontWeight="bold">
-        {label}
-      </text>
-    )} */}
   </svg>
 );
 
-// 🛏️ Upper Berth Icon
-const SvgUpperBerthIcon = ({ fill = "none", stroke = "#000", label = "" }) => (
+// Upper Berth Icon
+const SvgUpperBerthIcon = ({ fill = "none", stroke = "#000" }) => (
   <svg width="55" height="50" viewBox="0 0 60 50" xmlns="http://www.w3.org/2000/svg">
     <rect x="5" y="20" width="50" height="15" rx="3" ry="3" fill={fill} stroke={stroke} strokeWidth="2" />
     <rect x="45" y="20" width="8" height="15" rx="2" ry="1" fill="white" stroke={stroke} strokeWidth="1.5" />
-    {/* {label && (
-      <text x="50%" y="55" textAnchor="middle" fontSize="10" fill={stroke} fontWeight="bold">
-        {label}
-      </text>
-    )} */}
   </svg>
 );
 
 const BusSeatSelect = ({ show, onHide, bus }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const { fromCity, toCity, departDate } = location?.state || {};
+
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [seatLayout, setSeatLayout] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [boarding, setBoarding] = useState(null);
+  const [dropping, setDropping] = useState(null);
 
   useEffect(() => {
     const loadSeatLayout = async () => {
@@ -66,7 +62,6 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
 
   const toggleSeat = (seat) => {
     if (!seat.SeatStatus) return;
-
     setSelectedSeats((prev) =>
       prev.some((s) => s.SeatName === seat.SeatName)
         ? prev.filter((s) => s.SeatName !== seat.SeatName)
@@ -78,6 +73,28 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
     (sum, seat) => sum + (seat?.Price?.PublishedPrice ?? 450),
     0
   );
+
+  const handleContinue = () => {
+    if (!boarding || !dropping || selectedSeats.length === 0) {
+      alert("Please select seats, boarding and dropping point.");
+      return;
+    }
+
+    navigate("/bus-detail", {
+      state: {
+        bus,
+        selectedSeats,
+        totalPrice,
+        boarding,
+        dropping,
+        fromCity,
+        toCity,
+        departDate,
+        departTime: bus?.departTime,  // ✅ added
+        arriveTime: bus?.arriveTime,  // ✅ added
+      },
+    });
+  };
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
@@ -118,7 +135,6 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                                       ? "#ff69b4"
                                       : "#eaeaea"
                               }
-                              label={seat.SeatName}
                             />
                           </div>
                         );
@@ -150,7 +166,6 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                                       ? "#ff69b4"
                                       : "#eaeaea"
                               }
-                              label={seat.SeatName}
                             />
                           </div>
                         );
@@ -183,18 +198,24 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
 
               <Form.Group className="mb-3">
                 <Form.Label>Boarding Point</Form.Label>
-                <Form.Select>
+                <Form.Select onChange={(e) => setBoarding(JSON.parse(e.target.value))}>
+                  <option value="">Select Boarding</option>
                   {bus?.BoardingPointsDetails.map((p, i) => (
-                    <option key={i}>{p.CityPointName}</option>  
+                    <option key={i} value={JSON.stringify(p)}>
+                      {p.CityPointName} - {p.DepTime}
+                    </option>
                   ))}
                 </Form.Select>
               </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Label>Dropping Point</Form.Label>
-                <Form.Select>
+                <Form.Select onChange={(e) => setDropping(JSON.parse(e.target.value))}>
+                  <option value="">Select Dropping</option>
                   {bus?.DroppingPointsDetails.map((p, i) => (
-                    <option key={i}>{p.CityPointName}</option>
+                    <option key={i} value={JSON.stringify(p)}>
+                      {p.CityPointName} - {p.ArrTime}
+                    </option>
                   ))}
                 </Form.Select>
               </Form.Group>
@@ -209,7 +230,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                 <span className="fs-5 fw-bold">₹ {totalPrice.toFixed(2)}</span>
               </div>
 
-              <Button className="btn-red w-100" onClick={() => navigate("/bus-detail")}>
+              <Button className="btn-red w-100" onClick={handleContinue}>
                 Continue
               </Button>
             </Card>
