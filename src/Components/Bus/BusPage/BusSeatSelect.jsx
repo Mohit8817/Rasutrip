@@ -280,7 +280,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                       {p.CityPointName} - {p.ArrTime}
                     </option>
                   ))}
-                </Form.Select>
+                </Form.Select>  
               </Form.Group>
 
               <div className="mb-2">

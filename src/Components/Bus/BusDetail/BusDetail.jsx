@@ -20,7 +20,6 @@ const BusDetail = () => {
                         <BusDetailinfo />
                     </Col>
                     <Col lg={3}>
-
                         <BusFareSummary />
                         <BusPromoCode />
 

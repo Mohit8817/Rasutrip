@@ -112,7 +112,7 @@ const BusDetailsList = () => {
         <div className="text-center py-5">
           {/* <Spinner animation="border" variant="primary" />
            */}
-           <Busloader/>
+          <Busloader />
         </div>
       ) : busList.length ? (
         busList.map((bus, idx) => (
