@@ -152,7 +152,7 @@ const HotelList = () => {
   }, [city, checkIn, checkOut, guests, rooms]);
 
   if (loading) return <div className="text-center p-5">Loading hotels...</div>;
-  if (hotels.length === 0) return <div className="text-center p-5">No hotels found.</div>;
+  if (hotels.length === 0) return <div className="text-center p-5">No hotels found. please change the date</div>;
 
   return (
     <div className="hotel-list">

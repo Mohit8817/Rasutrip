@@ -7,26 +7,13 @@ import { HotelSearchContext } from "../Context/HotelSearchContext";
 
 const DateSelector = () => {
   const [departDate, setDepartDate] = useState(new Date());
-  const [returnDate, setReturnDate] = useState(new Date());
+  const [returnDate, setReturnDate] = useState(new Date(new Date().getTime() + 24 * 60 * 60 * 1000)); // default: next day
   const [activeCalendar, setActiveCalendar] = useState(null); // 'depart' or 'return'
   const wrapperRef = useRef();
 
-  // 🔗 Access context
   const { hotelSearchData, setHotelSearchData } = useContext(HotelSearchContext);
 
-  // Close calendar on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setActiveCalendar(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
+  // 📌 Format functions
   const formatDate = (date) =>
     date?.toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -37,7 +24,18 @@ const DateSelector = () => {
   const getDayName = (date) =>
     date?.toLocaleDateString("en-GB", { weekday: "long" });
 
-  // ✅ Update context on date change
+  // 📌 Close calendar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setActiveCalendar(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ✅ Update search context on date change
   useEffect(() => {
     setHotelSearchData((prev) => ({
       ...prev,
@@ -46,7 +44,7 @@ const DateSelector = () => {
     }));
   }, [departDate, returnDate]);
 
-  // ✅ Auto-calculate nights
+  // ✅ Update nights count
   useEffect(() => {
     if (departDate && returnDate) {
       const nights = Math.max(
@@ -61,11 +59,8 @@ const DateSelector = () => {
   }, [departDate, returnDate]);
 
   return (
-    <div
-      className="d-flex flex-wrap align-items-start custom-date-picker"
-      ref={wrapperRef}
-    >
-      {/* Check-In */}
+    <div className="d-flex flex-wrap align-items-start custom-date-picker" ref={wrapperRef}>
+      {/* ✅ Check-In Date Picker */}
       <div className="date-button-wrapper position-relative Depart">
         <div
           className="date-button"
@@ -84,7 +79,15 @@ const DateSelector = () => {
               mode="single"
               selected={departDate}
               onSelect={(date) => {
-                if (date) setDepartDate(date);
+                if (date) {
+                  setDepartDate(date);
+                  // ✅ Auto-set return date to next day if same/earlier
+                  if (!returnDate || date >= returnDate) {
+                    const nextDay = new Date(date);
+                    nextDay.setDate(date.getDate() + 1);
+                    setReturnDate(nextDay);
+                  }
+                }
                 setActiveCalendar(null);
               }}
             />
@@ -92,7 +95,7 @@ const DateSelector = () => {
         )}
       </div>
 
-      {/* Check-Out */}
+      {/* ✅ Check-Out Date Picker */}
       <div className="date-button-wrapper position-relative Return">
         <div
           className="date-button"
@@ -114,6 +117,7 @@ const DateSelector = () => {
                 if (date) setReturnDate(date);
                 setActiveCalendar(null);
               }}
+              disabled={{ before: departDate }} // ✅ Prevent earlier than check-in
             />
           </div>
         )}

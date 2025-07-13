@@ -1,19 +1,19 @@
-import React from "react";
-import { useLocation } from "react-router-dom";
+import React, { useContext } from "react";
 import { Container, Row, Col, Button } from "react-bootstrap";
+import { HotelSearchContext } from "../../Context/HotelSearchContext";
 import "./HotelListingPage.css";
 
 const SearchSummary = () => {
+  const { hotelSearchData } = useContext(HotelSearchContext);
+
   const {
-    state: {
-      city = "—",
-      checkIn = "—",
-      checkOut = "—",
-      guests = "—",
-      rooms = "—",
-      nights = "—",
-    } = {},
-  } = useLocation();
+    city = "—",
+    checkIn = "—",
+    checkOut = "—",
+    guests = "—",
+    rooms = "—",
+    nights = "—",
+  } = hotelSearchData || {};
 
   return (
     <Container className="mt-4 p-3 bg-white shadow-sm rounded border">
