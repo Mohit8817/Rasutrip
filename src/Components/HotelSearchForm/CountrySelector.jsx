@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Form, Card } from 'react-bootstrap';
-import '../../Style/HotelSearchForm.css'; // custom styles
+import '../../Style/HotelSearchForm.css'; 
 
 const CountrySelector = () => {
     const [country, setCountry] = useState('India');

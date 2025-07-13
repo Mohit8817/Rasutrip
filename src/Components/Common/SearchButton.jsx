@@ -2,11 +2,15 @@
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LocationContext } from '../Context/LocationContext';
+import { HotelSearchContext } from '../Context/HotelSearchContext';
 import '../../Style/FlightBooking.css';
 
 const SearchButton = ({ type }) => {
   const navigate = useNavigate();
   const { locationData } = useContext(LocationContext);
+
+  const { hotelSearchData } = useContext(HotelSearchContext);
+
 
   const handleSearchClick = () => {
     const {
@@ -57,8 +61,21 @@ const SearchButton = ({ type }) => {
         });
         break;
 
+
+      // Hotel navigate 
+
       case 'hotel':
-        navigate('/hotel-results');
+        navigate('/hotel-results', {
+          state: {
+            city: hotelSearchData.city,
+            checkIn: hotelSearchData.checkIn,
+            checkOut: hotelSearchData.checkOut,
+            guests: hotelSearchData.guests,
+            rooms: hotelSearchData.rooms,
+            nights: hotelSearchData.nights
+          }
+        });
+
         break;
 
       default:

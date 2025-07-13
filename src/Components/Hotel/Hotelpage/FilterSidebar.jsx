@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card, Form,Button } from "react-bootstrap";
+import { Card, Form, Button } from "react-bootstrap";
 import "./HotelListingPage.css";
 
 const FilterSidebar = () => {

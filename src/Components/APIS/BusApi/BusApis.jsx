@@ -16,7 +16,7 @@ export const fetchBusCities = async (cityName) => {
         const response = await axios.get(`${BusServices.fetchCities}?city_name=${cityName}`);
         return response.data;
     } catch (err) {
-        console.error("❌ Error fetching bus cities:", err);
+        console.error(" Error fetching bus cities:", err);
         return [];
     }
 };
@@ -35,7 +35,7 @@ export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, Us
 
         return response.data;
     } catch (err) {
-        console.error("❌ Failed to fetch bus results:", err);
+        console.error(" Failed to fetch bus results:", err);
         return [];
     }
 };
@@ -70,7 +70,7 @@ export const fetchSeatLayout = async ({
         console.log("✅ Seat Layout API Response:", response.data);
         return response.data;
     } catch (err) {
-        console.error("❌ Seat layout fetch error:", err);
+        console.error(" Seat layout fetch error:", err);
         throw err;
     }
 };
