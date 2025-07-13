@@ -1,14 +1,47 @@
-import React from "react";
+import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, Row, Col, Button } from "react-bootstrap";
+import { HotelSearchContext } from "../../Context/HotelSearchContext";
 import "./HotelListingPage.css";
 
 const HotelCard = ({ hotel }) => {
   const navigate = useNavigate();
+  const { hotelSearchData } = useContext(HotelSearchContext);
+
   if (!hotel) return null;
 
   const handleBookClick = () => {
-    navigate(`/HotelDetailsPage/${hotel.id}`, { state: { hotel } });
+    const {
+      city,
+      checkIn,
+      checkOut,
+      guests,
+      rooms,
+      nights,
+    } = hotelSearchData || {};
+
+    // ✅ Prepare the payload with required API fields
+    const hotelPayload = {
+      ...hotel,
+      ResultIndex: hotel.resultIndex,          // ✅ Ensure correct casing
+      HotelCode: hotel.id,                     // ✅ Required by API
+      SearchTokenId: hotel.SearchTokenId,      // ✅ Should be passed from API response
+    };
+
+    // Navigate to details page
+    navigate(`/HotelDetailsPage/${hotel.id}`, {
+      state: {
+        hotel: hotelPayload,
+        searchDetails: {
+          city: city?.trim() || hotel.location || "",
+          checkIn,
+          checkOut,
+          guests: Number(guests),
+          rooms: Number(rooms),
+          nights: Number(nights),
+        },
+      },
+    });
   };
 
   const {
@@ -28,39 +61,32 @@ const HotelCard = ({ hotel }) => {
         <Col md={3}>
           <img
             src={image || "https://via.placeholder.com/300x200?text=No+Image"}
-            alt={name || "Hotel Image"}
+            alt={name}
             className="img-fluid rounded w-100"
             style={{ height: "180px", objectFit: "cover" }}
           />
         </Col>
 
-        {/* Details */}
+        {/* Hotel Info */}
         <Col md={6}>
           <h5 className="fw-bold mb-1">{name}</h5>
           <div className="text-muted small mb-2">{location}</div>
-
           <div className="text-warning mb-2">
             {[...Array(Math.round(rating))].map((_, i) => (
               <i key={i} className="bi bi-star-fill me-1" />
             ))}
           </div>
-
-          <p className="text-muted small mb-0">
-            {description?.slice(0, 100)}...
-          </p>
+          <p className="text-muted small mb-0">{description?.slice(0, 100)}...</p>
         </Col>
 
-        {/* Price & Book Button */}
+        {/* Price & Book */}
         <Col md={3} className="text-end d-flex flex-column justify-content-between">
           <div>
             <h5 className="fw-bold text-dark mb-1">₹ {price.toFixed(2)}</h5>
             <div className="small text-muted">Per Night</div>
             <div className="small text-muted">+ ₹ {tax.toFixed(2)} taxes & fees</div>
           </div>
-          <Button
-            className="btn-red mt-3"
-            onClick={handleBookClick}
-          >
+          <Button className="btn-red mt-3" onClick={handleBookClick}>
             Book
           </Button>
         </Col>

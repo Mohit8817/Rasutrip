@@ -73,12 +73,12 @@ const HotelList = () => {
             {
               Adult: guests,
               Child: 0,
-              ChildAge: []
-            }
+              ChildAge: [],
+            },
           ],
           MaxRating: 5,
           MinRating: 1,
-          UserIp: "49.36.217.215"
+          UserIp: "49.36.217.215",
         };
 
         console.log("📦 Sending Payload to API:", payload);
@@ -94,6 +94,7 @@ const HotelList = () => {
           return;
         }
 
+        // ✅ Attach SearchTokenId to each hotel item
         const formattedHotels = (Result || []).map((item) => ({
           id: item.HotelCode,
           name: item.HotelName,
@@ -111,6 +112,7 @@ const HotelList = () => {
           supplier: item.Supplier,
           source: item.Source,
           isHotDeal: item.IsHotDeal,
+          SearchTokenId: SearchTokenId, // ✅ Injected for later use
         }));
 
         if (formattedHotels.length === 0) {
@@ -136,7 +138,7 @@ const HotelList = () => {
       console.warn("❗ Missing required hotel search fields", {
         city,
         checkIn,
-        checkOut
+        checkOut,
       });
       setLoading(false);
     }

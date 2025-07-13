@@ -1,80 +1,68 @@
 import React from "react";
-import { Card, Row, Col } from "react-bootstrap";
+import { Card, } from "react-bootstrap";
+import { FaCalendarCheck, FaCalendarTimes, FaMoon } from "react-icons/fa";
+import { PiBed } from "react-icons/pi"; // bed icon similar to the image
 import "./HotelDetails.css";
 
-const BookingInfoCard = () => {
+const BookingInfoCard = ({ searchDetails }) => {
+  const {
+    checkInDate = '',
+    checkInDay = '',
+    checkOutDate = ' ',
+    checkOutDay = '',
+    nights = 2,
+    rooms = 1,
+    guests = 2,
+  } = searchDetails || {};
+
   return (
-
-    <div className="p-3 card">
-      <Card className="mb-3">
-        <Card.Body>
-          <Row>
-            <Col xs={2}>
-              <img
-                src="/icons/checkin.png"
-                alt="Check In"
-                width="30"
-              />
-            </Col>
-            <Col>
-              <div className="fw-bold">Check In</div>
-              <div className="text-dark fw-semibold">19 Jun, 2025</div>
-              <div className="text-muted small">Thursday</div>
-            </Col>
-          </Row>
+    <div className="booking-info-wrapper p-3">
+      {/* ✅ Check In */}
+      <Card className="mb-2 box-card">
+        <Card.Body className="d-flex justify-content-between align-items-center py-2 px-3">
+          <div className="d-flex align-items-center">
+            <FaCalendarCheck size={22} className="me-3" />
+            <span className="fw-medium text-muted">Check In</span>
+          </div>
+          <div className="text-end">
+            <div className="fw-bold">{checkInDate}</div>
+            <div className="text-muted small">{checkInDay}</div>
+          </div>
         </Card.Body>
       </Card>
 
-      <Card className="mb-3">
-        <Card.Body className="d-flex align-items-center">
-          <img
-            src="/icons/night.png"
-            alt="Night"
-            width="30"
-            className="me-2"
-          />
-          <span className="fw-bold">1 Night</span>
+      {/* ✅ Nights */}
+      <Card className="mb-2 box-card">
+        <Card.Body className="d-flex justify-content-between align-items-center py-2 px-3">
+          <div><FaMoon size={22} className="me-3" />  <span className="fw-medium text-muted">Nights</span></div>
+          <div>  <span className="fw-bold">{nights} Night{nights > 1 ? "s" : ""}</span></div>
         </Card.Body>
       </Card>
 
-      <Card className="mb-3">
-        <Card.Body>
-          <Row>
-            <Col xs={2}>
-              <img
-                src="/icons/checkout.png"
-                alt="Check Out"
-                width="30"
-              />
-            </Col>
-            <Col>
-              <div className="fw-bold">Check Out</div>
-              <div className="text-dark fw-semibold">20 Jun, 2025</div>
-              <div className="text-muted small">Friday</div>
-            </Col>
-          </Row>
+      {/* ✅ Check Out */}
+      <Card className="mb-2 box-card">
+        <Card.Body className="d-flex justify-content-between align-items-center py-2 px-3">
+          <div className="d-flex align-items-center">
+            <FaCalendarTimes size={22} className="me-3" />
+            <span className="fw-medium text-muted">Check Out</span>
+          </div>
+          <div className="text-end">
+            <div className="fw-bold">{checkOutDate}</div>
+            <div className="text-muted small">{checkOutDay}</div>
+          </div>
         </Card.Body>
       </Card>
 
-      <Card>
-        <Card.Body>
-          <Row>
-            <Col xs={2}>
-              <img
-                src="/icons/roomguest.png"
-                alt="Room & Guests"
-                width="30"
-              />
-            </Col>
-            <Col>
-              <div className="fw-bold">Rooms & Guests</div>
-            </Col>
-            <Col className="text-end">
-              <span className="fw-bold">
-                1 Room <span className="fw-normal">2 Guest</span>
-              </span>
-            </Col>
-          </Row>
+      {/* ✅ Rooms & Guests */}
+      <Card className="box-card">
+        <Card.Body className="d-flex justify-content-between align-items-center py-2 px-3">
+          <div className="d-flex align-items-center">
+            <PiBed size={22} className="me-3" />
+            <span className="fw-medium text-muted">Rooms & guests</span>
+          </div>
+          <div className="fw-bold text-end">
+            {rooms} Room <span className="fw-normal">{guests} Guest</span>
+          </div>
         </Card.Body>
       </Card>
     </div>
