@@ -1,4 +1,4 @@
-// SearchButton.js
+// src/Components/Common/SearchButton.jsx
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LocationContext } from '../Context/LocationContext';
@@ -8,9 +8,7 @@ import '../../Style/FlightBooking.css';
 const SearchButton = ({ type }) => {
   const navigate = useNavigate();
   const { locationData } = useContext(LocationContext);
-
   const { hotelSearchData } = useContext(HotelSearchContext);
-
 
   const handleSearchClick = () => {
     const {
@@ -21,11 +19,10 @@ const SearchButton = ({ type }) => {
       fromCode,
       toCode,
       departDate,
-      returnDate, // ✅ include returnDate
+      returnDate,
       passengers,
       cabinClass,
       tripType,
-      // bus data 
       fromCityId,
       toCityId,
     } = locationData;
@@ -41,7 +38,7 @@ const SearchButton = ({ type }) => {
             fromCode,
             toCode,
             departDate: departDate || { PreferredTime: new Date().toISOString() },
-            returnDate: returnDate || null, // ✅ Pass returnDate if exists
+            returnDate: returnDate || null,
             passengers,
             cabinClass,
             tripType: tripType || 'oneway'
@@ -61,22 +58,33 @@ const SearchButton = ({ type }) => {
         });
         break;
 
+      case 'hotel': {
+        const {
+          city,
+          checkIn,
+          checkOut,
+          guests,
+          rooms,
+          nights,
+        } = hotelSearchData || {};
 
-      // Hotel navigate 
-
-      case 'hotel':
-        navigate('/hotel-results', {
-          state: {
-            city: hotelSearchData.city,
-            checkIn: hotelSearchData.checkIn,
-            checkOut: hotelSearchData.checkOut,
-            guests: hotelSearchData.guests,
-            rooms: hotelSearchData.rooms,
-            nights: hotelSearchData.nights
-          }
-        });
-
+        if (city && checkIn && checkOut) {
+          navigate('/hotel-results', {
+            state: {
+              city: city.trim(),
+              checkIn,
+              checkOut,
+              guests: Number(guests),
+              rooms: Number(rooms),
+              nights: Number(nights)
+            }
+          });
+        } else {
+          console.warn('❌ Missing hotel search parameters:', hotelSearchData);
+          alert("Please fill in city, check-in, and check-out dates for hotel search.");
+        }
         break;
+      }
 
       default:
         console.warn('Unknown search type:', type);

@@ -1,27 +1,21 @@
-// src/Context/HotelSearchContext.js
+// HotelSearchContext.js
+import React, { createContext, useState } from 'react';
 
-import React, { createContext, useState } from "react";
+export const HotelSearchContext = createContext();
 
-// ✅ Default values for hotel search context
-const defaultValues = {
+export const HotelSearchProvider = ({ children }) => {
+  const [hotelSearchData, setHotelSearchData] = useState({
     city: '',
     checkIn: '',
     checkOut: '',
-    guests: '',
-    rooms: '',
-    nights: '',
-};
+    guests: 1,
+    rooms: 1,
+    nights: 1,
+  });
 
-// ✅ Create context
-export const HotelSearchContext = createContext();
-
-// ✅ Provider component
-export const HotelSearchProvider = ({ children }) => {
-    const [hotelSearchData, setHotelSearchData] = useState(defaultValues);
-
-    return (
-        <HotelSearchContext.Provider value={{ hotelSearchData, setHotelSearchData }}>
-            {children}
-        </HotelSearchContext.Provider>
-    );
+  return (
+    <HotelSearchContext.Provider value={{ hotelSearchData, setHotelSearchData }}>
+      {children}
+    </HotelSearchContext.Provider>
+  );
 };
