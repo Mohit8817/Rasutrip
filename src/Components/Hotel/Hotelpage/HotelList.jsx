@@ -113,6 +113,13 @@ const HotelList = () => {
           source: item.Source,
           isHotDeal: item.IsHotDeal,
           SearchTokenId: SearchTokenId, // ✅ Injected for later use
+
+          //          // ✅ Add these:
+          // checkInDate: formattedCheckIn,
+          // checkOutDate: formattedCheckOut,
+          // nights: nights,
+          // rooms: rooms,
+          // guests: guests
         }));
 
         if (formattedHotels.length === 0) {

@@ -12,23 +12,32 @@ const HotelCard = ({ hotel }) => {
 
   const handleBookClick = () => {
     const {
-      city,
-      checkIn,
-      checkOut,
-      guests,
-      rooms,
-      nights,
+      city = "",
+      checkIn = "",
+      checkOut = "",
+      guests = 1,
+      rooms = 1,
     } = hotelSearchData || {};
+
+    // Calculate number of nights
+    const getNights = (checkInDate, checkOutDate) => {
+      const start = new Date(checkInDate);
+      const end = new Date(checkOutDate);
+      const diffTime = end - start;
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    };
+
+    const nights = getNights(checkIn, checkOut);
 
     // ✅ Prepare the payload with required API fields
     const hotelPayload = {
       ...hotel,
-      ResultIndex: hotel.resultIndex,          // ✅ Ensure correct casing
-      HotelCode: hotel.id,                     // ✅ Required by API
-      SearchTokenId: hotel.SearchTokenId,      // ✅ Should be passed from API response
+      ResultIndex: hotel.resultIndex,
+      HotelCode: hotel.id,
+      SearchTokenId: hotel.SearchTokenId,
     };
 
-    // Navigate to details page
+    // ✅ Navigate with hotel + search details
     navigate(`/HotelDetailsPage/${hotel.id}`, {
       state: {
         hotel: hotelPayload,
@@ -38,7 +47,7 @@ const HotelCard = ({ hotel }) => {
           checkOut,
           guests: Number(guests),
           rooms: Number(rooms),
-          nights: Number(nights),
+          nights,
         },
       },
     });
