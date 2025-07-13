@@ -13,7 +13,9 @@ const Addoninfo = () => {
 
   const passengersData = useSelector((state) => state.passengersData || []);
   console.log("passenger", passengersData, "SSR", SSR)
-  const mealOptions = SSR?.Meal?.[0] || [];
+  // const mealOptions = SSR?.Meal?.[0] || [];
+  const mealOptions = SSR?.Meal?.[0]?.Meals || [];
+
   const baggageOptions = SSR?.Baggage?.[0] || [];
   const rawSeatData = SSR?.Seats?.[0]?.[0]?.ul;
   const seatOptions = Array.isArray(rawSeatData)
@@ -136,7 +138,7 @@ const Addoninfo = () => {
                     aria-label="Select meal option"
                   >
                     <option value="">Select a meal</option>
-                    {mealOptions.map((meal) => (
+                    {mealOptions?.map((meal) => (
                       <option key={`meal-${meal.Key}`} value={meal.Key}>
                         {meal.AirlineDescription} (Rs. {meal.Price})
                       </option>
