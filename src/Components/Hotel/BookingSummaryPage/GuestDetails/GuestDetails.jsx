@@ -18,8 +18,7 @@ const GuestDetails = () => {
                     <GuestDetailsInfo/>
                     </Col>
                     <Col lg={3}>
-                        {/* <FareSummaryCard /> */}
-                        {/* <HotelPromoCodeCard /> */}
+                      
                         <FareSummaryCard/>
                         <HotelPromoCodeCard/>
                     </Col>

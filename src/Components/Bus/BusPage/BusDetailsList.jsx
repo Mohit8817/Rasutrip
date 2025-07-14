@@ -1,4 +1,3 @@
-// src/Components/Bus/BusPage/BusDetailsList.jsx
 import React, { useEffect, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { Container } from "react-bootstrap";
@@ -10,7 +9,7 @@ import Busloader from "../Busloader/Busloader";
 
 const USER_IP_FALLBACK = "122.161.64.143";
 
-const BusDetailsList = () => {
+const BusDetailsList = ({ priceRange, setActualPriceRange }) => {
   const { state } = useLocation();
 
   const from = state?.fromCity ?? null;
@@ -42,7 +41,19 @@ const BusDetailsList = () => {
       setLoading(true);
 
       try {
-        const apiResult = await fetchBusResults(DateOfJourney, OriginId, DestinationId, UserIp);
+        const apiResult = await fetchBusResults(
+          DateOfJourney,
+          OriginId,
+          DestinationId,
+          UserIp
+        );
+
+        const prices = apiResult.Result.map((item) =>
+          item.BusPrice?.PublishedPrice || 0
+        );
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        setActualPriceRange([min, max]);
 
         const mapped = apiResult.Result.map((item) => {
           const dep = new Date(item.DepartureTime);
@@ -52,19 +63,28 @@ const BusDetailsList = () => {
             operator: item.TravelName || "N/A",
             serviceName: item.ServiceName || "N/A",
             busType: item.BusType,
-            departTime: dep.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            departTime: dep.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
             departDate: dep.toLocaleDateString("en-CA"),
-            departLocation: item.BoardingPointsDetails?.[0]?.CityPointLocation || from,
+            departLocation:
+              item.BoardingPointsDetails?.[0]?.CityPointLocation || from,
             duration: getDuration(dep, arr),
-            arriveTime: arr.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            arriveTime: arr.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
             arriveDate: arr.toLocaleDateString("en-CA"),
-            arriveLocation: item.DroppingPointsDetails?.[0]?.CityPointLocation || to,
+            arriveLocation:
+              item.DroppingPointsDetails?.[0]?.CityPointLocation || to,
             price: item.BusPrice?.PublishedPrice
               ? `₹ ${item.BusPrice.PublishedPrice.toFixed(2)}`
               : "Price Not Available",
+            numericPrice: item.BusPrice?.PublishedPrice || 0, // useful for filtering
             seatsAvailable: item.AvailableSeats || 0,
             cancellationPolicies: item.CancellationPolicies || [],
-            ResultIndex: item.ResultIndex, // ✅ correct case
+            ResultIndex: item.ResultIndex,
             SearchTokenId: apiResult.SearchTokenId,
             OriginId,
             DestinationId,
@@ -74,7 +94,13 @@ const BusDetailsList = () => {
           };
         });
 
-        setBusList(mapped);
+        const filtered = mapped.filter(
+          (bus) =>
+            bus.numericPrice >= priceRange[0] &&
+            bus.numericPrice <= priceRange[1]
+        );
+
+        setBusList(filtered);
       } catch (error) {
         console.error("API Error:", error);
       } finally {
@@ -83,7 +109,17 @@ const BusDetailsList = () => {
     };
 
     getBusData();
-  }, [DateOfJourney, DestinationId, OriginId, UserIp, from, getDuration, to]);
+  }, [
+    DateOfJourney,
+    DestinationId,
+    OriginId,
+    UserIp,
+    from,
+    getDuration,
+    to,
+    priceRange,
+    setActualPriceRange,
+  ]);
 
   const handleBusClick = (bus) => {
     setSelectedBus(bus);
@@ -109,7 +145,9 @@ const BusDetailsList = () => {
           <BusDetailsCard key={idx} bus={bus} onSelect={handleBusClick} />
         ))
       ) : (
-        <div className="text-center text-muted py-5">No buses found for your search.</div>
+        <div className="text-center text-muted py-5">
+          No buses found for your search.
+        </div>
       )}
 
       <BusSeatSelect

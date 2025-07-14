@@ -21,7 +21,7 @@ const SearchSummary = () => {
           <strong>📍 {city}</strong>
         </Col>
         <Col style={{ minWidth: 140 }}>
-          <div className="fw-semibold">Check‑In</div>
+          <div className="fw-semibold">Check-In</div>
           <small className="text-muted">{checkIn}</small>
         </Col>
         <Col style={{ minWidth: 80 }}>
@@ -29,13 +29,13 @@ const SearchSummary = () => {
           <small className="text-muted">{nights}</small>
         </Col>
         <Col style={{ minWidth: 140 }}>
-          <div className="fw-semibold">Check‑Out</div>
+          <div className="fw-semibold">Check-Out</div>
           <small className="text-muted">{checkOut}</small>
         </Col>
         <Col style={{ minWidth: 180 }}>
-          <div className="fw-semibold">Rooms & Guests</div>
+          <div className="fw-semibold">Rooms & Guests</div>
           <small className="text-muted">
-            {guests} Guest&nbsp;&bull;&nbsp;{rooms} Room
+            {guests} Guest&nbsp;&bull;&nbsp;{rooms} Room
           </small>
         </Col>
         <Col className="text-end" style={{ minWidth: 150 }}>
