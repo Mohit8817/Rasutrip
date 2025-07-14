@@ -1,11 +1,10 @@
 // src/Components/Bus/BusPage/BusDetailsList.jsx
 import React, { useEffect, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Container, Spinner } from "react-bootstrap";
+import { Container } from "react-bootstrap";
 import BusDetailsCard from "./BusDetailsCard";
 import BusSeatSelect from "./BusSeatSelect";
-import { fetchBusResults } from '../../APIS/BusApi/BusApis';
-
+import { fetchBusResults } from "../../APIS/BusApi/BusApis";
 import "../../../Style/Pagescss/BusResultPage.css";
 import Busloader from "../Busloader/Busloader";
 
@@ -43,12 +42,7 @@ const BusDetailsList = () => {
       setLoading(true);
 
       try {
-        const apiResult = await fetchBusResults(
-          DateOfJourney,
-          OriginId,
-          DestinationId,
-          UserIp
-        );
+        const apiResult = await fetchBusResults(DateOfJourney, OriginId, DestinationId, UserIp);
 
         const mapped = apiResult.Result.map((item) => {
           const dep = new Date(item.DepartureTime);
@@ -70,13 +64,11 @@ const BusDetailsList = () => {
               : "Price Not Available",
             seatsAvailable: item.AvailableSeats || 0,
             cancellationPolicies: item.CancellationPolicies || [],
-            resultIndex: item.ResultIndex,
+            ResultIndex: item.ResultIndex, // ✅ correct case
             SearchTokenId: apiResult.SearchTokenId,
-            // IDs / IP we need for seat API
             OriginId,
             DestinationId,
             UserIp,
-            // extra details
             BoardingPointsDetails: item.BoardingPointsDetails || [],
             DroppingPointsDetails: item.DroppingPointsDetails || [],
           };
@@ -110,8 +102,6 @@ const BusDetailsList = () => {
 
       {loading ? (
         <div className="text-center py-5">
-          {/* <Spinner animation="border" variant="primary" />
-           */}
           <Busloader />
         </div>
       ) : busList.length ? (

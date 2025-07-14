@@ -36,22 +36,27 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
 
   useEffect(() => {
     const loadSeatLayout = async () => {
-      if (!show || !bus?.SearchTokenId || !bus?.resultIndex) return;
+      if (!show || !bus?.SearchTokenId || !bus?.ResultIndex) return;
       setLoading(true);
 
       try {
-        const data = await fetchSeatLayout({
+        const payload = {
           SearchTokenId: bus.SearchTokenId,
-          ResultIndex: bus.resultIndex,
-          UserIp: bus.UserIp,
+          ResultIndex: bus.ResultIndex,
           OriginId: bus.OriginId,
           DestinationId: bus.DestinationId,
-        });
+        };
+
+        if (bus.UserIp) payload.UserIp = bus.UserIp;
+
+        console.log("📡 Sending seat layout request:", payload);
+
+        const data = await fetchSeatLayout(payload);
 
         const seats = data?.Result?.SeatLayout?.SeatDetails?.flat() ?? [];
         setSeatLayout(seats);
       } catch (err) {
-        console.error("Error loading seat layout:", err);
+        console.error("❌ Error loading seat layout:", err.response?.data || err.message);
       } finally {
         setLoading(false);
       }
@@ -59,6 +64,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
 
     loadSeatLayout();
   }, [show, bus]);
+
 
   const toggleSeat = (seat) => {
     if (!seat.SeatStatus) return;
@@ -133,10 +139,10 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                                   isBooked
                                     ? "#b8b8b8"
                                     : isSelected
-                                    ? "#6FA84F"
-                                    : seat?.IsLadiesSeat
-                                    ? "#ff69b4"
-                                    : "#fdfcfcff"
+                                      ? "#6FA84F"
+                                      : seat?.IsLadiesSeat
+                                        ? "#ff69b4"
+                                        : "#fdfcfcff"
                                 }
                               />
                             </div>
@@ -159,10 +165,10 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                                   isBooked
                                     ? "#b8b8b8"
                                     : isSelected
-                                    ? "#6FA84F"
-                                    : seat?.IsLadiesSeat
-                                    ? "#ff69b4"
-                                    : "#fdfcfcff"
+                                      ? "#6FA84F"
+                                      : seat?.IsLadiesSeat
+                                        ? "#ff69b4"
+                                        : "#fdfcfcff"
                                 }
                               />
                             </div>
@@ -196,10 +202,10 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                                   isBooked
                                     ? "#b8b8b8"
                                     : isSelected
-                                    ? "#6FA84F"
-                                    : seat?.IsLadiesSeat
-                                    ? "#ff69b4"
-                                    : "#fdfcfcff"
+                                      ? "#6FA84F"
+                                      : seat?.IsLadiesSeat
+                                        ? "#ff69b4"
+                                        : "#fdfcfcff"
                                 }
                               />
                             </div>
@@ -222,10 +228,10 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                                   isBooked
                                     ? "#b8b8b8"
                                     : isSelected
-                                    ? "#6FA84F"
-                                    : seat?.IsLadiesSeat
-                                    ? "#ff69b4"
-                                    : "#fdfcfcff"
+                                      ? "#6FA84F"
+                                      : seat?.IsLadiesSeat
+                                        ? "#ff69b4"
+                                        : "#fdfcfcff"
                                 }
                               />
                             </div>
@@ -280,7 +286,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                       {p.CityPointName} - {p.ArrTime}
                     </option>
                   ))}
-                </Form.Select>  
+                </Form.Select>
               </Form.Group>
 
               <div className="mb-2">
