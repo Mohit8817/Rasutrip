@@ -2,7 +2,6 @@ import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, Row, Col, Button } from "react-bootstrap";
 import { HotelSearchContext } from "../../Context/HotelSearchContext";
-import "./HotelListingPage.css";
 
 const HotelCard = ({ hotel }) => {
   const navigate = useNavigate();

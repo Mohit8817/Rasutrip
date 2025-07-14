@@ -1,7 +1,6 @@
 import React, { useContext } from "react";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import { HotelSearchContext } from "../../Context/HotelSearchContext";
-import "./HotelListingPage.css";
 
 const SearchSummary = () => {
   const { hotelSearchData } = useContext(HotelSearchContext);
