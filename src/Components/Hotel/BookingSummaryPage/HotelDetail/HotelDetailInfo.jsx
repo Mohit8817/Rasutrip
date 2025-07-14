@@ -1,15 +1,27 @@
 import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, Row, Col, Button } from "react-bootstrap";
 import { FaMapMarkerAlt, FaCalendarAlt, FaBed, FaMoon } from "react-icons/fa";
-import hotelImage from "../../../../assest/hotel1.jpg";
-import { useNavigate } from "react-router-dom";
+import hotelFallbackImage from "../../../../assest/hotel1.jpg"; // Fallback if no image
 
 const HotelDetailInfo = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { hotel, room } = location.state || {};
 
     const handleContinue = () => {
-        navigate("/guest-details");
+        navigate("/guest-details", {
+            state: { hotel, room },
+        });
     };
+
+    if (!hotel || !room) {
+        return (
+            <div className="p-4 text-danger text-center">
+                ❌ Missing hotel or room details. Please go back and try again.
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -19,27 +31,29 @@ const HotelDetailInfo = () => {
 
             <Card className="shadow-sm border-0 mb-4">
                 <Card.Body>
+                    {/* Header */}
                     <Row className="align-items-center">
                         <Col>
-                            <h5 className="fw-bold text-dark">
-                                Elivaas 1 BHK with Rooftop Pool - Kamerios Verano, India
-                            </h5>
+                            <h5 className="fw-bold text-dark">{hotel.name}</h5>
                             <p className="text-muted mb-2">
                                 <FaMapMarkerAlt className="me-1" />
-                                Pilerne - Candolim Rd, Saipem Goa, India
+                                {hotel.location || "N/A"}
                             </p>
                         </Col>
                         <Col xs="auto">
-                            <div className="text-warning fs-5">⭐⭐⭐⭐⭐</div>
+                            <div className="text-warning fs-5">
+                                {"⭐".repeat(hotel.rating || 3)}
+                            </div>
                         </Col>
                     </Row>
 
                     <hr />
 
+                    {/* Image & Details */}
                     <Row className="align-items-center mb-3">
                         <Col md={3}>
                             <img
-                                src={hotelImage}
+                                src={hotel.image || hotelFallbackImage}
                                 alt="Hotel"
                                 className="img-fluid rounded"
                                 style={{ height: "180px", objectFit: "cover" }}
@@ -51,27 +65,27 @@ const HotelDetailInfo = () => {
                                 <Col md={3} className="mb-3">
                                     <FaCalendarAlt className="me-1" />
                                     <strong> Check-in</strong>
-                                    <div className="text-dark fw-bold">Jun, 2025</div>
-                                    <div className="text-muted small">19, Thu</div>
+                                    <div className="text-dark fw-bold">{hotel.checkInDate}</div>
                                 </Col>
 
                                 <Col md={3} className="mb-3">
                                     <FaMoon className="me-1" />
                                     <strong> Nights</strong>
-                                    <div className="fw-bold mt-1">1</div>
+                                    <div className="fw-bold mt-1">{hotel.nights}</div>
                                 </Col>
 
                                 <Col md={3} className="mb-3">
                                     <FaCalendarAlt className="me-1" />
                                     <strong> Check-out</strong>
-                                    <div className="text-dark fw-bold">Jun, 2025</div>
-                                    <div className="text-muted small">20, Fri</div>
+                                    <div className="text-dark fw-bold">{hotel.checkOutDate}</div>
                                 </Col>
 
                                 <Col md={3} className="mb-3">
                                     <FaBed className="me-1" />
                                     <strong> Rooms & Guests</strong>
-                                    <div className="fw-bold mt-1">1 Room 2 Guests</div>
+                                    <div className="fw-bold mt-1">
+                                        {hotel.rooms} Room(s), {hotel.guests} Guest(s)
+                                    </div>
                                 </Col>
                             </Row>
 
@@ -80,15 +94,17 @@ const HotelDetailInfo = () => {
                             <Row>
                                 <Col md={4}>
                                     <span className="text-muted">Room Type</span>
-                                    <div className="fw-bold">Apartment</div>
+                                    <div className="fw-bold">{room.RoomTypeName || "N/A"}</div>
                                 </Col>
                                 <Col md={4}>
                                     <span className="text-muted">No. of Guests</span>
-                                    <div className="fw-bold">2 Adults</div>
+                                    <div className="fw-bold">{room.Adult || hotel.guests} Adult(s)</div>
                                 </Col>
                                 <Col md={4}>
                                     <span className="text-muted">Cancellation Policy</span>
-                                    <div className="fw-bold text-primary">Free Cancellation</div>
+                                    <div className="fw-bold text-primary">
+                                        {room.CancellationPolicy || "Free Cancellation"}
+                                    </div>
                                 </Col>
                             </Row>
                         </Col>
@@ -96,6 +112,7 @@ const HotelDetailInfo = () => {
                 </Card.Body>
             </Card>
 
+            {/* Button */}
             <div className="text-start">
                 <Button variant="primary" className="btn-red" onClick={handleContinue}>
                     Continue Booking

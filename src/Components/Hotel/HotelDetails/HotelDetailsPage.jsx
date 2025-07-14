@@ -11,6 +11,7 @@ import {
   fetchHotelInfo,
   fetchRoomInfo,
 } from "../../APIS/HotelApi/HotelAPi";
+import HotelLoader from "../HotelLoaderCard/HotelLoader";
 
 const HotelDetailsPage = () => {
   const { state } = useLocation();
@@ -18,6 +19,8 @@ const HotelDetailsPage = () => {
 
   const [hotelData, setHotelData] = useState(null);
   const [roomData, setRoomData] = useState([]);
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [selectedPrice, setSelectedPrice] = useState(null);
 
   useEffect(() => {
     const getHotelDetails = async () => {
@@ -37,10 +40,7 @@ const HotelDetailsPage = () => {
         const hotelInfo = await fetchHotelInfo(payload);
         const roomInfoResponse = await fetchRoomInfo(payload);
 
-        console.log("✅ ROOM API Response:", roomInfoResponse);
-
         const roomInfo = roomInfoResponse?.Result?.HotelRoomsDetails || [];
-        console.log("✅ Extracted Room Info:", roomInfo);
 
         setHotelData(hotelInfo);
         setRoomData(roomInfo);
@@ -52,12 +52,13 @@ const HotelDetailsPage = () => {
     getHotelDetails();
   }, [hotel]);
 
-
   if (!hotelData) {
     return (
-      <Container className="text-center mt-5 pt-5">
-        <p className="mt-5 pt-5">Loading hotel details...</p>
-      </Container>
+      <div className="d-flex justify-content-center align-items-center mt-5 pt-5">
+        <div className="p-5">
+          <HotelLoader />
+        </div>
+      </div>
     );
   }
 
@@ -76,14 +77,30 @@ const HotelDetailsPage = () => {
       <Row className="mt-3">
         <Col lg={8}>
           <ImageGallery images={hotelData.Images || []} />
-          <RoomCard roomData={roomData} /> {/* ✅ Updated to use roomData */}
+
+          <RoomCard
+            roomData={roomData}
+            hotel={{
+              ...hotel,
+              checkInDate: searchDetails?.checkIn,
+              checkOutDate: searchDetails?.checkOut,
+              nights: searchDetails?.nights,
+              rooms: searchDetails?.rooms,
+              guests: searchDetails?.guests,
+            }}
+            onRoomSelect={({ baseFare, tax, serviceCharges, gst, room }) => {
+              setSelectedRoom(room);
+              setSelectedPrice({ baseFare, tax, serviceCharges, gst });
+              // navigation happens inside RoomCard
+            }}
+          />
+
           <Amenities facilities={hotelData.HotelFacilities || []} />
           <AboutHotel description={hotelData.Description || ""} />
         </Col>
 
         <Col lg={4}>
           <BookingInfoCard searchDetails={searchDetails} />
-
           <div className="map-placeholder mt-2">
             <iframe
               title="hotel-map"

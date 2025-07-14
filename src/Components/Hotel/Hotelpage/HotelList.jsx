@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import HotelCard from "./HotelCard";
 import { fetchHotels, fetchHotelCities } from "../../APIS/HotelApi/HotelAPi";
 import "./HotelListingPage.css";
+import HotelLoader from "../HotelLoaderCard/HotelLoader";
 
 const HotelList = () => {
   const location = useLocation();
@@ -151,14 +152,19 @@ const HotelList = () => {
     }
   }, [city, checkIn, checkOut, guests, rooms]);
 
-  if (loading) return <div className="text-center p-5">Loading hotels...</div>;
+  if (loading) return <div className="">
+
+    <div>
+      <HotelLoader />
+    </div>
+  </div>;
   if (hotels.length === 0) return <div className="text-center p-5">No hotels found. please change the date</div>;
 
   return (
     <div className="hotel-list">
-      <div className="text-end p-2 text-muted" style={{ fontSize: "12px" }}>
+      {/* <div className="text-end p-2 text-muted" style={{ fontSize: "12px" }}>
         Token: {searchToken || "N/A"}
-      </div>
+      </div> */}
       {hotels.map((hotel, index) => (
         <HotelCard key={index} hotel={hotel} />
       ))}

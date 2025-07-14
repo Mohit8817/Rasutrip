@@ -1,17 +1,38 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle } from "react-bootstrap-icons";
-import "./HotelDetails.css";
 
-const RoomCard = ({ roomData = [] }) => {
+const RoomCard = ({ roomData = [], hotel, onRoomSelect }) => {
   const navigate = useNavigate();
 
-  console.log("🔍 roomData received in RoomCard:", roomData); // Add this!
-
   const handleBookNow = (room) => {
-    navigate("/HotelDetail", {
-      state: { room },
-    });
+    const baseFare = Number(room?.Price?.OfferedPrice || 0);
+    const tax = Number(room?.Price?.Tax || 0);
+
+    if (onRoomSelect) {
+      onRoomSelect({
+        baseFare,
+        tax,
+        serviceCharges: 0,
+        gst: 0,
+        room,
+        hotel,
+      });
+
+      // Navigate after selecting room
+      navigate("/HotelDetail", {
+        state: {
+          hotel,
+          room,
+          priceDetails: {
+            baseFare,
+            tax,
+            serviceCharges: 0,
+            gst: 0,
+          },
+        },
+      });
+    }
   };
 
   return (
@@ -24,20 +45,16 @@ const RoomCard = ({ roomData = [] }) => {
             key={index}
             className="border rounded bg-white p-3 d-flex justify-content-between align-items-center flex-wrap mb-3"
           >
-            {/* Left Side */}
             <div>
               <div className="fw-bold">{room.RoomTypeName || "Room"}</div>
-              <div>
-                <a href="/" className="text-decoration-underline text-purple">
-                  Room Information
-                </a>
-              </div>
+              <a href="#" className="text-decoration-underline text-purple">
+                Room Information
+              </a>
               <div className="fw-bold mt-2 text-dark">
-                ₹{room.Price?.OfferedPrice || "N/A"}
+                ₹{Number(room.Price?.OfferedPrice || 0).toLocaleString()}
               </div>
             </div>
 
-            {/* Right Side */}
             <div className="text-end ms-auto d-flex flex-column align-items-end">
               <div className="text-success d-flex align-items-center mb-2">
                 <CheckCircle className="me-1" size={16} />
@@ -45,7 +62,10 @@ const RoomCard = ({ roomData = [] }) => {
                   {room.Inclusion?.[0] || room.RatePlanName || "ROOM ONLY"}
                 </span>
               </div>
-              <button className="btn-red" onClick={() => handleBookNow(room)}>
+              <button
+                className="btn btn-danger btn-sm px-4"
+                onClick={() => handleBookNow(room)}
+              >
                 Book Now
               </button>
             </div>
