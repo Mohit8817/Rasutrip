@@ -22,6 +22,12 @@ import BusTravellerDetails from './Components/Bus/BusTravellerDetails/BusTravell
 import BusReview from './Components/Bus/BusReview/BusReview';
 import CustomerLogin from './Components/Login/CustomerLogin';
 import AgentLogin from './Components/Login/AgentLogin';
+import TermsandConditions from './Pages/LegalPages/TermsandConditions';
+import PrivacyPolicy from './Pages/LegalPages/PrivacyPolicy';
+import Declaration from './Pages/LegalPages/Declaration';
+import UserAgreement from './Pages/LegalPages/UserAgreement';
+import CancellationRefundpolicy from './Pages/LegalPages/CancellationRefundpolicy';
+import FAQ from './Pages/LegalPages/FAQ';
 
 function App() {
   return (
@@ -53,6 +59,20 @@ function App() {
         {/* Login */}
         <Route path="/login/customer" element={<CustomerLogin />} />
         <Route path="/login/agent" element={<AgentLogin />} />
+
+
+
+
+        {/* Footer pages  */}
+
+
+        <Route path="terms-and-conditions" element={<TermsandConditions />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/disclaimer" element={<Declaration />} />
+        <Route path="/UserAgreement" element={<UserAgreement />} />
+        <Route path="/CancellationRefundpolicy" element={<CancellationRefundpolicy />} />
+        <Route path="/faq" element={<FAQ />} />
+
       </Routes>
       <Footer />
     </>

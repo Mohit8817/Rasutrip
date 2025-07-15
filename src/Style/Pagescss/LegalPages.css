@@ -1,0 +1,19 @@
+
+
+
+.terms-wrapper {
+    background-color: #f6f8fc;
+    margin-top: 5rem;
+    min-height: 100vh;
+}
+
+.terms-wrapper h2 {
+    border-bottom: 2px solid #ca0e27;
+    /* purple color line */
+    display: inline-block;
+    padding-bottom: 0.3rem;
+}
+
+
+
+
