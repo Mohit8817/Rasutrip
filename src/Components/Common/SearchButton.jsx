@@ -25,6 +25,7 @@ const SearchButton = ({ type }) => {
       tripType,
       fromCityId,
       toCityId,
+      totalPrice,
     } = locationData;
 
     switch (type) {
@@ -53,7 +54,8 @@ const SearchButton = ({ type }) => {
             toCity,
             fromCityId,
             toCityId,
-            departDate: departDate || new Date().toISOString()
+            departDate: departDate || new Date().toISOString(),
+            totalPrice
           }
         });
         break;
