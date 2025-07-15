@@ -1,5 +1,5 @@
 import React from "react";
-import carImage from "../../../Assests/newHomeImgs/aboutLogo.png"; // Image of the car illustration
+import carImage from "../../Assests/newHomeImgs/aboutLogo.png"; // Image of the car illustration
 
 const AboutRasu = () => {
     const aboutTSJData = [
