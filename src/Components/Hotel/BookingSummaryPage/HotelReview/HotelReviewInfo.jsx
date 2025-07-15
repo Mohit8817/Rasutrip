@@ -37,8 +37,8 @@ const HotelReviewInfo = () => {
                 <Card.Body>
                     <Row className="align-items-center">
                         <Col>
-                            <h5 className="fw-bold text-dark">{hotel.name}</h5>
-                            <p className="text-muted mb-2">
+                            <h5 className="fw-bold mb-3  align-items-center">{hotel.name}</h5>
+                            <p className="text-muted d-flex mb-2">
                                 <FaMapMarkerAlt className="me-1 text-danger" />
                                 {hotel.location}
                             </p>

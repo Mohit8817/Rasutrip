@@ -8,7 +8,7 @@ import { useLocation } from 'react-router-dom';
 
 const GuestDetails = () => {
 
-        const location = useLocation();
+    const location = useLocation();
     const { priceDetails } = location.state || {};
     return (
         <div>
@@ -19,12 +19,12 @@ const GuestDetails = () => {
                 </Row>
                 <Row>
                     <Col lg={9}>
-                    <GuestDetailsInfo/>
+                        <GuestDetailsInfo />
                     </Col>
                     <Col lg={3} className='mt-4'>
-                      
+
                         <FareSummaryCard priceDetails={priceDetails} />
-                        <HotelPromoCodeCard/>
+                        <HotelPromoCodeCard />
                     </Col>
                 </Row>
             </Container></div>

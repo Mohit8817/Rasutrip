@@ -7,7 +7,8 @@ const GuestDetailsInfo = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { hotel, room, roomDetails } = location.state || {};
+  const { hotel, room, roomDetails, priceDetails } = location.state || {};
+
 
   // Input states
   const [guestInputs, setGuestInputs] = useState(
@@ -66,10 +67,9 @@ const GuestDetailsInfo = () => {
     if (!validateFields()) return;
 
     navigate('/Hotelreview', {
-      state: { hotel, room, roomDetails, guestInputs, email, mobile }
+      state: { hotel, room, roomDetails, priceDetails, guestInputs, email, mobile }
     });
   };
-
   if (!hotel || !room || !roomDetails) {
     return (
       <div className="p-4 text-danger text-center">
@@ -176,10 +176,11 @@ const GuestDetailsInfo = () => {
       {/* Contact Details */}
       <Card className="mb-4 shadow-sm border-0">
         <Card.Body>
-          <h6 className="fw-bold mb-3">
+          <h6 className="fw-bold mb-3 d-flex align-items-center">
             <FaEnvelope className="me-2 text-danger" />
             Your ticket and hotel details will be shared here
           </h6>
+
           <Row>
             <Col lg={3}><Form.Select><option>India (+91)</option></Form.Select></Col>
             <Col lg={4}>
