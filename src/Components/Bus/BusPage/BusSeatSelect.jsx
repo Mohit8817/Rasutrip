@@ -91,15 +91,23 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
         bus,
         selectedSeats,
         totalPrice,
-        boarding,
-        dropping,
         fromCity,
         toCity,
-        departDate,
+        departDate: bus?.departDate,
+        arriveDate: bus?.arriveDate,
         departTime: bus?.departTime,
         arriveTime: bus?.arriveTime,
+        boarding: {
+          name: boarding?.CityPointName,
+          time: boarding?.DepTime,
+        },
+        dropping: {
+          name: dropping?.CityPointName,
+          time: dropping?.ArrTime,
+        },
       },
     });
+
   };
 
   return (
@@ -256,52 +264,66 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
               <div><SvgSeatIcon fill="#B8B8B8" /> Booked seat</div>
             </div>
           </Col>
-
           {/* Booking Info */}
           <Col md={4}>
             <Card className="p-3 shadow-sm mb-3">
-              <h6 className="fw-bold">{bus?.operator}</h6>
-              <div className="small text-muted mb-3">
-                {bus?.departTime} - {bus?.arriveTime} | {bus?.busType}
+              <h6 className="fw-bold mb-1">{bus?.operator}</h6>
+              <div className="text-muted mb-2" style={{ fontSize: "14px" }}>
+                {bus?.departDate} | {bus?.departTime} - {bus?.arriveTime} | {bus?.busType}
               </div>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Boarding Point</Form.Label>
+              {/* Boarding Point */}
+              <Form.Group className="mb-2">
+                <Form.Label className="mb-1 fw-semibold">Choose Boarding Point</Form.Label>
                 <Form.Select onChange={(e) => setBoarding(JSON.parse(e.target.value))}>
                   <option value="">Select Boarding</option>
                   {bus?.BoardingPointsDetails.map((p, i) => (
                     <option key={i} value={JSON.stringify(p)}>
-                      {p.CityPointName} - {p.DepTime}
+                      {p.CityPointName} Time: {p.DepTime}
                     </option>
                   ))}
                 </Form.Select>
+                {boarding && (
+                  <div className="mt-1 small text-muted">
+                    {boarding.CityPointName} Time: {boarding.DepTime}
+                  </div>
+                )}
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Dropping Point</Form.Label>
+              {/* Dropping Point */}
+              <Form.Group className="mb-2">
+                <Form.Label className="mb-1 fw-semibold">Choose Dropping Point</Form.Label>
                 <Form.Select onChange={(e) => setDropping(JSON.parse(e.target.value))}>
                   <option value="">Select Dropping</option>
                   {bus?.DroppingPointsDetails.map((p, i) => (
                     <option key={i} value={JSON.stringify(p)}>
-                      {p.CityPointName} - {p.ArrTime}
+                      {p.CityPointName} Time: {p.ArrTime}
                     </option>
                   ))}
                 </Form.Select>
+                {dropping && (
+                  <div className="mt-1 small text-muted">
+                    {dropping.CityPointName} Time: {dropping.ArrTime}
+                  </div>
+                )}
               </Form.Group>
 
-              <div className="mb-2">
-                <strong>Selected Seats:</strong> {selectedSeats.map((s) => s.SeatName).join(", ") || "None"}
-              </div>
+              {/* Seats & Price */}
+              <div className="mt-3">
+                <div className="fw-semibold">Selected Seats No</div>
+                <div className="mb-2 text-muted">{selectedSeats.map((s) => s.SeatName).join(", ") || "None"}</div>
 
-              <div className="mb-3">
-                <strong>You Pay:</strong> <span className="fs-5 fw-bold">₹ {totalPrice.toFixed(2)}</span>
-              </div>
+                <div className="fw-semibold">You Pay :</div>
+                <div className="fs-5 fw-bold mb-3">{totalPrice.toFixed(2)} Rs</div>
 
-              <Button className="btn-red w-100" onClick={handleContinue}>
-                Continue
-              </Button>
+                <Button className="btn-red w-100" onClick={handleContinue}>
+                  Continue
+                </Button>
+              </div>
             </Card>
           </Col>
+
+
         </Row>
       </Modal.Body>
     </Modal>

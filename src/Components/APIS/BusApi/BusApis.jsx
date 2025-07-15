@@ -6,6 +6,7 @@ const BusServices = {
     fetchCities: `${baseURL}/bus/search-city`,
     searchResults: `${baseURL}/busservice/search`,
     seatLayout: `${baseURL}/busservice/seatlayout`,
+     boardingDroppingPoints: `${baseURL}/busservice/boardingpoint`,
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -72,5 +73,32 @@ export const fetchSeatLayout = async ({
     } catch (err) {
         console.error(" Seat layout fetch error:", err);
         throw err;
+    }
+};
+
+
+
+// ─────────────────────────────────────────────────────────────
+// 💺 Fetch  Boarding / Dropping points   
+// ─────────────────────────────────────────────────────────────
+
+// New function to fetch boarding/dropping
+export const fetchBoardingDroppingPoints = async ({
+    SearchTokenId,
+    ResultIndex,
+    OriginId,
+    DestinationId,
+}) => {
+    try {
+        const response = await axios.post(BusServices.boardingDroppingPoints, {
+            SearchTokenId,
+            ResultIndex,
+            OriginId,
+            DestinationId,
+        });
+        return response.data;
+    } catch (err) {
+        console.error("Failed to fetch boarding/dropping points:", err);
+        return { BoardingPoints: [], DroppingPoints: [] };
     }
 };
