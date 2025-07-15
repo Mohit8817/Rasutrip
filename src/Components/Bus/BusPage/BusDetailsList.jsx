@@ -9,21 +9,25 @@ import Busloader from "../Busloader/Busloader";
 
 const USER_IP_FALLBACK = "122.161.64.143";
 
-const BusDetailsList = ({ priceRange, setActualPriceRange }) => {
+const BusDetailsList = ({
+  priceRange,
+  setActualPriceRange,
+  selectedOperators,
+  selectedBusTypes,
+  setAvailableOperators,
+  setAvailableBusTypes,
+}) => {
   const { state } = useLocation();
-
   const from = state?.fromCity ?? null;
   const to = state?.toCity ?? null;
   const formattedDate = state?.departDate ?? null;
   const DateOfJourney = formattedDate?.split("T")[0];
-
   const OriginId = state?.fromCityId;
   const DestinationId = state?.toCityId;
   const UserIp = USER_IP_FALLBACK;
 
   const [busList, setBusList] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [selectedBus, setSelectedBus] = useState(null);
   const [showSeatModal, setShowSeatModal] = useState(false);
 
@@ -61,29 +65,17 @@ const BusDetailsList = ({ priceRange, setActualPriceRange }) => {
 
           return {
             operator: item.TravelName || "N/A",
-            serviceName: item.ServiceName || "N/A",
-            busType: item.BusType,
-            departTime: dep.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
+            busType: item.BusType || "N/A",
+            departTime: dep.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            arriveTime: arr.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             departDate: dep.toLocaleDateString("en-CA"),
-            departLocation:
-              item.BoardingPointsDetails?.[0]?.CityPointLocation || from,
-            duration: getDuration(dep, arr),
-            arriveTime: arr.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
             arriveDate: arr.toLocaleDateString("en-CA"),
-            arriveLocation:
-              item.DroppingPointsDetails?.[0]?.CityPointLocation || to,
-            price: item.BusPrice?.PublishedPrice
-              ? `₹ ${item.BusPrice.PublishedPrice.toFixed(2)}`
-              : "Price Not Available",
-            numericPrice: item.BusPrice?.PublishedPrice || 0, // useful for filtering
+            departLocation: item.BoardingPointsDetails?.[0]?.CityPointLocation || from,
+            arriveLocation: item.DroppingPointsDetails?.[0]?.CityPointLocation || to,
+            duration: getDuration(dep, arr),
+            price: item.BusPrice?.PublishedPrice?.toFixed(2),
+            numericPrice: item.BusPrice?.PublishedPrice || 0,
             seatsAvailable: item.AvailableSeats || 0,
-            cancellationPolicies: item.CancellationPolicies || [],
             ResultIndex: item.ResultIndex,
             SearchTokenId: apiResult.SearchTokenId,
             OriginId,
@@ -94,10 +86,18 @@ const BusDetailsList = ({ priceRange, setActualPriceRange }) => {
           };
         });
 
+        // Populate dynamic filters
+        const operatorSet = [...new Set(mapped.map((bus) => bus.operator))];
+        const busTypeSet = [...new Set(mapped.map((bus) => bus.busType))];
+        setAvailableOperators(operatorSet);
+        setAvailableBusTypes(busTypeSet);
+
         const filtered = mapped.filter(
           (bus) =>
             bus.numericPrice >= priceRange[0] &&
-            bus.numericPrice <= priceRange[1]
+            bus.numericPrice <= priceRange[1] &&
+            (selectedOperators.length === 0 || selectedOperators.includes(bus.operator)) &&
+            (selectedBusTypes.length === 0 || selectedBusTypes.includes(bus.busType))
         );
 
         setBusList(filtered);
@@ -118,7 +118,11 @@ const BusDetailsList = ({ priceRange, setActualPriceRange }) => {
     getDuration,
     to,
     priceRange,
+    selectedOperators,
+    selectedBusTypes,
     setActualPriceRange,
+    setAvailableOperators,
+    setAvailableBusTypes,
   ]);
 
   const handleBusClick = (bus) => {
@@ -137,17 +141,13 @@ const BusDetailsList = ({ priceRange, setActualPriceRange }) => {
       </div>
 
       {loading ? (
-        <div className="text-center py-5">
-          <Busloader />
-        </div>
+        <div className="text-center py-5"><Busloader /></div>
       ) : busList.length ? (
         busList.map((bus, idx) => (
           <BusDetailsCard key={idx} bus={bus} onSelect={handleBusClick} />
         ))
       ) : (
-        <div className="text-center text-muted py-5">
-          No buses found for your search.
-        </div>
+        <div className="text-center text-muted py-5">No buses found for your search.</div>
       )}
 
       <BusSeatSelect

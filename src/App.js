@@ -28,6 +28,7 @@ import Declaration from './Pages/LegalPages/Declaration';
 import UserAgreement from './Pages/LegalPages/UserAgreement';
 import CancellationRefundpolicy from './Pages/LegalPages/CancellationRefundpolicy';
 import FAQ from './Pages/LegalPages/FAQ';
+import AboutUs from './Pages/LegalPages/Aboutus';
 
 function App() {
   return (
@@ -66,7 +67,8 @@ function App() {
         {/* Footer pages  */}
 
 
-        <Route path="terms-and-conditions" element={<TermsandConditions />} />
+        <Route path="/Aboutus" element={<AboutUs />} />
+        <Route path="/terms-and-conditions" element={<TermsandConditions />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/disclaimer" element={<Declaration />} />
         <Route path="/UserAgreement" element={<UserAgreement />} />

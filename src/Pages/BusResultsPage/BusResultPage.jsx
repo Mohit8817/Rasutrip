@@ -8,6 +8,12 @@ const BusResultPage = () => {
     const [priceRange, setPriceRange] = useState([0, 10000]);
     const [actualPriceRange, setActualPriceRange] = useState([0, 10000]);
 
+    const [selectedOperators, setSelectedOperators] = useState([]);
+    const [selectedBusTypes, setSelectedBusTypes] = useState([]);
+
+    const [availableOperators, setAvailableOperators] = useState([]);
+    const [availableBusTypes, setAvailableBusTypes] = useState([]);
+
     return (
         <div>
             <Container className="mt-5 pt-5">
@@ -22,12 +28,22 @@ const BusResultPage = () => {
                             priceRange={priceRange}
                             actualPriceRange={actualPriceRange}
                             onPriceChange={setPriceRange}
+                            selectedOperators={selectedOperators}
+                            setSelectedOperators={setSelectedOperators}
+                            selectedBusTypes={selectedBusTypes}
+                            setSelectedBusTypes={setSelectedBusTypes}
+                            availableOperators={availableOperators}
+                            availableBusTypes={availableBusTypes}
                         />
                     </Col>
                     <Col lg={9}>
                         <BusDetailsList
                             priceRange={priceRange}
                             setActualPriceRange={setActualPriceRange}
+                            selectedOperators={selectedOperators}
+                            selectedBusTypes={selectedBusTypes}
+                            setAvailableOperators={setAvailableOperators}
+                            setAvailableBusTypes={setAvailableBusTypes}
                         />
                     </Col>
                 </Row>

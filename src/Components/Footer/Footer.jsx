@@ -47,8 +47,16 @@ const Footer = () => {
                     <Col md={2} className="mb-4 mb-md-0 text-start">
                         <h5 className="footer-heading">Company</h5>
                         <ul className="list-unstyled">
-                            <li className="mb-2">About Us</li>
-                            <li>Frequently Asked Questions</li>
+                            <li className="mb-2">
+                                <Link to="/Aboutus" className="text-decoration-none text-dark">
+                                    About Us
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/faq" className="text-decoration-none text-dark">
+                                    Frequently Asked Questions
+                                </Link>
+                            </li>
                         </ul>
                     </Col>
 
@@ -67,11 +75,6 @@ const Footer = () => {
                         <h5 className="footer-heading">Legal</h5>
                         <ul className="list-unstyled">
                             <li className="mb-2">
-                             <li className="mb-2">
-                                <Link to="/faq" className="text-decoration-none text-dark">
-                                    FAQ
-                                </Link>
-                            </li>
                                 <Link to="/terms-and-conditions" className="text-decoration-none text-dark">
                                     Terms & Conditions
                                 </Link>
@@ -88,7 +91,7 @@ const Footer = () => {
                             </li>
                             <li className="mb-2">
                                 <Link to="/UserAgreement" className="text-decoration-none text-dark">
-                                    UserAgreement
+                                    User Agreement
                                 </Link>
                             </li>
                             <li className="mb-2">
