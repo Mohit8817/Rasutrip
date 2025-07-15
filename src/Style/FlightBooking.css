@@ -1,33 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 body {
   font-family: 'Roboto', sans-serif;
-  margin: 0;
-  padding: 0;
 }
 
-/* Trip Selector */
+
 .tripselector {
   display: flex;
   justify-content: flex-start;
-  flex-wrap: wrap;
 }
 
-/* Tagline */
 .flight-tagline {
-  font-size: 1.125rem; /* 18px */
+  font-size: 18px;
   font-weight: 600;
   color: #131313;
   margin: 0;
 }
 
-/* Tab Box */
+
+
+
+/* tabs system */
 .tab-box {
   background-color: #fff;
   color: #4c4c4c;
@@ -36,8 +29,8 @@ body {
   cursor: pointer;
   box-shadow: 0 4px 8px #0000001a;
   transition: all 0.3s ease;
-  width: 100%;
-  max-width: 600px;
+  width: 70% !important;
+
 }
 
 .tab-box:hover {
@@ -47,18 +40,26 @@ body {
 
 .tab-box.active-tab {
   background-color: #cb0d26;
+  /* Purple background */
   color: #fff;
 }
 
 .tab-box.active-tab svg {
   color: #fff;
+  /* White icon when active */
 }
 
 .tab-box svg {
   color: #cb0d26;
+  /* Purple icon */
 }
 
-/* Trip Type Tab */
+
+
+
+/* Trip type Selector css  */
+
+/* trip tab css Oneway / Round Trip / Multi City */
 .trip-type-tab-wrapper {
   display: flex;
   gap: 10px;
@@ -69,7 +70,6 @@ body {
   align-items: center;
   width: fit-content;
   margin: auto;
-  flex-wrap: wrap;
 }
 
 .trip-type-input {
@@ -90,13 +90,125 @@ body {
 
 .trip-type-input:checked+label.trip-type-tab {
   background-color: #cb0d26;
+  /* Purple like in your screenshot */
   color: white;
   border-color: #cb0d26;
   box-shadow: 0 0 5px #ac2b3c;
 }
 
-/* Location Card */
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* LocationInput css             Component for 'From' and 'To' input fields */
+
+/* 
+
 .location-card {
+  border-radius: 12px;
+  padding: 15px 10px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
+  background-color: #fff;
+
+}
+
+.location-box {
+  padding: 0 12px;
+  text-align: left;
+}
+
+.location-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #2b2b2b; 
+  text-transform: uppercase;
+}
+
+.location-city:focus {
+    box-shadow: none;
+    outline: none;
+}
+.location-city {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000;
+}
+
+.location-airport {
+  font-size: 13px;
+  color: #2b2b2b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.switch-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.switch-icon {
+  background: #e5d8f5;
+  color: #cb0d26;
+  border-radius: 50%;
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  max-height: 280px;
+  overflow-y: auto;
+  width: 450px;
+  z-index: 10;
+  border-radius: 8px;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+  margin-top: 5px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dropdown-item:hover {
+  background-color: #b9192e;
+  color: #fff;
+}
+
+.location-box {
+  position: relative;
+}
+
+
+
+
+ */
+
+
+ .location-card {
   border-radius: 12px !important;
   padding: 15px 10px !important;
   background-color: #fff !important;
@@ -151,7 +263,6 @@ body {
   cursor: pointer !important;
 }
 
-/* Dropdown */
 .dropdown-list {
   position: absolute !important;
   top: 100% !important;
@@ -181,9 +292,28 @@ body {
   color: #fff !important;
 }
 
-/* Date Picker */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Date picker css  */
+
+/* Calendar css  */
+
 .custom-date-picker .date-button-wrapper {
   border: 1px solid #ccc;
+  /* border-radius: 1px; */
   padding: 15px 10px;
   min-width: 140px;
   cursor: pointer;
@@ -231,7 +361,18 @@ body {
   z-index: 1000;
 }
 
-/* Fare Type */
+
+
+
+
+
+
+
+
+/* FareTypeSelector */
+
+
+
 .fare-type-container .form-check-input:checked {
   background-color: #cb0d26;
   border-color: #cb0d26;
@@ -242,10 +383,13 @@ body {
   color: #333;
 }
 
-/* Passenger Class */
+
+
+/* PassengerClass css  */
+
+
 .passenger-class-box {
-  width: 100%;
-  max-width: 280px;
+  width: 280px;
   text-align: left;
   padding: 0;
   cursor: pointer;
@@ -268,11 +412,18 @@ body {
   text-overflow: ellipsis;
 }
 
+
+
+
 .passenger-class-wrapper {
   position: relative;
-  width: 100%;
-  max-width: 300px;
+  width: 300px;
 }
+
+
+
+
+
 
 .dropdown-box {
   position: absolute !important;
@@ -284,49 +435,71 @@ body {
   overflow-y: auto;
 }
 
-/* Cabin Options */
+.circle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #e8e8e8;
+  color: #cb0d26;
+  font-weight: 400;
+  padding: 0;
+  text-align: center;
+}
+
+
 .cabin-option {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 12px;
 }
 
 .custom-radio {
-  width: 18px;
-  height: 18px;
-  border: 2px solid #999;
-  border-radius: 50%;
-  margin-right: 10px;
-  position: relative;
-  transition: border-color 0.2s ease;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #999;
+    border-radius: 50%;
+    margin-right: 10px;
+    position: relative;
+    transition: border-color 0.2s ease;
 }
 
 .custom-radio.checked {
-  border-color: #cb0d26;
+    border-color: #cb0d26; /* purple color */
 }
 
 .custom-radio.checked::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 8px;
-  height: 8px;
-  background-color: #cb0d26;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background-color: #cb0d26;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .cabin-label {
-  text-transform: uppercase;
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  user-select: none;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    user-select: none;
 }
 
-/* Button */
+
+
+
+
+
+
+
+
+
+/* Search button css 
+
+*/
 .Mybutton {
   background-color: #cb0d26;
   color: white;
@@ -335,98 +508,4 @@ body {
   font-weight: bold;
   box-shadow: 6px 6px 10px rgba(37, 37, 37, 0.1);
   border: none;
-  width: fit;
-/*   
-  max-width: 300px; */
-}
-
-/* Media Queries */
-@media screen and (max-width: 1024px) {
-  .tab-box,
-  .passenger-class-box,
-  .passenger-class-wrapper,
-  .dropdown-list {
-    width: 100% !important;
-  }
-
-  .tripselector {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .dropdown-list {
-    width: 100% !important;
-  }
-
-  .custom-date-picker .date-button-wrapper {
-    min-width: unset;
-    width: 100%;
-  }
-
-  .Mybutton {
-    padding: 25px 20px;
-    width: 100%;
-    text-align: center;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .flight-tagline {
-    font-size: 16px;
-  }
-
-  .location-city {
-    font-size: 16px;
-  }
-
-  .tab-box {
-    font-size: 14px;
-  }
-
-  .location-label,
-  .cabin-label,
-  .passenger-label {
-    font-size: 11px;
-  }
-
-  .dropdown-item {
-    font-size: 13px;
-  }
-
-  .trip-type-tab {
-    font-size: 13px;
-    padding: 6px 14px;
-  }
-}
-
-@media screen and (max-width: 480px) {
-  .tripselector {
-    flex-direction: column;
-  }
-
-  .tab-box {
-    max-width: 100%;
-  }
-
-  .Mybutton {
-    font-size: 16px;
-    padding: 20px 16px;
-  }
-
-  .custom-date-picker .date {
-    font-size: 16px;
-  }
-
-  .custom-date-picker .label {
-    font-size: 10px;
-  }
-
-  .passenger-class-box,
-  .passenger-class-wrapper {
-    width: 100% !important;
-  }
-
-  .switch-icon {
-    padding: 6px;
-  }
 }

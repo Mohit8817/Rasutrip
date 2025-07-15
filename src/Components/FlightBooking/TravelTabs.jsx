@@ -10,8 +10,7 @@ const TravelTabs = ({ activeTab, setActiveTab }) => {
 
   return (
     <Container>
-      <Row className="justify-content-start justify-content-md-center">
-
+      <Row className="justify-content-center">
         <Col xs={4} md={2}>
           <Card
             className={`text-center tab-box ${activeTab === 'flight' ? 'active-tab' : ''}`}

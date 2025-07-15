@@ -57,93 +57,79 @@ const FlightBooking = () => {
 
                 {/* One way trip components  */}
                 {tripType !== 'multicity' && (
-                    <Row className="mt-2">
-                        <Col xs={12} sm={12} md={6} lg={5} className="mb-2">
+                    <Row className='mt-2'>
+                        <Col lg={5}>
                             <LocationInput />
                         </Col>
-
-                        <Col xs={12} sm={6} md={6} lg={3} className="mb-2">
+                        <Col lg={3}>
                             <DatePicker tripType={tripType} setTripType={setTripType} />
                         </Col>
-
-                        <Col xs={12} sm={6} md={6} lg={3} className="mb-2">
+                        <Col lg={3}>
                             <PassengerClass />
                         </Col>
-
-                        <Col xs={12} sm={12} md={12} lg={1}>
+                        <Col lg={1}>
                             <SearchButton type="flight" />
                         </Col>
                     </Row>
-
                 )}
 
                 {/* Multicity Component show  */}
                 {/* this Row only show when i click multi city tab */}
                 {tripType === 'multicity' && (
                     <Container className='p-0 m-0'>
-                        <Row className="mt-2">
-                            <Col xs={12} sm={12} md={6} lg={5} className="mb-2">
+                        <Row className='mt-2'>
+                            <Col lg={5}>
                                 <CitySegment onToCityChange={setToCityFromCitySegment} />
                             </Col>
-
-                            <Col xs={12} sm={6} md={3} lg={3} className="mb-2">
+                            <Col lg={3}>
                                 <DateSelect />
                             </Col>
-
-                            <Col xs={12} sm={6} md={3} lg={3} className="mb-2">
+                            <Col lg={3}>
                                 <PassengerClass />
                             </Col>
-
-                            <Col xs={12} sm={12} md={12} lg={1}>
+                            <Col lg={1}>
                                 <SearchButton />
                             </Col>
                         </Row>
-
                         {/* Add city row  */}
-                        <Row className="mt-2">
-                            <Col xs={12} sm={12} md={6} lg={5} className="mb-2">
+                        <Row className='mt-2'>
+                            <Col lg={5}>
                                 <MultiCityForm fromCityProp={toCityFromCitySegment} />
                             </Col>
-
-                            <Col xs={12} sm={6} md={3} lg={3} className="mb-2">
+                            <Col lg={3}>
                                 <SecondDateSelecter />
                             </Col>
 
-                            <Col xs={12} sm={6} md={2} lg={2} className="mb-2">
+                            <Col lg={2}>
                                 <AddCityButton onClick={handleAddCityClick} />
                             </Col>
+                            <Col lg={2}>
 
-                            <Col xs={12} sm={12} md={1} lg={2} className="mb-2">
-                                {/* Optional content or spacer */}
                             </Col>
                         </Row>
 
-
                         {/* Render each AddMorecity row */}
                         {cityComponents.map((city, index) => (
-                            <Row className="mt-2" key={index}>
-                                <Col xs={12} sm={12} md={6} lg={5} className="mb-2">
+                            <Row className='mt-2' key={index}>
+                                <Col lg={5}>
                                     <AddMorecity />
                                 </Col>
-
-                                <Col xs={12} sm={6} md={4} lg={3} className="mb-2">
+                                <Col lg={3}>
                                     <AddMorecitydatapick />
                                 </Col>
-
-                                <Col xs={6} sm={6} md={2} lg={1} className="mb-2">
-                                    <button
-                                        className="btn btn-secondary w-100"
-                                        onClick={() => handleRemoveCity(city.id)}
-                                    >
-                                        X
-                                    </button>
+                                <Col lg={1}>
+                                    {/* Remove button */}
+                                    <div>
+                                        <button
+                                            className='btn btn-secondary'
+                                            onClick={() => handleRemoveCity(city.id)}
+                                        >
+                                            X
+                                        </button>
+                                    </div>
                                 </Col>
-
-                                <Col xs={12} sm={12} md={12} lg={3} className="mb-2">
-                                    {/* Spacer or optional UI content */}
-                                </Col>
+                                <Col lg={3}></Col>
                             </Row>
-
                         ))}
                     </Container>
                 )}
