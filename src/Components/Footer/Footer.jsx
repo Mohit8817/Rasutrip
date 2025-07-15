@@ -4,6 +4,8 @@ import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../../Style/Footer.css'; // You can add styles here
 import footerlogo from '../../assest/rasutrip.png'
+import { Link } from 'react-router-dom';
+
 const Footer = () => {
     return (
         <footer className="footer py-5 bg-white">
@@ -45,8 +47,16 @@ const Footer = () => {
                     <Col md={2} className="mb-4 mb-md-0 text-start">
                         <h5 className="footer-heading">Company</h5>
                         <ul className="list-unstyled">
-                            <li className="mb-2">About Us</li>
-                            <li>Frequently Asked Questions</li>
+                            <li className="mb-2">
+                                <Link to="/Aboutus" className="text-decoration-none text-dark">
+                                    About Us
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/faq" className="text-decoration-none text-dark">
+                                    Frequently Asked Questions
+                                </Link>
+                            </li>
                         </ul>
                     </Col>
 
@@ -64,11 +74,33 @@ const Footer = () => {
                     <Col md={2} className="mb-4 mb-md-0 text-start">
                         <h5 className="footer-heading">Legal</h5>
                         <ul className="list-unstyled">
-                            <li className="mb-2">Terms & Conditions</li>
-                            <li className="mb-2">Privacy Policy</li>
-                            <li className="mb-2">Disclaimer</li>
-                            <li>Refund Policy</li>
+                            <li className="mb-2">
+                                <Link to="/terms-and-conditions" className="text-decoration-none text-dark">
+                                    Terms & Conditions
+                                </Link>
+                            </li>
+                            <li className="mb-2">
+                                <Link to="/privacy-policy" className="text-decoration-none text-dark">
+                                    Privacy Policy
+                                </Link>
+                            </li>
+                            <li className="mb-2">
+                                <Link to="/disclaimer" className="text-decoration-none text-dark">
+                                    Declaration
+                                </Link>
+                            </li>
+                            <li className="mb-2">
+                                <Link to="/UserAgreement" className="text-decoration-none text-dark">
+                                    User Agreement
+                                </Link>
+                            </li>
+                            <li className="mb-2">
+                                <Link to="/CancellationRefundpolicy" className="text-decoration-none text-dark">
+                                    Cancellation & Refund policy
+                                </Link>
+                            </li>
                         </ul>
+
                     </Col>
                 </Row>
 

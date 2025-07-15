@@ -1,8 +1,29 @@
 
+/* SortBAR */
+.sort-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #e6e6e6;
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
 
+.sort-bar span {
+  font-size: 16px;
+  color: #333;
+}
 
-
-
+.sort-bar select {
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
 
 
 

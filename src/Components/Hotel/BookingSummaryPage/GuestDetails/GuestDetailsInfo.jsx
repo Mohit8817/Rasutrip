@@ -27,7 +27,7 @@ const GuestDetailsInfo = () => {
                             <Row className="align-items-center mb-3">
                                 <Col lg={1} className="fw-bold">Adult 1</Col>
                                 <Col lg={2}>
-                                    <Form.Select className="border-danger">
+                                    <Form.Select className="">
                                         <option>Title</option>
                                         <option>Mr</option>
                                         <option>Ms</option>
@@ -37,14 +37,14 @@ const GuestDetailsInfo = () => {
                                     <Form.Control
                                         type="text"
                                         placeholder="First Name"
-                                        className="border-danger"
+                                        className=" "
                                     />
                                 </Col>
                                 <Col lg={4}>
                                     <Form.Control
                                         type="text"
                                         placeholder="Last Name"
-                                        className="border-danger"
+                                        className=" "
                                     />
                                 </Col>
                             </Row>
@@ -53,7 +53,7 @@ const GuestDetailsInfo = () => {
                             <Row className="align-items-center">
                                 <Col lg={1} className="fw-bold">Adult 2</Col>
                                 <Col lg={2}>
-                                    <Form.Select className="border-danger">
+                                    <Form.Select className=" ">
                                         <option>Title</option>
                                         <option>Mr</option>
                                         <option>Ms</option>
@@ -63,14 +63,14 @@ const GuestDetailsInfo = () => {
                                     <Form.Control
                                         type="text"
                                         placeholder="First Name"
-                                        className="border-danger"
+                                        className=" "
                                     />
                                 </Col>
                                 <Col lg={4}>
                                     <Form.Control
                                         type="text"
                                         placeholder="Last Name"
-                                        className="border-danger"
+                                        className=" "
                                     />
                                 </Col>
                             </Row>
@@ -88,7 +88,7 @@ const GuestDetailsInfo = () => {
 
                         <Row>
                             <Col lg={3}>
-                                <Form.Select className="border-danger">
+                                <Form.Select className=" ">
                                     <option>India (91)</option>
                                     {/* More countries can be added */}
                                 </Form.Select>
@@ -97,14 +97,14 @@ const GuestDetailsInfo = () => {
                                 <Form.Control
                                     type="text"
                                     placeholder="Mobile Number"
-                                    className="border-danger"
+                                    className=" "
                                 />
                             </Col>
                             <Col lg={5}>
                                 <Form.Control
                                     type="email"
                                     placeholder="Email"
-                                    className="border-danger"
+                                    className=" "
                                 />
                             </Col>
                         </Row>

@@ -3,8 +3,15 @@ import BusStep from "../BusStep"
 import BusDetailinfo from "./BusDetailinfo"
 import BusFareSummary from "../BusFareSummary"
 import BusPromoCode from "../BusPromoCode"
+import { useLocation } from 'react-router-dom';
+
+
 
 const BusDetail = () => {
+
+      const location = useLocation();
+  const { totalPrice } = location.state || {};
+
     return (
         <div>
 
@@ -20,8 +27,7 @@ const BusDetail = () => {
                         <BusDetailinfo />
                     </Col>
                     <Col lg={3}>
-
-                        <BusFareSummary />
+                        <BusFareSummary totalPrice={totalPrice} />
                         <BusPromoCode />
 
                     </Col>

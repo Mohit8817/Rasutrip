@@ -1,61 +1,52 @@
+import { useState, useEffect } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import './HotelResultsPage.css';
 import FilterSidebar from '../../Components/Hotel/Hotelpage/FilterSidebar';
 import SearchSummary from '../../Components/Hotel/Hotelpage/SearchSummary';
-import SortBar from '../../Components/Hotel/Hotelpage/SortBar';
-import HotelCard from '../../Components/Hotel/Hotelpage/HotelCard';
-import Card1 from "../../assest/crd1.jpeg";
 import HotelList from '../../Components/Hotel/Hotelpage/HotelList';
 
 const HotelResultsPage = () => {
-  const hotels = [
-    {
-      name: "ELIVAAS 1 BHK with Rooftop Pool - Kamerios Verano",
-      location: "Pilerne - Candolim Rd, Saipem Goa India",
-      rating: 5,
-      price: 3904.49,
-      image: Card1,
-    },
-    {
-      name: "ELIVAAS Kamerios Verano 1 BHK with Pool",
-      location: "Pilerne - Candolim Rd Marra India",
-      rating: 4,
-      price: 3936.16,
-      image: Card1,
-    }
-  ];
+  const [priceRange, setPriceRange] = useState([0, 20000]);
+  const [actualPriceRange, setActualPriceRange] = useState([0, 20000]);
+  const [starRatings, setStarRatings] = useState([]);
+  const [searchName, setSearchName] = useState('');
+  const [hotelNames, setHotelNames] = useState([]); // This holds all hotel names for dropdown
 
   return (
-    <>
+    <Container className='mt-5 pt-5'>
+      <Row>
+        <Col>
+          <SearchSummary />
+        </Col>
+      </Row>
 
-   
+      <Row className='mt-4'>
+        {/* Sidebar */}
+        <Col lg={3}>
+          <FilterSidebar
+            priceRange={priceRange}
+            actualPriceRange={actualPriceRange}
+            onPriceChange={setPriceRange}
+            selectedRatings={starRatings}
+            onRatingChange={setStarRatings}
+            searchName={searchName}
+            onSearchNameChange={setSearchName}
+            hotelNames={hotelNames} // pass hotel names for dropdown
+          />
+        </Col>
 
-      <Container className='mt-5 pt-5'>
-        <Row>
-          <Col>
-            <SearchSummary />
-          </Col>
-        </Row>
-        <Row className='mt-4'>
-          <Col lg={3}>
-            <FilterSidebar />
-          </Col>
-          <Col lg={9}>
-            <div className="">
-              <SortBar />
-              {hotels.map((hotel, index) => (
-                <HotelCard key={index} {...hotel} />
-              ))}
-
-              <div>
-                <HotelList />
-              </div>
-            </div>
-          </Col>
-        </Row>
-      </Container>
-    </>
-
+        {/* Hotel List */}
+        <Col lg={9}>
+          <HotelList
+            priceRange={priceRange}
+            selectedRatings={starRatings}
+            searchName={searchName}
+            setActualPriceRange={setActualPriceRange}
+            setHotelNames={setHotelNames} // allow HotelList to set hotelNames for dropdown
+          />
+        </Col>
+      </Row>
+    </Container>
   );
 };
 

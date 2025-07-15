@@ -1,16 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./HotelDetails.css";
 
-const images = [
-  "/images/card1.jpg",
-  "/images/card3.avif",
-  "/images/card4.avif",
-  "/images/card1.jpg",
-  "/images/card1.jpg",
-];
+const ImageGallery = ({ images = [] }) => {
+  const [selectedImage, setSelectedImage] = useState("");
 
-const ImageGallery = () => {
-  const [selectedImage, setSelectedImage] = useState(images[0]);
+  useEffect(() => {
+    if (images.length > 0) {
+      setSelectedImage(images[0]);
+    }
+  }, [images]);
+
+  if (!images.length) {
+    return <p className="text-muted">No images available</p>;
+  }
 
   return (
     <div className="gallery-container">
