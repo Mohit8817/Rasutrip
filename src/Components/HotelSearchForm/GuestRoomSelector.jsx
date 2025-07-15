@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useContext } from 'react';
-import { Row, Col, Card, Form, Button } from 'react-bootstrap';
+import { Row, Col, Card, Form } from 'react-bootstrap';
 import '../../Style/FlightBooking.css';
 import { HotelSearchContext } from '../Context/HotelSearchContext';
 
@@ -12,7 +12,7 @@ const GuestRoomSelector = () => {
   const popupRef = useRef();
   const { setHotelSearchData } = useContext(HotelSearchContext);
 
-  // Close popup when clicking outside
+  // Close popup on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (popupRef.current && !popupRef.current.contains(event.target)) {
@@ -26,35 +26,46 @@ const GuestRoomSelector = () => {
   // Update context when rooms change
   useEffect(() => {
     const totalGuests = rooms.reduce((total, room) => total + room.adults + room.children, 0);
+    const totalAdults = rooms.reduce((sum, r) => sum + r.adults, 0);
+    const totalChildren = rooms.reduce((sum, r) => sum + r.children, 0);
+
     setHotelSearchData((prev) => ({
       ...prev,
       guests: totalGuests,
-      rooms: rooms.length
+      rooms: rooms.length,
+      adultsCount: totalAdults,
+      childrenCount: totalChildren,
+      roomDetails: rooms
     }));
   }, [rooms]);
 
-  // Update adults/children in a specific room
+  // Update adults or children in a room
   const handleRoomChange = (index, type, value) => {
     const updatedRooms = [...rooms];
     updatedRooms[index][type] = parseInt(value);
     setRooms(updatedRooms);
   };
 
+  // Add another room
   const handleAddRoom = () => {
-    setRooms([...rooms, { adults: 2, children: 0 }]); // Add new room with default values
+    setRooms([...rooms, { adults: 2, children: 0 }]);
   };
 
   return (
     <div className="position-relative d-inline-block" ref={popupRef}>
+      {/* Main Summary Box */}
       <Card className="guest-room-box" onClick={() => setShowPopup(!showPopup)} style={{ cursor: 'pointer' }}>
         <Card.Body>
           <div className="guest-label">Rooms & Guests</div>
           <div className="fw-bold fs-5">
-            {rooms.reduce((sum, r) => sum + r.adults + r.children, 0)} Guest, {rooms.length} Room
+            {rooms.reduce((sum, r) => sum + r.adults + r.children, 0)}  Guest
+       
+           <span>  {rooms.length} Room</span>
           </div>
         </Card.Body>
       </Card>
 
+      {/* Popup Panel */}
       {showPopup && (
         <Card className="position-absolute rounded p-2" style={{ width: '300px', zIndex: 999 }}>
           <Form.Group className="mb-2">
@@ -73,10 +84,12 @@ const GuestRoomSelector = () => {
 
           <hr />
 
+          {/* Room Inputs */}
           {rooms.map((room, index) => (
             <div key={index}>
               <div className="fw-bold text-primary mb-2">Room {index + 1}</div>
 
+              {/* Adults */}
               <Form.Group className="mb-1">
                 <Row>
                   <Col xs={6} className="text-start">
@@ -97,6 +110,7 @@ const GuestRoomSelector = () => {
                 </Row>
               </Form.Group>
 
+              {/* Children */}
               <Form.Group className="mb-3">
                 <Row>
                   <Col xs={6} className="text-start">
@@ -121,6 +135,7 @@ const GuestRoomSelector = () => {
             </div>
           ))}
 
+          {/* Add Room Button */}
           <div
             className="text-success fw-bold text-center"
             style={{ cursor: 'pointer', textDecoration: 'underline' }}

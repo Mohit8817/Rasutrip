@@ -1,17 +1,30 @@
-import React from "react";
+import React, { useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, Row, Col, Button } from "react-bootstrap";
 import { FaMapMarkerAlt, FaCalendarAlt, FaBed, FaMoon } from "react-icons/fa";
-import hotelFallbackImage from "../../../../assest/hotel1.jpg"; // Fallback if no image
+import hotelFallbackImage from "../../../../assest/hotel1.jpg";
+import { HotelSearchContext } from "../../../Context/HotelSearchContext"; // ✅ Import context
 
 const HotelDetailInfo = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { hotel, room } = location.state || {};
+    const { hotelSearchData } = useContext(HotelSearchContext); // ✅ Get roomDetails
 
     const handleContinue = () => {
+        const roomDetails = hotelSearchData?.roomDetails || [{ adults: 2, children: 0 }]; // ✅ use context value
+
         navigate("/guest-details", {
-            state: { hotel, room },
+            state: {
+                hotel: {
+                    ...hotel,
+                    rooms: hotelSearchData?.rooms,
+                    guests: hotelSearchData?.guests,
+                    roomDetails, // ✅ Send correct room details
+                },
+                room,
+                roomDetails,
+            },
         });
     };
 
@@ -36,7 +49,7 @@ const HotelDetailInfo = () => {
                         <Col>
                             <h5 className="fw-bold text-dark">{hotel.name}</h5>
                             <p className="text-muted mb-2">
-                                <FaMapMarkerAlt className="me-1" />
+                                <FaMapMarkerAlt className="me-1 text-danger" />
                                 {hotel.location || "N/A"}
                             </p>
                         </Col>
@@ -65,26 +78,27 @@ const HotelDetailInfo = () => {
                                 <Col md={3} className="mb-3">
                                     <FaCalendarAlt className="me-1" />
                                     <strong> Check-in</strong>
-                                    <div className="text-dark fw-bold">{hotel.checkInDate}</div>
+                                    <div className="text-dark fw-semibold">{hotel.checkInDate}</div>
                                 </Col>
 
                                 <Col md={3} className="mb-3">
                                     <FaMoon className="me-1" />
                                     <strong> Nights</strong>
-                                    <div className="fw-bold mt-1">{hotel.nights}</div>
+                                    <div className="fw-semibold mt-1">{hotel.nights}</div>
                                 </Col>
 
                                 <Col md={3} className="mb-3">
                                     <FaCalendarAlt className="me-1" />
                                     <strong> Check-out</strong>
-                                    <div className="text-dark fw-bold">{hotel.checkOutDate}</div>
+                                    <div className="text-dark fw-semibold">{hotel.checkOutDate}</div>
                                 </Col>
 
                                 <Col md={3} className="mb-3">
                                     <FaBed className="me-1" />
                                     <strong> Rooms & Guests</strong>
-                                    <div className="fw-bold mt-1">
-                                        {hotel.rooms} Room(s), {hotel.guests} Guest(s)
+                                    <div className="text-dark fw-semibold mt-1">
+                                        {hotelSearchData?.rooms || hotel.rooms} Room(s),{" "}
+                                        {hotelSearchData?.guests || hotel.guests} Guest(s)
                                     </div>
                                 </Col>
                             </Row>
@@ -98,7 +112,9 @@ const HotelDetailInfo = () => {
                                 </Col>
                                 <Col md={4}>
                                     <span className="text-muted">No. of Guests</span>
-                                    <div className="fw-bold">{room.Adult || hotel.guests} Adult(s)</div>
+                                    <div className="fw-bold">
+                                        {room.Adult || hotelSearchData?.guests || hotel.guests} Adult(s)
+                                    </div>
                                 </Col>
                                 <Col md={4}>
                                     <span className="text-muted">Cancellation Policy</span>

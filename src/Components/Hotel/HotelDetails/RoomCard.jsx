@@ -32,6 +32,7 @@ const RoomCard = ({ roomData = [], hotel, onRoomSelect }) => {
           },
         },
       });
+
     }
   };
 
@@ -47,7 +48,7 @@ const RoomCard = ({ roomData = [], hotel, onRoomSelect }) => {
           >
             <div>
               <div className="fw-bold">{room.RoomTypeName || "Room"}</div>
-              <a href="#" className="text-decoration-underline text-purple">
+              <a href="/" className="text-decoration-underline text-purple">
                 Room Information
               </a>
               <div className="fw-bold mt-2 text-dark">

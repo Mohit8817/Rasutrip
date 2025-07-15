@@ -4,6 +4,8 @@ import HotelStep from '../HotelStep';
 import { Container, Row, Col } from 'react-bootstrap';
 import FareSummaryCard from '../FareSummaryCard';
 import HotelPromoCodeCard from '../HotelPromoCodeCard ';
+import { useLocation } from "react-router-dom";
+
 
 const HotelDetail = () => {
     const [selectedPrice, setSelectedPrice] = useState(null);
@@ -11,6 +13,9 @@ const HotelDetail = () => {
     const handleRoomSelect = (priceData) => {
         setSelectedPrice(priceData);
     };
+
+    const location = useLocation();
+    const { priceDetails } = location.state || {};
 
     return (
         <Container className='mt-5 pt-5'>
@@ -24,7 +29,7 @@ const HotelDetail = () => {
                 </Col>
 
                 <Col lg={3}>
-                    <FareSummaryCard priceDetails={selectedPrice} />
+                    <FareSummaryCard priceDetails={priceDetails} />
 
                     <HotelPromoCodeCard />
                 </Col>
