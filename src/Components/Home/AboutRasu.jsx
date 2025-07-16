@@ -1,24 +1,23 @@
 import React from "react";
-import carImage from "../../Assests/newHomeImgs/aboutLogo.png"; // Image of the car illustration
+import travelImage from "../../Assests/newHomeImgs/info.png"; // Image of travel illustration
 
 const AboutRasu = () => {
-    const aboutTSJData = [
+    const aboutRasuData = [
         {
             id: 1,
-            title: "About TSJ Car Rental Service",
+            title: "About RasuTrip - Your Travel Booking Partner",
             description: `
-Founded in 2019 with just one car in Indore, Madhya Pradesh, TSJ Car Rental Service has grown into one of the leading car rental companies in India. Thanks to the trust and support of our valued customers, we now proudly operate in Indore, Bhopal, Udaipur, and Ujjain, offering a fleet of over 50 premium vehicles.
-</br>
-</br>
+Founded in 2025, <strong>RasuTrip</strong> has emerged as one of India’s most reliable and customer-centric online travel booking platforms. With a presence across major cities, we offer a comprehensive range of travel services including bus bookings, flight reservations (domestic and international), and hotel accommodations.
+</br></br>
 
-At TSJ Car Rental, we specialize in providing self-drive car rental services with a wide range of premium cars to suit every need. Whether you’re planning a road trip, a family vacation, or simply need a car for your daily commute, we ensure an affordable, hassle-free, and private travel experience.
-</br>
-</br>
+Whether you're planning a spontaneous weekend trip, a family vacation, or a professional tour, RasuTrip brings convenience and affordability right to your fingertips. We believe that travel should be smooth, secure, and enjoyable — and our platform reflects just that.
+</br></br>
 
-We understand the importance of privacy and safety when you’re on the road. With our self-drive option, customers can enjoy complete freedom and flexibility—pause at scenic spots, explore hidden gems, and create unforgettable memories with family and friends.
-</br>
-</br>
-At TSJ Car Rental Service, your privacy, safety, and satisfaction are our top priorities. Join us for a smooth and enjoyable driving experience, and let every journey become a standard journey with TSJ!`,
+By partnering with leading bus operators, renowned airlines like Akasa Air, and top-rated hotels in cities like Mumbai, we ensure you get the best deals, flexible options, and a hassle-free booking experience.
+</br></br>
+
+From hill stations to metro cities, travel with confidence knowing that <strong>RasuTrip</strong> has your journey covered from start to finish. Let every trip begin with trust and comfort — book with RasuTrip today!
+            `,
         },
     ];
 
@@ -26,11 +25,11 @@ At TSJ Car Rental Service, your privacy, safety, and satisfaction are our top pr
         <section className="max-w-[80vw] mx-auto justify-between flex flex-col lg:flex-row items-center gap-10 px-10 py-5">
             {/* Left Section: Image */}
             <div className="w-full lg:w-[40%]">
-                <img src={carImage} alt="Car Rental" className="max-w-full h-auto" />
+                <img src={travelImage} alt="RasuTrip Travel" className="max-w-full h-auto rounded-lg shadow-lg" />
             </div>
 
-            {/* Right Section: About TSJ */}
-            {aboutTSJData.map((data) => (
+            {/* Right Section: About RasuTrip */}
+            {aboutRasuData.map((data) => (
                 <div
                     key={data.id}
                     className="w-full lg:w-[60%] xsm:w-[90vw] my-[2rem] text-start p-5 justify-between flex flex-col h-auto"

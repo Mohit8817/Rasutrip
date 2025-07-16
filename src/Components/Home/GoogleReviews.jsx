@@ -2,40 +2,40 @@ import React, { useState, useEffect } from "react";
 import { FcGoogle } from "react-icons/fc";
 
 const reviews = [
-    {
-        name: "Tarun Pawar",
-        role: "3 reviews 2 photos",
+   {
+        name: "Amit Sharma",
+        role: "6 reviews",
         rating: 5,
         content:
-            "Have good experience. Mr. Ankit Singh was very humble and polite. We got good condition car. We have rented an Ertiga in minimal budget. Overall good experience. Highly recommended for rental cars. Must visit!",
+            "I booked a flight and hotel through RasuTrip and the experience was seamless! Everything was well-coordinated and support was top-notch.",
     },
     {
-        name: "Nov",
+        name: "Neha Verma",
+        role: "3 reviews 1 photo",
+        rating: 5,
+        content:
+            "Highly recommend RasuTrip for last-minute bus bookings. Their platform is fast and easy to use. Customer support is very responsive.",
+    },
+    {
+        name: "Rahul Mehta",
+        role: "2 reviews",
+        rating: 5,
+        content:
+            "Booked a hotel in Goa through RasuTrip — got the best price and smooth check-in. Loved the service!",
+    },
+    {
+        name: "Priya Nair",
         role: "4 reviews",
-        rating: 5,
-        content:
-            "Very professional team. Pilot Saab Satosh Ji is having a smiling face. Car condition was good.",
-    },
-    {
-        name: "Aayushman Pandey",
-        role: "3 reviews",
-        rating: 5,
-        content:
-            "Excellent service and, most importantly, the whole staff is very cooperative. Cars are extremely amazing at nominal rates. Loved it!",
-    },
-    {
-        name: "Hardik Chouksey",
-        role: "5 reviews",
-        rating: 5,
-        content:
-            "This company is so good. Excellent services. Vehicle condition is also good. Thank you so much TSJ! 👏👏🥰",
-    },
-    {
-        name: "Mohit Pareek",
-        role: "5 reviews 4 photos",
         rating: 4,
         content:
-            "Cars are in very good condition and reasonable too. I suggest everyone to prefer TSJ for self-driven cars.",
+            "Their flight booking system is super quick. Got amazing deals. Just wish they had more filter options, otherwise perfect!",
+    },
+    {
+        name: "Rohit Sinha",
+        role: "5 reviews 2 photos",
+        rating: 5,
+        content:
+            "One of the best travel platforms I've used. Buses, flights, and hotels — all in one place. Keep it up RasuTrip!",
     },
 ];
 

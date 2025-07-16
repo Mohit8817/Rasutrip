@@ -10,11 +10,8 @@ import c2 from "../../Assests/newHomeImgs/Getty.jpg"
 import c3 from "../../Assests/newHomeImgs/Multiple.jpeg"
 import c4 from "../../Assests/newHomeImgs/girl.jpg"
 import { motion } from "framer-motion";
-
 import road from "../../Assests/newHomeImgs/Background.png"
-import LatestBlog from './Blog'
 import GoogleReviews from './GoogleReviews'
-import Whybook from './WhyBook'
 import AboutRasu from './AboutRasu'
 
 const Home = () => {
@@ -44,11 +41,6 @@ const Home = () => {
             <DealsSection />
             <TravelBenefits />
             <FlightRoutes />
-
-
-            {/*  */}
-
-             <Whybook />
             <section>
                 <AboutRasu />
                 <img src={road} />
@@ -98,9 +90,6 @@ const Home = () => {
                 </section> */}
             </section>
             <GoogleReviews />
-            <LatestBlog />
-            {/* <Footer /> */}
-
         </div>
     )
 }
