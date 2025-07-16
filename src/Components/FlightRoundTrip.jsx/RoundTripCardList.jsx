@@ -9,6 +9,7 @@ import RoundTripBookingBar from './RoundTripBookingBar';
 import { useSelector, useDispatch } from 'react-redux';
 import { setOnwardFlight, setReturnFlight, setSelectedOnwardFare, setSelectedReturnFare } from './../../redux/Slices/SelectedFlight';
 import { fetchFlightData } from '../APIS/FlightApi/FlightApi';
+import FlightLoader from '../FlightLoader/FlightLoader';
 
 
 const RoundTripCardList = () => {
@@ -101,7 +102,7 @@ const RoundTripCardList = () => {
     getFlights();
   }, []);
 
-  if (loading) return <div className="text-center my-4">Loading flights...</div>;
+  if (loading) return <div className="text-center my-4"><FlightLoader></FlightLoader></div>;
   if (error) return <div className="text-danger text-center my-4">{error}</div>;
 
   return (

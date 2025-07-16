@@ -3,12 +3,16 @@ import { Container, Row, Col } from 'react-bootstrap';
 import BookingSteps from '../FlightDetails/BookingSteps';
 import FareSummary from '../FlightDetails/FareSummary';
 import PromoCodeBox from '../FlightDetails/PromoCodeBox';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import '../../Style/Pagescss/FlightResultsPage.css';
 import ReviewInfo from './Reviewinfo';
 
 
 const FlightReview = () => {
+ const location = useLocation();
+  const { passengerSelections = [], SSR, SelectedFare } = location.state || {};
+
     return (
         <div>
             <div>
@@ -28,7 +32,7 @@ const FlightReview = () => {
                         </Col>
                         <Col lg={3}>
                             <div>
-                                <FareSummary />
+                                <FareSummary  passengerSelections={passengerSelections} SelectedFare={SelectedFare}  />
                                 <PromoCodeBox />
 
                             </div>

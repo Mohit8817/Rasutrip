@@ -1,20 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Button, Form } from 'react-bootstrap';
+import { Container,Card, Row, Col, Button, Form } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { updatePassengerAddons } from '../../redux/Slices/PassengersSlice';
 import '../../Style/Pagescss/FlightResultsPage.css';
+import BookingSteps from '../FlightDetails/BookingSteps';
+import FareSummary from '../FlightDetails/FareSummary';
+import PromoCodeBox from '../FlightDetails/PromoCodeBox';
+
 
 const Addoninfo = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { SSR } = location?.state || {};
-
+  const { SelectedFare,SSR } = location?.state || {};
+console.log('SelectedFare',SelectedFare)
   const passengersData = useSelector((state) => state.passengersData || []);
   console.log("passenger", passengersData, "SSR", SSR)
   // const mealOptions = SSR?.Meal?.[0] || [];
-  const mealOptions = SSR?.Meal?.[0]?.Meals || [];
+  const mealOptions = Array.isArray(SSR?.Meal?.[0]) ? SSR?.Meal?.[0] : [];
+
+
 
   const baggageOptions = SSR?.Baggage?.[0] || [];
   const rawSeatData = SSR?.Seats?.[0]?.[0]?.ul;
@@ -46,7 +52,7 @@ const Addoninfo = () => {
 
   const handleMealChange = (index, e) => {
     console.log("index", index, "e", e.target.value)
-    const selected = mealOptions.find((meal) => meal.Key === e.target.value);
+    const selected = mealOptions?.find((meal) => meal.Key === e.target.value);
     console.log("slected", selected)
     const updatedSelections = [...passengerSelections];
     updatedSelections[index].meal = selected;
@@ -88,7 +94,8 @@ const Addoninfo = () => {
     navigate('/review', {
       state: {
         passengerSelections,
-        SSR
+        SSR,
+        SelectedFare
       }
     });
   };
@@ -106,7 +113,20 @@ const Addoninfo = () => {
   }
 
   return (
-    <div className="container">
+
+
+     <div>
+            <Container style={{ marginTop: '8rem' }}>
+               <Row>
+                    <div>
+                        <BookingSteps activeIndex={2} />
+                    </div>
+                </Row>
+                <Row>
+                    <Col lg={9}>
+                        <div >
+
+                            <div className="container">
       {passengersData?.map((passenger, index) => {
         // Skip rendering for INFANT passengers
         if (passenger.type === 'INF') return null;
@@ -140,7 +160,7 @@ const Addoninfo = () => {
                     <option value="">Select a meal</option>
                     {mealOptions?.map((meal) => (
                       <option key={`meal-${meal.Key}`} value={meal.Key}>
-                        {meal.AirlineDescription} (Rs. {meal.Price})
+                        {meal.AirlineDescription==''?'No Meal':meal.AirlineDescription} (Rs. {meal.Price})
                       </option>
                     ))}
                   </Form.Select>
@@ -212,12 +232,27 @@ const Addoninfo = () => {
           variant="primary"
           className="btn-red"
           onClick={handleContinue}
-          disabled={!allSelectionsComplete}
+          // disabled={!allSelectionsComplete}
         >
           Continue Booking
         </Button>
       </div>
     </div>
+                        </div>
+
+                    </Col>
+                    <Col lg={3}>
+                        <div>
+                            <FareSummary SelectedFare={SelectedFare} passengerSelections={passengerSelections} />
+                            <PromoCodeBox />
+
+                        </div>
+                    </Col>
+                </Row>
+            </Container>
+        </div>
+
+    
   );
 };
 

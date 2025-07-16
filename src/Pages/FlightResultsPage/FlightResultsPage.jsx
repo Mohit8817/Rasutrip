@@ -10,6 +10,7 @@ import RoundTripCardList from '../../Components/FlightRoundTrip.jsx/RoundTripCar
 import RoundTripBookingBar from '../../Components/FlightRoundTrip.jsx/RoundTripBookingBar';
 import { useDispatch } from 'react-redux';
 import { clearSelectedFlights } from '../../redux/Slices/SelectedFlight';
+import FlightLoader from '../../Components/FlightLoader/FlightLoader';
 
 const FlightResultsPage = () => {
     const dispatch = useDispatch();

@@ -1,25 +1,21 @@
 import React, { useMemo, useState } from 'react';
-import { Card, Row, Col, Button, Badge } from 'react-bootstrap';
+import { Card, Row, Col, Button, Badge, Modal } from 'react-bootstrap';
 import { FaArrowRight } from 'react-icons/fa';
 import '../../Style/Pagescss/FlightResultsPage.css';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
-import { Modal } from 'react-bootstrap';
 import { fetchFareConfirmation } from '../APIS/FlightApi/FlightApi';
 
-
-
-
 const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
-    const segment = FareData?.Segments?.[0]?.[0];
+    const segments = FareData?.Segments?.[0] || [];
+    const firstSegment = segments[0];
+    const lastSegment = segments[segments.length - 1];
+
     const [loading, setLoading] = useState(false);
     const [show, setShow] = useState(false);
     const [fareConfirm, setFareConfirm] = useState([]);
-    const FareRuleDetail = fareRules
+
     const navigate = useNavigate();
-
-    console.log("fareConfirm", fareConfirm)
-
 
     const farePayload = useMemo(() => ({
         UserIp: localStorage.getItem("UserIp") || "",
@@ -28,22 +24,17 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
         SearchTokenId: localStorage.getItem("searchToken") || ""
     }), [SelectedFare]);
 
+    const selectedFlight = localStorage.getItem('selectedFlight');
+    console.log('selectedFlight',selectedFlight)
     const handleContinue = async () => {
         setLoading(true);
         try {
             const res = await fetchFareConfirmation(farePayload);
-            console.log("Fare Confirmation API Response:", res);
-
             const confirmedFare = res?.Result || [];
             setFareConfirm(confirmedFare);
             navigate('/traveller-details', {
-                state: {
-                    SelectedFare,
-                    fareConfirm: confirmedFare
-                },
+                state: { SelectedFare, fareConfirm: confirmedFare },
             });
-
-
         } catch (error) {
             console.error("API call failed:", error);
         } finally {
@@ -51,31 +42,15 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
         }
     };
 
+    const navigateBack = () => navigate('/');
 
-    const navigateBack = () => {
-        navigate('/');
-    };
-
-    if (!segment) return <p className="text-danger text-center">No flight segment data available.</p>;
-
-    // format times
-    const departTime = moment(segment.Origin.DepartTime).format('HH:mm');
-    const departDate = moment(segment.Origin.DepartTime).format('DD MMM');
-
-    const arrivalTime = moment(segment.Destination.ArrivalTime).format('HH:mm');
-    const arrivalDate = moment(segment.Destination.ArrivalTime).format('DD MMM');
-
-    const durationMin = segment.Duration;
-    const durationHr = Math.floor(durationMin / 60);
-    const durationLeft = durationMin % 60;
-    const durationText = `${durationHr} h ${durationLeft} m`;
-
-
+    const formatTime = (time) => moment(time).format('HH:mm');
+    const formatDate = (time) => moment(time).format('DD MMM');
+    const totalDuration = lastSegment?.TotalDuration || 0;
+    const stops = segments.length - 1;
 
     return (
         <div className="container">
-
-            {/* Header */}
             <Card className="mb-3 shadow-sm">
                 <Card.Body className="d-flex justify-content-between align-items-center">
                     <h5 className="mb-0 fw-bold">Review Your Flight Details</h5>
@@ -83,121 +58,117 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                 </Card.Body>
             </Card>
 
-            {/* Route Info */}
             <Card className="mb-3 shadow-sm position-relative">
                 <Card.Body>
                     <div>
                         <span className="text-success fw-semibold">Depart </span>
-                        <span className="fw-bold">{segment.Origin.CityName}</span> → <span className="fw-bold">{segment.Destination.CityName}</span>
+                        <span className="fw-bold">{firstSegment.Origin.CityName}</span> → <span className="fw-bold">{lastSegment.Destination.CityName}</span>
                         <div className="text-muted small">
-                            {segment.Origin.CityName} | {segment.SegmentIndicator === 1 ? "0 Stops" : `${segment.SegmentIndicator - 1} Stop(s)`} | {durationText}
+                            {firstSegment.Origin.CityName} | {stops === 0 ? 'Non Stop' : `${stops} Stop(s)`} | {Math.floor(totalDuration / 60)}h {totalDuration % 60}m
                         </div>
                     </div>
                     <Button variant="outline-danger" size="sm" onClick={() => setShow(true)} className="position-absolute top-50 end-0 translate-middle-y me-3">Fare Rules</Button>
                 </Card.Body>
             </Card>
-            <Card className="shadow-sm mb-3 flight-card-custom">
-                <Card.Body>
-                    <Row className="align-items-center mb-3 justify-content-between">
-                        <Col md="auto">
-                            <img src={segment.Airline.airlineLogo || "/default-airline.png"} alt={segment.Airline.AirlineName} width={40} />
-                        </Col>
 
-                        <Col md={4}>
-                            <div>
-                                <strong>{segment.Origin.CityName}</strong> → <strong>{segment.Destination.CityName}</strong> {segment.Airline.AirlineName} {segment.Airline.AirlineCode} - {segment.Airline.FlightNumber} | Economy
-                            </div>
-                        </Col>
+            {segments.map((segment, index) => {
+                const departTime = formatTime(segment.Origin.DepartTime);
+                const departDate = formatDate(segment.Origin.DepartTime);
+                const arrivalTime = formatTime(segment.Destination.ArrivalTime);
+                const arrivalDate = formatDate(segment.Destination.ArrivalTime);
+                const durationMin = segment.Duration;
+                const durationHr = Math.floor(durationMin / 60);
+                const durationLeft = durationMin % 60;
+                const durationText = `${durationHr} h ${durationLeft} m`;
 
-                        <Col md="auto" className="text-center">
-                            <div><strong>{departTime}</strong></div>
-                            <div className="text-muted small">{departDate}</div>
-                        </Col>
-
-                        <Col md="auto" className="text-center">
-                            <FaArrowRight />
-                        </Col>
-
-                        <Col md="auto" className="text-center">
-                            <div><strong>{arrivalTime}</strong></div>
-                            <div className="text-muted small">{arrivalDate}</div>
-                        </Col>
-
-                        <Col md="auto" className="text-center">
-                            <div className="small text-muted">{durationText}</div>
-                            <div className="small text-muted">{segment.SegmentIndicator === 1 ? "0 Stops" : `${segment.SegmentIndicator - 1} Stop(s)`}</div>
-                        </Col>
-                    </Row>
-
-                    <hr />
-
-                    {/* Timeline Info */}
-                    <Row>
-                        <Col md={8}>
-                            <Row>
-                                <Col xs={2} className="text-center">
+                return (
+                    <Card key={index} className="shadow-sm mb-3 flight-card-custom">
+                        <Card.Body>
+                            <Row className="align-items-center mb-3 justify-content-between">
+                                <Col md="auto">
+                                    <img src={segment.Airline.airlineLogo || "/default-airline.png"} alt={segment.Airline.AirlineName} width={40} />
+                                </Col>
+                                <Col md={4}>
+                                    <div>
+                                        <strong>{segment.Origin.CityName}</strong> → <strong>{segment.Destination.CityName}</strong> {segment.Airline.AirlineName} {segment.Airline.AirlineCode} - {segment.Airline.FlightNumber} | Economy
+                                    </div>
+                                </Col>
+                                <Col md="auto" className="text-center">
                                     <div><strong>{departTime}</strong></div>
+                                    <div className="text-muted small">{departDate}</div>
                                 </Col>
-                                <Col xs={10}>
-                                    <div><strong>{segment.Origin.CityName}</strong></div>
-                                    <div className="text-muted small">{segment.Origin.AirportName}</div>
-                                    <div className="text-muted small">Terminal {segment.Origin.Terminal || 'N/A'}</div>
+                                <Col md="auto" className="text-center">
+                                    <FaArrowRight />
                                 </Col>
-
-                                <Col xs={2} className="d-flex justify-content-center">
-                                    <div className="flight-dot-line"></div>
-                                </Col>
-                                <Col xs={10} className="d-flex align-items-center">
-                                    <Badge bg="light" text="dark">{durationText}</Badge>
-                                </Col>
-
-                                <Col xs={2} className="text-center mt-2">
+                                <Col md="auto" className="text-center">
                                     <div><strong>{arrivalTime}</strong></div>
+                                    <div className="text-muted small">{arrivalDate}</div>
                                 </Col>
-                                <Col xs={10} className="mt-2">
-                                    <div><strong>{segment.Destination.CityName}</strong></div>
-                                    <div className="text-muted small">{segment.Destination.AirportName}</div>
-                                    <div className="text-muted small">Terminal {segment.Destination.Terminal || 'N/A'}</div>
+                                <Col md="auto" className="text-center">
+                                    <div className="small text-muted">{durationText}</div>
+                                    <div className="small text-muted">{segment.SegmentIndicator === 1 ? "0 Stops" : `${segment.SegmentIndicator - 1} Stop(s)`}</div>
                                 </Col>
                             </Row>
-                        </Col>
 
-                        <Col md={4} className="text-md-end text-start mt-3 mt-md-0 small">
-                            <div><strong>(Adult)</strong> Check-In : 15 Kg</div>
-                            <div><strong>Child</strong> : 7 Kg, <strong>Infant</strong>: 7 Kg</div>
-                            <div><strong>Fare Class</strong> : {segment.Airline.FareClass || 'N/A'}, <strong>Aircraft</strong> : {segment.Craft || 'N/A'}</div>
-                        </Col>
-                    </Row>
-                </Card.Body>
-            </Card>
+                            <hr />
+
+                            <Row>
+                                <Col md={8}>
+                                    <Row>
+                                        <Col xs={2} className="text-center">
+                                            <div><strong>{departTime}</strong></div>
+                                        </Col>
+                                        <Col xs={10}>
+                                            <div className="text-muted small">{segment.Origin.AirportName}</div>
+                                            <div className="text-muted small">Terminal {segment.Origin.Terminal || 'N/A'}</div>
+                                        </Col>
+
+                                        <Col xs={2} className="d-flex justify-content-center">
+                                            <div className="flight-dot-line"></div>
+                                        </Col>
+                                        <Col xs={10} className="d-flex align-items-center">
+                                            <Badge bg="light" text="dark">{durationText}</Badge>
+                                        </Col>
+
+                                        <Col xs={2} className="text-center mt-2">
+                                            <div><strong>{arrivalTime}</strong></div>
+                                        </Col>
+                                        <Col xs={10} className="mt-2">
+                                            <div><strong>{segment.Destination.CityName}</strong></div>
+                                            <div className="text-muted small">{segment.Destination.AirportName}</div>
+                                            <div className="text-muted small">Terminal {segment.Destination.Terminal || 'N/A'}</div>
+                                        </Col>
+                                    </Row>
+                                </Col>
+
+                                <Col md={4} className="text-md-end text-start mt-3 mt-md-0 small">
+                                    <div> <strong>Check-In </strong> : {FareData.FareList[0].SeatBaggage[0][0].CheckIn}</div>
+                                    <div><strong>Cabin</strong> : {FareData.FareList[0].SeatBaggage[0][0].Cabin}</div>
+                                    <div><strong>Fare Class</strong> : {FareData.FareList[0].FareClass || 'N/A'}, <strong>Aircraft</strong> : {segment.Craft || 'N/A'}</div>
+                                </Col>
+                            </Row>
+                        </Card.Body>
+                    </Card>
+                );
+            })}
 
             <div className="text-start">
-                <Button variant="primary" className="btn-red"
-                    disabled={loading}
-
-                    onClick={(e) => handleContinue()}>
+                <Button variant="primary" className="btn-red" disabled={loading} onClick={handleContinue}>
                     {loading ? "loading..." : "Continue Booking"}
                 </Button>
             </div>
+
             <Modal show={show} onHide={() => setShow(false)} size="lg" centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Fare Rules</Modal.Title>
                 </Modal.Header>
-
                 <Modal.Body>
                     {fareRules.length > 0 ? (
                         <div>
                             {fareRules.map((item, index) => {
                                 const parser = new DOMParser();
                                 const doc = parser.parseFromString(item.FareRuleDetail, 'text/html');
-
-                                const headers = Array.from(doc.querySelectorAll('th')).map(th =>
-                                    th.textContent.trim()
-                                );
-                                const values = Array.from(doc.querySelectorAll('td')).map(td =>
-                                    td.textContent.trim()
-                                );
-
+                                const listItems = Array.from(doc.querySelectorAll('li')).map(li => li.textContent.trim());
                                 return (
                                     <div key={index} className="mb-4 p-3 border rounded bg-light">
                                         <p><strong>✈️ Airline:</strong> {item.Airline || 'N/A'}</p>
@@ -205,25 +176,12 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                                         <p><strong>📍 Destination:</strong> {item.Destination}</p>
                                         <p><strong>🧾 Fare Basis Code:</strong> {item.FareBasisCode || 'N/A'}</p>
                                         <p><strong>📌 Fare Restriction:</strong> {item.FareRestriction || 'N/A'}</p>
-
-                                        <div className="mt-3">
-                                            {/* <h6 className="mb-3 border-bottom pb-1">📋 Fare Rules</h6>/ */}
-                                            <ul className="list-group list-group-flush">
-                                                {headers.map((header, i) => {
-                                                    const isCancellation = header.toLowerCase().includes('cancellation');
-                                                    return (
-                                                        <li
-                                                            key={i}
-                                                            className={`list-group-item ${isCancellation ? 'text-danger fw-semibold' : ''}`}
-                                                        >
-                                                            <strong>{header}:</strong> {values[i] || 'N/A'}
-                                                        </li>
-                                                    );
-                                                })}
-                                            </ul>
-                                        </div>
+                                        <ul className="list-group list-group-flush">
+                                            {listItems.map((li, i) => (
+                                                <li key={i} className="list-group-item">{li}</li>
+                                            ))}
+                                        </ul>
                                     </div>
-
                                 );
                             })}
                         </div>
@@ -231,14 +189,12 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                         <p>No fare rules available.</p>
                     )}
                 </Modal.Body>
-
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => setShow(false)}>
                         Close
                     </Button>
                 </Modal.Footer>
             </Modal>
-
         </div>
     );
 };

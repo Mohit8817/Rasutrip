@@ -8,6 +8,11 @@ const SearchButton = ({ type }) => {
   const navigate = useNavigate();
   const { locationData } = useContext(LocationContext);
 
+localStorage.removeItem('SearchedFlights');
+localStorage.removeItem('selectedOnwardFlight');
+localStorage.removeItem('selectedReturnFlight');
+
+   
   const handleSearchClick = () => {
     const {
       fromCity,
