@@ -13,7 +13,6 @@ import Busloader from "../Busloader/Busloader";
 const USER_IP_FALLBACK = "122.161.64.143";
 
 const BusDetailsList = ({
-  /* incoming props from BusResultPage */
   priceRange,
   setActualPriceRange,
   selectedOperators,
@@ -21,7 +20,6 @@ const BusDetailsList = ({
   setAvailableOperators,
   setAvailableBusTypes,
 }) => {
-  /* --------- search params from <Link state> -------- */
   const { state } = useLocation();
   const from = state?.fromCity ?? null;
   const to = state?.toCity ?? null;
@@ -31,26 +29,23 @@ const BusDetailsList = ({
   const DestinationId = state?.toCityId;
   const UserIp = USER_IP_FALLBACK;
 
-  /* ---------------- component state ---------------- */
+  const [masterBusList, setMasterBusList] = useState([]);
   const [busList, setBusList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedBus, setSelectedBus] = useState(null);
   const [showSeatModal, setShowSeatModal] = useState(false);
 
-  /* util: compute trip duration */
   const getDuration = useCallback((start, end) => {
     const ms = end - start;
-    const hrs = Math.floor(ms / 3_600_000);
-    const mins = Math.floor((ms % 3_600_000) / 60_000);
+    const hrs = Math.floor(ms / 3600000);
+    const mins = Math.floor((ms % 3600000) / 60000);
     return `${hrs}h ${mins}m`;
   }, []);
 
-  /* --------------- main data fetch --------------- */
   useEffect(() => {
     const getBusData = async () => {
       if (!from || !to || !DateOfJourney) return;
       setLoading(true);
-
       try {
         const apiResult = await fetchBusResults(
           DateOfJourney,
@@ -59,13 +54,11 @@ const BusDetailsList = ({
           UserIp
         );
 
-        /* ---------- map raw API to UI‑friendly obj ---------- */
         const mapped = apiResult.Result.map((item) => {
           const dep = new Date(item.DepartureTime);
           const arr = new Date(item.ArrivalTime);
 
           return {
-            /* core fields */
             operator: item.TravelName || "N/A",
             serviceName: item.ServiceName || "N/A",
             busType: item.BusType || "N/A",
@@ -76,17 +69,12 @@ const BusDetailsList = ({
             departLocation: item.BoardingPointsDetails?.[0]?.CityPointLocation || from,
             arriveLocation: item.DroppingPointsDetails?.[0]?.CityPointLocation || to,
             duration: getDuration(dep, arr),
-
-            /* pricing */
             price: item.BusPrice?.PublishedPrice
               ? `₹ ${item.BusPrice.PublishedPrice.toFixed(2)}`
               : "Price Not Available",
             numericPrice: item.BusPrice?.PublishedPrice || 0,
-
             seatsAvailable: item.AvailableSeats || 0,
             cancellationPolicies: item.CancellationPolicies || [],
-
-            /* identifiers (needed for seat‑selection) */
             ResultIndex: item.ResultIndex,
             SearchTokenId: apiResult.SearchTokenId,
             OriginId,
@@ -97,26 +85,15 @@ const BusDetailsList = ({
           };
         });
 
-        /* ---------- set price slider bounds ---------- */
+        setMasterBusList(mapped);
+
         const prices = mapped.map((b) => b.numericPrice);
         const min = Math.min(...prices);
         const max = Math.max(...prices);
         setActualPriceRange([min, max]);
 
-        /* ---------- build dynamic filter options ---------- */
         setAvailableOperators([...new Set(mapped.map((b) => b.operator))]);
         setAvailableBusTypes([...new Set(mapped.map((b) => b.busType))]);
-
-        /* ---------- apply active filters ---------- */
-        const filtered = mapped.filter(
-          (b) =>
-            b.numericPrice >= priceRange[0] &&
-            b.numericPrice <= priceRange[1] &&
-            (selectedOperators.length === 0 || selectedOperators.includes(b.operator)) &&
-            (selectedBusTypes.length === 0 || selectedBusTypes.includes(b.busType))
-        );
-
-        setBusList(filtered);
       } catch (err) {
         console.error("Bus API Error:", err);
       } finally {
@@ -133,26 +110,33 @@ const BusDetailsList = ({
     from,
     to,
     getDuration,
-    /* filtering deps */
-    priceRange,
-    selectedOperators,
-    selectedBusTypes,
-    /* setters passed from parent */
     setActualPriceRange,
     setAvailableOperators,
     setAvailableBusTypes,
   ]);
 
-  /* --------------- UI helpers --------------- */
+  // Apply filters when any of them change
+  useEffect(() => {
+    if (!masterBusList.length) return;
+
+    const filtered = masterBusList.filter(
+      (b) =>
+        b.numericPrice >= priceRange[0] &&
+        b.numericPrice <= priceRange[1] &&
+        (selectedOperators.length === 0 || selectedOperators.includes(b.operator)) &&
+        (selectedBusTypes.length === 0 || selectedBusTypes.includes(b.busType))
+    );
+
+    setBusList(filtered);
+  }, [priceRange, selectedOperators, selectedBusTypes, masterBusList]);
+
   const handleBusClick = (bus) => {
     setSelectedBus(bus);
     setShowSeatModal(true);
   };
 
-  /* --------------- render --------------- */
   return (
     <Container className="bus-list-container">
-      {/* sort header (static) */}
       <div className="sort-header d-flex p-2 mb-2">
         <div className="flex-fill text-center">Sort By:</div>
         <div className="flex-fill text-center fw-bold">Depart</div>
@@ -161,7 +145,6 @@ const BusDetailsList = ({
         <div className="flex-fill text-center fw-bold">Price</div>
       </div>
 
-      {/* results / loader */}
       {loading ? (
         <div className="text-center py-5">
           <Busloader />
@@ -176,7 +159,6 @@ const BusDetailsList = ({
         </div>
       )}
 
-      {/* seat‑selection modal */}
       <BusSeatSelect
         show={showSeatModal}
         onHide={() => setShowSeatModal(false)}
