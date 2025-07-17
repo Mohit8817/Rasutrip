@@ -29,7 +29,7 @@ const FlightPayment = () => {
                         <Col lg={9}>
                             <div >  
 
-                            <Paymentinfo passengerSelections={passengerSelections} SelectedFare={SelectedFare} />
+                            <Paymentinfo  />
 
                             </div>
 
