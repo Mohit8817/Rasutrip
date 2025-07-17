@@ -1,5 +1,4 @@
-// FlightResultsPage.js
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import { useLocation } from 'react-router-dom';
 import FlightSearchBar from '../../Components/FlightOneWay/FlightSearchBar';
@@ -10,15 +9,25 @@ import RoundTripCardList from '../../Components/FlightRoundTrip.jsx/RoundTripCar
 import RoundTripBookingBar from '../../Components/FlightRoundTrip.jsx/RoundTripBookingBar';
 import { useDispatch } from 'react-redux';
 import { clearSelectedFlights } from '../../redux/Slices/SelectedFlight';
+import FlightLoader from '../../Components/FlightLoader/FlightLoader';
 
 const FlightResultsPage = () => {
     const dispatch = useDispatch();
-    const { state } = useLocation()
-    const tripType = state?.tripType || 'oneway'
+    const { state } = useLocation();
+    const tripType = state?.tripType || 'oneway';
+    
     useEffect(() => {
+        dispatch(clearSelectedFlights());
+    }, [dispatch]);
 
-        dispatch(clearSelectedFlights())
-    }, [])
+    const [filters, setFilters] = useState({
+        airlines: [],
+        priceRange: [1000, 10000], // Updated based on API response
+        departureTime: null,
+        arrivalTime: null,
+        refundable: null,
+        stops: []
+    });
 
     return (
         <div className='relative'>
@@ -31,10 +40,10 @@ const FlightResultsPage = () => {
                     </Row>
                     <Row className="mt-4">
                         <Col lg={3}>
-                            <FlightSidebar />
+                            <FlightSidebar filters={filters} setFilters={setFilters} />
                         </Col>
                         <Col lg={9}>
-                            <FlightList />
+                            <FlightList filters={filters} />
                         </Col>
                     </Row>
                 </Container>
@@ -50,14 +59,12 @@ const FlightResultsPage = () => {
                     </Row>
                     <Row className="mt-4">
                         <Col lg={3}>
-                            <FlightSidebar />
+                            <FlightSidebar filters={filters} setFilters={setFilters} />
                         </Col>
                         <Col lg={9}>
-                            <RoundTripCardList />
+                            <RoundTripCardList filters={filters} />
                         </Col>
                     </Row>
-
-
                 </Container>
             )}
             <RoundTripBookingBar />

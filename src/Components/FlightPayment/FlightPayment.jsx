@@ -4,11 +4,17 @@ import BookingSteps from '../FlightDetails/BookingSteps';
 import FareSummary from '../FlightDetails/FareSummary';
 import PromoCodeBox from '../FlightDetails/PromoCodeBox';
 import Paymentinfo from './Paymentinfo';
+import { useLocation, useNavigate } from "react-router-dom";
+
 
 import '../../Style/Pagescss/FlightResultsPage.css';
 
 
 const FlightPayment = () => {
+  const location = useLocation();
+
+  const { passengerSelections = [], SSR, SelectedFare } = location.state || {};
+
     return (
         <div>
             <div>
@@ -23,14 +29,14 @@ const FlightPayment = () => {
                         <Col lg={9}>
                             <div >  
 
-                            <Paymentinfo/>
+                            <Paymentinfo  />
 
                             </div>
 
                         </Col>
                         <Col lg={3}>
                             <div>
-                                <FareSummary />
+                                <FareSummary  passengerSelections={passengerSelections} SelectedFare={SelectedFare}/>
                                 <PromoCodeBox />
 
                             </div>

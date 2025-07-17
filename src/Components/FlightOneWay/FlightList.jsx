@@ -1,13 +1,14 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useMemo} from 'react';
 import moment from 'moment';
 import FlightCard from './FlightCards';
 import { fetchFlightData } from '../APIS/FlightApi/FlightApi'
 import { LocationContext } from '../../Components/Context/LocationContext';
 import { useSelector, useDispatch } from 'react-redux';
 import { setFlights } from "../../redux/Slices/flightSlices";
+import FlightLoader from '../FlightLoader/FlightLoader';
 
-
-const FlightList = () => {
+const FlightList = ({ filters }) => {
+  console.log('filters', filters);
   const dispatch = useDispatch();
   const { locationData } = useContext(LocationContext);
   const flightsData = useSelector((state) => state?.flight?.flights || []);
@@ -24,6 +25,83 @@ const FlightList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const filteredFlights = useMemo(() => {
+    return allFlights.filter(flight => {
+      const airline = flight.Segments?.[0]?.[0]?.Airline?.AirlineName;
+      
+      // Use MinPublishedPrice for filtering (lowest price from all fare options)
+      const price = flight?.MinPublishedPrice;
+      
+      // Get departure and arrival times
+      const depTime = new Date(flight.Segments?.[0]?.[0]?.Origin?.DepartTime);
+      const arrTime = new Date(flight.Segments?.[0]?.[0]?.Destination?.ArrivalTime);
+      const depHour = depTime.getHours();
+      const arrHour = arrTime.getHours();
+      
+      // Calculate number of stops
+      const segments = flight.Segments?.[0] || [];
+      const stops = segments.length - 1; // Number of stops is segments - 1
+
+      // Check if any fare option is refundable
+      const hasRefundableFare = flight?.FareList?.some(fare => fare.IsRefundable);
+      const hasNonRefundableFare = flight?.FareList?.some(fare => !fare.IsRefundable);
+
+      // Apply filters
+      let passesFilter = true;
+
+      // Airlines filter
+      if (filters?.airlines?.length > 0) {
+        passesFilter = passesFilter && filters.airlines.includes(airline);
+      }
+
+      // Refundable filter
+      if (filters?.refundable) {
+        if (filters.refundable === 'refundable') {
+          passesFilter = passesFilter && hasRefundableFare;
+        } else if (filters.refundable === 'non-refundable') {
+          passesFilter = passesFilter && hasNonRefundableFare;
+        }
+      }
+
+      // Price range filter
+      if (filters?.priceRange && filters.priceRange.length === 2) {
+        passesFilter = passesFilter && 
+          (price >= filters.priceRange[0] && price <= filters.priceRange[1]);
+      }
+
+      // Stops filter
+      if (filters?.stops?.length > 0) {
+        passesFilter = passesFilter && filters.stops.includes(stops.toString());
+      }
+
+      // Departure time filter
+      if (filters?.departureTime && filters.departureTime.length === 2) {
+        const [startHour, endHour] = filters.departureTime;
+        if (endHour === 24) {
+          // Handle 6PM-12AM case (18-24 hours)
+          passesFilter = passesFilter && (depHour >= startHour || depHour < 1);
+        } else {
+          passesFilter = passesFilter && (depHour >= startHour && depHour < endHour);
+        }
+      }
+
+      // Arrival time filter
+      if (filters?.arrivalTime && filters.arrivalTime.length === 2) {
+        const [startHour, endHour] = filters.arrivalTime;
+        if (endHour === 24) {
+          // Handle 6PM-12AM case (18-24 hours)
+          passesFilter = passesFilter && (arrHour >= startHour || arrHour < 1);
+        } else {
+          passesFilter = passesFilter && (arrHour >= startHour && arrHour < endHour);
+        }
+      }
+
+      return passesFilter;
+    });
+  }, [allFlights, filters]);
+
+  console.log('filteredFlights', filteredFlights);
+
   // Restore flights from localStorage on initial mount
   useEffect(() => {
     const savedFlights = localStorage.getItem('SearchedFlights');
@@ -33,7 +111,7 @@ const FlightList = () => {
       setAllFlights(parsedFlights);
       setLoading(false); // skip fetching
     }
-  }, [dispatch, allFlights]);
+  }, [dispatch, flightsData.length]);
 
   // Format departure date
   let displayDate = 'Not selected';
@@ -74,8 +152,7 @@ const FlightList = () => {
       typeof cabinClass === 'number' ? cabinClass : cabinMap[cabinClass] || 1;
 
     const requestPayload = {
-      // UserIp: "27.60.0.238",
-      UserIp:"122.161.64.143",
+      UserIp: "122.161.64.143",
       Adult: passengers.adults || 1,
       Child: passengers.children || 0,
       Infant: passengers.infants || 0,
@@ -101,10 +178,10 @@ const FlightList = () => {
       try {
         const response = await fetchFlightData(requestPayload);
         const result = response?.Result?.[0] || [];
-        console.log("searchToken",response?.SearchTokenId);
-        console.log("UserIp",response?.UserIp)
-        localStorage.setItem("searchToken",response?.SearchTokenId)
-        localStorage.setItem("UserIp",response?.UserIp)
+        console.log("searchToken", response?.SearchTokenId);
+        console.log("UserIp", response?.UserIp);
+        localStorage.setItem("searchToken", response?.SearchTokenId);
+        localStorage.setItem("UserIp", response?.UserIp);
         setAllFlights(result || []);
         dispatch(setFlights(result || []));
       } catch (err) {
@@ -121,25 +198,31 @@ const FlightList = () => {
   // Save flights to localStorage when updated
   useEffect(() => {
     if (flightsData?.length) {
+      localStorage.removeItem('SearchedFlights');
       localStorage.setItem('SearchedFlights', JSON.stringify(flightsData));
     }
   }, [flightsData]);
 
-  if (loading) return <div className="text-center my-4">Loading flights...</div>;
+  if (loading) return <div className="text-center my-4"><FlightLoader></FlightLoader></div>;
   if (error) return <div className="text-danger text-center my-4">{error}</div>;
 
   return (
- <div className="my-4 overflow-auto" style={{ maxHeight: '70vh' }}>
-  <h5 className="mb-2">Showing {allFlights?.length} Flights</h5>
-  <p className="text-muted">
-    Departure Date: <strong>{displayDate}</strong>
-  </p>
+    <div className="my-4 overflow-auto" >
+      <h5 className="mb-2">Showing {filteredFlights?.length} of {allFlights?.length} Flights</h5>
+      <p className="text-muted">
+        Departure Date: <strong>{displayDate}</strong>
+      </p>
 
-  {allFlights?.map((flight, idx) => (
-    <FlightCard key={idx} flight={flight} />
-  ))}
-</div>
-
+      {filteredFlights?.length === 0 ? (
+        <div className="text-center my-4">
+          <p className="text-muted">No flights found matching your filters.</p>
+        </div>
+      ) : (
+        filteredFlights?.map((flight, idx) => (
+          <FlightCard key={idx} flight={flight} />
+        ))
+      )}
+    </div>
   );
 };
 

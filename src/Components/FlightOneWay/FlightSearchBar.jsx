@@ -77,7 +77,7 @@ const FlightSearchBar = () => {
         </Col>
 
         <Col md={1} xs={12} className="text-end">
-          <Button variant="primary" className="ModifyButton">
+          <Button href='/' variant="primary" className="ModifyButton">
             Modify
           </Button>
         </Col>

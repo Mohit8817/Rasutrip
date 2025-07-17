@@ -32,7 +32,7 @@ const FlightTravellerDetails = () => {
                     </Col>
                     <Col lg={3}>
                         <div>
-                            <FareSummary />
+                            <FareSummary SelectedFare={SelectedFare} />
                             <PromoCodeBox />
 
                         </div>
