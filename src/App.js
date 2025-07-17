@@ -29,6 +29,7 @@ import UserAgreement from './Pages/LegalPages/UserAgreement';
 import CancellationRefundpolicy from './Pages/LegalPages/CancellationRefundpolicy';
 import FAQ from './Pages/LegalPages/FAQ';
 import AboutUs from './Pages/LegalPages/Aboutus';
+import BusPayment from './Components/Bus/BusPayment/BusPayment';
 
 function App() {
   return (
@@ -56,6 +57,7 @@ function App() {
         <Route path="/bus-detail" element={<BusDetail />} />
         <Route path="/bus-traveller-details" element={<BusTravellerDetails />} />
         <Route path="/bus-review" element={<BusReview />} />
+        <Route path="/bus-payment" element={<BusPayment />} />
 
         {/* Login */}
         <Route path="/login/customer" element={<CustomerLogin />} />

@@ -22,7 +22,7 @@ const BusReviewInfo = () => {
     } = state || {};
 
     const handlePayment = () => {
-        alert("Redirecting to payment gateway...");
+        navigate("/bus-payment", { state: { ...state, totalPrice } });
     };
 
     const handleEdit = () => {
@@ -43,7 +43,6 @@ const BusReviewInfo = () => {
             {/* Route Info */}
             <Card className="mb-4 p-3" style={{ borderRadius: "10px" }}>
                 <Row>
-                    {/* Departure */}
                     <Col md={5}>
                         <div className="d-flex align-items-center mb-2">
                             <FaCity className="me-2" />
@@ -58,13 +57,11 @@ const BusReviewInfo = () => {
                         </div>
                     </Col>
 
-                    {/* Duration + Seats */}
                     <Col md={2} className="text-center d-flex flex-column justify-content-center align-items-center">
                         <FaClock className="mb-1" />
                         <div className="fw-bold">{bus?.duration || '--h --m'}</div>
                         <div className="mt-3">
                             <div className="text-muted">Seat no(s)</div>
-
                             <div className="text-danger d-flex align-items-center gap-2 flex-wrap">
                                 <FaWheelchair />
                                 <span>{selectedSeats?.map(s => s.SeatName).join(", ")}</span>
@@ -72,14 +69,13 @@ const BusReviewInfo = () => {
                         </div>
                     </Col>
 
-                    {/* Arrival */}
                     <Col md={5} className="text-end">
                         <div className="d-flex justify-content-end align-items-center mb-2">
                             <FaCity className="me-2" />
                             <strong>{toCity}</strong>
                         </div>
                         <h5 className="fw-bold">{arriveTime}</h5>
-                        <div>Fri, 01 Aug 25</div>
+                        <div>{new Date(departDate).toDateString()}</div>
                         <hr />
                         <div className="text-muted">Boarding Point & Time</div>
                         <strong>{boarding?.CityPointName} / {boarding?.DepTime}</strong>
@@ -124,13 +120,7 @@ const BusReviewInfo = () => {
                     label={<>I have read and accept the <a href="/">Terms & Conditions</a>.</>}
                     defaultChecked
                 />
-
-                {/* <div className="d-flex justify-content-between align-items-center">
-                    <div className="text-muted">Total Amount</div>
-                    <div className="fs-4 fw-bold text-success">₹ {totalPrice?.toFixed(2)}</div>
-                </div> */}
-
-                <div className=" mt-3">
+                <div className="mt-3">
                     <Button className="btn-red" size="lg" onClick={handlePayment}>
                         Continue Payment
                     </Button>
