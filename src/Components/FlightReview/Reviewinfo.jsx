@@ -33,7 +33,7 @@ const ReviewInfo = () => {
       state: {
         passengerSelections,
         SSR,
-        SelectedFare
+        SelectedFare,
       }
     });
   };
