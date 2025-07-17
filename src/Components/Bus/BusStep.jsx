@@ -6,7 +6,7 @@ import { FaBus, FaUser, FaClipboardList, FaCreditCard } from 'react-icons/fa';
 const steps = [
     { label: 'Bus Details', icon: <FaBus />, path: '/bus-detail' },
     { label: 'Traveller Details', icon: <FaUser />, path: '/bus-traveller-details' },
-    { label: 'Review', icon: <FaClipboardList />, path: '/bus-Review' },
+    { label: 'Review', icon: <FaClipboardList />, path: '/bus-review' },
     { label: 'Payment', icon: <FaCreditCard />, path: '/bus-payment' }
 ];
 

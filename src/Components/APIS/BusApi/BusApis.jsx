@@ -6,7 +6,7 @@ const BusServices = {
     fetchCities: `${baseURL}/bus/search-city`,
     searchResults: `${baseURL}/busservice/search`,
     seatLayout: `${baseURL}/busservice/seatlayout`,
-     boardingDroppingPoints: `${baseURL}/busservice/boardingpoint`,
+    boardingDroppingPoints: `${baseURL}/busservice/boardingpoint`,
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -83,22 +83,39 @@ export const fetchSeatLayout = async ({
 // ─────────────────────────────────────────────────────────────
 
 // New function to fetch boarding/dropping
+
+
 export const fetchBoardingDroppingPoints = async ({
-    SearchTokenId,
-    ResultIndex,
-    OriginId,
-    DestinationId,
+  UserIp,
+  SearchTokenId,
+  ResultIndex,
+  OriginId,
+  DestinationId,
 }) => {
-    try {
-        const response = await axios.post(BusServices.boardingDroppingPoints, {
-            SearchTokenId,
-            ResultIndex,
-            OriginId,
-            DestinationId,
-        });
-        return response.data;
-    } catch (err) {
-        console.error("Failed to fetch boarding/dropping points:", err);
-        return { BoardingPoints: [], DroppingPoints: [] };
-    }
+  try {
+    const payload = {
+      UserIp,
+      SearchTokenId,
+      ResultIndex,
+      OriginId,
+      DestinationId,
+    };
+
+    console.log("🔍 Sending Boarding/Dropping API Payload:", payload);
+
+    const response = await axios.post(
+      "https://api.mybus.com/api/Bus/BoardingDroppingPoint", // Replace with your actual URL
+      payload
+    );
+
+    console.log("✅ Boarding/Dropping Response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Failed to fetch boarding/dropping points:", error);
+    return {
+      BoardingPoints: [],
+      DroppingPoints: [],
+    };
+  }
 };
+

@@ -105,7 +105,6 @@ const HotelDetailInfo = () => {
               </Row>
 
               <hr className="my-3" />
-
               <Row>
                 <Col md={4}>
                   <span className="text-muted">Room Type</span>
