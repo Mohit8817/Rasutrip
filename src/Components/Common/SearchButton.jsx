@@ -10,6 +10,11 @@ const SearchButton = ({ type }) => {
   const { locationData } = useContext(LocationContext);
   const { hotelSearchData } = useContext(HotelSearchContext);
 
+localStorage.removeItem('SearchedFlights');
+localStorage.removeItem('selectedOnwardFlight');
+localStorage.removeItem('selectedReturnFlight');
+
+   
   const handleSearchClick = () => {
     const {
       fromCity,

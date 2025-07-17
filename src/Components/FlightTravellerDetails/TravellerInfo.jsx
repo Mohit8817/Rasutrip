@@ -105,7 +105,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
         setLoading(true);
         try {
             const res = await fetchSSR(SSRPayload);
-            navigate('/addons', { state: { SSR: res?.Result || [] } });
+            navigate('/addons', { state: { SSR: res?.Result || [] ,SelectedFare} });
         } catch (error) {
             console.error("API call failed:", error);
         } finally {

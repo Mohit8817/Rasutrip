@@ -4,9 +4,14 @@ import { Modal, Row, Col, Card, Button, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
 const FarePopup = ({ show, onClose, fares = [], searchToken }) => {
+  console.log('show',show,'fare',fares)
   const navigate = useNavigate();
 
   const handleBook = (SelectedFare,FareData) => {
+    console.log('mainlogo',SelectedFare)
+    console.log('mainlogo',FareData)
+    const selectedData= localStorage.setItem('selectedFlight',JSON.stringify(FareData))
+
     onClose(); // Close the modal
     navigate('/flight-details', {
       state: { SelectedFare,FareData }
@@ -30,8 +35,10 @@ const FarePopup = ({ show, onClose, fares = [], searchToken }) => {
                       <Badge bg="warning" text="dark">Refundable</Badge>
                     )}
                   </div>
-                  <h6 className="fw-bold">{fare?.FareType}</h6>
-                  <p className="text-muted">Class: {fare?.FareClass}</p>
+                  <h6 className="fw-bold m-0" > {fare?.CabinClass}</h6>
+                  <p className="text-muted text-6 m-0"> {fare?.FareType}</p>
+                 
+
 
                   <hr />
                   <h6>Baggage</h6>

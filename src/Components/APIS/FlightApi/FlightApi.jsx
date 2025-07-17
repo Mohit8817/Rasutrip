@@ -23,6 +23,7 @@ export const fetchLocationData = async (query) => {
 // flightApis.js
 export const fetchFlightData = async (payload) => {
   const response = await axios.post(Services.fetchFlights, payload, { headers });
+  console.log('response',response)
   return response.data; // ✅ return full data
 };
 
@@ -41,5 +42,22 @@ export const fetchSSR = async (payload) => {
   const response = await axios.post(Services?.fetchssr, payload, { headers })
   return response.data
 }
+
+export const post = async (data, url, customHeaders = {}) => {
+  try {
+    // const token = localStorage.getItem("token");
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODA3NmE0OThhYmQzYmExZDNjMDY0NTUiLCJ1c2VyUmVnSWQiOiJSVFJJUDAwMTIiLCJlbWFpbCI6ImlzaGl0YS5vdHVzb25lQGdtYWlsLmNvbSIsImlhdCI6MTc1MjAzMzcxMCwiZXhwIjoxNzUzMzI5NzEwfQ.AWZZOOXwch5GSLkUx-f7Ke7bWP3ULHhOvFWN25w96rQ'
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      ...customHeaders, // allow additional headers
+    };
+    const response = await axios.post(baseURL + url, data, { headers });
+    console.log('hit api');
+    return response.data;
+  } catch (error) {
+    console.error('POST request failed:', error);
+    throw error;
+  }
+};
 
 
