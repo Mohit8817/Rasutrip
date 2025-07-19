@@ -69,7 +69,7 @@
 
 // export default Header;
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
@@ -106,10 +106,10 @@ const Header = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [isHomePage]);
 
-    const handleLoginClick = () => {
-        setShowLogin(true);
-    };
-
+const handleLoginClick = () => {
+    setShowLogin(true);
+    Navigate('/login/customer'); // ✅ use lowercase 'navigate'
+};
     const handleLogout = () => {
         setIsLoggedIn(false);
         setUserName('');
@@ -352,14 +352,11 @@ const Header = () => {
                                 </Dropdown.Menu>
                             </Dropdown>
                         ) : (
-                            <div className="auth-buttons">
-                                <Button variant="outline-primary" className="me-2" onClick={handleLoginClick}>
-                                    Login
-                                </Button>
-                                <Button variant="primary" onClick={handleLoginClick}>
-                                    Sign Up
-                                </Button>
-                            </div>
+                           <div>
+                           <Login/>
+                           </div>
+                            
+                    
                         )}
                     </div>
                 </Container>
