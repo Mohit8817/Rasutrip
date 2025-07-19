@@ -1,98 +1,175 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Form, Button } from 'react-bootstrap';
-import { BsPerson, BsLock, BsArrowRight } from 'react-icons/bs';
-import '../../Style/user.css'; // Assuming you have a CSS file for styling
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Form, Button, Alert } from 'react-bootstrap';
+import loginImage from '../../assest/loginimg.jpg';
+import {
+  signupOrLogin,
+  verifyOtp,
+  completeSignup
+} from './services/authService';
+import { AuthContext } from '../Context/AuthContext';
 
-
-import login from '../../assest/loginimg.jpg'; // Assuming you have a login image in assets
 const CustomerLogin = () => {
+  const { login } = useContext(AuthContext);
+  const [mobile, setMobile] = useState('');
+  const [otp, setOtp] = useState('');
+  const [mpin, setMPIN] = useState('');
+  const [name, setName] = useState('');
+  const [token, setToken] = useState('');
+  const [step, setStep] = useState(1);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-    const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-//   const [captcha, setCaptcha] = useState('');
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    // login logic
-    console.log(email, password);
+  const handleSendOtp = async () => {
+    if (!mobile) return setError('Please enter your mobile number.');
+    try {
+      await signupOrLogin({ mobile });
+      setMessage('OTP sent to your mobile.');
+      setError('');
+      setStep(2);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send OTP');
+    }
   };
-    return (
-        <Container fluid className="login-wrapper">
-      <Row className="login-box shadow">
+
+  const handleVerifyAndSetMPIN = async () => {
+    if (!otp || !mpin || !name) {
+      return setError('Please enter OTP, Name, and MPIN.');
+    }
+    if (!/^\d{4}$/.test(mpin)) {
+      return setError('MPIN must be exactly 4 digits.');
+    }
+
+    try {
+      // 1. Verify OTP and get token
+      const response = await verifyOtp({ mobile, otp });
+      const receivedToken = response.data.token;
+
+      if (!receivedToken) {
+        return setError('Failed to get token. Please try again.');
+      }
+
+      setToken(receivedToken);
+
+      // 2. Call completeSignup with token
+      await completeSignup(
+        {
+          mobile,
+          otp,
+          newMPIN: mpin,
+          name,
+        },
+        receivedToken
+      );
+
+      // 3. Save user data to context
+      login({ mobile });
+
+      setMessage('Signup completed successfully.');
+      setError('');
+      setMobile('');
+      setOtp('');
+      setMPIN('');
+      setName('');
+      setStep(1);
+      navigate('/');
+    } catch (err) {
+      console.error('Error:', err);
+      if (err.response?.status === 409) {
+        setError('MPIN already exists for this number.');
+      } else {
+        setError(err.response?.data?.message || 'Failed to complete signup');
+      }
+    }
+  };
+
+  return (
+    <div className="login-wrapper">
+      <div className="login-box d-flex">
         {/* Left Panel */}
-        <Col md={6} className="left-panel p-4">
-          <h5 className="benefits-title">Registration Benefits:-</h5>
-          <ul className="benefits-list mt-3">
+        <div className="col-md-6 left-panel p-4">
+          <h4 className="fw-bold text-white bg-danger py-2 px-3 rounded-pill d-inline-block">
+            Registration Benefits:
+          </h4>
+          <ul className="list-unstyled">
             <li>✅ No Registration Fees</li>
             <li>✅ Easy Steps for registration</li>
             <li>✅ Manage Your Bookings</li>
             <li>✅ Print Ticket or Voucher</li>
             <li>✅ 24*7 Dedicated Support</li>
           </ul>
-          <img
-            src={login}
-            alt="Login"
-            className="image-fluid w-75 m-auto  "
-          />
-        </Col>
+          <img src={loginImage} alt="Login" className="img-fluid w-75 rounded" />
+        </div>
 
         {/* Right Panel */}
-        <Col md={6} className="right-panel">
-            <h2 className="login-title">Login</h2>
-          <Form onSubmit={handleLogin}>
-            <Form.Group className="mb-3 custom-input">
-              <Form.Label>
-                <BsPerson className="me-2" />
-                Email Address Or Mobile Number
-              </Form.Label>
-              <Form.Control
-                type="text"
-                required
-                placeholder="Email Address Or Mobile Number"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </Form.Group>
+        <div className="col-md-6 right-panel d-flex flex-column justify-content-center">
+          <h2 className="login-title">
+            {step === 1 ? 'Login / Signup' : 'Verify OTP & Set MPIN'}
+          </h2>
 
-            <Form.Group className="mb-3 custom-input">
-              <Form.Label>
-                <BsLock className="me-2" />
-                Password
-              </Form.Label>
-              <Form.Control
-                type="password"
-                required
-                placeholder="Password"
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </Form.Group>
-{/* 
-            <div className="captcha-box mb-2">
-              <img src="/captcha.png" alt="captcha" className="captcha-img" />
-              <a href="#refresh" className="refresh-link">Can't read the image? 🔁</a>
-            </div> */}
+          {error && <Alert variant="danger">{error}</Alert>}
+          {message && <Alert variant="success">{message}</Alert>}
 
-            {/* <Form.Group className="mb-3">
-              <Form.Control
-                type="text"
-                placeholder="Please Enter Captcha Code"
-                required
-                onChange={(e) => setCaptcha(e.target.value)}
-              />
-            </Form.Group> */}
+          <Form>
+            {step === 1 && (
+              <>
+                <Form.Group className="mb-3">
+                  <Form.Label>Mobile Number</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter mobile"
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value)}
+                  />
+                </Form.Group>
+                <Button onClick={handleSendOtp} className="w-100">
+                  Send OTP
+                </Button>
+              </>
+            )}
 
-            <div className="d-flex justify-content-between mb-3    ">
-              <a href="#forgot " className='label'>Forgot Password</a>
-              <a href="#register" className='label'>Create An Account</a>
-            </div>
+            {step === 2 && (
+              <>
+                <Form.Group className="mb-3">
+                  <Form.Label>OTP</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                  />
+                </Form.Group>
 
-            <Button type="submit" className="w-100 login-btn">
-              Login <BsArrowRight className="ms-2" />
-            </Button>
+                <Form.Group className="mb-3">
+                  <Form.Label>Full Name</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Set 4-digit MPIN</Form.Label>
+                  <Form.Control
+                    type="password"
+                    maxLength={4}
+                    value={mpin}
+                    onChange={(e) => setMPIN(e.target.value)}
+                  />
+                </Form.Group>
+
+                <Button onClick={handleVerifyAndSetMPIN} className="w-100">
+                  Continue
+                </Button>
+              </>
+            )}
           </Form>
-        </Col>
-      </Row>
-    </Container>
-    );
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default CustomerLogin;

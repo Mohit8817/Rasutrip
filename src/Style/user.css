@@ -1,4 +1,4 @@
-Hover dropdown
+/* Hover dropdown */
 
 .login-dropdown-wrapper .dropdown:hover .dropdown-menu {
   display: block;
@@ -69,10 +69,7 @@ Hover dropdown
   padding: 40px 0;
   margin-top: 6rem;
   min-height: 100vh;
-  position: relative;
-  z-index: 1;
 }
-
 
 .login-box {
   max-width: 700px;
@@ -80,40 +77,26 @@ Hover dropdown
   background: #fff;
   border-radius: 20px;
   overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .left-panel {
   background: #f8f9fa;
 }
 
-.benefits-title {
-  background-color: #ca0e27;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 25px;
-  font-weight: bold;
-  display: inline-block;
-}
-
-.benefits-list {
-  list-style: none;
-  padding-left: 0;
-  font-size: 15px;
-}
-
 .right-panel {
   background: #ff0022;
   color: #fff;
-  padding: 85px 18px 0 18px;
+  padding: 0 18px 0 18px;
 }
 
 .login-title {
   color: #fff;
   font-weight: 700;
-  font-size: 28px;
+  font-size: 20px;
   text-align: center;
-  letter-spacing: 2px;
-
+  letter-spacing: 1px;
   margin-bottom: 20px;
 }
 
@@ -126,6 +109,15 @@ Hover dropdown
   background-color: white;
   border-radius: 8px;
 }
+
+.login-btn {
+  background: #123867;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 0;
+  font-weight: bold;
+}
+
 
 .captcha-box {
   display: flex;
@@ -143,17 +135,18 @@ Hover dropdown
   text-decoration: underline;
 }
 
-.label {
-  color: #fff;
-  font-weight: 600;
+.loginlabel {
+  color: #fff !important;
+  font-weight: 600 !important;
 }
 
-.login-btn {
+.loginbtn{
   background: #123867;
   border: none;
   border-radius: 10px;
   padding: 10px 0;
-  font-weight: bold;
+  letter-spacing: 1px;
+  font-weight: 500;
 }
 
 

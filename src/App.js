@@ -20,7 +20,6 @@ import BusResultPage from './Pages/BusResultsPage/BusResultPage';
 import BusDetail from './Components/Bus/BusDetail/BusDetail';
 import BusTravellerDetails from './Components/Bus/BusTravellerDetails/BusTravellerDetails';
 import BusReview from './Components/Bus/BusReview/BusReview';
-import CustomerLogin from './Components/Login/CustomerLogin';
 import AgentLogin from './Components/Login/AgentLogin';
 import TermsandConditions from './Pages/LegalPages/TermsandConditions';
 import PrivacyPolicy from './Pages/LegalPages/PrivacyPolicy';
@@ -30,6 +29,8 @@ import CancellationRefundpolicy from './Pages/LegalPages/CancellationRefundpolic
 import FAQ from './Pages/LegalPages/FAQ';
 import AboutUs from './Pages/LegalPages/Aboutus';
 import BusPayment from './Components/Bus/BusPayment/BusPayment';
+import SetResetMPIN from './Components/Login/SetResetMPIN';
+import CustomerLogin from './Components/Login/CustomerLogin';
 
 function App() {
   return (
@@ -60,9 +61,27 @@ function App() {
         <Route path="/bus-payment" element={<BusPayment />} />
 
         {/* Login */}
+        {/* <Route path="/login/customer" element={<CustomerLogin />} />
+
+        <Route path="/login/agent" element={<AgentLogin />} /> */}
+
+
+        {/* ✅ Customer & Agent Login */}
         <Route path="/login/customer" element={<CustomerLogin />} />
         <Route path="/login/agent" element={<AgentLogin />} />
 
+
+
+
+
+
+        {/* ✅ Complete Signup (for new users only) */}
+
+        {/* ✅ Set or Reset MPIN */}
+        <Route path="/set-mpin" element={<SetResetMPIN />} />
+
+        {/* ✅ Optional: Dashboard after login */}
+        <Route path="/dashboard" element={<h1>Welcome to Dashboard</h1>} />
 
 
 

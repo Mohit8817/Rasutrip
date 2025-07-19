@@ -9,6 +9,8 @@ import { Provider } from "react-redux";
 import { store } from "./redux/store";
 import { LocationProvider } from "./Components/Context/LocationContext";
 import { HotelSearchProvider } from "./Components/Context/HotelSearchContext";
+import { UserProvider } from './Components/Context/UserContext';
+import { AuthProvider } from './Components/Context/AuthContext';
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
@@ -17,9 +19,14 @@ root.render(
     <Provider store={store}>
       <LocationProvider>
         <HotelSearchProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
+          <UserProvider>
+            <AuthProvider>
+
+              <BrowserRouter>
+                <App />
+              </BrowserRouter>
+            </AuthProvider>
+          </UserProvider>
         </HotelSearchProvider>
       </LocationProvider>
     </Provider>
