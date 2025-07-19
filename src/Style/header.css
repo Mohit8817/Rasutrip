@@ -431,7 +431,6 @@
         margin-left: 0.5rem;
     }
 }
-
 /* Animation for smooth transitions */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
