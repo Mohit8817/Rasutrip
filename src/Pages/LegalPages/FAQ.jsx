@@ -124,8 +124,46 @@ const FAQ = () => {
                             <li>Net banking refunds go to original payment source.</li>
                         </ul>
 
+                        <p>
+                            Ready to experience travel the <strong>RASUTRIP</strong> way?
+                            <br />
+                            📱 Download our app or 🌐 visit our website:&nbsp;
+                            <a
+                                href="http://rasutrip.com/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: '#000', textDecoration: 'none' }}
+                            >
+                                rasutrip.com
+                            </a>
+                            <br />
+                            📞 Call us anytime – We're here 24/7:&nbsp;
+                            <a
+                                href="tel:9266424809"
+                                style={{ color: '#000', textDecoration: 'none' }}
+                            >
+                                9266424809
+                            </a>
+                            <br />
+                            💬 Chat with our experts – Get instant assistance
+                        </p>
+
                         <p className="mt-4">
-                            For further assistance, contact our support team anytime at <strong>1800-270-0297</strong> or email <strong>support@rasutrip.com</strong>.
+                            For further assistance, contact our support team anytime at&nbsp;
+                            <a
+                                href="tel:9266424809"
+                                style={{ fontWeight: 'bold', color: '#000', textDecoration: 'none' }}
+                            >
+                               9266424809
+                            </a>
+                            &nbsp;or email&nbsp;
+                            <a
+                                href="mailto:support@rasutrip.com"
+                                style={{ fontWeight: 'bold', color: '#000', textDecoration: 'none' }}
+                            >
+                                support@rasutrip.com
+                            </a>
+                            .
                         </p>
                     </Col>
                 </Row>

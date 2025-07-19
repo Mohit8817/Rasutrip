@@ -78,13 +78,29 @@ const AboutUs = () => {
                         <p><strong>Our Mission:</strong> Simplifying travel through innovation, reliability, and unmatched customer service – one journey at a time.</p>
 
                         <h5 className="fw-bold mt-4">Get Started Today</h5>
-                        <p>
-                            Ready to experience travel the RASUTRIP way?
-                            <br />📱 Download our app or 🌐 visit our website
-                            <br />📞 Call us anytime – We're here 24/7
-                            <br />💬 Chat with our experts – Get instant assistance
+                        <p style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                            Ready to experience travel the <strong>RASUTRIP</strong> way?
+                            <br />
+                            📱 Download our app or 🌐 visit our website:&nbsp;
+                            <a
+                                href="http://rasutrip.com/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: '#000', textDecoration: 'none' }}
+                            >
+                                rasutrip.com
+                            </a>
+                            <br />
+                            📞 Call us anytime – We're here 24/7:&nbsp;
+                            <a
+                                href="tel:9266424809"
+                                style={{ color: '#000', textDecoration: 'none' }}
+                            >
+                                9266424809
+                            </a>
+                            <br />
+                            💬 Chat with our experts – Get instant assistance
                         </p>
-
                         <h5 className="fw-bold mt-4">Join the RASUTRIP Family</h5>
                         <p>
                             Thousands of happy travelers can't be wrong.
