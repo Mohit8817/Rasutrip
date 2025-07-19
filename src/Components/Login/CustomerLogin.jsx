@@ -1,86 +1,60 @@
+// src/components/auth/CustomerLogin.js
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
 import loginImage from '../../assest/loginimg.jpg';
-import {
-  signupOrLogin,
-  verifyOtp,
-  completeSignup
-} from './services/authService';
+import { signupOrLogin, verifyOtp, createMPIN, loginWithMPIN } from './services/authService';
 import { AuthContext } from '../Context/AuthContext';
 
 const CustomerLogin = () => {
   const { login } = useContext(AuthContext);
   const [mobile, setMobile] = useState('');
-  const [otp, setOtp] = useState('');
   const [mpin, setMPIN] = useState('');
-  const [name, setName] = useState('');
-  const [token, setToken] = useState('');
-  const [step, setStep] = useState(1);
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState('login'); // 'login', 'signup', 'verify'
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  // LOGIN handler
+  const handleLogin = async () => {
+    if (!mobile || !mpin) return setError('Enter both mobile and MPIN');
+    if (!/^\d{4}$/.test(mpin)) return setError('MPIN must be exactly 4 digits.');
+
+    try {
+      await loginWithMPIN({ mobile, mPIN: mpin }); // ✅ correct key
+      login({ mobile }); // store in context
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed');
+    }
+  };
+
+  // SIGNUP: Send OTP
   const handleSendOtp = async () => {
     if (!mobile) return setError('Please enter your mobile number.');
     try {
       await signupOrLogin({ mobile });
       setMessage('OTP sent to your mobile.');
       setError('');
-      setStep(2);
+      setStep('verify');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send OTP');
     }
   };
 
+  // SIGNUP: Verify OTP & Create MPIN
   const handleVerifyAndSetMPIN = async () => {
-    if (!otp || !mpin || !name) {
-      return setError('Please enter OTP, Name, and MPIN.');
-    }
-    if (!/^\d{4}$/.test(mpin)) {
-      return setError('MPIN must be exactly 4 digits.');
-    }
+    if (!otp || !mpin) return setError('Enter both OTP and MPIN.');
+    if (!/^\d{4}$/.test(mpin)) return setError('MPIN must be exactly 4 digits.');
 
     try {
-      // 1. Verify OTP and get token
-      const response = await verifyOtp({ mobile, otp });
-      const receivedToken = response.data.token;
-
-      if (!receivedToken) {
-        return setError('Failed to get token. Please try again.');
-      }
-
-      setToken(receivedToken);
-
-      // 2. Call completeSignup with token
-      await completeSignup(
-        {
-          mobile,
-          otp,
-          newMPIN: mpin,
-          name,
-        },
-        receivedToken
-      );
-
-      // 3. Save user data to context
+      await verifyOtp({ mobile, otp });
+      await createMPIN({ mobile, newMPIN: mpin });
       login({ mobile });
-
-      setMessage('Signup completed successfully.');
-      setError('');
-      setMobile('');
-      setOtp('');
-      setMPIN('');
-      setName('');
-      setStep(1);
       navigate('/');
     } catch (err) {
-      console.error('Error:', err);
-      if (err.response?.status === 409) {
-        setError('MPIN already exists for this number.');
-      } else {
-        setError(err.response?.data?.message || 'Failed to complete signup');
-      }
+      setError(err.response?.data?.message || 'Failed to verify or set MPIN');
     }
   };
 
@@ -105,33 +79,58 @@ const CustomerLogin = () => {
         {/* Right Panel */}
         <div className="col-md-6 right-panel d-flex flex-column justify-content-center">
           <h2 className="login-title">
-            {step === 1 ? 'Login / Signup' : 'Verify OTP & Set MPIN'}
+            {step === 'login' ? 'Login / Signup' : step === 'signup' ? 'Signup' : 'Verify OTP & Set MPIN'}
           </h2>
 
           {error && <Alert variant="danger">{error}</Alert>}
           {message && <Alert variant="success">{message}</Alert>}
 
           <Form>
-            {step === 1 && (
+            {(step === 'login' || step === 'signup') && (
               <>
                 <Form.Group className="mb-3">
                   <Form.Label>Mobile Number</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="Enter mobile"
+                    placeholder="Enter Mobile"
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
                   />
                 </Form.Group>
-                <Button onClick={handleSendOtp} className="w-100">
-                  Send OTP
-                </Button>
               </>
             )}
 
-            {step === 2 && (
+            {step === 'login' && (
               <>
                 <Form.Group className="mb-3">
+                  <Form.Label>Enter your Password</Form.Label>
+                  <Form.Control
+                    type="password"
+                    placeholder="Enter Password"
+                    value={mpin}
+                    onChange={(e) => setMPIN(e.target.value)}
+                    maxLength={4}
+                  />
+                </Form.Group>
+                <div className="d-flex justify-content-between">
+                  <Button variant="link" className="p-0 text-light fw-semibold" onClick={() => alert('Reset flow coming soon')}>
+                    Forgot Password
+                  </Button>
+                  <Button variant="link" className="p-0 text-light fw-semibold" onClick={() => setStep('signup')}>
+                    Signup
+                  </Button>
+                </div>
+                <Button onClick={handleLogin} className="w-100 mb-3 mt-3 login-btn">Login</Button>
+              </>
+            )}
+
+            {step === 'signup' && (
+              <Button onClick={handleSendOtp} className="w-100 login-btn">Send OTP</Button>
+            )}
+
+            {step === 'verify' && (
+              <>
+                <Form.Group className="mb-2">
                   <Form.Label>OTP</Form.Label>
                   <Form.Control
                     type="text"
@@ -141,28 +140,16 @@ const CustomerLogin = () => {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Full Name</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Enter your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </Form.Group>
-
-                <Form.Group className="mb-3">
                   <Form.Label>Set 4-digit MPIN</Form.Label>
                   <Form.Control
                     type="password"
-                    maxLength={4}
                     value={mpin}
                     onChange={(e) => setMPIN(e.target.value)}
+                    maxLength={4}
                   />
                 </Form.Group>
 
-                <Button onClick={handleVerifyAndSetMPIN} className="w-100">
-                  Continue
-                </Button>
+                <Button onClick={handleVerifyAndSetMPIN} className="w-100 login-btn">Continue</Button>
               </>
             )}
           </Form>

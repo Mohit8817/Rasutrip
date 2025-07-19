@@ -7,16 +7,11 @@ export const signupOrLogin = (data) => API.post('/user/signup-login', data);
 // OTP Verification
 export const verifyOtp = (data) => API.post('/user/verify-otp', data);
 
-// Set MPIN 
+// Set MPIN
 export const createMPIN = (data) => API.post('/user/create-mpin', data);
 
-// Complete Signup 
-// export const completeSignup = (data) => API.post('/user/complete-signup', data);
+// Complete Signup (without token)
+export const completeSignup = (data) => API.post('/user/complete-signup', data);
 
-export const completeSignup = (data, token) =>
-  API.post('/user/complete-signup', data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
+// ✅ Login using mobile and MPIN
+export const loginWithMPIN = (data) => API.post('/user/login-with-mpin', data);
