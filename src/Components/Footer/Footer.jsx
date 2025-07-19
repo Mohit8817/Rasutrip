@@ -22,22 +22,27 @@ const Footer = () => {
                             <FaPhoneAlt className="footer-icon me-3 mt-1" size={20} />
                             <div>
                                 <div className="fw-semibold">Customer Support</div>
-                                <div>+91 96488 22608</div>
+                                <div>+91 9266424809</div>
                             </div>
                         </div>
                         <div className="d-flex text-start mb-3">
                             <FaEnvelope className="footer-icon me-3 mt-1" size={20} />
-                            <div>
+                            <div style={{ cursor: 'pointer' }}>
                                 <div className="fw-semibold">Drop Us an Email</div>
-                                <div>rasutrip.com</div>
+                                <div>
+                                    <a href="mailto:support@rasutrip.com" style={{ color: '#000', textDecoration: 'none' }}>
+                                        support@rasutrip.com
+                                    </a>
+                                </div>
                             </div>
+
                         </div>
                         <div className="d-flex text-start mb-3">
                             <FaMapMarkerAlt className="footer-icon me-3 mt-1" size={20} />
                             <div>
                                 <div className="fw-semibold">Company Address</div>
                                 <div>
-                                    B-11, Sector 72, Noida, UP 201301
+                                  Sarfabad, Noida - 201307
                                 </div>
                             </div>
                         </div>
@@ -112,7 +117,7 @@ const Footer = () => {
                 <Row>
                     <Col>
                         <div className='Copyright'>
-                            Copyright © 2025 rasutrip. All Rights Reserved
+                            Copyright © 2025 RASUTRIP WEBSOFT TECHNOLOGIES LLP. All Rights Reserved
                         </div>
                     </Col>
 
