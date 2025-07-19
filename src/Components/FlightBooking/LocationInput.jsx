@@ -26,7 +26,7 @@ const LocationInput = () => {
       ...prev,
       bookingType: 'flight',
       fromCity: 'Delhi',
-      toCity: 'London',
+      toCity: 'Mumbai',
 
     }));
   }, []);
