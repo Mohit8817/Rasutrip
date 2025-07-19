@@ -5,11 +5,11 @@ export const LocationContext = createContext();
 export const LocationProvider = ({ children }) => {
   const defaultLocation = {
     fromCity: 'Delhi',
-    toCity: 'London',
+    toCity: 'Mumbai',
     fromAirport: 'DEL',
-    toAirport: 'LON',
+    toAirport: 'BOM',
     fromCode: 'DEL',
-    toCode: 'LON',
+    toCode: 'BOM',
     departDate: null,
     returnDate: null,
     passengers: { adults: 1, children: 0, infants: 0 },
