@@ -42,7 +42,7 @@ const Footer = () => {
                             <div>
                                 <div className="fw-semibold">Company Address</div>
                                 <div>
-                                  Sarfabad, Noida - 201307
+                                  SARFABAD,NOIDA, Sarfabad, SARFABAD, Dadri, Gautam Buddha Nagar- 201307, Uttar Pradesh, India
                                 </div>
                             </div>
                         </div>
