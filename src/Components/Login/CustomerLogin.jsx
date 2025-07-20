@@ -2,6 +2,9 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/bootstrap.css';
+
 import loginImage from '../../assest/loginimg.jpg';
 import {
   signupOrLogin,
@@ -15,13 +18,12 @@ import { AuthContext } from '../Context/AuthContext';
 
 const CustomerLogin = () => {
   const { login } = useContext(AuthContext);
-  const [step, setStep] = useState('login'); // login | signup | verify | mpin | forgot
+  const [step, setStep] = useState('login'); // login | signup | verifyAndMpin | forgot
   const [mobile, setMobile] = useState('');
   const [otp, setOtp] = useState('');
   const [mpin, setMpin] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [forgotFlow, setForgotFlow] = useState(false);
   const navigate = useNavigate();
 
   const handleSignup = async () => {
@@ -29,35 +31,26 @@ const CustomerLogin = () => {
     if (!mobile) return setError('Mobile number is required');
     try {
       await signupOrLogin({ mobile });
-      setStep('verify');
+      setStep('verifyAndMpin');
       setMessage('OTP sent to your mobile');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup/Login failed');
     }
   };
 
-  const handleVerifyOtp = async () => {
+  const handleVerifyAndSetMpin = async () => {
     setError('');
-    if (!otp) return setError('OTP is required');
+    if (!otp || !/^\d{4}$/.test(mpin)) {
+      return setError('Enter valid OTP and 4-digit MPIN');
+    }
     try {
       await verifyOtp({ mobile, otp });
-      setStep('mpin');
-      setMessage('OTP verified. Please set your MPIN.');
-    } catch (err) {
-      setError(err.response?.data?.message || 'OTP verification failed');
-    }
-  };
-
-  const handleCreateMpin = async () => {
-    setError('');
-    if (!/^\d{4}$/.test(mpin)) return setError('MPIN must be 4 digits');
-    try {
       await createMPIN({ mobile, newMPIN: mpin });
       await loginWithMPIN({ mobile, mPIN: mpin });
       login({ mobile });
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'MPIN creation or login failed');
+      setError(err.response?.data?.message || 'Verification or MPIN setup failed');
     }
   };
 
@@ -122,9 +115,8 @@ const CustomerLogin = () => {
         <div className="col-md-6 right-panel d-flex flex-column justify-content-center">
           <h2 className="login-title mb-3 text-center">
             {step === 'login' && 'Login with MPIN'}
-            {step === 'signup' && 'Signup'}
-            {step === 'verify' && 'Verify OTP'}
-            {step === 'mpin' && 'Set MPIN'}
+            {step === 'signup' && 'Signup - Mobile'}
+            {step === 'verifyAndMpin' && 'Verify OTP & Set MPIN'}
             {step === 'forgot' && 'Reset MPIN'}
           </h2>
 
@@ -132,21 +124,24 @@ const CustomerLogin = () => {
           {message && <Alert variant="success">{message}</Alert>}
 
           <Form>
-            {(step === 'login' || step === 'signup' || step === 'forgot') && (
+            {['login', 'signup', 'forgot'].includes(step) && (
               <Form.Group className="mb-3">
-                <Form.Label className='text-light'>Mobile Number</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="Enter Mobile"
+                <Form.Label className="text-light">Mobile Number</Form.Label>
+                <PhoneInput
+                  country={'in'}
                   value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  onChange={(phone) => setMobile(phone)}
+                  placeholder="Enter mobile number"
+                  inputClass="custom-phone-input w-100"
                 />
               </Form.Group>
             )}
 
-            {(step === 'login' || step === 'mpin' || step === 'forgot') && (
+            {['login', 'verifyAndMpin', 'forgot'].includes(step) && (
               <Form.Group className="mb-3">
-                <Form.Label className='text-light'>{step === 'forgot' ? 'Set New MPIN' : 'MPIN'}</Form.Label>
+                <Form.Label className="text-light">
+                  {step === 'forgot' ? 'Set New MPIN' : 'MPIN'}
+                </Form.Label>
                 <Form.Control
                   type="password"
                   placeholder="Enter 4-digit MPIN"
@@ -157,9 +152,9 @@ const CustomerLogin = () => {
               </Form.Group>
             )}
 
-            {(step === 'verify' || step === 'forgot') && (
+            {['verifyAndMpin', 'forgot'].includes(step) && (
               <Form.Group className="mb-3">
-                <Form.Label className='text-light'>OTP</Form.Label>
+                <Form.Label className="text-light">OTP</Form.Label>
                 <Form.Control
                   type="text"
                   placeholder="Enter OTP"
@@ -173,33 +168,55 @@ const CustomerLogin = () => {
             {step === 'login' && (
               <>
                 <div className="d-flex justify-content-between">
-                  <Button variant="link" className="p-0 text-light mb-3" onClick={() => {
-                    setStep('signup');
-                    setMessage('');
-                    setError('');
-                  }}>Signup</Button>
-                  <Button variant="link" className="p-0 text-light mb-3" onClick={handleSendForgotOtp}>Forgot MPIN?</Button>
+                  <Button
+                    variant="link"
+                    className="p-0 text-light mb-3"
+                    onClick={() => {
+                      setStep('signup');
+                      setMessage('');
+                      setError('');
+                    }}
+                  >
+                    Signup
+                  </Button>
+                  <Button
+                    variant="link"
+                    className="p-0 text-light mb-3"
+                    onClick={handleSendForgotOtp}
+                  >
+                    Forgot MPIN?
+                  </Button>
                 </div>
-                <Button onClick={handleLoginWithMPIN} className="w-100 login-btn mb-2">Login</Button>
+                <Button onClick={handleLoginWithMPIN} className="w-100 login-btn mb-2">
+                  Login
+                </Button>
               </>
             )}
 
             {step === 'signup' && (
-              <Button onClick={handleSignup} className="w-100 login-btn mb-2">Send OTP</Button>
+              <Button onClick={handleSignup} className="w-100 login-btn mb-2">
+                Send OTP
+              </Button>
             )}
 
-            {step === 'verify' && (
-              <Button onClick={handleVerifyOtp} className="w-100 login-btn mb-2">Verify OTP</Button>
-            )}
-
-            {step === 'mpin' && (
-              <Button onClick={handleCreateMpin} className="w-100 login-btn mb-2">Set MPIN</Button>
+            {step === 'verifyAndMpin' && (
+              <Button onClick={handleVerifyAndSetMpin} className="w-100 login-btn mb-2">
+                Verify & Set MPIN
+              </Button>
             )}
 
             {step === 'forgot' && (
               <>
-                <Button onClick={handleForgotVerify} className="w-100 login-btn mb-2">Continue</Button>
-                <Button variant="link" className="w-100 text-light" onClick={() => setStep('login')}>Back to Login</Button>
+                <Button onClick={handleForgotVerify} className="w-100 login-btn mb-2">
+                  Continue
+                </Button>
+                <Button
+                  variant="link"
+                  className="w-100 text-light"
+                  onClick={() => setStep('login')}
+                >
+                  Back to Login
+                </Button>
               </>
             )}
           </Form>
