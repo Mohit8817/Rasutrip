@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { Card, Form, Row, Col, Button, Alert } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/bootstrap.css';
 import '../../Style/user.css';
@@ -21,36 +22,37 @@ const AgentLogin = () => {
   const [showResetForm, setShowResetForm] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
 
-const { setUser, setUserType } = useContext(AuthContext); // Add setUserType
+  const navigate = useNavigate(); // ← INIT HOOK
+  const { setUser, setUserType } = useContext(AuthContext); // Add setUserType
+  const handleLogin = async () => {
+    setError('');
+    setSuccess('');
+    try {
+      const { data } = await agentLogin({ mobile, password });
+      setSuccess('Login successful!');
+      setUser(data.agent || { mobile });
+      setUserType('agent');
+      navigate('/'); // ← REDIRECT TO HOME
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed');
+    }
+  };
 
-const handleLogin = async () => {
-  setError('');
-  setSuccess('');
-  try {
-    const { data } = await agentLogin({ mobile, password });
-    setSuccess('Login successful!');
-    setUser(data.agent || { mobile });      // Save agent details
-    setUserType('agent');                   // Set user type
-  } catch (err) {
-    setError(err.response?.data?.message || 'Login failed');
-  }
-};
+  const handleSendOtp = async () => {
+    setError('');
+    setSuccess('');
 
-const handleSendOtp = async () => {
-  setError('');
-  setSuccess('');
+    const cleanMobile = mobile.replace(/\D/g, '');
 
-  const cleanMobile = mobile.replace(/\D/g, '');
-
-  try {
-    const { data } = await sendForgotPasswordOtp({ mobile: cleanMobile }); // ← wrap in object
-    setSuccess(data.message);
-    setOtpSent(true);
-  } catch (err) {
-    console.error('OTP Send Error:', err.response?.data || err.message);
-    setError(err.response?.data?.message || 'Failed to send OTP');
-  }
-};
+    try {
+      const { data } = await sendForgotPasswordOtp({ mobile: cleanMobile }); // ← wrap in object
+      setSuccess(data.message);
+      setOtpSent(true);
+    } catch (err) {
+      console.error('OTP Send Error:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Failed to send OTP');
+    }
+  };
 
 
   const handleResetPassword = async () => {
