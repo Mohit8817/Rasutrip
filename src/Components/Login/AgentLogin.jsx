@@ -1,171 +1,187 @@
-import { Card, Form, Row, Col, Button } from 'react-bootstrap';
+import React, { useState, useContext } from 'react';
+import { Card, Form, Row, Col, Button, Alert } from 'react-bootstrap';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/bootstrap.css';
 import '../../Style/user.css';
+import loginImage from '../../assest/login_agent.png';
+import {
+  agentLogin,
+  sendForgotPasswordOtp,
+  resetAgentPassword,
+} from './services/authService';
+import { AuthContext } from '../Context/AuthContext';
 
 const AgentLogin = () => {
+  const [mobile, setMobile] = useState('');
+  const [password, setPassword] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showResetForm, setShowResetForm] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+
+const { setUser, setUserType } = useContext(AuthContext); // Add setUserType
+
+const handleLogin = async () => {
+  setError('');
+  setSuccess('');
+  try {
+    const { data } = await agentLogin({ mobile, password });
+    setSuccess('Login successful!');
+    setUser(data.agent || { mobile });      // Save agent details
+    setUserType('agent');                   // Set user type
+  } catch (err) {
+    setError(err.response?.data?.message || 'Login failed');
+  }
+};
+
+const handleSendOtp = async () => {
+  setError('');
+  setSuccess('');
+
+  const cleanMobile = mobile.replace(/\D/g, '');
+
+  try {
+    const { data } = await sendForgotPasswordOtp({ mobile: cleanMobile }); // ← wrap in object
+    setSuccess(data.message);
+    setOtpSent(true);
+  } catch (err) {
+    console.error('OTP Send Error:', err.response?.data || err.message);
+    setError(err.response?.data?.message || 'Failed to send OTP');
+  }
+};
+
+
+  const handleResetPassword = async () => {
+    setError('');
+    setSuccess('');
+    try {
+      const { data } = await resetAgentPassword({ otp: resetOtp, newPassword, mobile });
+      setSuccess(data.message || 'Password reset successful!');
+      setShowResetForm(false);
+      setResetOtp('');
+      setNewPassword('');
+      setOtpSent(false);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Reset failed');
+    }
+  };
+
   return (
     <div className="d-flex justify-content-center align-items-center agent-login-container">
-      <Card className='agent-login-card'>
-        <div className="text-center">
-          <h2 className="fw-bold">Sign Up Form</h2>
-          <p className="">sign up now to become a agent</p>
-        </div>
+      <Card className="agent-login-card w-100" style={{ maxWidth: '900px' }}>
+        <Row>
+          <Col md={6} className="p-3">
+            <img src={loginImage} alt="Login" className="img-fluid w-100 rounded mt-4" />
+          </Col>
 
-        <Form>
-          {/* Basic Information Section */}
-          <div className="form-section-box">
-            <div className="section-header">Basic Information</div>
-
-            <Row className="mb-3">
-              <Col md={3}>
-                <Form.Group>
-                  <Form.Label>Full Name</Form.Label>
-                  <Form.Control type="text" placeholder="Enter Name" />
-                </Form.Group>
-              </Col>
-              <Col md={3}>
-                <Form.Group>
-                  <Form.Label>Mobile Number</Form.Label>
-                  <Form.Control type="text" placeholder="Mobile No." />
-                </Form.Group>
-              </Col>
-              <Col md={3}>
-                <Form.Group>
-                  <Form.Label>Email ID</Form.Label>
-                  <Form.Control type="email" placeholder="Email ID" />
-                </Form.Group>
-              </Col>
-              <Col md={3}>
-                <Form.Group>
-                  <Form.Label>City</Form.Label>
-                  <Form.Control type="text" placeholder="City" />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Form.Group className="mb-4">
-              <Form.Label>Remark</Form.Label>
-              <Form.Control as="textarea" rows={2} placeholder="Enter Remark" />
-            </Form.Group>
-          </div>
-
-
-          <div className="form-section-box mt-4">
-            <div className="section-header">KYC Information</div>
-
-            {/* Company & Aadhar Info */}
-            <Row className="mb-3">
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>Company Name</Form.Label>
-                  <Form.Control type="text" placeholder="Company Name" />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>Aadhar Number</Form.Label>
-                  <Form.Control type="text" placeholder="Enter Aadhar Number" />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>Aadhar Document</Form.Label>
-                  <Form.Control type="file" />
-                  <div className="text-danger small mt-1">
-                    File Type Allowed (jpg|jpeg|gif|png|pdf) and Max File Size 8MB
-                  </div>
-                </Form.Group>
-              </Col>
-            </Row>
-
-            {/* PAN Details */}
-            <hr />
-            <h6 className="mt-3 mb-2 fw-bold">PAN Details</h6>
-            <Row className="mb-3">
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>PAN Name</Form.Label>
-                  <Form.Control type="text" placeholder="Name As Per PAN" />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>PAN Number</Form.Label>
-                  <Form.Control type="text" placeholder="PAN No." />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>PAN Document</Form.Label>
-                  <Form.Control type="file" />
-                  <div className="text-danger small mt-1">
-                    File Type Allowed (jpg|jpeg|gif|png|pdf) and Max File Size 8MB
-                  </div>
-                </Form.Group>
-              </Col>
-            </Row>
-
-            {/* GST Details */}
-            <hr />
-            <h6 className="mt-3 mb-2 fw-bold">GST Details</h6>
-            <Row className="mb-3">
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>GST Registration</Form.Label>
-                  <Form.Select>
-                    <option value="">Select</option>
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>GST Number</Form.Label>
-                  <Form.Control type="text" placeholder="GST No." />
-                </Form.Group>
-              </Col>
-              <Col md={4}>
-                <Form.Group>
-                  <Form.Label>GST Document</Form.Label>
-                  <Form.Control type="file" />
-                  <div className="text-danger small mt-1">
-                    File Type Allowed (jpg|jpeg|gif|png|pdf) and Max File Size 8MB
-                  </div>
-                </Form.Group>
-              </Col>
-            </Row>
-          </div>
-
-          <Row className="mt-4 text-center">
-            <Col lg={7}>
-              <Form.Check
-                type="checkbox"
-                id="termsCheckbox"
-                className="mb-2 me-0 pe-0"
-                label={
-                  <span className="terms-text">
-                    By proceeding, you agree with our <a href="/">Terms of Service</a> & <a href="/">Privacy Policy</a>
-                  </span>
-                }
-              />
-            </Col>
-
-            <Col lg={5}>
-              <p className="login-link mb-2">
-                Do you already have an account? <a href="/">Login here</a>
+          <Col md={6} className="d-flex flex-column justify-content-center agent-login-right-panel px-4">
+            <div className="text-center mb-3">
+              <h2 className="fw-bold text-light">
+                {showResetForm ? 'Reset Password' : 'Agent Login'}
+              </h2>
+              <p className="text-light">
+                {showResetForm
+                  ? 'Reset your password using OTP'
+                  : 'Sign in to continue as an agent'}
               </p>
-            </Col>
+            </div>
 
-            <Col md={12}>
-              <Button variant="primary" className="btn-red w-50 mt-3">Submit</Button>
-            </Col>
-          </Row>
+            {error && <Alert variant="danger">{error}</Alert>}
+            {success && <Alert variant="success">{success}</Alert>}
 
+            <Form>
+              <Form.Group className="mb-3">
+                <Form.Label className="text-light">Mobile Number</Form.Label>
+                <PhoneInput
+                  country={'in'}
+                  value={mobile}
+                  onChange={setMobile}
+                  inputClass="custom-phone-input w-100"
+                  placeholder="Enter mobile number"
+                />
+              </Form.Group>
 
-        </Form>
+              {!showResetForm ? (
+                <>
+                  <Form.Group className="mb-3">
+                    <Form.Label className="text-light">Password</Form.Label>
+                    <Form.Control
+                      type="password"
+                      placeholder="Enter password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </Form.Group>
+
+                  <div className="d-flex justify-content-between">
+                    <Button
+                      variant="link"
+                      className="p-0 text-light mb-3"
+                      onClick={() => setShowResetForm(true)}
+                    >
+                      Forgot Password?
+                    </Button>
+                  </div>
+
+                  <Button className="w-100 login-btn mb-2" onClick={handleLogin}>
+                    Login
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {!otpSent ? (
+                    <Button className="w-100 mb-3 login-btn" onClick={handleSendOtp}>
+                      Send OTP
+                    </Button>
+                  ) : (
+                    <>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="text-light">OTP</Form.Label>
+                        <Form.Control
+                          type="text"
+                          placeholder="Enter OTP"
+                          value={resetOtp}
+                          onChange={(e) => setResetOtp(e.target.value)}
+                        />
+                      </Form.Group>
+
+                      <Form.Group className="mb-3">
+                        <Form.Label className="text-light">New Password</Form.Label>
+                        <Form.Control
+                          type="password"
+                          placeholder="Enter new password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                        />
+                      </Form.Group>
+
+                      <Button className="w-100 login-btn mb-2" onClick={handleResetPassword}>
+                        Reset Password
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    variant="link"
+                    className="p-0 text-light mt-2"
+                    onClick={() => {
+                      setShowResetForm(false);
+                      setOtpSent(false);
+                      setResetOtp('');
+                      setNewPassword('');
+                    }}
+                  >
+                    Back to Login
+                  </Button>
+                </>
+              )}
+            </Form>
+          </Col>
+        </Row>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default AgentLogin
+export default AgentLogin;

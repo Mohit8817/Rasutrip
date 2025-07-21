@@ -1,6 +1,6 @@
 /* Top Bar Styles */
 .top-bar {
-    background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+    background: #ca0d27;
     color: white;
     font-size: 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -110,7 +110,7 @@
 .brand-name {
     font-size: 24px;
     font-weight: 700;
-    color: #0066cc;
+    color: #ca0d27;
     line-height: 1;
     margin: 0;
 }
@@ -126,18 +126,38 @@
 .header-nav .nav-item-link {
     font-size: 14px;
     font-weight: 400 !important;
-    padding: 8px 20px !important;
     margin: 0 4px;
     font-family: 'Roboto', sans-serif;
-    color: #ffffff !important; /* White by default */
-    border-radius: 6px;
+    color: #ffffff !important; 
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
     text-decoration: none !important;
-    position: relative;
     text-transform: capitalize;
+    gap: 10px;
+}
+
+
+
+/* Default: Transparent background and no shadow (Desktop and up) */
+.offcanvas.offcanvas-start {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-right: none !important;
+}
+
+/* White background only on mobile (below 992px, Bootstrap lg breakpoint) */
+@media (max-width: 991.98px) {
+  .offcanvas.offcanvas-start {
+    background-color: #ffffff !important;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2) !important;
+    border-right: 1px solid #ddd !important;
+  }
+
+  .offcanvas-header,
+  .offcanvas-body {
+    background-color: #ffffff !important;
+  }
 }
 
 /* When scrolled, change nav links to black */
@@ -152,7 +172,6 @@
 
 /* When scrolled, different hover effect */
 .header_navbar.scrolled .nav-item-link:hover {
-    background-color: #f8f9fa;
     color: #0066cc !important;
 }
 
@@ -395,7 +414,7 @@
     
     .brand-name {
         font-size: 20px;
-        color: #0066cc; /* Always blue on mobile */
+        color: #ca0d27; /* Always blue on mobile */
     }
     
     .brand-tagline {

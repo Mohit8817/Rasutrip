@@ -210,7 +210,7 @@ const handleLoginClick = () => {
                             </Offcanvas.Title>
                         </Offcanvas.Header>
                         <Offcanvas.Body>
-                            <Nav className="justify-content-center flex-grow-1 pe-3 header-nav">
+                            <Nav className="header-nav ">
                                 {/* Main Navigation */}
                                 <Nav.Link href="/" className="nav-item-link">
                                     <i className="fas fa-home"></i> Home
