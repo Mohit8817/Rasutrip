@@ -30,7 +30,8 @@ const FlightResultsPage = () => {
     });
 
     return (
-        <div className='relative'>
+       <div className='innerpagecontainer'>
+         <div className='relative'>
             {tripType === 'oneway' && (
                 <Container className="mt-5 pt-5">
                     <Row>
@@ -69,6 +70,7 @@ const FlightResultsPage = () => {
             )}
             <RoundTripBookingBar />
         </div>
+       </div>
     );
 };
 

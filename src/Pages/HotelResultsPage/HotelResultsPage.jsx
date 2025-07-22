@@ -13,7 +13,7 @@ const HotelResultsPage = () => {
   const [hotelNames, setHotelNames] = useState([]); // This holds all hotel names for dropdown
 
   return (
-    <Container className='mt-5 pt-5'>
+    <Container className='mt-5 pt-5 innerpagecontainer'>
       <Row>
         <Col>
           <SearchSummary />

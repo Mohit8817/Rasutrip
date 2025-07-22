@@ -31,11 +31,14 @@ import AboutUs from './Pages/LegalPages/Aboutus';
 import BusPayment from './Components/Bus/BusPayment/BusPayment';
 import SetResetMPIN from './Components/Login/SetResetMPIN';
 import CustomerLogin from './Components/Login/CustomerLogin';
+import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
 
 function App() {
   return (
     <>
       <Header />
+          
+<ScrollToTop/>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/flight-results" element={<FlightResultsPage />} />
@@ -95,6 +98,7 @@ function App() {
         <Route path="/UserAgreement" element={<UserAgreement />} />
         <Route path="/CancellationRefundpolicy" element={<CancellationRefundpolicy />} />
         <Route path="/faq" element={<FAQ />} />
+
 
       </Routes>
       <Footer />

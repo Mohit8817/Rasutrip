@@ -1,3 +1,8 @@
+.innerpagecontainer{
+    margin-top: 5rem !important;
+}
+
+
 @media (max-width: 768px) {
     .flight-search-row>div {
         margin-bottom: 10px;

@@ -1,5 +1,11 @@
 
 /* SortBAR */
+
+
+.innerpagecontainer{
+    margin-top: 5rem !important;
+}
+
 .sort-bar {
   display: flex;
   justify-content: space-between;
