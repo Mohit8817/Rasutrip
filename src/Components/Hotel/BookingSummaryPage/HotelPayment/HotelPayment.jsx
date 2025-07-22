@@ -1,21 +1,38 @@
-import React from 'react'
-import HotelStep from '../HotelStep'
+import React from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import { useLocation } from 'react-router-dom';
+
+import HotelStep from '../HotelStep';
+import HotelPromoCodeCard from '../HotelPromoCodeCard ';
+import FareSummaryCard from '../FareSummaryCard';
+import HotelPaymentInfo from './HotelPaymentInfo';
 
 const HotelPayment = () => {
+    const location = useLocation();
+    const { totalPrice, priceDetails } = location.state || {};
+
     return (
         <div>
-            <div className="container mt-5 pt-5">
-                <HotelStep activeIndex={3}/>
-            </div>
-            <div className="container" style={{ marginTop: '8rem' }}>
+            <Container className="mt-5 pt-3">
+                <Row>
+                    <Col>
+                        <HotelStep activeIndex={3} />
+                    </Col>
+                </Row>
 
+                <Row>
+                    <Col lg={9}>
+                       <HotelPaymentInfo totalPrice={totalPrice} priceDetails={priceDetails} />
 
-                This is the Hotel Payment Page
-
-                <h2>comming soon</h2>
-            </div>
+                    </Col>
+                    <Col lg={3}>
+                        <FareSummaryCard priceDetails={priceDetails} />
+                        <HotelPromoCodeCard />
+                    </Col>
+                </Row>
+            </Container>
         </div>
-    )
-}
+    );
+};
 
-export default HotelPayment
+export default HotelPayment;

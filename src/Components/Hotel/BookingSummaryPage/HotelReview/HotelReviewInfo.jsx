@@ -14,11 +14,24 @@ const HotelReviewInfo = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const { hotel, room, roomDetails, guestInputs, email, mobile } =
+    const { hotel, room, roomDetails, guestInputs, email, mobile, priceDetails } =
         location.state || {};
 
     const handleContinue = () => {
-        navigate("/HotelPayment");
+        const totalPrice = roomDetails?.Amount || 0;
+
+        navigate("/HotelPayment", {
+            state: {
+                hotel,
+                room,
+                roomDetails,
+                guestInputs,
+                email,
+                mobile,
+                totalPrice,
+                priceDetails,
+            },
+        });
     };
 
     if (!hotel || !room || !guestInputs) {
