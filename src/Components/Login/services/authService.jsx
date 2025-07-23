@@ -50,7 +50,7 @@ export const createMPIN = (data) => API.post('/user/create-mpin', data);
 export const completeSignup = (data) => API.post('/user/complete-signup', data);
 
 // Login using mobile and MPIN
-export const loginWithMPIN = (data) => API.post('/user/login-with-mpin', data);
+export const loginWithMPIN = (data) => API.post('/user/login-with-mpin', data); 
 
 // Verify MPIN OTP (used during MPIN reset/forgot)
 export const verifyForgotOtp = (data) => API.post('/user/verify-mpin-otp', data);

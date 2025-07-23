@@ -1,10 +1,7 @@
 import axios from "axios";
 import baseURL from "../../../Services/Config";
 
-const headers = {
-  userName: 'TTS',
-  password: 'TTS@001',
-};
+
 
 // ✅ Define hotel-related service endpoints
 const HotelServices = {
@@ -13,7 +10,7 @@ const HotelServices = {
   hotelInfo: `${baseURL}/hotelservice/gethotelinfo`,
   roomInfo: `${baseURL}/hotelservice/getroominfo`,
   createOrder: `${baseURL}/hotelservice/create-order`,
-   validate: `${baseURL}/hotelservice/validate`, // ✅ Added validate endpoint
+  validate: `${baseURL}/hotelservice/validate`, // ✅ Added validate endpoint
 };
 
 // ✅ Fetch hotel cities for autocomplete or destination suggestions
@@ -65,7 +62,7 @@ export const fetchRoomInfo = async (payload) => {
 // ✅ Hotel Razorpay order creation with authentication headers
 export const postHotel = async (data, endpoint) => {
   try {
-    const res = await axios.post(`${baseURL}${endpoint}`, data, { headers });
+    const res = await axios.post(`${baseURL}${endpoint}`, data);
     return res.data;
   } catch (error) {
     console.error("❌ postHotel Error:", error.response?.data || error.message);
@@ -73,23 +70,52 @@ export const postHotel = async (data, endpoint) => {
   }
 };
 
-// ✅ Validate hotel payment after Razorpay success
-export const validateHotelPayment = async (payload) => {
-  return await postHotel(payload, HotelServices.validate);
-};
 
 
-// ✅ Create Razorpay hotel order
+
+
 export const createHotelOrder = async (amount) => {
   try {
+    const token = localStorage.getItem('token');
+    console.log("🔐 Sending token:", token); // Check token exists
+
     const res = await axios.post(
       `${HotelServices.createOrder}`,
       { amount },
-      { headers: { userName: 'TTS', password: 'TTS@001' } } // ✅ Correct headers
+      {
+        headers: {
+          Authorization: `Bearer ${token}` // ✅ Must be exactly this format
+        }
+      }
     );
+
     return res.data;
   } catch (error) {
     console.error("❌ createHotelOrder Error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+
+
+// ✅ Validate hotel payment after Razorpay success
+export const validateHotelPayment = async (payload) => {
+  try {
+    const token = localStorage.getItem('token'); // 👈 Get token
+
+    const res = await axios.post(
+      `${baseURL}/hotelservice/validate-payment`, // 🔁 Replace with your actual endpoint
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // 👈 Pass token in header
+        },
+      }
+    );
+
+    return res.data;
+  } catch (error) {
+    console.error("❌ validateHotelPayment Error:", error.response?.data || error.message);
     throw error;
   }
 };

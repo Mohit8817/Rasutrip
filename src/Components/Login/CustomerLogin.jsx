@@ -54,17 +54,33 @@ const CustomerLogin = () => {
     }
   };
 
+
   const handleLoginWithMPIN = async () => {
     setError('');
     if (!mobile || !mpin) return setError('Enter both mobile and MPIN');
+
     try {
-      await loginWithMPIN({ mobile, mPIN: mpin });
-      login({ mobile });
-      navigate('/');
+      const response = await loginWithMPIN({ mobile, mPIN: mpin });
+
+      if (response.status === 200 || response.status === 201) {
+        const token = response?.data?.token; // 👈 Get the token
+        console.log("🎟️ Login Token:", token);
+
+      
+        if (token) {
+          localStorage.setItem('token', token);
+        }
+
+        login({ mobile, ...response.data });
+        navigate('/');
+      }
+
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
+      console.error('❌ MPIN Login Error:', err);
     }
   };
+
 
   const handleSendForgotOtp = async () => {
     setError('');

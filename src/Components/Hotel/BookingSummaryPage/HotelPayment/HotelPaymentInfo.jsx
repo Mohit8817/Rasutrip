@@ -56,7 +56,7 @@ const HotelPaymentInfo = ({ priceDetails, hotelBookingDetails }) => {
           address: 'Hotel Booking',
         },
         theme: {
-          color: '#dc3545',
+          color: '#c90d26',
         },
       };
 

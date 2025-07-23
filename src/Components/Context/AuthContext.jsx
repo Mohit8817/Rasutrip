@@ -6,6 +6,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userType, setUserType] = useState(null); // "customer" or "agent"
+  
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
