@@ -32,6 +32,7 @@ import BusPayment from './Components/Bus/BusPayment/BusPayment';
 import SetResetMPIN from './Components/Login/SetResetMPIN';
 import CustomerLogin from './Components/Login/CustomerLogin';
 import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
+import HotelConfirmation from './Components/Hotel/BookingSummaryPage/HotelConfirmation/HotelConfirmation';
 
 function App() {
   return (
@@ -55,6 +56,9 @@ function App() {
         <Route path="/guest-details" element={<GuestDetails />} />
         <Route path="/Hotelreview" element={<HotelReview />} />
         <Route path="/HotelPayment" element={<HotelPayment />} />
+        <Route path="/hotel/confirmation" element={<HotelConfirmation />} />
+
+
 
         {/* Bus */}
         <Route path="/bus-results" element={<BusResultPage />} />

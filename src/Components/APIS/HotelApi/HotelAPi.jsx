@@ -10,7 +10,9 @@ const HotelServices = {
   hotelInfo: `${baseURL}/hotelservice/gethotelinfo`,
   roomInfo: `${baseURL}/hotelservice/getroominfo`,
   createOrder: `${baseURL}/hotelservice/create-order`,
-  validate: `${baseURL}/hotelservice/validate`, // ✅ Added validate endpoint
+  validate: `${baseURL}/hotelservice/validate`,
+  book: `${baseURL}/hotelservice/book`,
+
 };
 
 // ✅ Fetch hotel cities for autocomplete or destination suggestions
@@ -101,14 +103,14 @@ export const createHotelOrder = async (amount) => {
 // ✅ Validate hotel payment after Razorpay success
 export const validateHotelPayment = async (payload) => {
   try {
-    const token = localStorage.getItem('token'); // 👈 Get token
+    const token = localStorage.getItem('token');
 
     const res = await axios.post(
-      `${baseURL}/hotelservice/validate-payment`, // 🔁 Replace with your actual endpoint
+      `${baseURL}/hotelservice/validate`,
       payload,
       {
         headers: {
-          Authorization: `Bearer ${token}`, // 👈 Pass token in header
+          Authorization: `Bearer ${token}`,
         },
       }
     );
@@ -117,5 +119,29 @@ export const validateHotelPayment = async (payload) => {
   } catch (error) {
     console.error("❌ validateHotelPayment Error:", error.response?.data || error.message);
     throw error;
+  }
+};
+
+
+
+
+export const bookHotel = async (bookingPayload) => {
+  try {
+    const token = localStorage.getItem('token');
+
+    const res = await axios.post(
+      HotelServices.book,
+      bookingPayload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error("❌ Error booking hotel:", err);
+    return null;
   }
 };
