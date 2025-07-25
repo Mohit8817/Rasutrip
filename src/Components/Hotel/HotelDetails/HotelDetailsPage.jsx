@@ -88,12 +88,18 @@ const HotelDetailsPage = () => {
               rooms: searchDetails?.rooms,
               guests: searchDetails?.guests,
             }}
+            payload={{
+              UserIp: "49.36.217.215",
+              ResultIndex: hotel.ResultIndex,
+              HotelCode: hotel.HotelCode,
+              SearchTokenId: hotel.SearchTokenId,
+            }}
             onRoomSelect={({ baseFare, tax, serviceCharges, gst, room }) => {
               setSelectedRoom(room);
               setSelectedPrice({ baseFare, tax, serviceCharges, gst });
-              // navigation happens inside RoomCard
             }}
           />
+
 
           <Amenities facilities={hotelData.HotelFacilities || []} />
           <AboutHotel description={hotelData.Description || ""} />

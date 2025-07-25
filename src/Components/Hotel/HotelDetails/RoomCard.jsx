@@ -2,12 +2,16 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle } from "react-bootstrap-icons";
 
-const RoomCard = ({ roomData = [], hotel, onRoomSelect }) => {
+const RoomCard = ({ roomData = [], hotel, payload, onRoomSelect }) => {
   const navigate = useNavigate();
 
   const handleBookNow = (room) => {
     const baseFare = Number(room?.Price?.OfferedPrice || 0);
     const tax = Number(room?.Price?.Tax || 0);
+
+    const totalGuests =
+      (hotel?.adultCount || 0) +
+      (hotel?.childCount || 0); // or use hotel?.guests?.length
 
     if (onRoomSelect) {
       onRoomSelect({
@@ -17,9 +21,9 @@ const RoomCard = ({ roomData = [], hotel, onRoomSelect }) => {
         gst: 0,
         room,
         hotel,
+        totalGuests,
       });
 
-      // Navigate after selecting room
       navigate("/HotelDetail", {
         state: {
           hotel,
@@ -30,11 +34,13 @@ const RoomCard = ({ roomData = [], hotel, onRoomSelect }) => {
             serviceCharges: 0,
             gst: 0,
           },
+          totalGuests,
+           payload,
         },
       });
-
     }
   };
+
 
   return (
     <div>

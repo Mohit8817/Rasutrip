@@ -9,27 +9,34 @@ const HotelDetailInfo = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { hotel, room, priceDetails } = location.state || {}; // ✅ read priceDetails
+  const { hotel, room, payload, priceDetails } = location.state || {}; // ✅ read priceDetails
   const { hotelSearchData } = useContext(HotelSearchContext);
 
-  const handleContinue = () => {
-    const roomDetails = hotelSearchData?.roomDetails || [{ adults: 2, children: 0 }];
+const handleContinue = () => {
+  const roomDetails = hotelSearchData?.roomDetails || [{ adults: 2, children: 0 }];
 
-    // ✅ pass priceDetails to guest-details
-    navigate("/guest-details", {
-      state: {
-        hotel: {
-          ...hotel,
-          rooms: hotelSearchData?.rooms,
-          guests: hotelSearchData?.guests,
-          roomDetails,
-        },
-        room,
+  // 👇 Total guests = sum of adults + children in each room
+  const totalGuests = roomDetails.reduce((acc, room) => {
+    return acc + (room.adults || 0) + (room.children || 0);
+  }, 0);
+
+  navigate("/guest-details", {
+    state: {
+      hotel: {
+        ...hotel,
+        rooms: hotelSearchData?.rooms,
+        guests: hotelSearchData?.guests,
         roomDetails,
-        priceDetails, // ✅ added here
       },
-    });
-  };
+      room,
+      priceDetails,
+      roomDetails,
+      totalGuests,
+       payload
+    },
+  });
+};
+
 
   if (!hotel || !room) {
     return (

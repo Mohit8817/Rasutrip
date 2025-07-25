@@ -14,11 +14,58 @@ const HotelReviewInfo = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const { hotel, room, roomDetails, guestInputs, email, mobile, priceDetails } =
-        location.state || {};
+    const {
+        hotel,
+        room,
+        roomDetails,
+        guestInputs,
+        priceDetails,
+        email,
+        mobile,
+        payload,
+    } = location.state || {};
+
+    // ✅ FIXED: totalGuests declared globally for component
+    const totalGuests =
+        guestInputs?.reduce(
+            (acc, room) => acc + room.adults.length + room.children.length,
+            0
+        ) || 0;
 
     const handleContinue = () => {
         const totalPrice = roomDetails?.Amount || 0;
+
+        const hotelBookingDetails = {
+            Hotel: {
+                ResultIndex: hotel?.ResultIndex ?? "",
+                HotelCode: hotel?.HotelCode ?? "",
+                HotelName: hotel?.HotelName ?? hotel?.name ?? "",
+                SearchTokenId: hotel?.SearchTokenId ?? "",
+                GuestNationality: "IN",
+                NoOfRooms: hotel?.rooms ?? 1,
+                ClientReferenceNo: "Ref123",
+                IsVoucherBooking: true,
+                HotelRoomsDetails: [
+                    {
+                        RoomIndex: room?.RoomIndex ?? "",
+                        RoomTypeCode: room?.RoomTypeCode ?? "",
+                        RoomTypeName: room?.RoomTypeName ?? "",
+                        RatePlanCode: room?.RatePlanCode ?? "",
+                        RoomRate: roomDetails,
+                        HotelPassenger: guestInputs?.flatMap((g) => [
+                            ...g.adults,
+                            ...g.children,
+                        ]),
+                    },
+                ],
+            },
+        };
+
+        const totalGuests =
+            guestInputs?.reduce(
+                (acc, room) => acc + room.adults.length + room.children.length,
+                0
+            ) || 0;
 
         navigate("/HotelPayment", {
             state: {
@@ -28,17 +75,20 @@ const HotelReviewInfo = () => {
                 guestInputs,
                 email,
                 mobile,
-                totalPrice,
+                totalGuests,
                 priceDetails,
+                totalPrice,
+                hotelBookingDetails,
+                payload
             },
         });
     };
 
+
     if (!hotel || !room || !guestInputs) {
         return (
             <div className="p-4 text-danger text-center">
-                ❌ Missing booking review data. Please go back and complete previous
-                steps.
+                ❌ Missing booking review data. Please go back and complete previous steps.
             </div>
         );
     }
@@ -50,15 +100,15 @@ const HotelReviewInfo = () => {
                 <Card.Body>
                     <Row className="align-items-center">
                         <Col>
-                            <h5 className="fw-bold mb-3  align-items-center">{hotel.name}</h5>
+                            <h5 className="fw-bold mb-3">{hotel?.HotelName || hotel?.name}</h5>
                             <p className="text-muted d-flex mb-2">
                                 <FaMapMarkerAlt className="me-1 text-danger" />
-                                {hotel.location}
+                                {hotel?.location || "No location info"}
                             </p>
                         </Col>
                         <Col xs="auto">
                             <div className="text-warning fs-5">
-                                {"⭐".repeat(hotel.rating || 3)}
+                                {"⭐".repeat(hotel?.rating || 3)}
                             </div>
                         </Col>
                     </Row>
@@ -68,7 +118,7 @@ const HotelReviewInfo = () => {
                     <Row className="align-items-center mb-3">
                         <Col md={3}>
                             <img
-                                src={hotel.image || hotelImage}
+                                src={hotel?.image || hotelImage}
                                 alt="Hotel"
                                 className="img-fluid rounded"
                                 style={{ height: "180px", objectFit: "cover" }}
@@ -80,26 +130,30 @@ const HotelReviewInfo = () => {
                                 <Col md={3} className="mb-3">
                                     <FaCalendarAlt className="me-1" />
                                     <strong> Check-in</strong>
-                                    <div className="text-dark fw-semibold">{hotel.checkInDate}</div>
+                                    <div className="text-dark fw-semibold">
+                                        {hotel?.checkInDate || "N/A"}
+                                    </div>
                                 </Col>
 
                                 <Col md={3} className="mb-3">
                                     <FaMoon className="me-1" />
                                     <strong> Nights</strong>
-                                    <div className=" mt-1 fw-semibold">{hotel.nights}</div>
+                                    <div className="mt-1 fw-semibold">{hotel?.nights || 1}</div>
                                 </Col>
 
                                 <Col md={3} className="mb-3">
                                     <FaCalendarAlt className="me-1" />
                                     <strong> Check-out</strong>
-                                    <div className="text-dark fw-semibold">{hotel.checkOutDate}</div>
+                                    <div className="text-dark fw-semibold">
+                                        {hotel?.checkOutDate || "N/A"}
+                                    </div>
                                 </Col>
 
                                 <Col md={3} className="mb-3">
                                     <FaBed className="me-1" />
                                     <strong> Rooms & Guests</strong>
                                     <div className="fw-semibold mt-1">
-                                        {hotel.rooms} Room(s), {hotel.guests} Guest(s)
+                                        {hotel?.rooms || 1} Room(s), {totalGuests} Guest(s)
                                     </div>
                                 </Col>
                             </Row>
@@ -115,7 +169,7 @@ const HotelReviewInfo = () => {
                                 </Col>
                                 <Col md={4}>
                                     <span className="text-muted">No. of Guests</span>
-                                    <div className="fw-bold">{room?.Adult || hotel.guests} Adult(s)</div>
+                                    <div className="fw-bold">{totalGuests}</div>
                                 </Col>
                                 <Col md={4}>
                                     <span className="text-muted">Cancellation Policy</span>
@@ -134,21 +188,17 @@ const HotelReviewInfo = () => {
                 <Card.Body>
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <h6 className="fw-bold mb-0">Primary Guest Details</h6>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                            <h6 className="fw-bold mb-0 mx-2">Primary Guest Details </h6>
-                            <span
-                                role="button"
-                                title="Edit"
-                                onClick={() =>
-                                    navigate("/guest-details", {
-                                        state: { hotel, room, roomDetails, guestInputs, email, mobile },
-                                    })
-                                }
-                            >
-                                <FaEdit className="text-danger cursor-pointer" />
-                            </span>
-                        </div>
-
+                        <span
+                            role="button"
+                            title="Edit"
+                            onClick={() =>
+                                navigate("/guest-details", {
+                                    state: { hotel, room, roomDetails, guestInputs, email, mobile },
+                                })
+                            }
+                        >
+                            <FaEdit className="text-danger cursor-pointer" />
+                        </span>
                     </div>
 
                     <div className="border rounded p-3">
@@ -177,7 +227,6 @@ const HotelReviewInfo = () => {
                                     </div>
                                 ))}
                             </Col>
-
                         </Row>
                     </div>
                 </Card.Body>
@@ -190,7 +239,10 @@ const HotelReviewInfo = () => {
                     label={
                         <>
                             I have read and accept the{" "}
-                            <a href="/terms-and-conditions" className="text-danger text-decoration-none ">
+                            <a
+                                href="/terms-and-conditions"
+                                className="text-danger text-decoration-none "
+                            >
                                 Terms & Conditions
                             </a>
                             .
