@@ -22,6 +22,11 @@ const HotelList = ({
   const checkOut = state.checkOut || "";
   const guests = Number(state.guests || 1);
   const rooms = Number(state.rooms || 1);
+  const nights = Number(state.nights || 1);
+  const roomDetails = state.roomDetails || [{ Adult: guests, Child: 0, ChildAge: [] }];
+  const minRating = state.minRating ?? 1;
+  const maxRating = state.maxRating ?? 5;
+  const resultCount = state.resultCount ?? 20;
 
   const getNights = (checkInDate, checkOutDate) => {
     const start = new Date(checkInDate);
@@ -57,15 +62,15 @@ const HotelList = ({
         const payload = {
           CheckInDate: formatDate(checkIn),
           CheckOutDate: formatDate(checkOut),
-          NoOfNights: getNights(checkIn, checkOut),
+          NoOfNights: nights || getNights(checkIn, checkOut),
           CountryCode: "IN",
           DestinationCityId: selectedCity.city_id,
-          ResultCount: 20,
+          ResultCount: resultCount,
           GuestNationality: "IN",
           NoOfRooms: rooms,
-          RoomGuests: [{ Adult: guests, Child: 0, ChildAge: [] }],
-          MaxRating: 5,
-          MinRating: 1,
+          RoomGuests: roomDetails,
+          MaxRating: maxRating,
+          MinRating: minRating,
           UserIp: "49.36.217.215",
         };
 
@@ -91,8 +96,6 @@ const HotelList = ({
 
         setHotels(formattedHotels);
         setActualPriceRange([minPrice, maxPrice]);
-
-        // ✅ Set hotel names for search dropdown
         setHotelNames(formattedHotels.map((h) => h.name));
       } catch (err) {
         console.error("Error loading hotels:", err);
@@ -107,7 +110,20 @@ const HotelList = ({
     } else {
       setLoading(false);
     }
-  }, [city, checkIn, checkOut, guests, rooms, setActualPriceRange, setHotelNames]);
+  }, [
+    city,
+    checkIn,
+    checkOut,
+    guests,
+    rooms,
+    nights,
+    roomDetails,
+    minRating,
+    maxRating,
+    resultCount,
+    setActualPriceRange,
+    setHotelNames,
+  ]);
 
   useEffect(() => {
     const filtered = hotels.filter((hotel) => {

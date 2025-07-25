@@ -32,7 +32,7 @@ const handleContinue = () => {
       priceDetails,
       roomDetails,
       totalGuests,
-       payload
+      payload,
     },
   });
 };

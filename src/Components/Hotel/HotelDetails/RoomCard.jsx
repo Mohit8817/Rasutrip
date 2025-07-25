@@ -1,85 +1,136 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle } from "react-bootstrap-icons";
+import { blockRoom } from "../../APIS/HotelApi/HotelAPi"; // ✅ import API
 
-const RoomCard = ({ roomData = [], hotel, payload, onRoomSelect }) => {
+const RoomCard = ({ roomData = [], hotel = {}, payload, onRoomSelect }) => {
   const navigate = useNavigate();
+  const [loadingRoomId, setLoadingRoomId] = useState(null);
 
-  const handleBookNow = (room) => {
-    const baseFare = Number(room?.Price?.OfferedPrice || 0);
-    const tax = Number(room?.Price?.Tax || 0);
+  const handleBookNow = async (room) => {
+    if (room.AvailabilityType !== "Confirm") {
+      alert("⚠️ This room is not available. Please choose another.");
+      return;
+    }
 
-    const totalGuests =
-      (hotel?.adultCount || 0) +
-      (hotel?.childCount || 0); // or use hotel?.guests?.length
+    setLoadingRoomId(room.RoomId); // To show loader per room (optional)
 
-    if (onRoomSelect) {
-      onRoomSelect({
-        baseFare,
-        tax,
-        serviceCharges: 0,
-        gst: 0,
-        room,
-        hotel,
-        totalGuests,
-      });
+    // ✅ Prepare payload for blockRoom
+    const blockPayload = {
+      UserIp: payload.UserIp,
+      HotelCode: payload.HotelCode,
+      ResultIndex: payload.ResultIndex,
+      SearchTokenId: payload.SearchTokenId,
+      HotelName: hotel?.HotelName,
+      NoOfRooms: 1,
+      HotelRoomsDetails: [room], // Block one room
+    };
 
-      navigate("/HotelDetail", {
-        state: {
-          hotel,
+    try {
+      const blockRes = await blockRoom(blockPayload);
+
+      if (blockRes?.Error?.ErrorCode === 0) {
+        // ✅ Success: Room is blocked
+        const baseFare = Number(room?.Price?.OfferedPrice || 0);
+        const tax = Number(room?.Price?.Tax || 0);
+
+        onRoomSelect?.({
+          baseFare,
+          tax,
+          serviceCharges: 0,
+          gst: 0,
           room,
-          priceDetails: {
-            baseFare,
-            tax,
-            serviceCharges: 0,
-            gst: 0,
+          hotel,
+        });
+
+        navigate("/HotelDetail", {
+          state: {
+            hotel,
+            room,
+            priceDetails: {
+              baseFare,
+              tax,
+              serviceCharges: 0,
+              gst: 0,
+            },
+            totalGuests: hotel?.guests ?? 0,
+            guestDetails: {
+              adult: hotel?.adult,
+              child: hotel?.child,
+              rooms: hotel?.rooms,
+              nights: hotel?.nights,
+              city: hotel?.city,
+              checkInDate: hotel?.checkInDate,
+              checkOutDate: hotel?.checkOutDate,
+            },
+            payload,
+            blockedRoomData: blockRes?.Result,
           },
-          totalGuests,
-           payload,
-        },
-      });
+        });
+
+      } else {
+        alert("❌ Failed to block room: " + blockRes?.Error?.ErrorMessage);
+      }
+    } catch (err) {
+      console.error("❌ BlockRoom error", err);
+      alert("❌ Something went wrong while blocking the room.");
+    } finally {
+      setLoadingRoomId(null);
     }
   };
 
+  const availableRooms = roomData.filter(
+    (room) => room.AvailabilityType === "Confirm"
+  );
 
   return (
     <div>
-      <h5 className="fw-bold mb-3">Rooms:</h5>
+      <h5 className="fw-bold mb-3">Rooms</h5>
 
-      {Array.isArray(roomData) && roomData.length > 0 ? (
-        roomData.map((room, index) => (
-          <div
-            key={index}
-            className="border rounded bg-white p-3 d-flex justify-content-between align-items-center flex-wrap mb-3"
-          >
-            <div>
-              <div className="fw-bold">{room.RoomTypeName || "Room"}</div>
-              <a href="/" className="text-decoration-underline text-purple">
-                Room Information
-              </a>
-              <div className="fw-bold mt-2 text-dark">
-                ₹{Number(room.Price?.OfferedPrice || 0).toLocaleString()}
+      {availableRooms.length > 0 ? (
+        availableRooms.map((room, idx) => {
+          const offeredPrice = Number(room?.Price?.OfferedPrice || 0);
+
+          return (
+            <div
+              key={idx}
+              className="border rounded bg-white p-3 d-flex justify-content-between align-items-center flex-wrap mb-3"
+            >
+              <div>
+                <div className="fw-bold">{room.RoomTypeName || "Room"}</div>
+                <div className="small text-muted mb-1">
+                  {hotel.checkInDate} → {hotel.checkOutDate} •{" "}
+                  {hotel.nights} Night
+                </div>
+                <div className="small text-muted mb-2">
+                  {hotel.guests} Guest • {hotel.rooms} Room
+                </div>
+                <div className="fw-bold text-dark">
+                  ₹{offeredPrice.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="text-end ms-auto d-flex flex-column align-items-end">
+                <div className="text-success d-flex align-items-center mb-2">
+                  <CheckCircle size={16} className="me-1" />
+                  <span className="small">
+                    {room.Inclusion?.[0] || room.RatePlanName || "ROOM ONLY"}
+                  </span>
+                </div>
+
+                <button
+                  className="btn btn-danger btn-sm px-4"
+                  onClick={() => handleBookNow(room)}
+                  disabled={loadingRoomId === room.RoomId}
+                >
+                  {loadingRoomId === room.RoomId ? "Blocking..." : "Book"}
+                </button>
               </div>
             </div>
-
-            <div className="text-end ms-auto d-flex flex-column align-items-end">
-              <div className="text-success d-flex align-items-center mb-2">
-                <CheckCircle className="me-1" size={16} />
-                <span className="small">
-                  {room.Inclusion?.[0] || room.RatePlanName || "ROOM ONLY"}
-                </span>
-              </div>
-              <button
-                className="btn btn-danger btn-sm px-4"
-                onClick={() => handleBookNow(room)}
-              >
-                Book Now
-              </button>
-            </div>
-          </div>
-        ))
+          );
+        })
       ) : (
-        <p className="text-muted">No rooms available</p>
+        <p className="text-muted">No confirm-available rooms</p>
       )}
     </div>
   );

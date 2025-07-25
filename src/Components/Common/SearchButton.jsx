@@ -10,11 +10,11 @@ const SearchButton = ({ type }) => {
   const { locationData } = useContext(LocationContext);
   const { hotelSearchData } = useContext(HotelSearchContext);
 
-localStorage.removeItem('SearchedFlights');
-localStorage.removeItem('selectedOnwardFlight');
-localStorage.removeItem('selectedReturnFlight');
+  localStorage.removeItem('SearchedFlights');
+  localStorage.removeItem('selectedOnwardFlight');
+  localStorage.removeItem('selectedReturnFlight');
 
-   
+
   const handleSearchClick = () => {
     const {
       fromCity,
@@ -76,6 +76,12 @@ localStorage.removeItem('selectedReturnFlight');
         } = hotelSearchData || {};
 
         if (city && checkIn && checkOut) {
+          const roomDetails = Array.from({ length: Number(rooms) }, () => ({
+            Adult: 1,
+            Child: 0,
+            ChildAge: []
+          }));
+
           navigate('/hotel-results', {
             state: {
               city: city.trim(),
@@ -83,7 +89,11 @@ localStorage.removeItem('selectedReturnFlight');
               checkOut,
               guests: Number(guests),
               rooms: Number(rooms),
-              nights: Number(nights)
+              nights: Number(nights),
+              roomDetails,
+              minRating: 4,
+              maxRating: 5,
+              resultCount: null
             }
           });
         } else {
@@ -92,6 +102,7 @@ localStorage.removeItem('selectedReturnFlight');
         }
         break;
       }
+
 
       default:
         console.warn('Unknown search type:', type);

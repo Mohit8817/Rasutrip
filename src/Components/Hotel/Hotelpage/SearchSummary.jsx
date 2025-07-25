@@ -9,9 +9,12 @@ const SearchSummary = () => {
     city = "—",
     checkIn = "—",
     checkOut = "—",
-    guests = "—",
-    rooms = "—",
     nights = "—",
+    guests = "—",             // Used in UI
+    rooms = "—",              // Used in UI
+    // adultsCount = 0,          // Used in payload only
+    // childrenCount = 0,        // Used in payload only
+    // roomDetails = [],         // Used in payload only
   } = hotelSearchData || {};
 
   return (
@@ -20,24 +23,29 @@ const SearchSummary = () => {
         <Col style={{ minWidth: 200 }}>
           <strong>📍 {city}</strong>
         </Col>
+
         <Col style={{ minWidth: 140 }}>
           <div className="fw-semibold">Check-In</div>
           <small className="text-muted">{checkIn}</small>
         </Col>
+
         <Col style={{ minWidth: 80 }}>
           <div className="fw-semibold">Nights</div>
           <small className="text-muted">{nights}</small>
         </Col>
+
         <Col style={{ minWidth: 140 }}>
           <div className="fw-semibold">Check-Out</div>
           <small className="text-muted">{checkOut}</small>
         </Col>
-        <Col style={{ minWidth: 180 }}>
+
+        <Col style={{ minWidth: 200 }}>
           <div className="fw-semibold">Rooms & Guests</div>
           <small className="text-muted">
-            {guests} Guest&nbsp;&bull;&nbsp;{rooms} Room
+            {guests} Guest{guests > 1 ? "s" : ""} &bull; {rooms} Room{rooms > 1 ? "s" : ""}
           </small>
         </Col>
+
         <Col className="text-end" style={{ minWidth: 150 }}>
           <Button className="btn-red">Modify Search</Button>
         </Col>

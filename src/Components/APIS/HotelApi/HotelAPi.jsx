@@ -7,6 +7,7 @@ const HotelServices = {
   searchHotels: `${baseURL}/hotelservice/search`,
   hotelInfo: `${baseURL}/hotelservice/gethotelinfo`,
   roomInfo: `${baseURL}/hotelservice/getroominfo`,
+  blockRoom: `${baseURL}/hotelservice/blockroom`,
   createOrder: `${baseURL}/hotelservice/create-order`,
   validate: `${baseURL}/hotelservice/validate`,
   book: `${baseURL}/hotelservice/book`,
@@ -58,16 +59,29 @@ export const fetchRoomInfo = async (payload) => {
   }
 };
 
-// ✅ Generic hotel POST helper (used optionally)
-export const postHotel = async (data, endpoint) => {
+
+export const blockRoom = async (payload) => {
   try {
-    const res = await axios.post(`${baseURL}${endpoint}`, data);
+    const res = await axios.post(`${baseURL}/hotelservice/blockroom`, payload);
     return res.data;
   } catch (error) {
-    console.error("❌ postHotel Error:", error.response?.data || error.message);
+    console.error("blockRoom API error:", error);
     throw error;
   }
 };
+
+
+
+// ✅ Generic hotel POST helper (used optionally)
+// export const postHotel = async (data, endpoint) => {
+//   try {
+//     const res = await axios.post(`${baseURL}${endpoint}`, data);
+//     return res.data;
+//   } catch (error) {
+//     console.error("❌ postHotel Error:", error.response?.data || error.message);
+//     throw error;
+//   }
+// };
 
 // ✅ Create hotel Razorpay order
 

@@ -14,11 +14,20 @@ const HotelCard = ({ hotel }) => {
       city = "",
       checkIn = "",
       checkOut = "",
-      guests = 1,
-      rooms = 1,
+      guests,
+      rooms,
+      nights,
+      RoomGuests = [],
+      MinRating = 1,
+      MaxRating = 5,
+      GuestNationality = "IN",
+      DestinationCityId,
+      CountryCode = "IN",
+      ResultCount = null,
+      UserIp = "49.36.217.215",
     } = hotelSearchData || {};
 
-    // Calculate number of nights
+    // Fallback if nights not present
     const getNights = (checkInDate, checkOutDate) => {
       const start = new Date(checkInDate);
       const end = new Date(checkOutDate);
@@ -26,9 +35,8 @@ const HotelCard = ({ hotel }) => {
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
 
-    const nights = getNights(checkIn, checkOut);
+    const stayNights = nights || getNights(checkIn, checkOut);
 
-    // ✅ Prepare the payload with required API fields
     const hotelPayload = {
       ...hotel,
       ResultIndex: hotel.resultIndex,
@@ -36,7 +44,7 @@ const HotelCard = ({ hotel }) => {
       SearchTokenId: hotel.SearchTokenId,
     };
 
-    // ✅ Navigate with hotel + search details
+    // Pass full payload with search + hotel info
     navigate(`/HotelDetailsPage/${hotel.id}`, {
       state: {
         hotel: hotelPayload,
@@ -46,7 +54,15 @@ const HotelCard = ({ hotel }) => {
           checkOut,
           guests: Number(guests),
           rooms: Number(rooms),
-          nights,
+          nights: stayNights,
+          RoomGuests,
+          MinRating,
+          MaxRating,
+          GuestNationality,
+          DestinationCityId,
+          CountryCode,
+          ResultCount,
+          UserIp,
         },
       },
     });
