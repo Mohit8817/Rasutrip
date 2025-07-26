@@ -1,18 +1,20 @@
-// SearchButton.js
+// src/Components/Common/SearchButton.jsx
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LocationContext } from '../Context/LocationContext';
+import { HotelSearchContext } from '../Context/HotelSearchContext';
 import '../../Style/FlightBooking.css';
 
 const SearchButton = ({ type }) => {
   const navigate = useNavigate();
   const { locationData } = useContext(LocationContext);
+  const { hotelSearchData } = useContext(HotelSearchContext);
 
-localStorage.removeItem('SearchedFlights');
-localStorage.removeItem('selectedOnwardFlight');
-localStorage.removeItem('selectedReturnFlight');
+  localStorage.removeItem('SearchedFlights');
+  localStorage.removeItem('selectedOnwardFlight');
+  localStorage.removeItem('selectedReturnFlight');
 
-   
+
   const handleSearchClick = () => {
     const {
       fromCity,
@@ -22,13 +24,13 @@ localStorage.removeItem('selectedReturnFlight');
       fromCode,
       toCode,
       departDate,
-      returnDate, // ✅ include returnDate
+      returnDate,
       passengers,
       cabinClass,
       tripType,
-      // bus data 
       fromCityId,
       toCityId,
+      totalPrice,
     } = locationData;
 
     switch (type) {
@@ -42,7 +44,7 @@ localStorage.removeItem('selectedReturnFlight');
             fromCode,
             toCode,
             departDate: departDate || { PreferredTime: new Date().toISOString() },
-            returnDate: returnDate || null, // ✅ Pass returnDate if exists
+            returnDate: returnDate || null,
             passengers,
             cabinClass,
             tripType: tripType || 'oneway'
@@ -57,14 +59,50 @@ localStorage.removeItem('selectedReturnFlight');
             toCity,
             fromCityId,
             toCityId,
-            departDate: departDate || new Date().toISOString()
+            departDate: departDate || new Date().toISOString(),
+            totalPrice
           }
         });
         break;
 
-      case 'hotel':
-        navigate('/hotel-results');
+      case 'hotel': {
+        const {
+          city,
+          checkIn,
+          checkOut,
+          guests,
+          rooms,
+          nights,
+        } = hotelSearchData || {};
+
+        if (city && checkIn && checkOut) {
+          const roomDetails = Array.from({ length: Number(rooms) }, () => ({
+            Adult: 1,
+            Child: 0,
+            ChildAge: []
+          }));
+
+          navigate('/hotel-results', {
+            state: {
+              city: city.trim(),
+              checkIn,
+              checkOut,
+              guests: Number(guests),
+              rooms: Number(rooms),
+              nights: Number(nights),
+              roomDetails,
+              minRating: 4,
+              maxRating: 5,
+              resultCount: null
+            }
+          });
+        } else {
+          console.warn('❌ Missing hotel search parameters:', hotelSearchData);
+          alert("Please fill in city, check-in, and check-out dates for hotel search.");
+        }
         break;
+      }
+
 
       default:
         console.warn('Unknown search type:', type);

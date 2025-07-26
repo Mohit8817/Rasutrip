@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Row, Col, Button } from 'react-bootstrap';
 import BusSeatSelect from './BusSeatSelect';
+import { FaWheelchair } from "react-icons/fa";
 import "../../../Style/Pagescss/BusResultPage.css";
 
 const BusDetailsCard = ({ bus, DestinationId, OriginId, UserIp, price }) => {
@@ -55,12 +56,12 @@ const BusDetailsCard = ({ bus, DestinationId, OriginId, UserIp, price }) => {
                             className="d-flex justify-content-between align-items-center px-1 cursor-pointer"
                             onClick={() => setShowPolicy(!showPolicy)}
                         >
-                            <div className="text-muted">
+                            <div className="text-danger fw-semibold">
                                 Cancellation Policy{" "}
                                 <i className={`bi ${showPolicy ? "bi-chevron-up" : "bi-chevron-down"} ms-1`} />
                             </div>
-                            <small className="text-danger fw-semibold">
-                                <i className="bi bi-chair me-1" /> {bus.seatsAvailable} Seats Available
+                            <small className="text-danger fw-semibold d-flex align-items-center">
+                                <FaWheelchair className="me-1" /> {bus.seatsAvailable} Seats Available
                             </small>
                         </div>
 

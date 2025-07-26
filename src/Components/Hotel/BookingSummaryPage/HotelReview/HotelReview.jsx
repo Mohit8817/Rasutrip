@@ -4,8 +4,14 @@ import { Container, Row, Col } from 'react-bootstrap';
 import FareSummaryCard from '../FareSummaryCard';
 import HotelPromoCodeCard from '../HotelPromoCodeCard ';
 import HotelReviewInfo from './HotelReviewInfo';
+import { useLocation } from 'react-router-dom';
+
 
 const HotelReview = () => {
+
+    const location = useLocation();
+    const { priceDetails } = location.state || {};
+
     return (
         <div>
 
@@ -18,7 +24,7 @@ const HotelReview = () => {
                         <HotelReviewInfo />
                     </Col>
                     <Col lg={3}>
-                        <FareSummaryCard />
+                        <FareSummaryCard priceDetails={priceDetails} />
                         <HotelPromoCodeCard />
                     </Col>
                 </Row>

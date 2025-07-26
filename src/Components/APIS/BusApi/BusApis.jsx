@@ -6,6 +6,7 @@ const BusServices = {
     fetchCities: `${baseURL}/bus/search-city`,
     searchResults: `${baseURL}/busservice/search`,
     seatLayout: `${baseURL}/busservice/seatlayout`,
+    boardingDroppingPoints: `${baseURL}/busservice/boardingpoint`,
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -16,7 +17,7 @@ export const fetchBusCities = async (cityName) => {
         const response = await axios.get(`${BusServices.fetchCities}?city_name=${cityName}`);
         return response.data;
     } catch (err) {
-        console.error("❌ Error fetching bus cities:", err);
+        console.error(" Error fetching bus cities:", err);
         return [];
     }
 };
@@ -35,7 +36,7 @@ export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, Us
 
         return response.data;
     } catch (err) {
-        console.error("❌ Failed to fetch bus results:", err);
+        console.error(" Failed to fetch bus results:", err);
         return [];
     }
 };
@@ -70,7 +71,51 @@ export const fetchSeatLayout = async ({
         console.log("✅ Seat Layout API Response:", response.data);
         return response.data;
     } catch (err) {
-        console.error("❌ Seat layout fetch error:", err);
+        console.error(" Seat layout fetch error:", err);
         throw err;
     }
 };
+
+
+
+// ─────────────────────────────────────────────────────────────
+// 💺 Fetch  Boarding / Dropping points   
+// ─────────────────────────────────────────────────────────────
+
+// New function to fetch boarding/dropping
+
+
+export const fetchBoardingDroppingPoints = async ({
+  UserIp,
+  SearchTokenId,
+  ResultIndex,
+  OriginId,
+  DestinationId,
+}) => {
+  try {
+    const payload = {
+      UserIp,
+      SearchTokenId,
+      ResultIndex,
+      OriginId,
+      DestinationId,
+    };
+
+    console.log("🔍 Sending Boarding/Dropping API Payload:", payload);
+
+    const response = await axios.post(
+      "https://api.mybus.com/api/Bus/BoardingDroppingPoint", // Replace with your actual URL
+      payload
+    );
+
+    console.log("✅ Boarding/Dropping Response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Failed to fetch boarding/dropping points:", error);
+    return {
+      BoardingPoints: [],
+      DroppingPoints: [],
+    };
+  }
+};
+

@@ -1,16 +1,64 @@
 import React, { useState } from "react";
-import { Card, Form,Button } from "react-bootstrap";
-import "./HotelListingPage.css";
+import { Card, Form, Button } from "react-bootstrap";
 
-const FilterSidebar = () => {
-  const [priceRange, setPriceRange] = useState([3843.66, 4895.15]);
+const FilterSidebar = ({
+  priceRange,
+  actualPriceRange,
+  onPriceChange,
+  selectedRatings,
+  onRatingChange,
+  searchName,
+  onSearchNameChange,
+  hotelNames = [],
+}) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const handlePriceChange = (e) => {
+    const newMin = parseFloat(e.target.value);
+    onPriceChange([newMin, priceRange[1]]);
+  };
+
+  const handleRatingToggle = (star) => {
+    if (selectedRatings.includes(star)) {
+      onRatingChange(selectedRatings.filter((r) => r !== star));
+    } else {
+      onRatingChange([...selectedRatings, star]);
+    }
+  };
+
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    onSearchNameChange(value);
+    setShowSuggestions(value.length > 0);
+  };
+
+  const handleSelectSuggestion = (name) => {
+    onSearchNameChange(name);
+    setShowSuggestions(false);
+  };
+
+  const filteredSuggestions = hotelNames.filter((name) =>
+    name.toLowerCase().includes(searchName.toLowerCase())
+  );
 
   return (
-    <Card className="p-3 filter-sidebar">
+    <Card className="p-3 filter-sidebar position-relative">
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <div className="fw-bold"><i className="bi bi-funnel-fill me-2" /> Filter Results</div>
-        <Button variant="link" className="p-0 text-decoration-none reset-link">Reset All</Button>
+        <div className="fw-bold">
+          <i className="bi bi-funnel-fill me-2" /> Filter Results
+        </div>
+        <Button
+          variant="link"
+          className="p-0 text-decoration-none reset-link"
+          onClick={() => {
+            onPriceChange(actualPriceRange);
+            onRatingChange([]);
+            onSearchNameChange("");
+          }}
+        >
+          Reset All
+        </Button>
       </div>
 
       {/* Price Filter */}
@@ -18,46 +66,63 @@ const FilterSidebar = () => {
         <div className="filter_label">Price</div>
         <input
           type="range"
-          min="3843.66"
-          max="4895.15"
+          min={actualPriceRange[0]}
+          max={actualPriceRange[1]}
           value={priceRange[0]}
-          onChange={(e) => setPriceRange([parseFloat(e.target.value), priceRange[1]])}
+          onChange={handlePriceChange}
           className="form-range"
         />
         <div className="d-flex justify-content-between">
-          <span>{priceRange[0]}</span>
-          <span>{priceRange[1]}</span>
+          <span>₹{priceRange[0]}</span>
+          <span>₹{priceRange[1]}</span>
         </div>
       </div>
 
-      {/* Hotel Name Filter */}
-      <div className="mb-4">
+      {/* Hotel Name Search with Dropdown */}
+      <div className="mb-4 position-relative">
         <div className="filter_label">Hotel Name</div>
-        <Form.Control type="text" placeholder="Hotel Name" />
+        <Form.Control
+          type="text"
+          placeholder="Hotel Name"
+          value={searchName}
+          onChange={handleNameChange}
+          autoComplete="off"
+        />
+        {showSuggestions && filteredSuggestions.length > 0 && (
+          <div className="dropdown-menu show w-100 shadow-sm" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+            {filteredSuggestions.map((name, idx) => (
+              <div
+                key={idx}
+                className="dropdown-item"
+                style={{ cursor: "pointer" }}
+                onClick={() => handleSelectSuggestion(name)}
+              >
+                {name}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Star Rating Filter */}
       <div className="mb-4">
         <div className="filter_label">Star Rating</div>
-        <Form.Check
-          type="checkbox"
-          label={
-            <>
-              {[...Array(5)].map((_, i) => <i key={i} className="bi bi-star-fill text-warning"></i>)}
-            </>
-          }
-        />
-        <Form.Check
-          type="checkbox"
-          label={
-            <>
-              {[...Array(4)].map((_, i) => <i key={i} className="bi bi-star-fill text-warning"></i>)}
-            </>
-          }
-        />
+        {[5, 4, 3, 2, 1].map((star) => (
+          <Form.Check
+            key={star}
+            type="checkbox"
+            label={
+              [...Array(star)].map((_, i) => (
+                <i key={i} className="bi bi-star-fill text-warning"></i>
+              ))
+            }
+            checked={selectedRatings.includes(star)}
+            onChange={() => handleRatingToggle(star)}
+          />
+        ))}
       </div>
 
-      {/* Location Filter */}
+      {/* Location Filter (optional) */}
       <div className="mb-2">
         <div className="filter_label">Locations</div>
         <Form.Check label="None" />

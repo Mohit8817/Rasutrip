@@ -1,4 +1,4 @@
-Hover dropdown
+/* Hover dropdown */
 
 .login-dropdown-wrapper .dropdown:hover .dropdown-menu {
   display: block;
@@ -66,13 +66,10 @@ Hover dropdown
 .login-wrapper {
   background: url('../assest/bgimg.jpg') no-repeat center center;
   background-size: cover;
-  padding: 40px 0;
-  margin-top: 6rem;
+  padding: 60px 0;
+  margin-top: 8rem;
   min-height: 100vh;
-  position: relative;
-  z-index: 1;
 }
-
 
 .login-box {
   max-width: 700px;
@@ -80,41 +77,27 @@ Hover dropdown
   background: #fff;
   border-radius: 20px;
   overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .left-panel {
   background: #f8f9fa;
 }
 
-.benefits-title {
-  background-color: #ca0e27;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 25px;
-  font-weight: bold;
-  display: inline-block;
-}
-
-.benefits-list {
-  list-style: none;
-  padding-left: 0;
-  font-size: 15px;
-}
-
 .right-panel {
   background: #ff0022;
   color: #fff;
-  padding: 85px 18px 0 18px;
+  padding: 0 18px 0 18px;
 }
 
 .login-title {
   color: #fff;
   font-weight: 700;
-  font-size: 28px;
+  font-size: 20px;
   text-align: center;
-  letter-spacing: 2px;
-
-  margin-bottom: 20px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
 }
 
 .custom-input label {
@@ -126,6 +109,15 @@ Hover dropdown
   background-color: white;
   border-radius: 8px;
 }
+
+.login-btn {
+  background: #123867;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 0;
+  font-weight: bold;
+}
+
 
 .captcha-box {
   display: flex;
@@ -143,17 +135,18 @@ Hover dropdown
   text-decoration: underline;
 }
 
-.label {
-  color: #fff;
-  font-weight: 600;
+.loginlabel {
+  color: #fff !important;
+  font-weight: 600 !important;
 }
 
-.login-btn {
+.loginbtn {
   background: #123867;
   border: none;
   border-radius: 10px;
   padding: 10px 0;
-  font-weight: bold;
+  letter-spacing: 1px;
+  font-weight: 500;
 }
 
 
@@ -165,7 +158,6 @@ Hover dropdown
 .agent-login-container {
   background: url('../assest/agentimgbg.webp') no-repeat center center;
   background-size: cover;
-  padding: 40px 0;
   margin-top: 6rem;
   min-height: 100vh;
   position: relative;
@@ -173,92 +165,33 @@ Hover dropdown
 }
 
 .agent-login-card {
-  max-width: 1000px !important;
+  max-width: 700px !important;
   margin: auto;
-  background: #f8f9fb;
+  background: #ffff;
   border-radius: 14px;
   overflow: hidden;
-  padding: 20px;
 
 }
 
+/* agent left card  */
 
-.agent-login-card h2 {
-  font-size: 20px;
-  color: #000;
+
+
+.agent-login-right-panel {
+  background: #ff0022;
+  padding: 25px;
 }
 
-.agent-login-card p {
-  font-size: 12 px;
-  color: #000;
-  margin-bottom: 30px;
-}
 
-.form-section-box {
-  border: 0.1px solid #ca0e279f;
-  border-radius: 5px;
-  padding: 25px 10px 0 10px;
-  margin-bottom: 15px;
-  background: #fff;
-  position: relative;
-} 
 
-.section-header {
-  background-color: #ca0e27;
-  color: #fff;
-  font-weight: 600;
-  font-size: 16px;
-  padding: 8px 15px;
-  border-radius: 5px;
-  position: absolute;
-  top: -18px;
-  left: 20px;
-}
-
-.form-label {
-  font-weight: 600;
-  color: #000;
-  font-size: 14px;
-  margin-bottom: 6px;
-}
-
-/* .form-control {
-  border-radius: 4px;
-  font-size: 14px;
-  padding: 10px 12px;
-  border: 1px solid #ced4da;
-  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-} */
-
-/* .form-control:focus {
-  border-color: #ca0e27;
-  box-shadow: 0 0 0 0.1rem rgba(193, 66, 66, 0.111);
-} */
-
-.text-danger.small {
-  font-size: 12px;
-}
-
-.terms-text {
-  font-size: 13px;
-  color: #333;
-}
-
-.terms-text a {
-  color: #ca0e27;
-  text-decoration: underline;
-}
-
-.login-link {
-  font-size: 14px;
-}
-
-.login-link a {
-  color: #ca0e27;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.login-link a:hover {
-  text-decoration: underline;
+/* Remove extra height and match Bootstrap form-control */
+.custom-phone-input {
+  height: 38px !important;
+  padding-left: 55px !important;
+  /* adjusts for flag area */
+  padding-right: 15px !important;
+  font-size: 1rem;
+  border: 1px solid #ced4da !important;
+  border-radius: 0.375rem !important;
+  box-shadow: none !important;
 }

@@ -1,47 +1,51 @@
-// src/Components/Bus/BusPage/BusDetailsList.jsx
+/* -----------------------------------------------
+   BusDetailsList.jsx  –  merged & enhanced version
+------------------------------------------------ */
 import React, { useEffect, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Container, Spinner } from "react-bootstrap";
+import { Container } from "react-bootstrap";
 import BusDetailsCard from "./BusDetailsCard";
 import BusSeatSelect from "./BusSeatSelect";
-import { fetchBusResults } from '../../APIS/BusApi/BusApis';
-
+import { fetchBusResults } from "../../APIS/BusApi/BusApis";
 import "../../../Style/Pagescss/BusResultPage.css";
 import Busloader from "../Busloader/Busloader";
 
 const USER_IP_FALLBACK = "122.161.64.143";
 
-const BusDetailsList = () => {
+const BusDetailsList = ({
+  priceRange,
+  setActualPriceRange,
+  selectedOperators,
+  selectedBusTypes,
+  setAvailableOperators,
+  setAvailableBusTypes,
+}) => {
   const { state } = useLocation();
-
   const from = state?.fromCity ?? null;
   const to = state?.toCity ?? null;
   const formattedDate = state?.departDate ?? null;
   const DateOfJourney = formattedDate?.split("T")[0];
-
   const OriginId = state?.fromCityId;
   const DestinationId = state?.toCityId;
   const UserIp = USER_IP_FALLBACK;
 
+  const [masterBusList, setMasterBusList] = useState([]);
   const [busList, setBusList] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [selectedBus, setSelectedBus] = useState(null);
   const [showSeatModal, setShowSeatModal] = useState(false);
 
   const getDuration = useCallback((start, end) => {
     const ms = end - start;
-    const hrs = Math.floor(ms / (1000 * 60 * 60));
-    const mins = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const hrs = Math.floor(ms / 3600000);
+    const mins = Math.floor((ms % 3600000) / 60000);
     return `${hrs}h ${mins}m`;
   }, []);
 
   useEffect(() => {
     const getBusData = async () => {
       if (!from || !to || !DateOfJourney) return;
-
       setLoading(true);
-
       try {
         const apiResult = await fetchBusResults(
           DateOfJourney,
@@ -57,41 +61,74 @@ const BusDetailsList = () => {
           return {
             operator: item.TravelName || "N/A",
             serviceName: item.ServiceName || "N/A",
-            busType: item.BusType,
+            busType: item.BusType || "N/A",
             departTime: dep.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            departDate: dep.toLocaleDateString("en-CA"),
-            departLocation: item.BoardingPointsDetails?.[0]?.CityPointLocation || from,
-            duration: getDuration(dep, arr),
             arriveTime: arr.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            departDate: dep.toLocaleDateString("en-CA"),
             arriveDate: arr.toLocaleDateString("en-CA"),
+            departLocation: item.BoardingPointsDetails?.[0]?.CityPointLocation || from,
             arriveLocation: item.DroppingPointsDetails?.[0]?.CityPointLocation || to,
+            duration: getDuration(dep, arr),
             price: item.BusPrice?.PublishedPrice
               ? `₹ ${item.BusPrice.PublishedPrice.toFixed(2)}`
               : "Price Not Available",
+            numericPrice: item.BusPrice?.PublishedPrice || 0,
             seatsAvailable: item.AvailableSeats || 0,
             cancellationPolicies: item.CancellationPolicies || [],
-            resultIndex: item.ResultIndex,
+            ResultIndex: item.ResultIndex,
             SearchTokenId: apiResult.SearchTokenId,
-            // IDs / IP we need for seat API
             OriginId,
             DestinationId,
             UserIp,
-            // extra details
             BoardingPointsDetails: item.BoardingPointsDetails || [],
             DroppingPointsDetails: item.DroppingPointsDetails || [],
           };
         });
 
-        setBusList(mapped);
-      } catch (error) {
-        console.error("API Error:", error);
+        setMasterBusList(mapped);
+
+        const prices = mapped.map((b) => b.numericPrice);
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        setActualPriceRange([min, max]);
+
+        setAvailableOperators([...new Set(mapped.map((b) => b.operator))]);
+        setAvailableBusTypes([...new Set(mapped.map((b) => b.busType))]);
+      } catch (err) {
+        console.error("Bus API Error:", err);
       } finally {
         setLoading(false);
       }
     };
 
     getBusData();
-  }, [DateOfJourney, DestinationId, OriginId, UserIp, from, getDuration, to]);
+  }, [
+    DateOfJourney,
+    DestinationId,
+    OriginId,
+    UserIp,
+    from,
+    to,
+    getDuration,
+    setActualPriceRange,
+    setAvailableOperators,
+    setAvailableBusTypes,
+  ]);
+
+  // Apply filters when any of them change
+  useEffect(() => {
+    if (!masterBusList.length) return;
+
+    const filtered = masterBusList.filter(
+      (b) =>
+        b.numericPrice >= priceRange[0] &&
+        b.numericPrice <= priceRange[1] &&
+        (selectedOperators.length === 0 || selectedOperators.includes(b.operator)) &&
+        (selectedBusTypes.length === 0 || selectedBusTypes.includes(b.busType))
+    );
+
+    setBusList(filtered);
+  }, [priceRange, selectedOperators, selectedBusTypes, masterBusList]);
 
   const handleBusClick = (bus) => {
     setSelectedBus(bus);
@@ -101,7 +138,7 @@ const BusDetailsList = () => {
   return (
     <Container className="bus-list-container">
       <div className="sort-header d-flex p-2 mb-2">
-        <div className="flex-fill text-center">Sort&nbsp;By:</div>
+        <div className="flex-fill text-center">Sort By:</div>
         <div className="flex-fill text-center fw-bold">Depart</div>
         <div className="flex-fill text-center fw-bold">Duration</div>
         <div className="flex-fill text-center fw-bold">Arrive</div>
@@ -110,8 +147,6 @@ const BusDetailsList = () => {
 
       {loading ? (
         <div className="text-center py-5">
-          {/* <Spinner animation="border" variant="primary" />
-           */}
           <Busloader />
         </div>
       ) : busList.length ? (
@@ -119,7 +154,9 @@ const BusDetailsList = () => {
           <BusDetailsCard key={idx} bus={bus} onSelect={handleBusClick} />
         ))
       ) : (
-        <div className="text-center text-muted py-5">No buses found for your search.</div>
+        <div className="text-center text-muted py-5">
+          No buses found for your search.
+        </div>
       )}
 
       <BusSeatSelect
