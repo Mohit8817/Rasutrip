@@ -6,6 +6,7 @@ import {
     FaBed,
     FaMoon,
     FaEdit,
+    FaBuilding,
 } from "react-icons/fa";
 import hotelImage from "../../../../assest/hotel1.jpg";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -22,10 +23,12 @@ const HotelReviewInfo = () => {
         priceDetails,
         email,
         mobile,
+        gstData, // ✅ GST pulled from state
         payload,
     } = location.state || {};
+    console.log("✅ GST Data in  Page:", gstData);
 
-    // ✅ FIXED: totalGuests declared globally for component
+
     const totalGuests =
         guestInputs?.reduce(
             (acc, room) => acc + room.adults.length + room.children.length,
@@ -35,37 +38,56 @@ const HotelReviewInfo = () => {
     const handleContinue = () => {
         const totalPrice = roomDetails?.Amount || 0;
 
+        const vendorCommission = priceDetails?.vendorCommission || 0;
+        const couponDiscount = priceDetails?.discount || 0;
+        const userIp = "49.36.217.215"; // You can dynamically detect this if needed
+
+        const mapPassengers = guestInputs?.map((roomGuests, idx) => {
+            const roomIndex = idx + 1;
+
+            const hotelPassenger = [...roomGuests.adults, ...roomGuests.children].map((guest, index) => ({
+                Title: guest.title || null,
+                FirstName: guest.firstName || null,
+                MiddleName: guest.middleName || "",
+                LastName: guest.lastName || null,
+                Phoneno: mobile || null,
+                Email: email || null,
+                PaxType: guest.paxType || 1, // 1 = Adult, 2 = Child, 3 = Infant
+                LeadPassenger: index === 0 ? "true" : "false",
+                Age: guest.age || 0,
+                PassportNo: guest.passportNo || null,
+                PassportIssueDate: guest.passportIssueDate || null,
+                PassportExpDate: guest.passportExpDate || null,
+                PAN: guest.pan || "AWNPD1189N", // or fetch from input
+                GSTCompanyAddress: gstData?.address || null,
+                GSTCompanyContactNumber: gstData?.contactNo || null,
+                GSTCompanyEmail: gstData?.email || null,
+                GSTCompanyName: gstData?.companyName || null,
+                GSTNumber: gstData?.gstNumber || null,
+            }));
+
+            return {
+                RoomIndex: roomIndex,
+                HotelPassenger: hotelPassenger,
+            };
+        });
+
         const hotelBookingDetails = {
-            Hotel: {
-                ResultIndex: hotel?.ResultIndex ?? "",
-                HotelCode: hotel?.HotelCode ?? "",
-                HotelName: hotel?.HotelName ?? hotel?.name ?? "",
-                SearchTokenId: hotel?.SearchTokenId ?? "",
-                GuestNationality: "IN",
-                NoOfRooms: hotel?.rooms ?? 1,
-                ClientReferenceNo: "Ref123",
-                IsVoucherBooking: true,
-                HotelRoomsDetails: [
-                    {
-                        RoomIndex: room?.RoomIndex ?? "",
-                        RoomTypeCode: room?.RoomTypeCode ?? "",
-                        RoomTypeName: room?.RoomTypeName ?? "",
-                        RatePlanCode: room?.RatePlanCode ?? "",
-                        RoomRate: roomDetails,
-                        HotelPassenger: guestInputs?.flatMap((g) => [
-                            ...g.adults,
-                            ...g.children,
-                        ]),
-                    },
-                ],
-            },
+            ResultIndex: hotel?.ResultIndex ?? "",
+            HotelCode: hotel?.HotelCode ?? "",
+            HotelName: hotel?.HotelName ?? hotel?.name ?? "",
+            SearchTokenId: hotel?.SearchTokenId ?? "",
+            vendorCommission: vendorCommission,
+            CouponDiscount: couponDiscount,
+            GuestNationality: "IN",
+            NoOfRooms: hotel?.rooms?.toString() || "1",
+            ClientReferenceNo: "Ref123",
+            IsVoucherBooking: "true",
+            HotelRoomsDetails: mapPassengers || [],
+            UserIp: userIp,
         };
 
-        const totalGuests =
-            guestInputs?.reduce(
-                (acc, room) => acc + room.adults.length + room.children.length,
-                0
-            ) || 0;
+        console.log("🚀 Final Payload to Payment API:", JSON.stringify(hotelBookingDetails, null, 2));
 
         navigate("/HotelPayment", {
             state: {
@@ -75,15 +97,19 @@ const HotelReviewInfo = () => {
                 guestInputs,
                 email,
                 mobile,
+                gstData,
                 totalGuests,
                 priceDetails,
                 totalPrice,
                 hotelBookingDetails,
-                payload
+                payload,
+                reviewData: {
+                    ...gstData,
+                    panNumber: guestInputs?.[0]?.adults?.[0]?.pan || "", // 👈 Add PAN explicitly
+                }
             },
         });
     };
-
 
     if (!hotel || !room || !guestInputs) {
         return (
@@ -95,7 +121,7 @@ const HotelReviewInfo = () => {
 
     return (
         <div className="container my-4">
-            {/* Hotel Detail Card */}
+            {/* Hotel Details */}
             <Card className="shadow-sm border-0 mb-4">
                 <Card.Body>
                     <Row className="align-items-center">
@@ -183,7 +209,7 @@ const HotelReviewInfo = () => {
                 </Card.Body>
             </Card>
 
-            {/* Primary Guest Section */}
+            {/* Guest Details */}
             <Card className="shadow-sm border-0 mb-4">
                 <Card.Body>
                     <div className="d-flex justify-content-between align-items-center mb-3">
@@ -193,7 +219,7 @@ const HotelReviewInfo = () => {
                             title="Edit"
                             onClick={() =>
                                 navigate("/guest-details", {
-                                    state: { hotel, room, roomDetails, guestInputs, email, mobile },
+                                    state: { hotel, room, roomDetails, guestInputs, email, mobile, gstData },
                                 })
                             }
                         >
@@ -229,6 +255,26 @@ const HotelReviewInfo = () => {
                             </Col>
                         </Row>
                     </div>
+
+                    {/* GST Details Display */}
+                    {gstData && gstData.gstNumber && (
+                        <div className="border rounded p-3 mt-4">
+                            <h6 className="fw-bold mb-3">
+                                <FaBuilding className="me-2 text-primary" />
+                                GST Details
+                            </h6>
+                            <Row>
+                                <Col md={4}><strong>GST Number:</strong><br />{gstData.gstNumber}</Col>
+                                <Col md={4}><strong>Company Name:</strong><br />{gstData.companyName}</Col>
+                                <Col md={4}><strong>Contact:</strong><br />{gstData.contactNo}</Col>
+                            </Row>
+                            <Row className="mt-3">
+                                <Col md={4}><strong>Email:</strong><br />{gstData.email}</Col>
+                                <Col md={4}><strong>Address:</strong><br />{gstData.address}</Col>
+                                <Col md={4}><strong>panNumber:</strong><br />{gstData.panNumber}</Col>
+                            </Row>
+                        </div>
+                    )}
                 </Card.Body>
             </Card>
 
@@ -239,13 +285,9 @@ const HotelReviewInfo = () => {
                     label={
                         <>
                             I have read and accept the{" "}
-                            <a
-                                href="/terms-and-conditions"
-                                className="text-danger text-decoration-none "
-                            >
+                            <a href="/terms-and-conditions" className="text-danger text-decoration-none">
                                 Terms & Conditions
-                            </a>
-                            .
+                            </a>.
                         </>
                     }
                     defaultChecked

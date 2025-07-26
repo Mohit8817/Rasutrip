@@ -1,9 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle } from "react-bootstrap-icons";
-import { blockRoom } from "../../APIS/HotelApi/HotelAPi"; // ✅ import API
+import { blockRoom } from "../../APIS/HotelApi/HotelAPi";
 
-const RoomCard = ({ roomData = [], hotel = {}, payload, onRoomSelect }) => {
+const RoomCard = ({
+  roomData = [],
+  hotel = {},
+  payload = {},
+  onRoomSelect,
+  onBlockStatusChange,
+}) => {
   const navigate = useNavigate();
   const [loadingRoomId, setLoadingRoomId] = useState(null);
 
@@ -13,9 +19,8 @@ const RoomCard = ({ roomData = [], hotel = {}, payload, onRoomSelect }) => {
       return;
     }
 
-    setLoadingRoomId(room.RoomId); // To show loader per room (optional)
+    setLoadingRoomId(room.RoomId);
 
-    // ✅ Prepare payload for blockRoom
     const blockPayload = {
       UserIp: payload.UserIp,
       HotelCode: payload.HotelCode,
@@ -23,14 +28,13 @@ const RoomCard = ({ roomData = [], hotel = {}, payload, onRoomSelect }) => {
       SearchTokenId: payload.SearchTokenId,
       HotelName: hotel?.HotelName,
       NoOfRooms: 1,
-      HotelRoomsDetails: [room], // Block one room
+      HotelRoomsDetails: [room],
     };
 
     try {
       const blockRes = await blockRoom(blockPayload);
 
       if (blockRes?.Error?.ErrorCode === 0) {
-        // ✅ Success: Room is blocked
         const baseFare = Number(room?.Price?.OfferedPrice || 0);
         const tax = Number(room?.Price?.Tax || 0);
 
@@ -42,6 +46,8 @@ const RoomCard = ({ roomData = [], hotel = {}, payload, onRoomSelect }) => {
           room,
           hotel,
         });
+
+        onBlockStatusChange?.("success");
 
         navigate("/HotelDetail", {
           state: {
@@ -67,12 +73,16 @@ const RoomCard = ({ roomData = [], hotel = {}, payload, onRoomSelect }) => {
             blockedRoomData: blockRes?.Result,
           },
         });
-
+      } else if (blockRes?.Error?.ErrorCode === 5) {
+        onBlockStatusChange?.("unavailable");
+        alert("⚠️ Room no longer available. Please select another.");
       } else {
+        onBlockStatusChange?.("error");
         alert("❌ Failed to block room: " + blockRes?.Error?.ErrorMessage);
       }
     } catch (err) {
       console.error("❌ BlockRoom error", err);
+      onBlockStatusChange?.("error");
       alert("❌ Something went wrong while blocking the room.");
     } finally {
       setLoadingRoomId(null);
@@ -105,16 +115,24 @@ const RoomCard = ({ roomData = [], hotel = {}, payload, onRoomSelect }) => {
                 <div className="small text-muted mb-2">
                   {hotel.guests} Guest • {hotel.rooms} Room
                 </div>
-                <div className="fw-bold text-dark">
+                <div className="fw-bold text-dark mb-2">
                   ₹{offeredPrice.toLocaleString()}
                 </div>
+
+                {room?.IsPANMandatory && (
+                  <div className="text-danger small">
+                    ⚠️ PAN card is mandatory for booking this room.
+                  </div>
+                )}
               </div>
 
               <div className="text-end ms-auto d-flex flex-column align-items-end">
                 <div className="text-success d-flex align-items-center mb-2">
                   <CheckCircle size={16} className="me-1" />
                   <span className="small">
-                    {room.Inclusion?.[0] || room.RatePlanName || "ROOM ONLY"}
+                    {room.Inclusion?.[0] ||
+                      room.RatePlanName ||
+                      "ROOM ONLY"}
                   </span>
                 </div>
 

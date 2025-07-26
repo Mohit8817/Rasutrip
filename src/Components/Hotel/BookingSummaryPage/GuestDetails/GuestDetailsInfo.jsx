@@ -9,8 +9,6 @@ const GuestDetailsInfo = () => {
 
   const { hotel, room, roomDetails, payload, priceDetails } = location.state || {};
 
-
-  // Input states
   const [guestInputs, setGuestInputs] = useState(
     roomDetails?.map(room => ({
       adults: Array.from({ length: room.adults }, () => ({ title: 'Mr', firstName: '', lastName: '' })),
@@ -22,10 +20,20 @@ const GuestDetailsInfo = () => {
   const [mobile, setMobile] = useState('');
   const [errors, setErrors] = useState({});
 
-  // Validation functions
+  const [showGstinForm, setShowGstinForm] = useState(false);
+  const [gstData, setGstData] = useState({
+    gstNumber: '',
+    companyName: '',
+    contactNo: '',
+    email: '',
+    address: '',
+    panNumber: ''
+  });
+
   const isAlpha = str => /^[A-Za-z\s]+$/.test(str);
   const isEmail = str => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
   const isMobile = str => /^[0-9]{10,}$/.test(str);
+  const isValidPAN = pan => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
 
   const handleInputChange = (roomIndex, type, personIndex, field, value) => {
     const updatedInputs = [...guestInputs];
@@ -38,26 +46,23 @@ const GuestDetailsInfo = () => {
 
     guestInputs.forEach((room, roomIdx) => {
       room.adults.forEach((guest, i) => {
-        if (!isAlpha(guest.firstName)) {
-          newErrors[`adult-${roomIdx}-${i}-first`] = 'First name should only contain letters';
-        }
-        if (!isAlpha(guest.lastName)) {
-          newErrors[`adult-${roomIdx}-${i}-last`] = 'Last name should only contain letters';
-        }
+        if (!isAlpha(guest.firstName)) newErrors[`adult-${roomIdx}-${i}-first`] = 'Only letters allowed';
+        if (!isAlpha(guest.lastName)) newErrors[`adult-${roomIdx}-${i}-last`] = 'Only letters allowed';
       });
 
       room.children.forEach((guest, i) => {
-        if (!isAlpha(guest.firstName)) {
-          newErrors[`child-${roomIdx}-${i}-first`] = 'First name should only contain letters';
-        }
-        if (!isAlpha(guest.lastName)) {
-          newErrors[`child-${roomIdx}-${i}-last`] = 'Last name should only contain letters';
-        }
+        if (!isAlpha(guest.firstName)) newErrors[`child-${roomIdx}-${i}-first`] = 'Only letters allowed';
+        if (!isAlpha(guest.lastName)) newErrors[`child-${roomIdx}-${i}-last`] = 'Only letters allowed';
       });
     });
 
-    if (!isMobile(mobile)) newErrors.mobile = 'Enter a valid 10-digit mobile number';
-    if (!isEmail(email)) newErrors.email = 'Enter a valid email address';
+    if (!isMobile(mobile)) newErrors.mobile = 'Enter a valid 10-digit number';
+    if (!isEmail(email)) newErrors.email = 'Enter a valid email';
+
+    // Optional PAN validation
+    if (showGstinForm && gstData.panNumber && !isValidPAN(gstData.panNumber)) {
+      newErrors.pan = 'Enter valid PAN (e.g. ABCDE1234F)';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -66,10 +71,30 @@ const GuestDetailsInfo = () => {
   const handleContinue = () => {
     if (!validateFields()) return;
 
-    navigate('/Hotelreview', {
-      state: { hotel, room, roomDetails, priceDetails, guestInputs, email, mobile,payload }
-    });
+    const updatedGuestInputs = guestInputs.map((room) => ({
+      ...room,
+      adults: room.adults.map((guest) => ({
+        ...guest,
+        PAN: gstData.panNumber || ''
+      })),
+      children: room.children
+    }));
+
+    const bookingState = {
+      hotel,
+      room,
+      roomDetails,
+      priceDetails,
+      guestInputs: updatedGuestInputs,
+      email,
+      mobile,
+      payload,
+      ...(showGstinForm ? { gstData } : {})
+    };
+
+    navigate('/Hotelreview', { state: bookingState });
   };
+
   if (!hotel || !room || !roomDetails) {
     return (
       <div className="p-4 text-danger text-center">
@@ -89,7 +114,6 @@ const GuestDetailsInfo = () => {
             <div key={roomIndex} className="border rounded p-3 mb-4">
               <div className="mb-3 fw-bold">Room {roomIndex + 1}</div>
 
-              {/* Adults */}
               {guestInputs[roomIndex]?.adults.map((guest, i) => (
                 <Row className="align-items-center mb-3" key={`adult-${roomIndex}-${i}`}>
                   <Col lg={2} className="fw-bold">Adult {i + 1}</Col>
@@ -129,7 +153,6 @@ const GuestDetailsInfo = () => {
                 </Row>
               ))}
 
-              {/* Children */}
               {guestInputs[roomIndex]?.children.map((guest, i) => (
                 <Row className="align-items-center mb-3" key={`child-${roomIndex}-${i}`}>
                   <Col lg={2} className="fw-bold">Child {i + 1}</Col>
@@ -173,7 +196,6 @@ const GuestDetailsInfo = () => {
         </Card.Body>
       </Card>
 
-      {/* Contact Details */}
       <Card className="mb-4 shadow-sm border-0">
         <Card.Body>
           <h6 className="fw-bold mb-3 d-flex align-items-center">
@@ -207,7 +229,76 @@ const GuestDetailsInfo = () => {
         </Card.Body>
       </Card>
 
-      {/* Continue */}
+      <Card className="mb-4 shadow-sm border-0">
+        <Card.Body>
+          <Row className="align-items-center">
+            <Col md={9}><h6 className="fw-bold mb-1">Use GSTIN for this booking (Optional)</h6></Col>
+            <Col md={3} className="text-end">
+              <Button onClick={() => setShowGstinForm(!showGstinForm)} className='btn-red'>
+                {showGstinForm ? 'Close' : 'Add'}
+              </Button>
+            </Col>
+          </Row>
+
+          {showGstinForm && (
+            <Form className="mt-3">
+              <Row className="g-2">
+                <Col md={4}>
+                  <Form.Control
+                    type="text"
+                    placeholder="GST Number"
+                    value={gstData.gstNumber}
+                    onChange={(e) => setGstData({ ...gstData, gstNumber: e.target.value })}
+                  />
+                </Col>
+                <Col md={4}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Company Name"
+                    value={gstData.companyName}
+                    onChange={(e) => setGstData({ ...gstData, companyName: e.target.value })}
+                  />
+                </Col>
+                <Col md={4}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Contact Number"
+                    value={gstData.contactNo}
+                    onChange={(e) => setGstData({ ...gstData, contactNo: e.target.value })}
+                  />
+                </Col>
+                <Col md={6}>
+                  <Form.Control
+                    type="email"
+                    placeholder="Email"
+                    value={gstData.email}
+                    onChange={(e) => setGstData({ ...gstData, email: e.target.value })}
+                  />
+                </Col>
+                <Col md={6}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Address"
+                    value={gstData.address}
+                    onChange={(e) => setGstData({ ...gstData, address: e.target.value })}
+                  />
+                </Col>
+                <Col md={6}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter PAN Number"
+                    value={gstData.panNumber}
+                    onChange={(e) => setGstData({ ...gstData, panNumber: e.target.value })}
+                    isInvalid={!!errors.pan}
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.pan}</Form.Control.Feedback>
+                </Col>
+              </Row>
+            </Form>
+          )}
+        </Card.Body>
+      </Card>
+
       <div className="text-start">
         <Button variant="primary" className="btn-red" onClick={handleContinue}>
           Continue Booking

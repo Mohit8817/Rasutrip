@@ -33,6 +33,7 @@ const HotelDetailsPage = () => {
       }
 
       const payload = {
+        ...hotel,
         UserIp: "49.36.217.215",
         ResultIndex: hotel.ResultIndex,
         HotelCode: hotel.HotelCode,

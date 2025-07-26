@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Spinner } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -16,9 +16,7 @@ const HotelPaymentInfo = () => {
     payload = {},
     hotelBookingDetails = {},
     priceDetails = {},
-    guestInputs = [],
-    email = '',
-    mobile = '',
+    reviewData = {},
   } = location.state || {};
 
   const {
@@ -32,22 +30,28 @@ const HotelPaymentInfo = () => {
   const totalPayable = baseFare + cgst + sgst - discount;
   const roundedTotal = parseFloat(totalPayable.toFixed(2));
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
+  useEffect(() => {
+    console.log('📦 Payload from location.state:', payload);
+    console.log('🏨 Hotel Booking Details:', hotelBookingDetails);
+    console.log('💵 Price Details:', priceDetails);
+    console.log('🧾 Review Data:', reviewData);
+  }, []);
+
+  const loadRazorpayScript = () =>
+    new Promise((resolve) => {
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
-  };
 
   const handlePayment = async () => {
     setLoading(true);
-
     const razorpayLoaded = await loadRazorpayScript();
+
     if (!razorpayLoaded) {
-      alert('❌ Razorpay SDK failed to load.');
+      alert('Razorpay SDK failed to load.');
       setLoading(false);
       return;
     }
@@ -55,6 +59,7 @@ const HotelPaymentInfo = () => {
     try {
       const orderResponse = await createHotelOrder(roundedTotal);
       const order = orderResponse?.order;
+
       if (!order?.id) throw new Error('Invalid Razorpay order response');
 
       const options = {
@@ -64,11 +69,8 @@ const HotelPaymentInfo = () => {
         name: 'TTS Travels',
         description: 'Hotel Booking Payment',
         order_id: order.id,
-
-        handler: async function (response) {
+        handler: async (response) => {
           try {
-            const firstAdult = guestInputs?.[0]?.adults?.[0] || {};
-
             const validatePayload = {
               amount: roundedTotal,
               razorpay_order_id: response.razorpay_order_id,
@@ -76,15 +78,6 @@ const HotelPaymentInfo = () => {
               razorpay_signature: response.razorpay_signature,
               bookingType: 'HOTEL',
               Hotel: hotelBookingDetails,
-              LeadPassenger: {
-                Title: firstAdult?.title || 'Mr',
-                FirstName: firstAdult?.firstName || '',
-                MiddleName: firstAdult?.middleName || '',
-                LastName: firstAdult?.lastName || '',
-                Email: email || '',
-                Phoneno: mobile || '',
-              },
-              SearchTokenId: hotelBookingDetails?.SearchTokenId || payload?.SearchTokenId,
             };
 
             const validation = await validateHotelPayment(validatePayload);
@@ -93,145 +86,117 @@ const HotelPaymentInfo = () => {
               validation?.message === 'Payment verified successfully' &&
               validation?.payment?.status === 'success'
             ) {
-              const hotelData = hotelBookingDetails?.Hotel || hotelBookingDetails;
-              const hotelRooms = hotelData?.HotelRoomsDetails || [];
-
-              const allRooms = [];
-              const allPassengers = [];
-
-              hotelRooms.forEach((room, roomIndex) => {
-                const adults = guestInputs?.[roomIndex]?.adults || [];
-                const children = guestInputs?.[roomIndex]?.children || [];
-
-                const passengers = [
-                  ...adults.map((guest, i) => ({
-                    Title: guest.title || 'Mr',
-                    FirstName: guest.firstName || '',
-                    MiddleName: guest.middleName || '',
-                    LastName: guest.lastName || '',
-                    Phoneno: mobile,
-                    Email: email,
-                    PaxType: 1,
-                    LeadPassenger: roomIndex === 0 && i === 0 ? 'true' : 'false',
-                    Age: 0,
-                    PassportNo: null,
-                    PassportIssueDate: null,
-                    PassportExpDate: null,
-                    PAN: guest.pan || null,
-                    GSTCompanyAddress: null,
-                    GSTCompanyContactNumber: null,
-                    GSTCompanyEmail: null,
-                    GSTCompanyName: null,
-                    GSTNumber: null,
-                  })),
-                  ...children.map((guest) => ({
-                    Title: guest.title || 'Master',
-                    FirstName: guest.firstName || '',
-                    MiddleName: guest.middleName || '',
-                    LastName: guest.lastName || '',
-                    Phoneno: mobile,
-                    Email: email,
-                    PaxType: 2,
-                    LeadPassenger: 'false',
-                    Age: guest.age || 10,
-                    PassportNo: null,
-                    PassportIssueDate: null,
-                    PassportExpDate: null,
-                    PAN: null,
-                    GSTCompanyAddress: null,
-                    GSTCompanyContactNumber: null,
-                    GSTCompanyEmail: null,
-                    GSTCompanyName: null,
-                    GSTNumber: null,
-                  })),
-                ];
-
-                allPassengers.push(...passengers);
-
-                allRooms.push({
-                  RoomIndex: room.RoomIndex,
-                  RoomTypeCode: room.RoomTypeCode,
-                  RoomTypeName: room.RoomTypeName,
-                  HotelPassenger: passengers,
-                });
-              });
-
-              const topLead = allPassengers.find((p) => p.LeadPassenger === 'true');
-
-              const cleanedPayload = {
-                ResultIndex: hotelBookingDetails?.ResultIndex || payload?.ResultIndex || '',
-                HotelCode: hotelBookingDetails?.HotelCode || payload?.HotelCode || '',
-                SearchTokenId: hotelBookingDetails?.SearchTokenId || payload?.SearchTokenId || '',
-                HotelName:
-                  hotelBookingDetails?.Hotel?.HotelName ||
-                  hotelBookingDetails?.HotelName ||
-                  payload?.HotelName ||
-                  'Unknown Hotel',
-                vendorCommission,
-                CouponDiscount: discount,
-                GuestNationality: hotelBookingDetails?.GuestNationality || 'IN',
-                NoOfRooms: allRooms.length.toString(),
-                ClientReferenceNo: 0,
-                IsVoucherBooking: 'true',
-                HotelRoomsDetails: allRooms,
-                UserIp: '49.36.217.215',
-
-                LeadPassenger: {
-                  Title: topLead?.Title || 'Mr',
-                  FirstName: topLead?.FirstName || '',
-                  MiddleName: topLead?.MiddleName || '',
-                  LastName: topLead?.LastName || '',
-                  Email: topLead?.Email || '',
-                  Phoneno: topLead?.Phoneno || '',
-                },
+              let cleanedPayload = {
+                ...payload,
+                RazorpayOrderId: response.razorpay_order_id,
+                RazorpayPaymentId: response.razorpay_payment_id,
+                RazorpayOrderStatus: 'PAID',
+                PaymentId: validation?.payment?._id || '',
               };
 
+              let hotelData =
+                cleanedPayload?.Hotel?.Hotel ||
+                hotelBookingDetails?.Hotel ||
+                hotelBookingDetails;
+
+              const GuestNationality =
+                payload?.GuestNationality ||
+                reviewData?.GuestNationality ||
+                'IN';
+
+              if (hotelData?.HotelRoomsDetails) {
+                hotelData.HotelRoomsDetails = hotelData.HotelRoomsDetails.map(
+                  (room, roomIndex) => {
+                    const transformedPassengers = room?.HotelPassenger?.map(
+                      (pax, paxIndex) => ({
+                        Title: pax?.Title || 'Mr',
+                        FirstName: pax?.FirstName || 'Guest',
+                        MiddleName: pax?.MiddleName || '',
+                        LastName: pax?.LastName || '',
+                        Phoneno: pax?.Phoneno || '9999999999',
+                        Email: pax?.Email || 'user@example.com',
+                        PaxType: pax?.PaxType ?? 1,
+                        LeadPassenger:
+                          pax?.LeadPassenger === true ||
+                          pax?.LeadPassenger === 'true' ||
+                          (paxIndex === 0 && roomIndex === 0),
+                        Age: pax?.Age || 30,
+                        PAN:
+                          pax?.PAN && pax?.PAN.trim()
+                            ? pax.PAN
+                            : (paxIndex === 0 && roomIndex === 0 && reviewData?.panNumber)
+                              ? reviewData.panNumber
+                              : '',
+                        PassportNo: pax?.PassportNo || '',
+                        PassportIssueDate: pax?.PassportIssueDate || '',
+                        PassportExpDate: pax?.PassportExpDate || '',
+                        GSTCompanyAddress: pax?.GSTCompanyAddress || '',
+                        GSTCompanyContactNumber: pax?.GSTCompanyContactNumber || '',
+                        GSTCompanyEmail: pax?.GSTCompanyEmail || '',
+                        GSTCompanyName: pax?.GSTCompanyName || '',
+                        GSTNumber: pax?.GSTNumber || '',
+                      })
+                    );
+                    return {
+                      ...room,
+                      HotelPassenger: transformedPassengers,
+                    };
+                  }
+                );
+              }
+
+              const isValid = hotelData?.HotelRoomsDetails?.every((room) =>
+                room?.HotelPassenger?.every((p) => p.PAN && p.PAN.trim())
+              );
+
+              if (!isValid) {
+                alert('PAN missing for one or more passengers.');
+                setLoading(false);
+                return;
+              }
+
+              cleanedPayload = {
+                ...cleanedPayload,
+                ...hotelData,
+                GuestNationality,
+                vendorCommission,
+                CouponDiscount: discount,
+                UserIp: '49.36.217.215',
+                reviewData,
+              };
+
+              delete cleanedPayload.Hotel;
+
+              console.log('✅ Final Payload for Hotel Booking:', cleanedPayload);
 
               const bookingResponse = await bookHotel(cleanedPayload);
 
               if (bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed') {
-                alert('✅ Booking Confirmed!');
                 navigate('/hotel/confirmation', {
                   state: {
                     booking: bookingResponse,
                     amount: roundedTotal,
+                    reviewData,
                   },
                 });
               } else {
-                const retry = window.confirm('Payment succeeded but booking failed. Do you want to retry?');
-                if (retry) {
-                  const retryResponse = await bookHotel(cleanedPayload);
-                  if (retryResponse?.BookingStatus?.toLowerCase() === 'confirmed') {
-                    alert('✅ Booking Confirmed on Retry!');
-                    navigate('/hotel/confirmation', {
-                      state: {
-                        booking: retryResponse,
-                        amount: roundedTotal,
-                      },
-                    });
-                  } else {
-                    alert('❌ Retry also failed.');
-                    navigate('/hotel/payment-failed');
-                  }
-                } else {
-                  navigate('/hotel/payment-failed');
-                }
+                alert(bookingResponse?.Error?.ErrorMessage || 'Booking failed.');
+                navigate('/hotel/payment-failed');
               }
             } else {
-              alert('❌ Payment validation failed.');
+              alert(validation?.message || 'Payment validation failed.');
               navigate('/hotel/payment-failed');
             }
           } catch (err) {
             console.error('❌ Booking Error:', err);
-            alert('Booking failed. Please try again.');
+            alert('Something went wrong during booking.');
             navigate('/hotel/payment-failed');
           }
         },
-
         prefill: {
-          name: guestInputs?.[0]?.adults?.[0]?.firstName || 'Guest',
-          email: email || 'guest@example.com',
-          contact: mobile || '9999999999',
+          name: 'User',
+          email: 'user@example.com',
+          contact: '9999999999',
         },
         notes: {
           address: 'Hotel Booking',
@@ -244,14 +209,12 @@ const HotelPaymentInfo = () => {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      console.error('❌ Payment Init Error:', err);
+      console.error('❌ Razorpay Init Error:', err);
       alert('Failed to initiate payment.');
     } finally {
       setLoading(false);
     }
   };
-
-
 
   return (
     <Card className="shadow-sm rounded mt-4">
