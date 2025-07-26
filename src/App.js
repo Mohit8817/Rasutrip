@@ -46,7 +46,7 @@ import 'react-toastify/dist/ReactToastify.css';
 function App() {
   return (
     <>
-      <Router>
+      {/* <Router> */}
         <Header />
         <ScrollToTop />
         <Routes>
@@ -93,7 +93,7 @@ function App() {
           <Route path="/faq" element={<FAQ />} />
         </Routes>
         <Footer />
-      </Router>
+      {/* </Router> */}
       <ToastContainer position="top-right" autoClose={3000} />
     </>
   );
