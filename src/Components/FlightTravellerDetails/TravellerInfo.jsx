@@ -4,6 +4,7 @@ import { FaEnvelope } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPassengers, updatePassenger } from '../../redux/Slices/PassengersSlice';
+import { toast } from 'react-toastify';
 
 import { LocationContext } from '../Context/LocationContext';
 import { fetchSSR } from '../APIS/FlightApi/FlightApi';
@@ -13,6 +14,11 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
     console.log("  const { locationData } = useContext(LocationContext);")
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const res = localStorage.getItem('SearchedFlights')
+    const SearchData = JSON.parse(res)
+    const PassagerOrigin=SearchData[0].Segments[0]?.[0].Origin
+    console.log('SearchData',PassagerOrigin)
+
     const [loading, setLoading] = useState(false);
     const passengersData = useSelector((state) => state.passengersData || []);
     console.log("passengersData", passengersData)
@@ -41,8 +47,8 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
             AddressLine1: '',
             AddressLine2: '',
             City: '',
-            CountryCode: '',
-            CountryName: '',
+            CountryCode: PassagerOrigin.CountryCode,
+            CountryName: PassagerOrigin.CountryName,
             ContactNo: '',
             Email: '',
             IsLeadPax: index === 0 && type === 'ADT',
@@ -105,9 +111,18 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
         setLoading(true);
         try {
             const res = await fetchSSR(SSRPayload);
-            navigate('/addons', { state: { SSR: res?.Result || [] ,SelectedFare} });
+
+            localStorage.setItem('passengersData', JSON.stringify(passengersData));
+
+
+            navigate('/addons', { state: { SSR: res?.Result || [], SelectedFare, passengersData } });
         } catch (error) {
             console.error("API call failed:", error);
+            const errMsg =
+                error?.response?.data?.error?.Error?.ErrorMessage || // if server sends a message
+                error?.message || // general axios error
+                "Something went wrong. Please try again.";
+            toast.error(errMsg);
         } finally {
             setLoading(false);
         }
@@ -240,7 +255,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                     </Col>
 
                     {/* Date of Birth - Conditional */}
-                    {requireDOB && (
+                    {/* {requireDOB && ( */}
                         <Col md={3}>
                             <Form.Group>
                                 <Form.Label><RequiredLabel>Date of Birth</RequiredLabel></Form.Label>
@@ -252,7 +267,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                                 />
                             </Form.Group>
                         </Col>
-                    )}
+                    {/* )} */}
 
                     <Col md={3}>
                         <Form.Group>
@@ -305,6 +320,39 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                             </Col>
                         </>
                     )}
+
+
+                    <Col md={3}>
+                            <Form.Group>
+                                <Form.Label><RequiredLabel>City</RequiredLabel></Form.Label>
+                                <Form.Control
+                                    value={passenger.City || ''}
+                                    onChange={(e) => handlePassengerChange(type, index, 'City', e.target.value)}
+                                    required
+                                />
+                            </Form.Group>
+                        </Col>
+
+                         <Col md={3}>
+                            <Form.Group>
+                                <Form.Label><RequiredLabel>AddressLine1</RequiredLabel></Form.Label>
+                                <Form.Control
+                                    value={passenger.AddressLine1 || ''}
+                                    onChange={(e) => handlePassengerChange(type, index, 'AddressLine1', e.target.value)}
+                                    required
+                                maxLength={28} />
+                            </Form.Group>
+                        </Col>
+                        <Col md={3}>
+                            <Form.Group>
+                                <Form.Label>AddressLine2</Form.Label>
+                                <Form.Control
+                                    value={passenger.AddressLine2 || ''}
+                                    onChange={(e) => handlePassengerChange(type, index, 'AddressLine2', e.target.value)}
+                                    
+                                maxLength={28} />
+                            </Form.Group>
+                        </Col>
 
                     {requirePAN && (
                         <Col md={3}>
@@ -370,6 +418,16 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                                     />
                                 </Form.Group>
                             </Col>
+                             <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label><RequiredLabel>GST Company Email</RequiredLabel></Form.Label>
+                                    <Form.Control
+                                        value={passenger.GSTCompanyEmail || ''}
+                                        onChange={(e) => handlePassengerChange(type, index, 'GSTCompanyEmail', e.target.value)}
+                                        required={requireGST}
+                                    />
+                                </Form.Group>
+                            </Col>
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label><RequiredLabel>Company Address</RequiredLabel></Form.Label>
@@ -390,6 +448,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                                     />
                                 </Form.Group>
                             </Col>
+                            
                         </>
                     )
                     }

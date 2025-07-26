@@ -57,8 +57,14 @@ const RoundTripCardList = () => {
 
 
   useEffect(() => {
+   
+
+    const getFlights = async () => {
+      try {
+        
+    const IP = localStorage.getItem('UserIp');
     const requestPayload = {
-      UserIp: '27.60.0.238',
+      UserIp: IP,
       Adult: passengers.adults,
       Child: passengers.children,
       Infant: passengers.infants,
@@ -80,9 +86,6 @@ const RoundTripCardList = () => {
       ],
       Sources: null,
     };
-
-    const getFlights = async () => {
-      try {
         const response = await fetchFlightData(requestPayload);
         const result = response?.Result || [];
 

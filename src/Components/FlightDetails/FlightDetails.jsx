@@ -7,6 +7,7 @@ import FlightInfo from './FlightInfo';
 import FareSummary from './FareSummary';
 import PromoCodeBox from './PromoCodeBox';
 import { fetchFareRules } from '../APIS/FlightApi/FlightApi';
+import FlightLoader from '../FlightLoader/FlightLoader';
 
 
 const useFareRules = (fareId) => {
@@ -62,23 +63,30 @@ const FlightDetails = () => {
     return (
         <div>
             <Container style={{ marginTop: '8rem' }}>
-                <Row>
-                    <div>
-                        <BookingSteps activeIndex={0} />
-                    </div>
-                </Row>
-                <Row>
-                    <Col lg={9}>
-                        <FlightInfo FareData={FareData} SelectedFare={SelectedFare} fareRules={fareRules} />
-                    </Col>
-                    <Col lg={3}>
-                        <FareSummary SelectedFare={SelectedFare} />
-                        <PromoCodeBox />
-                    </Col>
-                </Row>
+                {loading ? (
+                    <>
+                        {loading && <p className="text-center text-primary mt-4"><FlightLoader message="Searching Fare Rules" /></p>}
+                        {error && <p className="text-center text-danger mt-4">Error fetching fare rules.</p>}</>
 
-                {loading && <p className="text-center text-primary mt-4">Loading fare rules...</p>}
-                {error && <p className="text-center text-danger mt-4">Error fetching fare rules.</p>}
+                ) : (
+                    <>
+                        <Row>
+                            <div>
+                                <BookingSteps activeIndex={0} />
+                            </div>
+                        </Row>
+                        <Row>
+                            <Col lg={9}>
+                                <FlightInfo FareData={FareData} SelectedFare={SelectedFare} fareRules={fareRules} />
+                            </Col>
+                            <Col lg={3}>
+                                <FareSummary SelectedFare={SelectedFare} />
+                                <PromoCodeBox />
+                            </Col>
+                        </Row></>
+                )}
+
+
             </Container>
         </div>
     );

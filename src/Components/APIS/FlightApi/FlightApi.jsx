@@ -5,6 +5,7 @@ export const Services = {
   fetchLocation: `${baseURL}/airport/search-airport`,
   fetchFlights: `${baseURL}/airservice/search`,
   fetchFareRulesUrl: `https://www.stagingapi.bdsd.technology/api/airservice/rest/farerule`,
+  // fetchFareRulesUrl: `${baseURL}/airservice/rest/farerule`,
   FareConfirmation: `${baseURL}/airservice/fare-confirmation`,
   fetchssr: `${baseURL}/airservice/ssr`
 };
@@ -46,18 +47,29 @@ export const fetchSSR = async (payload) => {
 export const post = async (data, url, customHeaders = {}) => {
   try {
     // const token = localStorage.getItem("token");
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODA3NmE0OThhYmQzYmExZDNjMDY0NTUiLCJ1c2VyUmVnSWQiOiJSVFJJUDAwMTIiLCJlbWFpbCI6ImlzaGl0YS5vdHVzb25lQGdtYWlsLmNvbSIsImlhdCI6MTc1MjAzMzcxMCwiZXhwIjoxNzUzMzI5NzEwfQ.AWZZOOXwch5GSLkUx-f7Ke7bWP3ULHhOvFWN25w96rQ'
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODdkZTViOWEwNmI1MGJhMWQ1NzA4ZjciLCJ1c2VyUmVnSWQiOiJSVFJJUDAxMTAiLCJlbWFpbCI6IiIsInJvbGUiOiJBZ2VudCIsImlhdCI6MTc1MzM1NTgxMywiZXhwIjoxNzU0NjUxODEzfQ.jYJfwiW4ZUWloh4ww8IAIIQtjtHywd-E15rCPEBsOvk'
     const headers = {
       Authorization: `Bearer ${token}`,
       ...customHeaders, // allow additional headers
     };
     const response = await axios.post(baseURL + url, data, { headers });
-    console.log('hit api');
     return response.data;
   } catch (error) {
     console.error('POST request failed:', error);
     throw error;
   }
 };
+
+export const getUserIP = async () => {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    return data.ip; // This will be something like "122.161.64.143"
+  } catch (error) {
+    console.error('Failed to get IP:', error);
+    return '';
+  }
+};
+
 
 

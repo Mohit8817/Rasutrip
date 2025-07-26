@@ -23,10 +23,14 @@ import BusTravellerDetails from './Components/Bus/BusTravellerDetails/BusTravell
 import BusReview from './Components/Bus/BusReview/BusReview';
 import CustomerLogin from './Components/Login/CustomerLogin';
 import AgentLogin from './Components/Login/AgentLogin';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import BookingSuccess from './Components/FlightBookingSuccess/BookingSuccess';
 
 
 function App() {
   return (
+     <>
     <Router>
       <Header />
       <Routes>
@@ -37,6 +41,8 @@ function App() {
         <Route path="/addons" element={<FlightAddon />} />
         <Route path="/review" element={<FlightReview />} />
         <Route path="/Payment" element={< FlightPayment />} />
+        <Route path="/booking/success" element={< BookingSuccess />} />
+
 
         {/* Hotel Results Page */}
         <Route path="/hotel-results" element={<HotelResultsPage />} />
@@ -68,6 +74,8 @@ function App() {
       </Routes>
       <Footer />
     </Router>
+     <ToastContainer position="top-right" autoClose={3000} />
+    </>
   );
 }
 
