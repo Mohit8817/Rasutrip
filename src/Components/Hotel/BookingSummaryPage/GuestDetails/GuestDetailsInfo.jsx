@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
 import { FaEnvelope } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -7,61 +7,157 @@ const GuestDetailsInfo = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { hotel, room, roomDetails, payload, priceDetails } = location.state || {};
+  const { hotel, room, roomDetails, payload, priceDetails, existingGuestData } = location.state || {};
 
-  const [guestInputs, setGuestInputs] = useState(
-    roomDetails?.map(room => ({
-      adults: Array.from({ length: room.adults }, () => ({ title: 'Mr', firstName: '', lastName: '' })),
-      children: Array.from({ length: room.children }, () => ({ title: 'Master', firstName: '', lastName: '' }))
-    }))
-  );
+  // ✅ Initialize with existing data if coming back from review page
+  const initializeGuestInputs = () => {
+    if (existingGuestData?.guestInputs) {
+      console.log('🔄 Restoring existing guest data:', existingGuestData.guestInputs);
+      return existingGuestData.guestInputs;
+    }
 
-  const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('');
+    return roomDetails?.map((room, roomIndex) => ({
+      adults: Array.from({ length: room.adults }, (_, index) => ({
+        title: 'Mr',
+        firstName: '',
+        lastName: '',
+        panNumber: '',
+        age: '',
+        LeadPassenger: roomIndex === 0 && index === 0 ? "true" : "false"
+      })),
+      children: Array.from({ length: room.children }, () => ({
+        title: 'Master',
+        firstName: '',
+        lastName: '',
+        age: ''
+      }))
+    }));
+  };
+
+  const [guestInputs, setGuestInputs] = useState(initializeGuestInputs());
+
+  // ✅ Initialize with existing contact data if available
+  const [email, setEmail] = useState(existingGuestData?.email || '');
+  const [mobile, setMobile] = useState(existingGuestData?.mobile || '');
   const [errors, setErrors] = useState({});
 
-  const [showGstinForm, setShowGstinForm] = useState(false);
-  const [gstData, setGstData] = useState({
+  // ✅ Initialize GST form state based on existing data
+  const [showGstinForm, setShowGstinForm] = useState(
+    existingGuestData?.gstData?.gstNumber ? true : false
+  );
+  const [gstData, setGstData] = useState(existingGuestData?.gstData || {
     gstNumber: '',
     companyName: '',
     contactNo: '',
     email: '',
-    address: '',
-    panNumber: ''
+    address: ''
   });
 
-  const isAlpha = str => /^[A-Za-z\s]+$/.test(str);
-  const isEmail = str => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
-  const isMobile = str => /^[0-9]{10,}$/.test(str);
-  const isValidPAN = pan => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
+  // ✅ Debug: Log when component mounts with existing data
+  useEffect(() => {
+    if (existingGuestData) {
+      console.log('📝 Guest Details Form loaded with existing data:', {
+        email: existingGuestData.email,
+        mobile: existingGuestData.mobile,
+        guestInputs: existingGuestData.guestInputs,
+        gstData: existingGuestData.gstData
+      });
+    }
+  }, [existingGuestData]);
+
+  // ✅ Enhanced validation functions
+  const isAlpha = str => /^[A-Za-z\s]+$/.test(str?.trim());
+  const isEmail = str => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str?.trim());
+  const isMobile = str => /^[0-9]{10}$/.test(str?.trim());
+  const isValidPAN = pan => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan?.trim());
+  const isValidGST = gst => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gst?.trim());
 
   const handleInputChange = (roomIndex, type, personIndex, field, value) => {
     const updatedInputs = [...guestInputs];
     updatedInputs[roomIndex][type][personIndex][field] = value;
     setGuestInputs(updatedInputs);
+
+    // ✅ Clear specific field error when user starts typing
+    const errorKey = `${type === 'adults' ? 'adult' : 'child'}-${roomIndex}-${personIndex}-${field === 'firstName' ? 'first' : field === 'lastName' ? 'last' : field === 'panNumber' ? 'pan' : 'age'}`;
+    if (errors[errorKey]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[errorKey];
+        return newErrors;
+      });
+    }
   };
 
   const validateFields = () => {
     const newErrors = {};
 
-    guestInputs.forEach((room, roomIdx) => {
-      room.adults.forEach((guest, i) => {
-        if (!isAlpha(guest.firstName)) newErrors[`adult-${roomIdx}-${i}-first`] = 'Only letters allowed';
-        if (!isAlpha(guest.lastName)) newErrors[`adult-${roomIdx}-${i}-last`] = 'Only letters allowed';
-      });
+    // ✅ Validate guest inputs
+    if (!guestInputs || guestInputs.length === 0) {
+      newErrors.general = 'No guest information found';
+      setErrors(newErrors);
+      return false;
+    }
 
-      room.children.forEach((guest, i) => {
-        if (!isAlpha(guest.firstName)) newErrors[`child-${roomIdx}-${i}-first`] = 'Only letters allowed';
-        if (!isAlpha(guest.lastName)) newErrors[`child-${roomIdx}-${i}-last`] = 'Only letters allowed';
-      });
+    guestInputs.forEach((room, roomIdx) => {
+      // Validate adults
+      if (room.adults && room.adults.length > 0) {
+        room.adults.forEach((guest, i) => {
+          if (!guest.firstName?.trim() || !isAlpha(guest.firstName)) {
+            newErrors[`adult-${roomIdx}-${i}-first`] = 'Only letters allowed';
+          }
+          if (!guest.lastName?.trim() || !isAlpha(guest.lastName)) {
+            newErrors[`adult-${roomIdx}-${i}-last`] = 'Only letters allowed';
+          }
+          if (!guest.panNumber?.trim() || !isValidPAN(guest.panNumber)) {
+            newErrors[`adult-${roomIdx}-${i}-pan`] = 'Enter valid PAN (e.g. ABCDE1234F)';
+          }
+          if (!guest.age || isNaN(guest.age) || parseInt(guest.age) < 18) {
+            newErrors[`adult-${roomIdx}-${i}-age`] = 'Enter valid age (18+)';
+          }
+        });
+      }
+
+      // Validate children
+      if (room.children && room.children.length > 0) {
+        room.children.forEach((guest, i) => {
+          if (!guest.firstName?.trim() || !isAlpha(guest.firstName)) {
+            newErrors[`child-${roomIdx}-${i}-first`] = 'Only letters allowed';
+          }
+          if (!guest.lastName?.trim() || !isAlpha(guest.lastName)) {
+            newErrors[`child-${roomIdx}-${i}-last`] = 'Only letters allowed';
+          }
+          if (!guest.age || isNaN(guest.age) || parseInt(guest.age) >= 18 || parseInt(guest.age) < 1) {
+            newErrors[`child-${roomIdx}-${i}-age`] = 'Enter valid child age (1-17)';
+          }
+        });
+      }
     });
 
-    if (!isMobile(mobile)) newErrors.mobile = 'Enter a valid 10-digit number';
-    if (!isEmail(email)) newErrors.email = 'Enter a valid email';
+    // ✅ Validate contact information
+    if (!isMobile(mobile)) {
+      newErrors.mobile = 'Enter a valid 10-digit number';
+    }
+    if (!isEmail(email)) {
+      newErrors.email = 'Enter a valid email';
+    }
 
-    // Optional PAN validation
-    if (showGstinForm && gstData.panNumber && !isValidPAN(gstData.panNumber)) {
-      newErrors.pan = 'Enter valid PAN (e.g. ABCDE1234F)';
+    // ✅ GST validation if form is shown and GST number is entered
+    if (showGstinForm && gstData.gstNumber?.trim()) {
+      if (!isValidGST(gstData.gstNumber)) {
+        newErrors.gstGstNumber = 'Enter valid GST number';
+      }
+      if (!gstData.companyName?.trim()) {
+        newErrors.gstCompanyName = 'Company name is required';
+      }
+      if (!gstData.contactNo?.trim()) {
+        newErrors.gstContactNo = 'Contact number is required';
+      }
+      if (!gstData.email?.trim() || !isEmail(gstData.email)) {
+        newErrors.gstEmail = 'Valid email is required';
+      }
+      if (!gstData.address?.trim()) {
+        newErrors.gstAddress = 'Address is required';
+      }
     }
 
     setErrors(newErrors);
@@ -69,15 +165,33 @@ const GuestDetailsInfo = () => {
   };
 
   const handleContinue = () => {
-    if (!validateFields()) return;
+    if (!validateFields()) {
+      console.log('❌ Validation failed:', errors);
+      // Scroll to first error
+      const firstErrorElement = document.querySelector('.is-invalid');
+      if (firstErrorElement) {
+        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
 
-    const updatedGuestInputs = guestInputs.map((room) => ({
+    // ✅ Ensure LeadPassenger is properly set as STRING
+    const updatedGuestInputs = guestInputs.map((room, roomIndex) => ({
       ...room,
-      adults: room.adults.map((guest) => ({
-        ...guest,
-        PAN: gstData.panNumber || ''
+      adults: room.adults.map((adult, adultIndex) => ({
+        ...adult,
+        firstName: adult.firstName?.trim(),
+        lastName: adult.lastName?.trim(),
+        panNumber: adult.panNumber?.trim().toUpperCase(),
+        age: parseInt(adult.age),
+        LeadPassenger: roomIndex === 0 && adultIndex === 0 ? "true" : "false"
       })),
-      children: room.children
+      children: room.children.map(child => ({
+        ...child,
+        firstName: child.firstName?.trim(),
+        lastName: child.lastName?.trim(),
+        age: parseInt(child.age)
+      }))
     }));
 
     const bookingState = {
@@ -86,141 +200,279 @@ const GuestDetailsInfo = () => {
       roomDetails,
       priceDetails,
       guestInputs: updatedGuestInputs,
-      email,
-      mobile,
+      email: email.trim(),
+      mobile: mobile.trim(),
       payload,
-      ...(showGstinForm ? { gstData } : {})
+      ...(showGstinForm && gstData.gstNumber?.trim() ? {
+        gstData: {
+          ...gstData,
+          gstNumber: gstData.gstNumber.trim().toUpperCase(),
+          companyName: gstData.companyName.trim(),
+          contactNo: gstData.contactNo.trim(),
+          email: gstData.email.trim(),
+          address: gstData.address.trim()
+        }
+      } : {})
     };
 
+    console.log('🚀 Navigating to review with state:', bookingState);
     navigate('/Hotelreview', { state: bookingState });
   };
 
+  // ✅ Handle email/mobile change with error clearing
+  const handleEmailChange = (value) => {
+    setEmail(value);
+    if (errors.email) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.email;
+        return newErrors;
+      });
+    }
+  };
+
+  const handleMobileChange = (value) => {
+    // Only allow numeric input
+    const numericValue = value.replace(/\D/g, '');
+    if (numericValue.length <= 10) {
+      setMobile(numericValue);
+      if (errors.mobile) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.mobile;
+          return newErrors;
+        });
+      }
+    }
+  };
+
+  // ✅ Handle GST data change with error clearing
+  const handleGstDataChange = (field, value) => {
+    setGstData(prev => ({ ...prev, [field]: value }));
+
+    // Clear related GST errors
+    const gstErrorKey = `gst${field.charAt(0).toUpperCase() + field.slice(1)}`;
+    if (errors[gstErrorKey]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[gstErrorKey];
+        return newErrors;
+      });
+    }
+  };
+
+  // ✅ Error boundary check
   if (!hotel || !room || !roomDetails) {
     return (
-      <div className="p-4 text-danger text-center">
-        ❌ Missing booking data. Please go back to Hotel Details page.
+      <div className="container my-4">
+        <Card className="shadow-sm border-0">
+          <Card.Body className="text-center text-danger">
+            <h5>❌ Missing Booking Data</h5>
+            <p>Please go back to Hotel Details page and try again.</p>
+            <Button variant="primary" onClick={() => navigate(-1)}>
+              Go Back
+            </Button>
+          </Card.Body>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="container my-4">
+      {/* ✅ Error display */}
+      {errors.general && (
+        <Card className="mb-4 border-danger">
+          <Card.Body className="text-danger">
+            <strong>Error:</strong> {errors.general}
+          </Card.Body>
+        </Card>
+      )}
+
       <Card className="mb-4 shadow-sm border-0">
         <Card.Body>
-          <h5 className="fw-bold">Guest Details</h5>
-          <p className="text-muted small">Please enter names as per Government ID.</p>
+          <h5 className="fw-bold mb-2">Guest Details</h5>
+          <p className="text-muted small mb-4">Please enter names as per Government ID. All fields are mandatory.</p>
 
           {roomDetails.map((room, roomIndex) => (
             <div key={roomIndex} className="border rounded p-3 mb-4">
-              <div className="mb-3 fw-bold">Room {roomIndex + 1}</div>
+              <div className="mb-3 fw-bold text-primary">
+                <FaEnvelope className="me-2" />
+                Room {roomIndex + 1} - {room.adults} Adult(s){room.children > 0 && `, ${room.children} Child(ren)`}
+              </div>
 
-              {guestInputs[roomIndex]?.adults.map((guest, i) => (
-                <Row className="align-items-center mb-3" key={`adult-${roomIndex}-${i}`}>
-                  <Col lg={2} className="fw-bold">Adult {i + 1}</Col>
-                  <Col lg={2}>
-                    <Form.Select
-                      value={guest.title}
-                      onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'title', e.target.value)}
-                    >
-                      <option>Mr</option>
-                      <option>Ms</option>
-                    </Form.Select>
-                  </Col>
-                  <Col lg={4}>
-                    <Form.Control
-                      type="text"
-                      placeholder="First Name"
-                      value={guest.firstName}
-                      onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'firstName', e.target.value)}
-                      isInvalid={errors[`adult-${roomIndex}-${i}-first`]}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors[`adult-${roomIndex}-${i}-first`]}
-                    </Form.Control.Feedback>
-                  </Col>
-                  <Col lg={4}>
-                    <Form.Control
-                      type="text"
-                      placeholder="Last Name"
-                      value={guest.lastName}
-                      onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'lastName', e.target.value)}
-                      isInvalid={errors[`adult-${roomIndex}-${i}-last`]}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors[`adult-${roomIndex}-${i}-last`]}
-                    </Form.Control.Feedback>
-                  </Col>
-                </Row>
+              {/* Adults */}
+              {guestInputs[roomIndex]?.adults?.map((guest, i) => (
+                <div key={`adult-${roomIndex}-${i}`} className="mb-4 p-3 bg-light rounded">
+                  <Row className="align-items-center mb-3">
+                    <Col lg={2} className="fw-bold">
+                      Adult {i + 1}
+                      {roomIndex === 0 && i === 0 && (
+                        <span className="badge bg-primary ms-2 small">Lead Guest</span>
+                      )}
+                    </Col>
+                    <Col lg={2}>
+                      <Form.Select
+                        value={guest.title}
+                        onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'title', e.target.value)}
+                      >
+                        <option value="Mr">Mr</option>
+                        <option value="Ms">Ms</option>
+                        <option value="Mrs">Mrs</option>
+                      </Form.Select>
+                    </Col>
+                    <Col lg={4}>
+                      <Form.Control
+                        type="text"
+                        placeholder="First Name *"
+                        value={guest.firstName}
+                        onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'firstName', e.target.value)}
+                        isInvalid={!!errors[`adult-${roomIndex}-${i}-first`]}
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors[`adult-${roomIndex}-${i}-first`]}
+                      </Form.Control.Feedback>
+                    </Col>
+                    <Col lg={4}>
+                      <Form.Control
+                        type="text"
+                        placeholder="Last Name *"
+                        value={guest.lastName}
+                        onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'lastName', e.target.value)}
+                        isInvalid={!!errors[`adult-${roomIndex}-${i}-last`]}
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors[`adult-${roomIndex}-${i}-last`]}
+                      </Form.Control.Feedback>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Control
+                        type="text"
+                        placeholder="PAN Number (ABCDE1234F) *"
+                        value={guest.panNumber}
+                        onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'panNumber', e.target.value.toUpperCase())}
+                        isInvalid={!!errors[`adult-${roomIndex}-${i}-pan`]}
+                        maxLength={10}
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors[`adult-${roomIndex}-${i}-pan`]}
+                      </Form.Control.Feedback>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Control
+                        type="number"
+                        placeholder="Age (18+) *"
+                        value={guest.age}
+                        onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'age', e.target.value)}
+                        isInvalid={!!errors[`adult-${roomIndex}-${i}-age`]}
+                        min="18"
+                        max="99"
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors[`adult-${roomIndex}-${i}-age`]}
+                      </Form.Control.Feedback>
+                    </Col>
+                  </Row>
+                </div>
               ))}
 
-              {guestInputs[roomIndex]?.children.map((guest, i) => (
-                <Row className="align-items-center mb-3" key={`child-${roomIndex}-${i}`}>
-                  <Col lg={2} className="fw-bold">Child {i + 1}</Col>
-                  <Col lg={2}>
-                    <Form.Select
-                      value={guest.title}
-                      onChange={(e) => handleInputChange(roomIndex, 'children', i, 'title', e.target.value)}
-                    >
-                      <option>Master</option>
-                      <option>Miss</option>
-                    </Form.Select>
-                  </Col>
-                  <Col lg={4}>
-                    <Form.Control
-                      type="text"
-                      placeholder="First Name"
-                      value={guest.firstName}
-                      onChange={(e) => handleInputChange(roomIndex, 'children', i, 'firstName', e.target.value)}
-                      isInvalid={errors[`child-${roomIndex}-${i}-first`]}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors[`child-${roomIndex}-${i}-first`]}
-                    </Form.Control.Feedback>
-                  </Col>
-                  <Col lg={4}>
-                    <Form.Control
-                      type="text"
-                      placeholder="Last Name"
-                      value={guest.lastName}
-                      onChange={(e) => handleInputChange(roomIndex, 'children', i, 'lastName', e.target.value)}
-                      isInvalid={errors[`child-${roomIndex}-${i}-last`]}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors[`child-${roomIndex}-${i}-last`]}
-                    </Form.Control.Feedback>
-                  </Col>
-                </Row>
+              {/* Children */}
+              {guestInputs[roomIndex]?.children?.map((guest, i) => (
+                <div key={`child-${roomIndex}-${i}`} className="mb-4 p-3 bg-warning bg-opacity-10 rounded">
+                  <Row className="align-items-center mb-3">
+                    <Col lg={2} className="fw-bold">
+                      Child {i + 1}
+                    </Col>
+                    <Col lg={2}>
+                      <Form.Select
+                        value={guest.title}
+                        onChange={(e) => handleInputChange(roomIndex, 'children', i, 'title', e.target.value)}
+                      >
+                        <option value="Master">Master</option>
+                        <option value="Miss">Miss</option>
+                      </Form.Select>
+                    </Col>
+                    <Col lg={4}>
+                      <Form.Control
+                        type="text"
+                        placeholder="First Name *"
+                        value={guest.firstName}
+                        onChange={(e) => handleInputChange(roomIndex, 'children', i, 'firstName', e.target.value)}
+                        isInvalid={!!errors[`child-${roomIndex}-${i}-first`]}
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors[`child-${roomIndex}-${i}-first`]}
+                      </Form.Control.Feedback>
+                    </Col>
+                    <Col lg={4}>
+                      <Form.Control
+                        type="text"
+                        placeholder="Last Name *"
+                        value={guest.lastName}
+                        onChange={(e) => handleInputChange(roomIndex, 'children', i, 'lastName', e.target.value)}
+                        isInvalid={!!errors[`child-${roomIndex}-${i}-last`]}
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors[`child-${roomIndex}-${i}-last`]}
+                      </Form.Control.Feedback>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Control
+                        type="number"
+                        placeholder="Child Age (1-17) *"
+                        value={guest.age}
+                        onChange={(e) => handleInputChange(roomIndex, 'children', i, 'age', e.target.value)}
+                        isInvalid={!!errors[`child-${roomIndex}-${i}-age`]}
+                        min="1"
+                        max="17"
+                      />
+                      <Form.Control.Feedback type="invalid">
+                        {errors[`child-${roomIndex}-${i}-age`]}
+                      </Form.Control.Feedback>
+                    </Col>
+                  </Row>
+                </div>
               ))}
             </div>
           ))}
         </Card.Body>
       </Card>
 
+      {/* Contact Information */}
       <Card className="mb-4 shadow-sm border-0">
         <Card.Body>
           <h6 className="fw-bold mb-3 d-flex align-items-center">
             <FaEnvelope className="me-2 text-danger" />
-            Your ticket and hotel details will be shared here
+            Contact Information - Booking confirmation will be sent here
           </h6>
 
           <Row>
-            <Col lg={3}><Form.Select><option>India (+91)</option></Form.Select></Col>
+            <Col lg={3}>
+              <Form.Select disabled>
+                <option>India (+91)</option>
+              </Form.Select>
+            </Col>
             <Col lg={4}>
               <Form.Control
                 type="text"
-                placeholder="Mobile Number"
+                placeholder="Mobile Number (10 digits) *"
                 value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
+                onChange={(e) => handleMobileChange(e.target.value)}
                 isInvalid={!!errors.mobile}
+                maxLength={10}
               />
               <Form.Control.Feedback type="invalid">{errors.mobile}</Form.Control.Feedback>
             </Col>
             <Col lg={5}>
               <Form.Control
                 type="email"
-                placeholder="Email"
+                placeholder="Email Address *"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => handleEmailChange(e.target.value)}
                 isInvalid={!!errors.email}
               />
               <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
@@ -229,79 +481,94 @@ const GuestDetailsInfo = () => {
         </Card.Body>
       </Card>
 
+      {/* GST Information */}
       <Card className="mb-4 shadow-sm border-0">
         <Card.Body>
           <Row className="align-items-center">
-            <Col md={9}><h6 className="fw-bold mb-1">Use GSTIN for this booking (Optional)</h6></Col>
+            <Col md={9}>
+              <h6 className="fw-bold mb-1">GST Invoice (Optional)</h6>
+              <small className="text-muted">Add GST details if you need a business invoice</small>
+            </Col>
             <Col md={3} className="text-end">
-              <Button onClick={() => setShowGstinForm(!showGstinForm)} className='btn-red'>
-                {showGstinForm ? 'Close' : 'Add'}
+              <Button
+                onClick={() => setShowGstinForm(!showGstinForm)}
+                variant={showGstinForm ? "outline-danger" : "outline-primary"}
+                size="sm"
+              >
+                {showGstinForm ? 'Remove GST' : 'Add GST'}
               </Button>
             </Col>
           </Row>
 
           {showGstinForm && (
-            <Form className="mt-3">
-              <Row className="g-2">
-                <Col md={4}>
+            <div className="mt-4 p-3 border rounded bg-light">
+              <Row className="g-3">
+                <Col md={6}>
                   <Form.Control
                     type="text"
-                    placeholder="GST Number"
+                    placeholder="GST Number (22AAAAA0000A1Z5) *"
                     value={gstData.gstNumber}
-                    onChange={(e) => setGstData({ ...gstData, gstNumber: e.target.value })}
+                    onChange={(e) => handleGstDataChange('gstNumber', e.target.value.toUpperCase())}
+                    isInvalid={!!errors.gstGstNumber}
+                    maxLength={15}
                   />
-                </Col>
-                <Col md={4}>
-                  <Form.Control
-                    type="text"
-                    placeholder="Company Name"
-                    value={gstData.companyName}
-                    onChange={(e) => setGstData({ ...gstData, companyName: e.target.value })}
-                  />
-                </Col>
-                <Col md={4}>
-                  <Form.Control
-                    type="text"
-                    placeholder="Contact Number"
-                    value={gstData.contactNo}
-                    onChange={(e) => setGstData({ ...gstData, contactNo: e.target.value })}
-                  />
+                  <Form.Control.Feedback type="invalid">{errors.gstGstNumber}</Form.Control.Feedback>
                 </Col>
                 <Col md={6}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Company Name *"
+                    value={gstData.companyName}
+                    onChange={(e) => handleGstDataChange('companyName', e.target.value)}
+                    isInvalid={!!errors.gstCompanyName}
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.gstCompanyName}</Form.Control.Feedback>
+                </Col>
+                <Col md={4}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Contact Number *"
+                    value={gstData.contactNo}
+                    onChange={(e) => handleGstDataChange('contactNo', e.target.value)}
+                    isInvalid={!!errors.gstContactNo}
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.gstContactNo}</Form.Control.Feedback>
+                </Col>
+                <Col md={4}>
                   <Form.Control
                     type="email"
-                    placeholder="Email"
+                    placeholder="Email *"
                     value={gstData.email}
-                    onChange={(e) => setGstData({ ...gstData, email: e.target.value })}
+                    onChange={(e) => handleGstDataChange('email', e.target.value)}
+                    isInvalid={!!errors.gstEmail}
                   />
+                  <Form.Control.Feedback type="invalid">{errors.gstEmail}</Form.Control.Feedback>
                 </Col>
-                <Col md={6}>
+                <Col md={4}>
                   <Form.Control
                     type="text"
-                    placeholder="Address"
+                    placeholder="Company Address *"
                     value={gstData.address}
-                    onChange={(e) => setGstData({ ...gstData, address: e.target.value })}
+                    onChange={(e) => handleGstDataChange('address', e.target.value)}
+                    isInvalid={!!errors.gstAddress}
                   />
-                </Col>
-                <Col md={6}>
-                  <Form.Control
-                    type="text"
-                    placeholder="Enter PAN Number"
-                    value={gstData.panNumber}
-                    onChange={(e) => setGstData({ ...gstData, panNumber: e.target.value })}
-                    isInvalid={!!errors.pan}
-                  />
-                  <Form.Control.Feedback type="invalid">{errors.pan}</Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">{errors.gstAddress}</Form.Control.Feedback>
                 </Col>
               </Row>
-            </Form>
+            </div>
           )}
         </Card.Body>
       </Card>
 
-      <div className="text-start">
-        <Button variant="primary" className="btn-red" onClick={handleContinue}>
-          Continue Booking
+      {/* Continue Button */}
+      <div className="text-center">
+        <Button
+          variant="primary"
+          size="lg"
+          className="btn-red px-5"
+          onClick={handleContinue}
+        >
+          Continue to Review →
         </Button>
       </div>
     </div>
