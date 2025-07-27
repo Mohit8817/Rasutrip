@@ -26,8 +26,10 @@ const HotelPayment = () => {
 
                     </Col>
                     <Col lg={3}>
-                        <FareSummaryCard priceDetails={priceDetails} />
+                      <div className='mt-4'>
+                          <FareSummaryCard priceDetails={priceDetails} />
                         <HotelPromoCodeCard />
+                      </div>
                     </Col>
                 </Row>
             </Container>

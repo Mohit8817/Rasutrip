@@ -11,6 +11,7 @@ const HotelServices = {
   createOrder: `${baseURL}/hotelservice/create-order`,
   validate: `${baseURL}/hotelservice/validate`,
   book: `${baseURL}/hotelservice/book`,
+  invoice: `${baseURL}/hotelservice/invoice`,
 };
 
 // ✅ Fetch hotel cities for autocomplete or destination suggestions
@@ -148,5 +149,23 @@ export const bookHotel = async (bookingPayload) => {
   } catch (err) {
     console.error('❌ Error booking hotel:', err.response?.data || err.message);
     return null;
+  }
+};
+
+
+
+
+// ✅ Function to call invoice API
+export const fetchHotelInvoice = async ({ BookingId, SearchTokenId, UserIp }) => {
+  try {
+    const res = await axios.post(HotelServices.invoice, {
+      BookingId,
+      SearchTokenId,
+      UserIp,
+    });
+    return res.data;
+  } catch (err) {
+    console.error("❌ Error fetching invoice:", err.response?.data || err.message);
+    throw err;
   }
 };

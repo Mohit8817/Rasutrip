@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, Button, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 import {
   createHotelOrder,
   validateHotelPayment,
@@ -43,11 +44,9 @@ const HotelPaymentInfo = () => {
 
   // ✅ GST Filtering Function - केवल Lead Passenger के लिए GST details रखता है
   const filterGSTForLeadPassengerOnly = (bookingData) => {
-    console.log('🔄 Filtering GST details for lead passenger only...');
-    
     // Clone the data to avoid mutation
     const filteredData = JSON.parse(JSON.stringify(bookingData));
-    
+
     // Process HotelRoomsDetails structure
     if (filteredData.HotelRoomsDetails && Array.isArray(filteredData.HotelRoomsDetails)) {
       filteredData.HotelRoomsDetails.forEach((room, roomIndex) => {
@@ -61,16 +60,12 @@ const HotelPaymentInfo = () => {
               passenger.GSTCompanyEmail = null;
               passenger.GSTCompanyName = null;
               passenger.GSTNumber = null;
-              
-              console.log(`🚫 GST details removed for non-lead passenger: ${passenger.FirstName} ${passenger.LastName} in Room ${roomIndex + 1}`);
-            } else {
-              console.log(`✅ GST details preserved for lead passenger: ${passenger.FirstName} ${passenger.LastName} in Room ${roomIndex + 1}`);
             }
           });
         }
       });
     }
-    
+
     // Process old roomTravellerInfo structure (fallback)
     if (filteredData.roomTravellerInfo && Array.isArray(filteredData.roomTravellerInfo)) {
       filteredData.roomTravellerInfo.forEach((room, roomIndex) => {
@@ -84,39 +79,21 @@ const HotelPaymentInfo = () => {
               traveller.GSTCompanyEmail = null;
               traveller.GSTCompanyName = null;
               traveller.GSTNumber = null;
-              
-              console.log(`🚫 GST details removed for non-lead traveller: ${traveller.FirstName} ${traveller.LastName} in Room ${roomIndex + 1}`);
-            } else {
-              console.log(`✅ GST details preserved for lead traveller: ${traveller.FirstName} ${traveller.LastName} in Room ${roomIndex + 1}`);
             }
           });
         }
       });
     }
-    
+
     return filteredData;
   };
 
   // ✅ GST Filtering Verification Function
   const verifyGSTFiltering = (data) => {
-    console.log('\n=== GST Filtering Verification ===');
-    
-    if (data.HotelRoomsDetails) {
-      data.HotelRoomsDetails.forEach((room, roomIndex) => {
-        console.log(`\nRoom ${roomIndex + 1}:`);
-        room.HotelPassenger?.forEach((passenger, passengerIndex) => {
-          console.log(`  Passenger ${passengerIndex + 1}: ${passenger.FirstName} ${passenger.LastName}`);
-          console.log(`    Lead Passenger: ${passenger.LeadPassenger}`);
-          console.log(`    GST Number: ${passenger.GSTNumber || 'null'}`);
-          console.log(`    GST Company: ${passenger.GSTCompanyName || 'null'}`);
-        });
-      });
-    }
-    
     // Count lead passengers with GST
     let leadWithGST = 0;
     let nonLeadWithGST = 0;
-    
+
     if (data.HotelRoomsDetails) {
       data.HotelRoomsDetails.forEach(room => {
         room.HotelPassenger?.forEach(passenger => {
@@ -128,10 +105,7 @@ const HotelPaymentInfo = () => {
         });
       });
     }
-    
-    console.log(`\n✅ Lead passengers with GST: ${leadWithGST}`);
-    console.log(`${nonLeadWithGST === 0 ? '✅' : '❌'} Non-lead passengers with GST: ${nonLeadWithGST}`);
-    
+
     return { leadWithGST, nonLeadWithGST };
   };
 
@@ -252,7 +226,7 @@ const HotelPaymentInfo = () => {
   const formatBookingData = (bookingDetails) => {
     // First apply GST filtering
     const gstFilteredData = filterGSTForLeadPassengerOnly(bookingDetails);
-    
+
     // Then continue with existing formatting logic
     const cleanedData = { ...gstFilteredData };
 
@@ -267,8 +241,6 @@ const HotelPaymentInfo = () => {
 
     // ✅ Convert roomTravellerInfo to HotelRoomsDetails structure if needed
     if (cleanedData.roomTravellerInfo && !cleanedData.HotelRoomsDetails) {
-      console.log('🔄 Converting roomTravellerInfo to HotelRoomsDetails structure...');
-
       cleanedData.HotelRoomsDetails = cleanedData.roomTravellerInfo.map((room, index) => {
         const roomData = {
           RoomIndex: index + 1,
@@ -349,11 +321,6 @@ const HotelPaymentInfo = () => {
               GSTNumber: passenger.GSTNumber ? String(passenger.GSTNumber).trim() : null
             };
 
-            // ✅ PAN format validation
-            if (processedPassenger.PAN && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(processedPassenger.PAN)) {
-              console.warn(`⚠️ Invalid PAN format for ${processedPassenger.FirstName}:`, processedPassenger.PAN);
-            }
-
             return processedPassenger;
           });
         }
@@ -367,8 +334,6 @@ const HotelPaymentInfo = () => {
 
   // ✅ Enhanced API error handler
   const handleApiError = (error, context = 'API') => {
-    console.error(`❌ ${context} Error:`, error);
-
     let errorMessage = `${context} failed. Please try again.`;
     let errorDetails = null;
 
@@ -429,55 +394,68 @@ const HotelPaymentInfo = () => {
     return { message: errorMessage, details: errorDetails };
   };
 
-  // ✅ Updated handlePayment function with GST filtering
+  // ✅ Show error toast function
+  const showErrorToast = (message, additionalInfo = '') => {
+    const toastMessage = additionalInfo ? `${message}\n${additionalInfo}` : message;
+
+    toast.error(toastMessage, {
+      position: "top-right",
+      autoClose: 8000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      style: {
+        whiteSpace: 'pre-line',
+        wordBreak: 'break-word'
+      }
+    });
+  };
+
+  // ✅ Show success toast function
+  const showSuccessToast = (message) => {
+    toast.success(message, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  };
+
+  // ✅ Updated handlePayment function with React Toastify instead of page navigation
   const handlePayment = async () => {
     setLoading(true);
     setError('');
 
     try {
-      // ✅ Pre-validate and format booking details with GST filtering
-      console.log('🔍 Formatting and validating booking payload...');
-
-      // Apply GST filtering FIRST
       const gstFilteredData = filterGSTForLeadPassengerOnly(hotelBookingDetails);
-      console.log('🎯 GST filtering applied successfully');
-      
-      // Verify GST filtering
       verifyGSTFiltering(gstFilteredData);
-      
-      // Then format the data
+
       const formattedBookingData = formatBookingData(gstFilteredData);
       const validationErrors = validateBookingPayload(formattedBookingData);
 
       if (validationErrors.length > 0) {
-        console.error('❌ Payload validation failed:', validationErrors);
-        setError(`Booking validation failed:\n• ${validationErrors.join('\n• ')}`);
+        const errorMessage = `Booking validation failed:\n• ${validationErrors.join('\n• ')}`;
+        setError(errorMessage);
+        showErrorToast('Booking Validation Failed', validationErrors.join('\n• '));
         setLoading(false);
         return;
       }
 
-      console.log('✅ Payload validation passed');
-      console.log('📦 Final booking data with GST filtering:', formattedBookingData);
+      // ✅ PAYLOAD CONSOLE - Final booking data with GST filtering
+      console.log('📦 Final booking payload with GST filtering:', formattedBookingData);
 
-      // ✅ Additional checks before API call
-      const currentTime = new Date().toISOString();
-      console.log('🕒 Booking attempt at:', currentTime);
-      console.log('🏨 Hotel Details:', {
-        name: formattedBookingData.HotelName,
-        code: formattedBookingData.HotelCode,
-        resultIndex: formattedBookingData.ResultIndex,
-        searchTokenId: formattedBookingData.SearchTokenId?.substring(0, 10) + '...'
-      });
-
-      // Load Razorpay script
       const razorpayLoaded = await loadRazorpayScript();
       if (!razorpayLoaded) {
-        setError('Payment system failed to load. Please refresh and try again.');
+        const errorMsg = 'Payment system failed to load. Please refresh and try again.';
+        setError(errorMsg);
+        showErrorToast('Payment System Error', errorMsg);
         setLoading(false);
         return;
       }
 
-      // Create order
       const orderResponse = await createHotelOrder(roundedTotal);
       const order = orderResponse?.order;
 
@@ -494,8 +472,6 @@ const HotelPaymentInfo = () => {
         order_id: order.id,
         handler: async (response) => {
           try {
-            console.log('💳 Payment completed, validating...');
-
             const validatePayload = {
               amount: roundedTotal,
               razorpay_order_id: response.razorpay_order_id,
@@ -511,14 +487,10 @@ const HotelPaymentInfo = () => {
               validation?.message === 'Payment verified successfully' &&
               validation?.payment?.status === 'success'
             ) {
-              console.log('✅ Payment validated successfully');
+              const finalPayload = { ...formattedBookingData };
 
-              // ✅ Create final booking payload with GST filtering already applied
-              const finalPayload = {
-                ...formattedBookingData
-              };
-
-              console.log('📦 Final Booking Payload with GST filtering (sanitized):', {
+              // ✅ PAYLOAD CONSOLE - Final booking payload (sanitized for security)
+              console.log('📦 Final booking payload (sanitized):', {
                 ...finalPayload,
                 HotelRoomsDetails: finalPayload.HotelRoomsDetails?.map(room => ({
                   ...room,
@@ -531,100 +503,125 @@ const HotelPaymentInfo = () => {
                 }))
               });
 
-              // ✅ Make booking API call with enhanced error handling
+              // ✅ FIXED: Hotel booking API call with proper status check
               try {
-                console.log('🚀 Calling booking API...');
-                const bookingStartTime = Date.now();
-
                 const bookingResponse = await bookHotel(finalPayload);
 
-                const bookingEndTime = Date.now();
-                console.log(`⏱️ Booking API took ${bookingEndTime - bookingStartTime}ms`);
-                console.log('📦 Booking API Response:', bookingResponse);
+                // ✅ PAYLOAD CONSOLE - Booking API response
+                console.log('📦 Booking API response:', bookingResponse);
 
-                // ✅ Enhanced response handling
-                if (bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
+                // ✅ FIXED: Updated robust booking status check for your specific API response
+                const isBookingSuccessful =
+                  // Primary check for your API response structure
+                  (bookingResponse?.message === "Hotel booking processed successfully") ||
+
+                  // Additional success message patterns (case-insensitive)
+                  (bookingResponse?.message &&
+                    bookingResponse.message.toLowerCase().includes('successfully')) ||
+                  (bookingResponse?.message &&
+                    bookingResponse.message.toLowerCase().includes('processed successfully')) ||
+                  (bookingResponse?.message &&
+                    bookingResponse.message.toLowerCase().includes('confirmed')) ||
+
+                  // Legacy checks (keeping for backward compatibility)
+                  bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
                   bookingResponse?.Status?.toLowerCase() === 'success' ||
-                  bookingResponse?.success === true) {
-                  console.log('✅ Booking confirmed successfully');
+                  bookingResponse?.success === true;
+
+                // ✅ FIXED: Check for required booking data from your API
+                const hasRequiredBookingData =
+                  bookingResponse?.userId &&
+                  bookingResponse?.SearchTokenId &&
+                  bookingResponse?.UserIp;
+
+                // ✅ ADDED: Additional validation for complete booking response
+                const isCompleteBookingResponse =
+                  bookingResponse?.message &&
+                  hasRequiredBookingData;
+
+                // ✅ FIXED: Final booking success validation
+                if (isBookingSuccessful && isCompleteBookingResponse) {
+                  // ✅ Show success toast and navigate to confirmation page
+                  showSuccessToast('🎉 Hotel booking confirmed successfully!');
+
+                  // ✅ Navigate to confirmation page with all necessary data
                   navigate('/hotel/confirmation', {
                     state: {
                       booking: bookingResponse,
                       amount: roundedTotal,
                       reviewData,
+                      hotelDetails: { 
+                        name: formattedBookingData?.HotelName,
+                        code: formattedBookingData?.HotelCode,
+                      },
                       paymentDetails: {
                         orderId: response.razorpay_order_id,
                         paymentId: response.razorpay_payment_id
+                      },
+                      // ✅ Your specific booking confirmation details
+                      confirmationDetails: {
+                        userId: bookingResponse.userId,
+                        searchTokenId: bookingResponse.SearchTokenId,
+                        bookingId: bookingResponse.BookingID,          // ✅ Added
+                        userIp: bookingResponse.UserIp,
+                        message: bookingResponse.message,
+                        bookingTime: new Date().toISOString()
                       }
-                    },
+                    }
                   });
+
+
                 } else {
-                  // Handle booking failure
-                  console.error('❌ Booking failed:', bookingResponse);
+                  // ❌ Handle booking failure with toast - NO PAGE NAVIGATION
+                  let errorMessage = 'Booking failed. Please contact support with your payment details.';
 
-                  let errorMessage = 'Booking failed. Please contact support.';
-
+                  // ✅ Better error message extraction for your API
                   if (bookingResponse?.Error?.ErrorMessage) {
                     errorMessage = bookingResponse.Error.ErrorMessage;
                   } else if (bookingResponse?.error?.message) {
                     errorMessage = bookingResponse.error.message;
-                  } else if (bookingResponse?.message && bookingResponse.message !== 'success') {
-                    errorMessage = bookingResponse.message;
+                  } else if (bookingResponse?.message && !bookingResponse.message.toLowerCase().includes('successfully')) {
+                    errorMessage = `Booking Issue: ${bookingResponse.message}`;
                   } else if (typeof bookingResponse?.error === 'string') {
                     errorMessage = bookingResponse.error;
+                  } else if (!hasRequiredBookingData) {
+                    errorMessage = 'Booking response is missing required confirmation data (userId, SearchTokenId, or UserIp). Please contact support.';
+                  } else if (!isBookingSuccessful) {
+                    errorMessage = 'Booking status could not be confirmed. Please contact support to verify your booking.';
                   }
 
+                  // ✅ Show error toast instead of navigating
+                  showErrorToast('❌ Booking Failed', errorMessage);
                   setError(`Booking Failed: ${errorMessage}`);
 
-                  navigate('/hotel/payment-failed', {
-                    state: {
-                      error: errorMessage,
-                      bookingResponse,
-                      amount: roundedTotal,
-                      paymentDetails: {
-                        orderId: response.razorpay_order_id,
-                        paymentId: response.razorpay_payment_id
-                      }
-                    }
+                  // ✅ Additional info for debugging (optional - can be removed in production)
+                  console.error('Booking failure details:', {
+                    isBookingSuccessful,
+                    hasRequiredBookingData,
+                    isCompleteBookingResponse,
+                    responseMessage: bookingResponse?.message,
+                    fullResponse: bookingResponse
                   });
                 }
               } catch (bookingError) {
-                console.error('❌ Booking API Error:', bookingError);
-
+                // ✅ Handle booking API error with toast - NO PAGE NAVIGATION
                 const { message: errorMessage, details } = handleApiError(bookingError, 'Hotel Booking');
-
-                if (details) {
-                  console.error('📋 Error Details:', details);
-                }
-
                 setError(`Booking Error: ${errorMessage}`);
+                showErrorToast('❌ Booking API Error', errorMessage);
 
-                navigate('/hotel/payment-failed', {
-                  state: {
-                    error: errorMessage,
-                    errorDetails: details,
-                    amount: roundedTotal,
-                    paymentDetails: {
-                      orderId: response.razorpay_order_id,
-                      paymentId: response.razorpay_payment_id
-                    }
-                  }
-                });
+                console.error('Booking API Error:', { error: bookingError, details });
               }
             } else {
-              console.error('❌ Payment validation failed:', validation);
-              setError(validation?.message || 'Payment validation failed.');
-              navigate('/hotel/payment-failed', {
-                state: {
-                  error: 'Payment validation failed',
-                  amount: roundedTotal
-                }
-              });
+              // ✅ Handle payment validation failure with toast - NO PAGE NAVIGATION
+              const validationError = validation?.message || 'Payment validation failed.';
+              setError(validationError);
+              showErrorToast('❌ Payment Validation Failed', validationError);
             }
           } catch (err) {
-            console.error('❌ Payment Handler Error:', err);
+            // ✅ Handle payment processing error with toast
             const { message: errorMessage } = handleApiError(err, 'Payment Processing');
             setError(errorMessage);
+            showErrorToast('❌ Payment Processing Error', errorMessage);
           } finally {
             setLoading(false);
           }
@@ -643,24 +640,26 @@ const HotelPaymentInfo = () => {
         },
         modal: {
           ondismiss: function () {
-            console.log('Payment modal dismissed');
             setLoading(false);
+            showErrorToast('⚠️ Payment Cancelled', 'Payment was cancelled by user');
           }
         }
       };
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
-        console.error('❌ Payment failed:', response.error);
-        setError(`Payment failed: ${response.error.description || 'Unknown error'}`);
+        const failureMessage = `Payment failed: ${response.error.description || 'Unknown error'}`;
+        setError(failureMessage);
+        showErrorToast('❌ Payment Failed', response.error.description || 'Unknown payment error occurred');
         setLoading(false);
       });
 
       rzp.open();
     } catch (err) {
-      console.error('❌ Payment Initialization Error:', err);
+      // ✅ Handle payment initialization error with toast
       const { message: errorMessage } = handleApiError(err, 'Payment Initialization');
       setError(errorMessage);
+      showErrorToast('❌ Payment Initialization Failed', errorMessage);
       setLoading(false);
     }
   };
@@ -725,7 +724,7 @@ const HotelPaymentInfo = () => {
   return (
     <div className="container my-4">
       <div className="row justify-content-center">
-        <div className="col-lg-8">
+        <div className="col">
           {/* Error Alert */}
           {error && (
             <Alert variant="danger" className="mb-4" dismissible onClose={() => setError('')}>
@@ -877,53 +876,6 @@ const HotelPaymentInfo = () => {
               </div>
             </Card.Footer>
           </Card>
-
-          {/* Debug Information (only in development) */}
-          {process.env.NODE_ENV === 'development' && (
-            <Card className="shadow-sm border-warning">
-              <Card.Header className="bg-warning">
-                <strong>Debug Information (Development Only)</strong>
-              </Card.Header>
-              <Card.Body>
-                <details>
-                  <summary className="mb-3 fw-bold cursor-pointer">GST Filtered Hotel Booking Details</summary>
-                  <pre className="small bg-light p-3 rounded" style={{ maxHeight: '300px', overflow: 'auto' }}>
-                    {JSON.stringify(filterGSTForLeadPassengerOnly(hotelBookingDetails), null, 2)}
-                  </pre>
-                </details>
-                <details>
-                  <summary className="mb-3 fw-bold cursor-pointer">Formatted Hotel Booking Details (Postman Structure)</summary>
-                  <pre className="small bg-light p-3 rounded" style={{ maxHeight: '300px', overflow: 'auto' }}>
-                    {JSON.stringify(formatBookingData(hotelBookingDetails), null, 2)}
-                  </pre>
-                </details>
-                <details>
-                  <summary className="mb-3 fw-bold cursor-pointer">Original Hotel Booking Details</summary>
-                  <pre className="small bg-light p-3 rounded" style={{ maxHeight: '300px', overflow: 'auto' }}>
-                    {JSON.stringify(hotelBookingDetails, null, 2)}
-                  </pre>
-                </details>
-                <details>
-                  <summary className="mb-3 fw-bold cursor-pointer">Price Details</summary>
-                  <pre className="small bg-light p-3 rounded">
-                    {JSON.stringify(priceDetails, null, 2)}
-                  </pre>
-                </details>
-                <details>
-                  <summary className="mb-3 fw-bold cursor-pointer">Payload Validation</summary>
-                  <pre className="small bg-light p-3 rounded">
-                    {JSON.stringify(validateBookingPayload(formatBookingData(hotelBookingDetails)), null, 2)}
-                  </pre>
-                </details>
-                <details>
-                  <summary className="mb-3 fw-bold cursor-pointer">GST Filtering Verification</summary>
-                  <pre className="small bg-light p-3 rounded">
-                    {JSON.stringify(verifyGSTFiltering(filterGSTForLeadPassengerOnly(hotelBookingDetails)), null, 2)}
-                  </pre>
-                </details>
-              </Card.Body>
-            </Card>
-          )}
         </div>
       </div>
     </div>

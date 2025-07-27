@@ -15,7 +15,7 @@ const GuestDetailsInfo = () => {
       console.log('🔄 Restoring existing guest data:', existingGuestData.guestInputs);
       return existingGuestData.guestInputs;
     }
-    
+
     return roomDetails?.map((room, roomIndex) => ({
       adults: Array.from({ length: room.adults }, (_, index) => ({
         title: 'Mr',
@@ -35,7 +35,7 @@ const GuestDetailsInfo = () => {
   };
 
   const [guestInputs, setGuestInputs] = useState(initializeGuestInputs());
-  
+
   // ✅ Initialize with existing contact data if available
   const [email, setEmail] = useState(existingGuestData?.email || '');
   const [mobile, setMobile] = useState(existingGuestData?.mobile || '');
@@ -76,7 +76,7 @@ const GuestDetailsInfo = () => {
     const updatedInputs = [...guestInputs];
     updatedInputs[roomIndex][type][personIndex][field] = value;
     setGuestInputs(updatedInputs);
-    
+
     // ✅ Clear specific field error when user starts typing
     const errorKey = `${type === 'adults' ? 'adult' : 'child'}-${roomIndex}-${personIndex}-${field === 'firstName' ? 'first' : field === 'lastName' ? 'last' : field === 'panNumber' ? 'pan' : 'age'}`;
     if (errors[errorKey]) {
@@ -167,7 +167,7 @@ const GuestDetailsInfo = () => {
   // ✅ NEW: Function to create booking payload with GST only for lead passenger
   const createBookingPayload = (updatedGuestInputs, emailValue, mobileValue, gstInfo) => {
     console.log('🏗️ Creating booking payload with GST filtering...');
-    
+
     // Create HotelRoomsDetails structure
     const HotelRoomsDetails = updatedGuestInputs.map((room, roomIndex) => {
       const roomData = {
@@ -178,7 +178,7 @@ const GuestDetailsInfo = () => {
       // Process adults
       room.adults.forEach((adult, adultIndex) => {
         const isLeadPassenger = roomIndex === 0 && adultIndex === 0;
-        
+
         const passengerData = {
           Title: adult.title,
           FirstName: adult.firstName?.trim(),
@@ -193,7 +193,7 @@ const GuestDetailsInfo = () => {
           PassportIssueDate: null,
           PassportExpDate: null,
           PAN: adult.panNumber?.trim().toUpperCase(),
-          
+
           // ✅ GST fields - ONLY for lead passenger
           GSTCompanyAddress: (isLeadPassenger && gstInfo?.gstNumber) ? gstInfo.address.trim() : null,
           GSTCompanyContactNumber: (isLeadPassenger && gstInfo?.gstNumber) ? gstInfo.contactNo.trim() : null,
@@ -225,7 +225,7 @@ const GuestDetailsInfo = () => {
           PassportIssueDate: null,
           PassportExpDate: null,
           PAN: null,
-          
+
           // ✅ GST fields - NULL for children
           GSTCompanyAddress: null,
           GSTCompanyContactNumber: null,
@@ -261,7 +261,7 @@ const GuestDetailsInfo = () => {
     console.log('\n=== GST Assignment Verification ===');
     let leadWithGST = 0;
     let nonLeadWithGST = 0;
-    
+
     HotelRoomsDetails.forEach((room, roomIndex) => {
       room.HotelPassenger.forEach((passenger, passengerIndex) => {
         if (passenger.LeadPassenger === "true") {
@@ -277,9 +277,9 @@ const GuestDetailsInfo = () => {
         }
       });
     });
-    
+
     console.log(`\n📊 GST Summary: ${leadWithGST} lead with GST, ${nonLeadWithGST} non-lead with GST`);
-    
+
     if (nonLeadWithGST > 0) {
       console.error('🚨 ERROR: Non-lead passengers have GST details!');
     } else {
@@ -330,9 +330,9 @@ const GuestDetailsInfo = () => {
 
     // ✅ Create booking payload with GST filtering
     const hotelBookingDetails = createBookingPayload(
-      updatedGuestInputs, 
-      email.trim(), 
-      mobile.trim(), 
+      updatedGuestInputs,
+      email.trim(),
+      mobile.trim(),
       gstInfo
     );
 
@@ -351,7 +351,7 @@ const GuestDetailsInfo = () => {
 
     console.log('🚀 Navigating to review with state:', bookingState);
     console.log('📦 Hotel Booking Details (with GST filtering):', hotelBookingDetails);
-    
+
     navigate('/Hotelreview', { state: bookingState });
   };
 
@@ -385,7 +385,7 @@ const GuestDetailsInfo = () => {
   // ✅ Handle GST data change with error clearing
   const handleGstDataChange = (field, value) => {
     setGstData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear related GST errors
     const gstErrorKey = `gst${field.charAt(0).toUpperCase() + field.slice(1)}`;
     if (errors[gstErrorKey]) {
@@ -626,8 +626,8 @@ const GuestDetailsInfo = () => {
               <small className="text-muted">Add GST details if you need a business invoice. GST will be applied to the lead passenger only.</small>
             </Col>
             <Col md={3} className="text-end">
-              <Button 
-                onClick={() => setShowGstinForm(!showGstinForm)} 
+              <Button
+                onClick={() => setShowGstinForm(!showGstinForm)}
                 variant={showGstinForm ? "outline-danger" : "outline-primary"}
                 size="sm"
               >
@@ -701,10 +701,10 @@ const GuestDetailsInfo = () => {
 
       {/* Continue Button */}
       <div className="text-center">
-        <Button 
-          variant="primary" 
+        <Button
+          variant="primary"
           size="lg"
-          className="btn-red px-5" 
+          className="btn-red px-5"
           onClick={handleContinue}
         >
           Continue to Review →
