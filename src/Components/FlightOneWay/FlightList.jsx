@@ -210,6 +210,7 @@ const FlightList = ({ filters }) => {
     }
   }, [flightsData]);
 
+  
   if (loading) return <div className="text-center my-4"><FlightLoader message="Searching flights..." /></div>;
   if (error) return <div className="text-danger text-center my-4">{error}</div>;
 

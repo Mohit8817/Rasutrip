@@ -3,6 +3,7 @@ import { Container, Row, Col, Button } from 'react-bootstrap';
 import { LocationContext } from '../Context/LocationContext';
 import '../../Style/Pagescss/FlightResultsPage.css';
 
+import { Link } from 'react-router-dom';
 const FlightSearchBar = () => {
   const { locationData } = useContext(LocationContext);
 
@@ -77,9 +78,9 @@ const FlightSearchBar = () => {
         </Col>
 
         <Col md={1} xs={12} className="text-end">
-          <Button href='/' variant="primary" className="ModifyButton">
+          <Link to='/' variant="primary" className="btn btn-primary ModifyButton">
             Modify
-          </Button>
+          </Link>
         </Col>
       </Row>
     </Container>

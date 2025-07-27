@@ -73,7 +73,7 @@ const FlightLoader = ({message}=null,color="black") => {
 
        
         <div style={styles.plane}>
-          <img
+          <img className='d-inline'
             src="https://zupimages.net/up/19/34/4820.gif"
             style={styles.planeImg}
             alt="plane"

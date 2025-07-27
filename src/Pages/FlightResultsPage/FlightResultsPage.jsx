@@ -21,10 +21,6 @@ const FlightResultsPage = () => {
         dispatch(clearSelectedFlights());
     }, [dispatch]);
   const flightsData = useSelector((state) => state?.flight?.flights || []);
-console.log('flightsDatakkkk',flightsData)
-    
-  
-
     const [filters, setFilters] = useState({
         airlines: [],
         stops: [],
@@ -36,7 +32,7 @@ console.log('flightsDatakkkk',flightsData)
     });
 
     return (
-       <div className='innerpagecontainer'>
+       <div className='innerpagecontainer mt-5'>
          <div className='relative'>
             {tripType === 'oneway' && (
                 <Container className="mt-5 pt-5">

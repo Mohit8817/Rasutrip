@@ -8,20 +8,17 @@ import { toast } from 'react-toastify';
 
 import { LocationContext } from '../Context/LocationContext';
 import { fetchSSR } from '../APIS/FlightApi/FlightApi';
+import moment from 'moment';
 
 const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
     const { locationData } = useContext(LocationContext);
-    console.log("  const { locationData } = useContext(LocationContext);")
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const res = localStorage.getItem('SearchedFlights')
     const SearchData = JSON.parse(res)
-    const PassagerOrigin=SearchData[0].Segments[0]?.[0].Origin
-    console.log('SearchData',PassagerOrigin)
-
+    const PassagerOrigin = SearchData[0].Segments[0]?.[0].Origin
     const [loading, setLoading] = useState(false);
     const passengersData = useSelector((state) => state.passengersData || []);
-    console.log("passengersData", passengersData)
     const [contactDetails, setContactDetails] = useState({
         countryCode: '91',
         mobile: '',
@@ -33,7 +30,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
         if (!fareConfirm) return;
         const createEmptyPassenger = (type, index) => ({
             type,
-            Title: '',
+            Title: 'Mr',
             FirstName: '',
             LastName: '',
             PaxType: type === 'ADT' ? 1 : type === 'CHD' ? 2 : 3,
@@ -89,7 +86,6 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
     }, [dispatch, fareConfirm, SelectedFare]);
 
     const handlePassengerChange = (type, passengerIndex, field, value) => {
-        console.log("Updating Passenger :", value, { type, passengerIndex, field, value });
         dispatch(updatePassenger({ type, index: passengerIndex, field, value }));
     };
 
@@ -111,10 +107,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
         setLoading(true);
         try {
             const res = await fetchSSR(SSRPayload);
-
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
-
-
             navigate('/addons', { state: { SSR: res?.Result || [], SelectedFare, passengersData } });
         } catch (error) {
             console.error("API call failed:", error);
@@ -222,10 +215,20 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                                 onChange={(e) => handlePassengerChange(type, index, 'Title', e.target.value)}
                                 required
                             >
-                                <option value="">Select</option>
-                                <option value="Mr">Mr</option>
-                                <option value="Ms">Ms</option>
-                                <option value="Mrs">Mrs</option>
+                                {passenger.PaxType === 1 ? (
+                                    <>
+                                        <option value="Mr">Mr</option>
+                                        <option value="Ms">Ms</option>
+                                        <option value="Mrs">Mrs</option>
+                                    </>
+                                ) : (
+                                    <>
+                                        <option value="Ms">Ms</option>
+                                        <option value="Mstr">Mstr</option>
+                                    </>
+                                )}
+
+
                             </Form.Select>
                         </Form.Group>
                     </Col>
@@ -256,17 +259,31 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
 
                     {/* Date of Birth - Conditional */}
                     {/* {requireDOB && ( */}
-                        <Col md={3}>
-                            <Form.Group>
-                                <Form.Label><RequiredLabel>Date of Birth</RequiredLabel></Form.Label>
-                                <Form.Control
-                                    type="date"
-                                    value={passenger.DateOfBirth || ''}
-                                    onChange={(e) => handlePassengerChange(type, index, 'DateOfBirth', e.target.value)}
-                                    required
-                                />
-                            </Form.Group>
-                        </Col>
+                    <Col md={3}>
+                        <Form.Group>
+                            <Form.Label><RequiredLabel>Date of Birth</RequiredLabel></Form.Label>
+                            <Form.Control
+                                type="date"
+                                value={passenger.DateOfBirth || ''}
+                                min={
+                                    passenger.PaxType === 1 // Adult
+                                        ? moment().subtract(100, 'years').format('YYYY-MM-DD') // Max age 100
+                                        : passenger.PaxType === 2 // Child
+                                            ? moment().subtract(12, 'years').format('YYYY-MM-DD') // Min age for child
+                                            : moment().subtract(2, 'years').format('YYYY-MM-DD') // Infant min age
+                                }
+                                max={
+                                    passenger.PaxType === 1 // Adult
+                                        ? moment().subtract(12, 'years').format('YYYY-MM-DD') // Must be 12+
+                                        : passenger.PaxType === 2 // Child
+                                            ? moment().subtract(2, 'years').format('YYYY-MM-DD') // Max age for child
+                                            : moment().format('YYYY-MM-DD') // Infant must be < 2 years old
+                                }
+                                onChange={(e) => handlePassengerChange(type, index, 'DateOfBirth', e.target.value)}
+                                required
+                            />
+                        </Form.Group>
+                    </Col>
                     {/* )} */}
 
                     <Col md={3}>
@@ -323,36 +340,36 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
 
 
                     <Col md={3}>
-                            <Form.Group>
-                                <Form.Label><RequiredLabel>City</RequiredLabel></Form.Label>
-                                <Form.Control
-                                    value={passenger.City || ''}
-                                    onChange={(e) => handlePassengerChange(type, index, 'City', e.target.value)}
-                                    required
-                                />
-                            </Form.Group>
-                        </Col>
+                        <Form.Group>
+                            <Form.Label><RequiredLabel>City</RequiredLabel></Form.Label>
+                            <Form.Control
+                                value={passenger.City || ''}
+                                onChange={(e) => handlePassengerChange(type, index, 'City', e.target.value)}
+                                required
+                            />
+                        </Form.Group>
+                    </Col>
 
-                         <Col md={3}>
-                            <Form.Group>
-                                <Form.Label><RequiredLabel>AddressLine1</RequiredLabel></Form.Label>
-                                <Form.Control
-                                    value={passenger.AddressLine1 || ''}
-                                    onChange={(e) => handlePassengerChange(type, index, 'AddressLine1', e.target.value)}
-                                    required
+                    <Col md={3}>
+                        <Form.Group>
+                            <Form.Label><RequiredLabel>AddressLine1</RequiredLabel></Form.Label>
+                            <Form.Control
+                                value={passenger.AddressLine1 || ''}
+                                onChange={(e) => handlePassengerChange(type, index, 'AddressLine1', e.target.value)}
+                                required
                                 maxLength={28} />
-                            </Form.Group>
-                        </Col>
-                        <Col md={3}>
-                            <Form.Group>
-                                <Form.Label>AddressLine2</Form.Label>
-                                <Form.Control
-                                    value={passenger.AddressLine2 || ''}
-                                    onChange={(e) => handlePassengerChange(type, index, 'AddressLine2', e.target.value)}
-                                    
+                        </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                        <Form.Group>
+                            <Form.Label>AddressLine2</Form.Label>
+                            <Form.Control
+                                value={passenger.AddressLine2 || ''}
+                                onChange={(e) => handlePassengerChange(type, index, 'AddressLine2', e.target.value)}
+
                                 maxLength={28} />
-                            </Form.Group>
-                        </Col>
+                        </Form.Group>
+                    </Col>
 
                     {requirePAN && (
                         <Col md={3}>
@@ -418,7 +435,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                                     />
                                 </Form.Group>
                             </Col>
-                             <Col md={6}>
+                            <Col md={6}>
                                 <Form.Group>
                                     <Form.Label><RequiredLabel>GST Company Email</RequiredLabel></Form.Label>
                                     <Form.Control
@@ -448,7 +465,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                                     />
                                 </Form.Group>
                             </Col>
-                            
+
                         </>
                     )
                     }

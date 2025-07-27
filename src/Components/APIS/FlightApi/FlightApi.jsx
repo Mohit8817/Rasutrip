@@ -10,6 +10,8 @@ export const Services = {
   fetchssr: `${baseURL}/airservice/ssr`
 };
 
+const token = localStorage.getItem('token')
+
 const headers = {
   userName: 'TTS',
   password: 'TTS@001'
@@ -47,7 +49,6 @@ export const fetchSSR = async (payload) => {
 export const post = async (data, url, customHeaders = {}) => {
   try {
     // const token = localStorage.getItem("token");
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODdkZTViOWEwNmI1MGJhMWQ1NzA4ZjciLCJ1c2VyUmVnSWQiOiJSVFJJUDAxMTAiLCJlbWFpbCI6IiIsInJvbGUiOiJBZ2VudCIsImlhdCI6MTc1MzM1NTgxMywiZXhwIjoxNzU0NjUxODEzfQ.jYJfwiW4ZUWloh4ww8IAIIQtjtHywd-E15rCPEBsOvk'
     const headers = {
       Authorization: `Bearer ${token}`,
       ...customHeaders, // allow additional headers
