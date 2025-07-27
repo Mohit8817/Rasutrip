@@ -12,17 +12,13 @@ import moment from 'moment';
 
 const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
     const { locationData } = useContext(LocationContext);
-    console.log("  const { locationData } = useContext(LocationContext);")
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const res = localStorage.getItem('SearchedFlights')
     const SearchData = JSON.parse(res)
     const PassagerOrigin = SearchData[0].Segments[0]?.[0].Origin
-    console.log('SearchData', PassagerOrigin)
-
     const [loading, setLoading] = useState(false);
     const passengersData = useSelector((state) => state.passengersData || []);
-    console.log("passengersData", passengersData)
     const [contactDetails, setContactDetails] = useState({
         countryCode: '91',
         mobile: '',
@@ -90,7 +86,6 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
     }, [dispatch, fareConfirm, SelectedFare]);
 
     const handlePassengerChange = (type, passengerIndex, field, value) => {
-        console.log("Updating Passenger :", value, { type, passengerIndex, field, value });
         dispatch(updatePassenger({ type, index: passengerIndex, field, value }));
     };
 
@@ -270,7 +265,6 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                             <Form.Control
                                 type="date"
                                 value={passenger.DateOfBirth || ''}
-<<<<<<< HEAD
                                 min={
                                     passenger.PaxType === 1 // Adult
                                         ? moment().subtract(100, 'years').format('YYYY-MM-DD') // Max age 100
@@ -285,8 +279,6 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                                             ? moment().subtract(2, 'years').format('YYYY-MM-DD') // Max age for child
                                             : moment().format('YYYY-MM-DD') // Infant must be < 2 years old
                                 }
-=======
->>>>>>> 9774a98 (fix error)
                                 onChange={(e) => handlePassengerChange(type, index, 'DateOfBirth', e.target.value)}
                                 required
                             />

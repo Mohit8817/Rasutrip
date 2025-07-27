@@ -21,10 +21,6 @@ const FlightResultsPage = () => {
         dispatch(clearSelectedFlights());
     }, [dispatch]);
   const flightsData = useSelector((state) => state?.flight?.flights || []);
-console.log('flightsDatakkkk',flightsData)
-    
-  
-
     const [filters, setFilters] = useState({
         airlines: [],
         stops: [],

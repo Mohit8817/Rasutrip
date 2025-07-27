@@ -12,9 +12,9 @@ import MyVerticallyCenteredModal from './paymentLoader';
 
 
 const RazorpayPayment = () => {
-    const navigate = useNavigate();
-  
-    const rasocommision=localStorage.getItem('rasocommision')
+  const navigate = useNavigate();
+
+  const rasocommision = localStorage.getItem('rasocommision')
   const location = useLocation();
   const { passengerSelections = [], SSR, SelectedFare } = location.state || {};
   const [loading, setLoading] = useState(false);
@@ -22,11 +22,9 @@ const RazorpayPayment = () => {
   const [modalShow, setModalShow] = useState(false);
   // const [passengerData, setpassengerData] = useState(false);
 
-
-  console.log('indexresult', SelectedFare)
   const baseFare = fare?.PublishedPrice || 0;
   const tax = baseFare * 0.18;
-  const serviceCharge = baseFare * rasocommision/100;
+  const serviceCharge = baseFare * rasocommision / 100;
   const totalMeal = passengerSelections.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0);
   const totalBaggage = passengerSelections.reduce((acc, p) => acc + (p?.baggage?.Price || 0), 0);
   const totalSeat = passengerSelections.reduce((acc, p) => acc + (p?.seat?.Price || 0), 0);
@@ -78,7 +76,6 @@ const RazorpayPayment = () => {
         console.error("❌ Booking Failed:", response?.Error?.ErrorMessage || "Unknown error");
         toast.error(response?.Error?.ErrorMessage || "Booking failed");
       }
-      console.log('airserviceResponse', response);
       setModalShow(false)
     } catch (error) {
       setModalShow(false)
@@ -110,7 +107,6 @@ const RazorpayPayment = () => {
       };
       const response = await post(payload, '/airservice/validate');
       await BookingConfermation()
-      console.log('dataResponse', response)
     } catch (error) {
       setModalShow(false)
       console.error("Booking Validation Failed:", error.response?.data || error.message);
@@ -120,7 +116,6 @@ const RazorpayPayment = () => {
 
 
   const handlePayment = async () => {
-    console.log('passenger data', passengersData)
     setLoading(true);
     const data = {
       amount: finalAmount,
@@ -128,7 +123,6 @@ const RazorpayPayment = () => {
 
     try {
       const response = await post(data, "/airservice/create-order");
-      console.log('responseapi', response)
       const order = response.order;
       const options = {
         key: "rzp_test_glwdvx2PlFDStN",
@@ -148,7 +142,6 @@ const RazorpayPayment = () => {
           }
           setModalShow(true)
           getBookingConfermation({ paymentData, SSR, SelectedFare, passengerSelections, order })
-          console.log('response', paymentData);
         },
         prefill: {
           name: passengersData.FirstName + ' ' + passengersData.LastName,
@@ -180,10 +173,7 @@ const RazorpayPayment = () => {
 
       <MyVerticallyCenteredModal
         show={modalShow}
-
-        onHide={() => setModalShow(false)}
       />
-
       <Card className="shadow-sm border-0">
         <Card.Header className="bg-white">
           <h5 className="fw-bold mb-0">Confirm Payment</h5>
