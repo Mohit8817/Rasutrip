@@ -112,10 +112,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
         setLoading(true);
         try {
             const res = await fetchSSR(SSRPayload);
-
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
-
-
             navigate('/addons', { state: { SSR: res?.Result || [], SelectedFare, passengersData } });
         } catch (error) {
             console.error("API call failed:", error);
@@ -273,6 +270,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                             <Form.Control
                                 type="date"
                                 value={passenger.DateOfBirth || ''}
+<<<<<<< HEAD
                                 min={
                                     passenger.PaxType === 1 // Adult
                                         ? moment().subtract(100, 'years').format('YYYY-MM-DD') // Max age 100
@@ -287,6 +285,8 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                                             ? moment().subtract(2, 'years').format('YYYY-MM-DD') // Max age for child
                                             : moment().format('YYYY-MM-DD') // Infant must be < 2 years old
                                 }
+=======
+>>>>>>> 9774a98 (fix error)
                                 onChange={(e) => handlePassengerChange(type, index, 'DateOfBirth', e.target.value)}
                                 required
                             />
