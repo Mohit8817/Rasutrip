@@ -14,6 +14,7 @@ import MyVerticallyCenteredModal from './paymentLoader';
 const RazorpayPayment = () => {
     const navigate = useNavigate();
   
+    const rasocommision=localStorage.getItem('rasocommision')
   const location = useLocation();
   const { passengerSelections = [], SSR, SelectedFare } = location.state || {};
   const [loading, setLoading] = useState(false);
@@ -25,11 +26,11 @@ const RazorpayPayment = () => {
   console.log('indexresult', SelectedFare)
   const baseFare = fare?.PublishedPrice || 0;
   const tax = baseFare * 0.18;
-  const serviceCharge = baseFare * 0.12;
+  const serviceCharge = baseFare * rasocommision/100;
   const totalMeal = passengerSelections.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0);
   const totalBaggage = passengerSelections.reduce((acc, p) => acc + (p?.baggage?.Price || 0), 0);
   const totalSeat = passengerSelections.reduce((acc, p) => acc + (p?.seat?.Price || 0), 0);
-  const finalAmount = (baseFare + tax + totalMeal + totalBaggage + totalSeat + serviceCharge).toFixed(2);
+  const finalAmount = (baseFare + totalMeal + totalBaggage + totalSeat + serviceCharge).toFixed(2);
   const storedPassengers = localStorage.getItem('passengersData');
   let passengersData = storedPassengers ? JSON.parse(storedPassengers) : []
 

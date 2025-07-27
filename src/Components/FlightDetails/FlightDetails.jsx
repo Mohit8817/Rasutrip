@@ -62,7 +62,7 @@ const FlightDetails = () => {
     console.log("fareRules in details", fareRules);
     return (
         <div>
-            <Container style={{ marginTop: '8rem' }}>
+            <Container style={{ marginTop: '10rem' }}>
                 {loading ? (
                     <>
                         {loading && <p className="text-center text-primary mt-4"><FlightLoader message="Searching Fare Rules" /></p>}

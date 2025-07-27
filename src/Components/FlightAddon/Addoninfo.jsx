@@ -153,7 +153,7 @@ const Addoninfo = () => {
 
   return (
     <div>
-      <Container style={{ marginTop: '8rem' }}>
+      <Container style={{ marginTop: '10rem' }}>
         <Row>
           <div>
             <BookingSteps activeIndex={2} />
@@ -185,7 +185,7 @@ const Addoninfo = () => {
 
                         <Row>
                           {/* Meal Section */}
-                          <Col md={4}>
+                          <Col md={6}>
                             <h5 className="fw-bold">Meal</h5>
                             <p className="mb-1">{Origin} → {Destination}</p>
                             <Form.Select
@@ -210,7 +210,7 @@ const Addoninfo = () => {
                           </Col>
 
                           {/* Baggage Section */}
-                          <Col md={4}>
+                          <Col md={6}>
                             <h5 className="fw-bold">Baggage</h5>
                             <p className="mb-1">{Origin} → {Destination}</p>
                             <Form.Select
@@ -235,7 +235,7 @@ const Addoninfo = () => {
                           </Col>
 
                           {/* Seat Section */}
-                          <Col md={4}>
+                          {/* <Col md={4}>
                             <h5 className="fw-bold">Seat</h5>
                             <p className="mb-1">{Origin} → {Destination}</p>
                             <Form.Select
@@ -257,7 +257,7 @@ const Addoninfo = () => {
                                 <p>Charges: Rs. {passengerSelections[index].seat.Price}</p>
                               </div>
                             )}
-                          </Col>
+                          </Col> */}
                         </Row>
 
                       </Card.Body>
