@@ -41,7 +41,101 @@ const HotelPaymentInfo = () => {
       document.body.appendChild(script);
     });
 
-  // ✅ Enhanced validation function with better error messages
+  // ✅ GST Filtering Function - केवल Lead Passenger के लिए GST details रखता है
+  const filterGSTForLeadPassengerOnly = (bookingData) => {
+    console.log('🔄 Filtering GST details for lead passenger only...');
+    
+    // Clone the data to avoid mutation
+    const filteredData = JSON.parse(JSON.stringify(bookingData));
+    
+    // Process HotelRoomsDetails structure
+    if (filteredData.HotelRoomsDetails && Array.isArray(filteredData.HotelRoomsDetails)) {
+      filteredData.HotelRoomsDetails.forEach((room, roomIndex) => {
+        if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
+          room.HotelPassenger.forEach((passenger, passengerIndex) => {
+            // Only keep GST details if this passenger is the lead passenger
+            if (passenger.LeadPassenger !== "true" && passenger.LeadPassenger !== true) {
+              // Remove GST fields for non-lead passengers
+              passenger.GSTCompanyAddress = null;
+              passenger.GSTCompanyContactNumber = null;
+              passenger.GSTCompanyEmail = null;
+              passenger.GSTCompanyName = null;
+              passenger.GSTNumber = null;
+              
+              console.log(`🚫 GST details removed for non-lead passenger: ${passenger.FirstName} ${passenger.LastName} in Room ${roomIndex + 1}`);
+            } else {
+              console.log(`✅ GST details preserved for lead passenger: ${passenger.FirstName} ${passenger.LastName} in Room ${roomIndex + 1}`);
+            }
+          });
+        }
+      });
+    }
+    
+    // Process old roomTravellerInfo structure (fallback)
+    if (filteredData.roomTravellerInfo && Array.isArray(filteredData.roomTravellerInfo)) {
+      filteredData.roomTravellerInfo.forEach((room, roomIndex) => {
+        if (room.travellerInfo && Array.isArray(room.travellerInfo)) {
+          room.travellerInfo.forEach((traveller, travellerIndex) => {
+            // Only keep GST details if this traveller is the lead passenger
+            if (traveller.LeadPassenger !== true && traveller.LeadPassenger !== "true") {
+              // Remove GST fields for non-lead passengers
+              traveller.GSTCompanyAddress = null;
+              traveller.GSTCompanyContactNumber = null;
+              traveller.GSTCompanyEmail = null;
+              traveller.GSTCompanyName = null;
+              traveller.GSTNumber = null;
+              
+              console.log(`🚫 GST details removed for non-lead traveller: ${traveller.FirstName} ${traveller.LastName} in Room ${roomIndex + 1}`);
+            } else {
+              console.log(`✅ GST details preserved for lead traveller: ${traveller.FirstName} ${traveller.LastName} in Room ${roomIndex + 1}`);
+            }
+          });
+        }
+      });
+    }
+    
+    return filteredData;
+  };
+
+  // ✅ GST Filtering Verification Function
+  const verifyGSTFiltering = (data) => {
+    console.log('\n=== GST Filtering Verification ===');
+    
+    if (data.HotelRoomsDetails) {
+      data.HotelRoomsDetails.forEach((room, roomIndex) => {
+        console.log(`\nRoom ${roomIndex + 1}:`);
+        room.HotelPassenger?.forEach((passenger, passengerIndex) => {
+          console.log(`  Passenger ${passengerIndex + 1}: ${passenger.FirstName} ${passenger.LastName}`);
+          console.log(`    Lead Passenger: ${passenger.LeadPassenger}`);
+          console.log(`    GST Number: ${passenger.GSTNumber || 'null'}`);
+          console.log(`    GST Company: ${passenger.GSTCompanyName || 'null'}`);
+        });
+      });
+    }
+    
+    // Count lead passengers with GST
+    let leadWithGST = 0;
+    let nonLeadWithGST = 0;
+    
+    if (data.HotelRoomsDetails) {
+      data.HotelRoomsDetails.forEach(room => {
+        room.HotelPassenger?.forEach(passenger => {
+          if (passenger.LeadPassenger === "true" && passenger.GSTNumber) {
+            leadWithGST++;
+          } else if (passenger.LeadPassenger !== "true" && passenger.GSTNumber) {
+            nonLeadWithGST++;
+          }
+        });
+      });
+    }
+    
+    console.log(`\n✅ Lead passengers with GST: ${leadWithGST}`);
+    console.log(`${nonLeadWithGST === 0 ? '✅' : '❌'} Non-lead passengers with GST: ${nonLeadWithGST}`);
+    
+    return { leadWithGST, nonLeadWithGST };
+  };
+
+  // ✅ Updated validation function for Postman structure
   const validateBookingPayload = (payload) => {
     const errors = [];
 
@@ -51,13 +145,13 @@ const HotelPaymentInfo = () => {
       return errors;
     }
 
-    // Required top-level fields with more specific validation
+    // Required top-level fields
     const requiredFields = {
       'ResultIndex': payload.ResultIndex,
       'HotelCode': payload.HotelCode,
       'HotelName': payload.HotelName,
       'SearchTokenId': payload.SearchTokenId,
-      'roomTravellerInfo': payload.roomTravellerInfo
+      'HotelRoomsDetails': payload.HotelRoomsDetails
     };
 
     Object.entries(requiredFields).forEach(([field, value]) => {
@@ -66,73 +160,78 @@ const HotelPaymentInfo = () => {
       }
     });
 
-    // Validate roomTravellerInfo structure
-    if (!payload.roomTravellerInfo || !Array.isArray(payload.roomTravellerInfo)) {
-      errors.push('roomTravellerInfo must be an array');
+    // Validate HotelRoomsDetails structure
+    if (!payload.HotelRoomsDetails || !Array.isArray(payload.HotelRoomsDetails)) {
+      errors.push('HotelRoomsDetails must be an array');
       return errors;
     }
 
-    if (payload.roomTravellerInfo.length === 0) {
-      errors.push('At least one room with traveller info is required');
+    if (payload.HotelRoomsDetails.length === 0) {
+      errors.push('At least one room with passenger info is required');
       return errors;
     }
 
     let leadPassengerCount = 0;
-    let totalTravellers = 0;
+    let totalPassengers = 0;
 
-    payload.roomTravellerInfo.forEach((room, roomIdx) => {
-      if (!room.travellerInfo || !Array.isArray(room.travellerInfo)) {
-        errors.push(`Room ${roomIdx + 1}: travellerInfo must be an array`);
+    payload.HotelRoomsDetails.forEach((room, roomIdx) => {
+      // Validate RoomIndex
+      if (!room.RoomIndex || typeof room.RoomIndex !== 'number') {
+        errors.push(`Room ${roomIdx + 1}: RoomIndex must be a number`);
+      }
+
+      if (!room.HotelPassenger || !Array.isArray(room.HotelPassenger)) {
+        errors.push(`Room ${roomIdx + 1}: HotelPassenger must be an array`);
         return;
       }
 
-      if (room.travellerInfo.length === 0) {
-        errors.push(`Room ${roomIdx + 1}: At least one traveller is required`);
+      if (room.HotelPassenger.length === 0) {
+        errors.push(`Room ${roomIdx + 1}: At least one passenger is required`);
         return;
       }
 
-      room.travellerInfo.forEach((traveller, travellerIdx) => {
-        totalTravellers++;
-        
-        // Check LeadPassenger
-        if (traveller.LeadPassenger === true) {
+      room.HotelPassenger.forEach((passenger, passengerIdx) => {
+        totalPassengers++;
+
+        // Check LeadPassenger (string in Postman structure)
+        if (passenger.LeadPassenger === "true") {
           leadPassengerCount++;
         }
 
-        // Required traveller fields with improved validation
-        const requiredTravellerFields = {
-          'Title': traveller.Title,
-          'FirstName': traveller.FirstName,
-          'LastName': traveller.LastName,
-          'Email': traveller.Email,
-          'Phoneno': traveller.Phoneno,
-          'Age': traveller.Age
+        // Required passenger fields
+        const requiredPassengerFields = {
+          'Title': passenger.Title,
+          'FirstName': passenger.FirstName,
+          'LastName': passenger.LastName,
+          'Email': passenger.Email,
+          'Phoneno': passenger.Phoneno,
+          'PaxType': passenger.PaxType
         };
 
-        Object.entries(requiredTravellerFields).forEach(([field, value]) => {
+        Object.entries(requiredPassengerFields).forEach(([field, value]) => {
           if (!value || (typeof value === 'string' && value.trim() === '')) {
-            errors.push(`Room ${roomIdx + 1}, Traveller ${travellerIdx + 1}: ${field} is required`);
+            errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: ${field} is required`);
           }
         });
 
-        // Age validation
-        if (traveller.Age && (isNaN(traveller.Age) || traveller.Age < 1 || traveller.Age > 120)) {
-          errors.push(`Room ${roomIdx + 1}, Traveller ${travellerIdx + 1}: Invalid age (${traveller.Age})`);
+        // PaxType validation (1=adult, 2=child, 3=infant)
+        if (passenger.PaxType && ![1, 2, 3].includes(parseInt(passenger.PaxType))) {
+          errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: Invalid PaxType (${passenger.PaxType}), must be 1, 2, or 3`);
         }
 
-        // PAN validation for adults (18+)
-        if (traveller.Age >= 18 && (!traveller.PAN || traveller.PAN.trim() === '')) {
-          errors.push(`Room ${roomIdx + 1}, Traveller ${travellerIdx + 1}: PAN is required for adults (Age: ${traveller.Age})`);
+        // PAN validation for adults (PaxType = 1)
+        if (passenger.PaxType === 1 && (!passenger.PAN || passenger.PAN.trim() === '' || passenger.PAN.trim() === 'null')) {
+          errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: PAN is required for adults`);
         }
 
         // Email validation
-        if (traveller.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(traveller.Email)) {
-          errors.push(`Room ${roomIdx + 1}, Traveller ${travellerIdx + 1}: Invalid email format (${traveller.Email})`);
+        if (passenger.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(passenger.Email)) {
+          errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: Invalid email format (${passenger.Email})`);
         }
 
-        // Phone validation - improved regex
-        if (traveller.Phoneno && !/^[0-9]{10}$/.test(traveller.Phoneno.replace(/\D/g, ''))) {
-          errors.push(`Room ${roomIdx + 1}, Traveller ${travellerIdx + 1}: Phone number must be 10 digits (${traveller.Phoneno})`);
+        // Phone validation
+        if (passenger.Phoneno && !/^[0-9]{10}$/.test(passenger.Phoneno.replace(/\D/g, ''))) {
+          errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: Phone number must be 10 digits (${passenger.Phoneno})`);
         }
       });
     });
@@ -142,92 +241,124 @@ const HotelPaymentInfo = () => {
       errors.push(`Must have exactly 1 LeadPassenger, found ${leadPassengerCount}`);
     }
 
-    if (totalTravellers === 0) {
-      errors.push('No travellers found in booking');
+    if (totalPassengers === 0) {
+      errors.push('No passengers found in booking');
     }
 
     return errors;
   };
 
-  // ✅ Function to clean and format booking data with additional validation
+  // ✅ Updated format function for Postman structure with GST filtering
   const formatBookingData = (bookingDetails) => {
-    const cleanedData = { ...bookingDetails };
+    // First apply GST filtering
+    const gstFilteredData = filterGSTForLeadPassengerOnly(bookingDetails);
+    
+    // Then continue with existing formatting logic
+    const cleanedData = { ...gstFilteredData };
 
-    // Ensure required top-level fields exist
+    // Ensure required top-level fields exist (following Postman structure)
     cleanedData.GuestNationality = cleanedData.GuestNationality || payload?.GuestNationality || reviewData?.GuestNationality || 'IN';
     cleanedData.NoOfRooms = cleanedData.NoOfRooms || "1";
     cleanedData.ClientReferenceNo = cleanedData.ClientReferenceNo || 0;
     cleanedData.IsVoucherBooking = cleanedData.IsVoucherBooking || "true";
     cleanedData.vendorCommission = cleanedData.vendorCommission || vendorCommission || 0;
     cleanedData.CouponDiscount = cleanedData.CouponDiscount || 0;
+    cleanedData.UserIp = cleanedData.UserIp || "0.0.0.0";
 
-    // Get user IP (you might want to fetch this dynamically)
-    cleanedData.UserIp = cleanedData.UserIp || "0.0.0.0"; // Default IP
+    // ✅ Convert roomTravellerInfo to HotelRoomsDetails structure if needed
+    if (cleanedData.roomTravellerInfo && !cleanedData.HotelRoomsDetails) {
+      console.log('🔄 Converting roomTravellerInfo to HotelRoomsDetails structure...');
 
-    // ✅ Additional validation for SearchTokenId - check if it's expired or invalid
-    if (cleanedData.SearchTokenId && typeof cleanedData.SearchTokenId === 'string') {
-      // Check if SearchTokenId looks valid (not empty, has proper format)
-      if (cleanedData.SearchTokenId.length < 10) {
-        console.warn('⚠️ SearchTokenId seems too short:', cleanedData.SearchTokenId);
-      }
-    }
+      cleanedData.HotelRoomsDetails = cleanedData.roomTravellerInfo.map((room, index) => {
+        const roomData = {
+          RoomIndex: index + 1,
+          HotelPassenger: []
+        };
 
-    // ✅ Validate ResultIndex format
-    if (cleanedData.ResultIndex && typeof cleanedData.ResultIndex === 'string') {
-      if (!cleanedData.ResultIndex.includes('-')) {
-        console.warn('⚠️ ResultIndex format might be invalid:', cleanedData.ResultIndex);
-      }
-    }
+        if (room.travellerInfo && Array.isArray(room.travellerInfo)) {
+          roomData.HotelPassenger = room.travellerInfo.map((traveller) => ({
+            Title: String(traveller.Title || "Mr").trim(),
+            FirstName: String(traveller.FirstName || "").trim(),
+            MiddleName: String(traveller.MiddleName || "").trim(),
+            LastName: String(traveller.LastName || "").trim(),
+            Phoneno: String(traveller.Phoneno || "").replace(/\D/g, ''),
+            Email: String(traveller.Email || "").trim().toLowerCase(),
+            PaxType: parseInt(traveller.PaxType) || 1,
+            LeadPassenger: traveller.LeadPassenger ? "true" : "false", // Convert to string
+            Age: traveller.Age && !isNaN(traveller.Age) ? parseInt(traveller.Age) : 0,
 
-    // Process roomTravellerInfo
-    if (cleanedData.roomTravellerInfo && Array.isArray(cleanedData.roomTravellerInfo)) {
-      cleanedData.roomTravellerInfo = cleanedData.roomTravellerInfo.map((room) => {
-        if (!room.travellerInfo || !Array.isArray(room.travellerInfo)) {
-          return { travellerInfo: [] };
-        }
-
-        const processedTravellers = room.travellerInfo.map((pax) => {
-          // Clean and format each traveller
-          const processedPax = {
-            Title: String(pax.Title || "Mr").trim(),
-            FirstName: String(pax.FirstName || "").trim(),
-            MiddleName: "", // Always empty string as per API requirement
-            LastName: String(pax.LastName || "").trim(),
-            Phoneno: String(pax.Phoneno || "").replace(/\D/g, ''), // Remove non-digits
-            Email: String(pax.Email || "").trim().toLowerCase(),
-            PaxType: parseInt(pax.PaxType) || 1,
-            Age: pax.Age && !isNaN(pax.Age) ? parseInt(pax.Age) : null,
-            
             // Passport fields - always null for domestic bookings
             PassportNo: null,
             PassportIssueDate: null,
             PassportExpDate: null,
-            
-            // PAN - required for adults, validate format
-            PAN: pax.PAN ? String(pax.PAN).trim().toUpperCase() : null,
-            
-            // GST fields - use null if empty
-            GSTCompanyAddress: pax.GSTCompanyAddress ? String(pax.GSTCompanyAddress).trim() : null,
-            GSTCompanyContactNumber: pax.GSTCompanyContactNumber ? String(pax.GSTCompanyContactNumber).trim() : null,
-            GSTCompanyEmail: pax.GSTCompanyEmail ? String(pax.GSTCompanyEmail).trim() : null,
-            GSTCompanyName: pax.GSTCompanyName ? String(pax.GSTCompanyName).trim() : null,
-            GSTNumber: pax.GSTNumber ? String(pax.GSTNumber).trim() : null,
-            
-            // LeadPassenger must be boolean
-            LeadPassenger: Boolean(pax.LeadPassenger)
-          };
 
-          // ✅ Additional PAN format validation
-          if (processedPax.PAN && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(processedPax.PAN)) {
-            console.warn(`⚠️ Invalid PAN format for ${processedPax.FirstName}:`, processedPax.PAN);
-          }
+            // PAN - required for adults
+            PAN: traveller.PAN ? String(traveller.PAN).trim().toUpperCase() : null,
 
-          return processedPax;
-        });
+            // ✅ GST fields - already filtered by filterGSTForLeadPassengerOnly
+            GSTCompanyAddress: traveller.GSTCompanyAddress ? String(traveller.GSTCompanyAddress).trim() : null,
+            GSTCompanyContactNumber: traveller.GSTCompanyContactNumber ? String(traveller.GSTCompanyContactNumber).trim() : null,
+            GSTCompanyEmail: traveller.GSTCompanyEmail ? String(traveller.GSTCompanyEmail).trim() : null,
+            GSTCompanyName: traveller.GSTCompanyName ? String(traveller.GSTCompanyName).trim() : null,
+            GSTNumber: traveller.GSTNumber ? String(traveller.GSTNumber).trim() : null
+          }));
+        }
 
-        return {
-          travellerInfo: processedTravellers
+        return roomData;
+      });
+
+      // Remove old structure
+      delete cleanedData.roomTravellerInfo;
+    }
+
+    // ✅ Process existing HotelRoomsDetails if present
+    if (cleanedData.HotelRoomsDetails && Array.isArray(cleanedData.HotelRoomsDetails)) {
+      cleanedData.HotelRoomsDetails = cleanedData.HotelRoomsDetails.map((room, index) => {
+        const processedRoom = {
+          RoomIndex: room.RoomIndex || (index + 1),
+          HotelPassenger: []
         };
+
+        if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
+          processedRoom.HotelPassenger = room.HotelPassenger.map((passenger) => {
+            // Clean and format each passenger
+            const processedPassenger = {
+              Title: String(passenger.Title || "Mr").trim(),
+              FirstName: String(passenger.FirstName || "").trim(),
+              MiddleName: String(passenger.MiddleName || "").trim(),
+              LastName: String(passenger.LastName || "").trim(),
+              Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
+              Email: String(passenger.Email || "").trim().toLowerCase(),
+              PaxType: parseInt(passenger.PaxType) || 1,
+              LeadPassenger: passenger.LeadPassenger === true || passenger.LeadPassenger === "true" ? "true" : "false",
+              Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 0,
+
+              // Passport fields - always null for domestic bookings
+              PassportNo: null,
+              PassportIssueDate: null,
+              PassportExpDate: null,
+
+              // PAN - required for adults, validate format
+              PAN: passenger.PAN && passenger.PAN.trim() !== '' ? String(passenger.PAN).trim().toUpperCase() : null,
+
+              // ✅ GST fields - already filtered by filterGSTForLeadPassengerOnly
+              GSTCompanyAddress: passenger.GSTCompanyAddress ? String(passenger.GSTCompanyAddress).trim() : null,
+              GSTCompanyContactNumber: passenger.GSTCompanyContactNumber ? String(passenger.GSTCompanyContactNumber).trim() : null,
+              GSTCompanyEmail: passenger.GSTCompanyEmail ? String(passenger.GSTCompanyEmail).trim() : null,
+              GSTCompanyName: passenger.GSTCompanyName ? String(passenger.GSTCompanyName).trim() : null,
+              GSTNumber: passenger.GSTNumber ? String(passenger.GSTNumber).trim() : null
+            };
+
+            // ✅ PAN format validation
+            if (processedPassenger.PAN && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(processedPassenger.PAN)) {
+              console.warn(`⚠️ Invalid PAN format for ${processedPassenger.FirstName}:`, processedPassenger.PAN);
+            }
+
+            return processedPassenger;
+          });
+        }
+
+        return processedRoom;
       });
     }
 
@@ -237,15 +368,14 @@ const HotelPaymentInfo = () => {
   // ✅ Enhanced API error handler
   const handleApiError = (error, context = 'API') => {
     console.error(`❌ ${context} Error:`, error);
-    
+
     let errorMessage = `${context} failed. Please try again.`;
     let errorDetails = null;
 
     if (error?.response) {
-      // Server responded with error status
       const status = error.response.status;
       const data = error.response.data;
-      
+
       errorDetails = {
         status,
         data,
@@ -289,11 +419,9 @@ const HotelPaymentInfo = () => {
           errorMessage = data?.Error?.ErrorMessage || data?.message || `${context} failed with status ${status}`;
       }
     } else if (error?.request) {
-      // Request was made but no response received
       errorMessage = 'Network error. Please check your internet connection and try again.';
       errorDetails = { request: 'No response received' };
     } else {
-      // Something else happened
       errorMessage = error?.message || `${context} failed due to an unexpected error.`;
       errorDetails = { message: error?.message };
     }
@@ -301,17 +429,26 @@ const HotelPaymentInfo = () => {
     return { message: errorMessage, details: errorDetails };
   };
 
+  // ✅ Updated handlePayment function with GST filtering
   const handlePayment = async () => {
     setLoading(true);
     setError('');
 
     try {
-      // ✅ Pre-validate and format booking details
+      // ✅ Pre-validate and format booking details with GST filtering
       console.log('🔍 Formatting and validating booking payload...');
+
+      // Apply GST filtering FIRST
+      const gstFilteredData = filterGSTForLeadPassengerOnly(hotelBookingDetails);
+      console.log('🎯 GST filtering applied successfully');
       
-      const formattedBookingData = formatBookingData(hotelBookingDetails);
+      // Verify GST filtering
+      verifyGSTFiltering(gstFilteredData);
+      
+      // Then format the data
+      const formattedBookingData = formatBookingData(gstFilteredData);
       const validationErrors = validateBookingPayload(formattedBookingData);
-      
+
       if (validationErrors.length > 0) {
         console.error('❌ Payload validation failed:', validationErrors);
         setError(`Booking validation failed:\n• ${validationErrors.join('\n• ')}`);
@@ -320,6 +457,7 @@ const HotelPaymentInfo = () => {
       }
 
       console.log('✅ Payload validation passed');
+      console.log('📦 Final booking data with GST filtering:', formattedBookingData);
 
       // ✅ Additional checks before API call
       const currentTime = new Date().toISOString();
@@ -328,7 +466,7 @@ const HotelPaymentInfo = () => {
         name: formattedBookingData.HotelName,
         code: formattedBookingData.HotelCode,
         resultIndex: formattedBookingData.ResultIndex,
-        searchTokenId: formattedBookingData.SearchTokenId?.substring(0, 10) + '...' // Log partial token for security
+        searchTokenId: formattedBookingData.SearchTokenId?.substring(0, 10) + '...'
       });
 
       // Load Razorpay script
@@ -357,7 +495,7 @@ const HotelPaymentInfo = () => {
         handler: async (response) => {
           try {
             console.log('💳 Payment completed, validating...');
-            
+
             const validatePayload = {
               amount: roundedTotal,
               razorpay_order_id: response.razorpay_order_id,
@@ -374,24 +512,21 @@ const HotelPaymentInfo = () => {
               validation?.payment?.status === 'success'
             ) {
               console.log('✅ Payment validated successfully');
-              
-              // ✅ Create final booking payload with payment information
+
+              // ✅ Create final booking payload with GST filtering already applied
               const finalPayload = {
-                ...formattedBookingData,
-                RazorpayOrderId: response.razorpay_order_id,
-                RazorpayPaymentId: response.razorpay_payment_id,
-                RazorpayOrderStatus: 'PAID',
-                PaymentId: validation?.payment?._id || '',
+                ...formattedBookingData
               };
 
-              console.log('📦 Final Booking Payload (sanitized):', {
+              console.log('📦 Final Booking Payload with GST filtering (sanitized):', {
                 ...finalPayload,
-                roomTravellerInfo: finalPayload.roomTravellerInfo?.map(room => ({
+                HotelRoomsDetails: finalPayload.HotelRoomsDetails?.map(room => ({
                   ...room,
-                  travellerInfo: room.travellerInfo?.map(traveller => ({
-                    ...traveller,
-                    PAN: traveller.PAN ? '***HIDDEN***' : null,
-                    Email: traveller.Email ? traveller.Email.replace(/(.{2}).*(@.*)/, '$1***$2') : null
+                  HotelPassenger: room.HotelPassenger?.map(passenger => ({
+                    ...passenger,
+                    PAN: passenger.PAN ? '***HIDDEN***' : null,
+                    Email: passenger.Email ? passenger.Email.replace(/(.{2}).*(@.*)/, '$1***$2') : null,
+                    GSTNumber: passenger.GSTNumber ? '***HIDDEN***' : null
                   }))
                 }))
               });
@@ -400,17 +535,17 @@ const HotelPaymentInfo = () => {
               try {
                 console.log('🚀 Calling booking API...');
                 const bookingStartTime = Date.now();
-                
+
                 const bookingResponse = await bookHotel(finalPayload);
-                
+
                 const bookingEndTime = Date.now();
                 console.log(`⏱️ Booking API took ${bookingEndTime - bookingStartTime}ms`);
                 console.log('📦 Booking API Response:', bookingResponse);
 
                 // ✅ Enhanced response handling
-                if (bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' || 
-                    bookingResponse?.Status?.toLowerCase() === 'success' ||
-                    bookingResponse?.success === true) {
+                if (bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
+                  bookingResponse?.Status?.toLowerCase() === 'success' ||
+                  bookingResponse?.success === true) {
                   console.log('✅ Booking confirmed successfully');
                   navigate('/hotel/confirmation', {
                     state: {
@@ -426,10 +561,9 @@ const HotelPaymentInfo = () => {
                 } else {
                   // Handle booking failure
                   console.error('❌ Booking failed:', bookingResponse);
-                  
+
                   let errorMessage = 'Booking failed. Please contact support.';
-                  
-                  // Extract error message from various possible response formats
+
                   if (bookingResponse?.Error?.ErrorMessage) {
                     errorMessage = bookingResponse.Error.ErrorMessage;
                   } else if (bookingResponse?.error?.message) {
@@ -441,7 +575,7 @@ const HotelPaymentInfo = () => {
                   }
 
                   setError(`Booking Failed: ${errorMessage}`);
-                  
+
                   navigate('/hotel/payment-failed', {
                     state: {
                       error: errorMessage,
@@ -456,17 +590,15 @@ const HotelPaymentInfo = () => {
                 }
               } catch (bookingError) {
                 console.error('❌ Booking API Error:', bookingError);
-                
-                // ✅ Use enhanced error handler
+
                 const { message: errorMessage, details } = handleApiError(bookingError, 'Hotel Booking');
-                
-                // Log additional details for debugging
+
                 if (details) {
                   console.error('📋 Error Details:', details);
                 }
 
                 setError(`Booking Error: ${errorMessage}`);
-                
+
                 navigate('/hotel/payment-failed', {
                   state: {
                     error: errorMessage,
@@ -498,9 +630,9 @@ const HotelPaymentInfo = () => {
           }
         },
         prefill: {
-          name: formattedBookingData?.roomTravellerInfo?.[0]?.travellerInfo?.[0]?.FirstName || 'Guest',
-          email: formattedBookingData?.roomTravellerInfo?.[0]?.travellerInfo?.[0]?.Email || 'guest@example.com',
-          contact: formattedBookingData?.roomTravellerInfo?.[0]?.travellerInfo?.[0]?.Phoneno || '9999999999',
+          name: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.FirstName || 'Guest',
+          email: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.Email || 'guest@example.com',
+          contact: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.Phoneno || '9999999999',
         },
         notes: {
           address: 'Hotel Booking Payment',
@@ -510,7 +642,7 @@ const HotelPaymentInfo = () => {
           color: '#c90d26',
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             console.log('Payment modal dismissed');
             setLoading(false);
           }
@@ -523,7 +655,7 @@ const HotelPaymentInfo = () => {
         setError(`Payment failed: ${response.error.description || 'Unknown error'}`);
         setLoading(false);
       });
-      
+
       rzp.open();
     } catch (err) {
       console.error('❌ Payment Initialization Error:', err);
@@ -550,6 +682,46 @@ const HotelPaymentInfo = () => {
       </div>
     );
   }
+
+  // ✅ Helper function to get guest count from new structure
+  const getGuestCount = () => {
+    if (hotelBookingDetails?.HotelRoomsDetails) {
+      return hotelBookingDetails.HotelRoomsDetails.reduce((total, room) =>
+        total + (room.HotelPassenger?.length || 0), 0
+      );
+    }
+    // Fallback for old structure
+    if (hotelBookingDetails?.roomTravellerInfo) {
+      return hotelBookingDetails.roomTravellerInfo.reduce((total, room) =>
+        total + (room.travellerInfo?.length || 0), 0
+      );
+    }
+    return 0;
+  };
+
+  // ✅ Helper function to get lead passenger info
+  const getLeadPassengerInfo = () => {
+    if (hotelBookingDetails?.HotelRoomsDetails) {
+      const leadRoom = hotelBookingDetails.HotelRoomsDetails.find(room =>
+        room.HotelPassenger?.some(passenger => passenger.LeadPassenger === "true" || passenger.LeadPassenger === true)
+      );
+      if (leadRoom) {
+        return leadRoom.HotelPassenger.find(passenger =>
+          passenger.LeadPassenger === "true" || passenger.LeadPassenger === true
+        );
+      }
+      // Fallback to first passenger
+      return hotelBookingDetails.HotelRoomsDetails[0]?.HotelPassenger?.[0];
+    }
+    // Fallback for old structure
+    if (hotelBookingDetails?.roomTravellerInfo) {
+      return hotelBookingDetails.roomTravellerInfo[0]?.travellerInfo?.[0];
+    }
+    return null;
+  };
+
+  const leadPassenger = getLeadPassengerInfo();
+
   return (
     <div className="container my-4">
       <div className="row justify-content-center">
@@ -558,7 +730,7 @@ const HotelPaymentInfo = () => {
           {error && (
             <Alert variant="danger" className="mb-4" dismissible onClose={() => setError('')}>
               <FaExclamationTriangle className="me-2" />
-              <strong>Error:</strong> 
+              <strong>Error:</strong>
               <div style={{ whiteSpace: 'pre-line', marginTop: '8px' }}>
                 {error}
               </div>
@@ -580,12 +752,8 @@ const HotelPaymentInfo = () => {
                 <div className="row">
                   <div className="col-md-8">
                     <div><strong>Hotel:</strong> {hotelBookingDetails?.HotelName || 'N/A'}</div>
-                    <div><strong>Rooms:</strong> {hotelBookingDetails?.NoOfRooms || 1}</div>
-                    <div><strong>Guests:</strong> {
-                      hotelBookingDetails?.roomTravellerInfo?.reduce((total, room) => 
-                        total + (room.travellerInfo?.length || 0), 0
-                      ) || 0
-                    }</div>
+                    <div><strong>Rooms:</strong> {hotelBookingDetails?.NoOfRooms || hotelBookingDetails?.HotelRoomsDetails?.length || 1}</div>
+                    <div><strong>Guests:</strong> {getGuestCount()}</div>
                   </div>
                   <div className="col-md-4 text-end">
                     <div className="fs-4 fw-bold text-danger">₹ {roundedTotal}</div>
@@ -596,35 +764,35 @@ const HotelPaymentInfo = () => {
               {/* Price Breakdown */}
               <div className="mb-4">
                 <h6 className="fw-bold mb-3">Price Details</h6>
-                
+
                 <Row className="mb-2">
                   <Col>Base Fare</Col>
                   <Col className="text-end">₹ {Math.round(baseFare)}</Col>
                 </Row>
-                
+
                 {cgst > 0 && (
                   <Row className="mb-2">
                     <Col>CGST</Col>
                     <Col className="text-end">₹ {Math.round(cgst)}</Col>
                   </Row>
                 )}
-                
+
                 {sgst > 0 && (
                   <Row className="mb-2">
                     <Col>SGST</Col>
                     <Col className="text-end">₹ {Math.round(sgst)}</Col>
                   </Row>
                 )}
-                
+
                 {discount > 0 && (
                   <Row className="mb-2">
                     <Col>Discount</Col>
                     <Col className="text-end text-success">- ₹ {Math.round(discount)}</Col>
                   </Row>
                 )}
-                
+
                 <hr />
-                
+
                 <Row className="fw-bold fs-5">
                   <Col>Total Payable</Col>
                   <Col className="text-end text-danger">₹ {roundedTotal}</Col>
@@ -638,31 +806,40 @@ const HotelPaymentInfo = () => {
                   <strong>Secure Payment</strong>
                 </div>
                 <small>
-                  Your payment is secured by Razorpay with 256-bit SSL encryption. 
+                  Your payment is secured by Razorpay with 256-bit SSL encryption.
                   We accept all major credit cards, debit cards, UPI, and net banking.
                 </small>
               </div>
 
               {/* Guest Information Preview */}
-              {hotelBookingDetails?.roomTravellerInfo?.[0]?.travellerInfo?.[0] && (
+              {leadPassenger && (
                 <div className="mb-4 p-3 border rounded">
                   <h6 className="fw-bold mb-2">Lead Guest Information</h6>
                   <div className="row">
                     <div className="col-md-6">
                       <strong>Name:</strong> {
-                        `${hotelBookingDetails.roomTravellerInfo[0].travellerInfo[0].Title} 
-                         ${hotelBookingDetails.roomTravellerInfo[0].travellerInfo[0].FirstName} 
-                         ${hotelBookingDetails.roomTravellerInfo[0].travellerInfo[0].LastName}`
+                        `${leadPassenger.Title} ${leadPassenger.FirstName} ${leadPassenger.LastName}`
                       }
                     </div>
                     <div className="col-md-6">
-                      <strong>Email:</strong> {hotelBookingDetails.roomTravellerInfo[0].travellerInfo[0].Email}
+                      <strong>Email:</strong> {leadPassenger.Email}
                     </div>
                   </div>
+                  {/* ✅ Show GST info if available for lead passenger */}
+                  {leadPassenger.GSTNumber && (
+                    <div className="row mt-2">
+                      <div className="col-md-6">
+                        <strong>GST Number:</strong> {leadPassenger.GSTNumber}
+                      </div>
+                      <div className="col-md-6">
+                        <strong>Company:</strong> {leadPassenger.GSTCompanyName}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </Card.Body>
-            
+
             <Card.Footer className="bg-white">
               <div className="d-flex gap-3 justify-content-between align-items-center">
                 <Button
@@ -672,7 +849,7 @@ const HotelPaymentInfo = () => {
                 >
                   ← Back to Review
                 </Button>
-                
+
                 <Button
                   variant="danger"
                   size="lg"
@@ -692,7 +869,7 @@ const HotelPaymentInfo = () => {
                   )}
                 </Button>
               </div>
-              
+
               <div className="text-center mt-3">
                 <small className="text-muted">
                   By clicking "Pay", you agree to our terms and conditions
@@ -709,7 +886,13 @@ const HotelPaymentInfo = () => {
               </Card.Header>
               <Card.Body>
                 <details>
-                  <summary className="mb-3 fw-bold cursor-pointer">Formatted Hotel Booking Details</summary>
+                  <summary className="mb-3 fw-bold cursor-pointer">GST Filtered Hotel Booking Details</summary>
+                  <pre className="small bg-light p-3 rounded" style={{ maxHeight: '300px', overflow: 'auto' }}>
+                    {JSON.stringify(filterGSTForLeadPassengerOnly(hotelBookingDetails), null, 2)}
+                  </pre>
+                </details>
+                <details>
+                  <summary className="mb-3 fw-bold cursor-pointer">Formatted Hotel Booking Details (Postman Structure)</summary>
                   <pre className="small bg-light p-3 rounded" style={{ maxHeight: '300px', overflow: 'auto' }}>
                     {JSON.stringify(formatBookingData(hotelBookingDetails), null, 2)}
                   </pre>
@@ -724,6 +907,18 @@ const HotelPaymentInfo = () => {
                   <summary className="mb-3 fw-bold cursor-pointer">Price Details</summary>
                   <pre className="small bg-light p-3 rounded">
                     {JSON.stringify(priceDetails, null, 2)}
+                  </pre>
+                </details>
+                <details>
+                  <summary className="mb-3 fw-bold cursor-pointer">Payload Validation</summary>
+                  <pre className="small bg-light p-3 rounded">
+                    {JSON.stringify(validateBookingPayload(formatBookingData(hotelBookingDetails)), null, 2)}
+                  </pre>
+                </details>
+                <details>
+                  <summary className="mb-3 fw-bold cursor-pointer">GST Filtering Verification</summary>
+                  <pre className="small bg-light p-3 rounded">
+                    {JSON.stringify(verifyGSTFiltering(filterGSTForLeadPassengerOnly(hotelBookingDetails)), null, 2)}
                   </pre>
                 </details>
               </Card.Body>
