@@ -108,6 +108,12 @@ const RoundTripCardList = () => {
   if (loading) return <div className="text-center my-4"><FlightLoader></FlightLoader></div>;
   if (error) return <div className="text-danger text-center my-4">{error}</div>;
 
+
+  console.log('flights',flights)
+
+  console.log('flights[0]',flights[0])
+  console.log('flights[1]',flights[1])
+
   return (
     <div className="px-4 pb-32">
       {flights?.length > 1 ? (

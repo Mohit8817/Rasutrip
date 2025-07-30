@@ -13,6 +13,9 @@ const RoundTripBookingBar = () => {
     selectedReturnFare
   } = useSelector((state) => state.selectedFlights);
 
+  console.log('selectedOnwardFarek',selectedOnwardFare)
+  console.log('selectedOnwardFarek',selectedReturnFare)
+
   // Don't render if any required data is missing
   if (!selectedOnward || !selectedReturn || !selectedOnwardFare || !selectedReturnFare) {
     return null;

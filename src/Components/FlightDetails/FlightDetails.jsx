@@ -56,7 +56,9 @@ const useFareRules = (fareId) => {
 const FlightDetails = () => {
     const location = useLocation();
 
-    const { SelectedFare, FareData } = location?.state || {};
+    const { SelectedFare, FareData ,state } = location?.state || {};
+
+    console.log('try to get all data',state)
     console.log("FareData details ", FareData, "SelectedFare", SelectedFare)
     const { fareRules, loading, error } = useFareRules(SelectedFare?.FareId);
     console.log("fareRules in details", fareRules);
@@ -65,7 +67,7 @@ const FlightDetails = () => {
             <Container style={{ marginTop: '10rem' }}>
                 {loading ? (
                     <>
-                        {loading && <p className="text-center text-primary mt-4"><FlightLoader message="Searching Fare Rules" /></p>}
+                        {/* {loading && <p className="text-center text-primary mt-4"><FlightLoader message="Searching Fare Rules" /></p>} */}
                         {error && <p className="text-center text-danger mt-4">Error fetching fare rules.</p>}</>
 
                 ) : (
