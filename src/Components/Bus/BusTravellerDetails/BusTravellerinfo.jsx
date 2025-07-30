@@ -100,7 +100,7 @@ const BusTravellerinfo = () => {
             };
         });
 
-
+        return null; // This component is just for debugging, doesn't render anything
     };
 
     // Validation Functions
@@ -580,17 +580,23 @@ const BusTravellerinfo = () => {
 
         setIsSubmitting(true);
 
-        // Navigate to next step immediately after validation passes
+        // Prepare the data to pass to review component
+        const dataToPass = {
+            ...state, // All existing state data
+            passengerData: passengerData, // Passenger details
+            contactData: contactData, // Contact information
+            gstData: showGstinForm ? gstData : null, // GST data only if form was shown
+            showGstinForm: showGstinForm, // Whether GST form was shown
+            blockSeatResponse: null, // Will be updated when API completes
+            seatsBlocked: false, // Will be updated when API completes
+            isBlockingSeats: true // Indicate that blocking is in progress
+        };
+
+        console.log("🚀 Passing data to review component:", dataToPass);
+
+        // Navigate to review page immediately after validation passes
         navigate("/bus-review", {
-            state: {
-                ...state,
-                passengerData,
-                contactData,
-                gstData: showGstinForm ? gstData : null,
-                blockSeatResponse: null, // Will be updated when API completes
-                seatsBlocked: false, // Will be updated when API completes
-                isBlockingSeats: true // Indicate that blocking is in progress
-            },
+            state: dataToPass
         });
 
         // Call block seats API in background (optional - for actual seat blocking)
@@ -627,8 +633,6 @@ const BusTravellerinfo = () => {
 
     return (
         <div className="container my-4">
-
-
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -670,7 +674,12 @@ const BusTravellerinfo = () => {
             {/* Seat Debug Component */}
             <SeatDebugComponent />
 
-
+            {/* API Error Display */}
+            {errors.api && (
+                <Alert variant="danger" className="mb-4" dismissible onClose={() => setErrors(prev => ({ ...prev, api: null }))}>
+                    <strong>Error:</strong> {errors.api}
+                </Alert>
+            )}
 
             {/* Passenger Details */}
             <Card className="mb-4 shadow-sm border-0">
@@ -1089,7 +1098,7 @@ const BusTravellerinfo = () => {
                     className="px-4"
                 >
                     <FaArrowLeft className="me-2" />
-                    Back to Review
+                    Back to Seats
                 </Button>
 
                 <Button
@@ -1112,13 +1121,11 @@ const BusTravellerinfo = () => {
                         </>
                     ) : (
                         <>
-                            Continue to Payment →
+                            Continue to Review →
                         </>
                     )}
                 </Button>
             </div>
-
-
         </div>
     );
 };

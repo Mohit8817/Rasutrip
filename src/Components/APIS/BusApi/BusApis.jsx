@@ -1,16 +1,33 @@
-// src/APIS/BusApi/BusApis.js
-import axios from "axios";
-import baseURL from "../../../Services/Config";
+  // src/APIS/BusApi/BusApis.js
+  import axios from "axios";
+  import baseURL from "../../../Services/Config";
 
+  const BusServices = {
+    fetchCities: `${baseURL}/bus/search-city`,
+    searchResults: `${baseURL}/busservice/search`,
+    seatLayout: `${baseURL}/busservice/seatlayout`,
+    boardingDroppingPoints: `${baseURL}/busservice/boardingpoint`,
+    blockSeat: `${baseURL}/busservice/blockseat`,
+    createOrder: `${baseURL}/busservice/create-order`,
+    validatePayment: `${baseURL}/busservice/validate`,
+    bookBus: `${baseURL}/busservice/book`,
+  };
 
-const BusServices = {
-  fetchCities: `${baseURL}/bus/search-city`,
-  searchResults: `${baseURL}/busservice/search`,
-  seatLayout: `${baseURL}/busservice/seatlayout`,
-  boardingDroppingPoints: `${baseURL}/busservice/boardingpoint`,
-  blockSeat: `${baseURL}/busservice/blockseat`, // ✅ Added Block Seat API
-  createOrder: `${baseURL}/busservice/create-order`,
+// Helper function to get auth token
+const getAuthToken = () => {
+  return localStorage.getItem('token') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+};
 
+// Helper function to create auth headers
+const createAuthHeaders = () => {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Authentication token not found. Please login again.');
+  }
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -81,7 +98,7 @@ export const fetchSeatLayout = async ({
 };
 
 // ─────────────────────────────────────────────────────────────
-// 🚌 Fetch Boarding / Dropping points (FIXED)
+// 🚌 Fetch Boarding / Dropping points
 // ─────────────────────────────────────────────────────────────
 export const fetchBoardingDroppingPoints = async ({
   UserIp,
@@ -91,7 +108,6 @@ export const fetchBoardingDroppingPoints = async ({
   DestinationId,
 }) => {
   try {
-    // Use only the 3 required parameters as per your Postman example
     const payload = {
       UserIp,
       SearchTokenId,
@@ -104,7 +120,6 @@ export const fetchBoardingDroppingPoints = async ({
 
     console.log("✅ Boarding/Dropping Response:", response.data);
 
-    // Return the data structure that matches your API response
     return {
       BoardingPointsDetails: response.data?.data?.BoardingPointsDetails || [],
       DroppingPointsDetails: response.data?.data?.DroppingPointsDetails || [],
@@ -112,7 +127,6 @@ export const fetchBoardingDroppingPoints = async ({
   } catch (error) {
     console.error("❌ Failed to fetch boarding/dropping points:", error.response?.data || error.message);
 
-    // Return empty arrays on error
     return {
       BoardingPointsDetails: [],
       DroppingPointsDetails: [],
@@ -160,35 +174,83 @@ export const blockSeats = async ({
 
 
 
-
-
-
-
-
-// ─────────────────────────────────────────────────────────────
-// 💳 Create Bus Payment Order
-// ─────────────────────────────────────────────────────────────
-export const createBusPaymentOrder = async (orderData) => {
+// ✅ FIXED: Create bus Razorpay order
+export const createBusOrder = async (orderData) => {
   try {
-    const response = await axios.post(BusServices.createOrder, orderData);
+    console.log('📦 Creating bus order with data:', orderData);
+
+    const headers = createAuthHeaders();
+
+    // Extract amount from orderData or use it directly if it's just amount
+    const amount = typeof orderData === 'object' ? orderData.amount : orderData;
+
+    const payload = {
+      amount: amount,
+      currency: 'INR',
+      booking_type: 'bus',
+      ...(typeof orderData === 'object' && orderData)
+    };
+
+    const response = await axios.post(
+      BusServices.createOrder,
+      payload,
+      { headers }
+    );
+
+    console.log('✅ createBusOrder Success:', response.data);
     return response.data;
-  } catch (err) {
-    console.error("❌ Error creating bus payment order:", err);
-    throw err.response?.data || { message: "Failed to create payment order" };
+  } catch (error) {
+    console.error('❌ createBusOrder Error:', error.response?.data || error.message);
+    throw error;
   }
 };
 
 
-export const formatBusOrderData = (data) => {
-  return {
-    transactionId: data.transactionId,
-    seats: data.seats,
-    amount: data.amount,
-    user: {
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-    },
-    // Add more fields as needed
-  };
+
+
+// ✅ FIXED: Create bus payment order (alias for createBusOrder)
+export const createBusPaymentOrder = async (orderData) => {
+  return createBusOrder(orderData);
 };
+
+// ✅ NEW: Validate bus payment with exact structure as per your Postman
+export const validateBusPayment = async (paymentData) => {
+  try {
+    console.log('🔍 Validating bus payment with payload:', paymentData);
+
+    const headers = createAuthHeaders();
+
+    // Construct payload exactly as per your Postman structure
+    const payload = {
+      amount: paymentData.amount,
+      razorpay_order_id: paymentData.razorpay_order_id,
+      razorpay_payment_id: paymentData.razorpay_payment_id,
+      razorpay_signature: paymentData.razorpay_signature,
+      bookingType: "BUS",
+      Bus: {
+        ResultIndex: paymentData.Bus.ResultIndex,
+        BoardingPointId: paymentData.Bus.BoardingPointId,
+        DroppingPointId: paymentData.Bus.DroppingPointId,
+        SearchTokenId: paymentData.Bus.SearchTokenId,
+        CouponDiscount: paymentData.Bus.CouponDiscount || 0,
+        Passenger: paymentData.Bus.Passenger
+      }
+    };
+
+    console.log('📤 Sending validate payment payload:', payload);
+
+    const response = await axios.post(
+      BusServices.validatePayment,
+      payload,
+      { headers }
+    );
+
+    console.log('✅ validateBusPayment Success:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ validateBusPayment Error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+

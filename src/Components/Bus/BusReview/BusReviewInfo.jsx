@@ -1,37 +1,247 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Button, Form, Alert, Badge } from 'react-bootstrap';
-import { FaCity, FaClock, FaEdit, FaWheelchair, FaUser, FaEnvelope, FaPhone, FaReceipt, FaArrowLeft } from 'react-icons/fa';
+import { FaCity, FaClock, FaEdit, FaWheelchair, FaUser, FaEnvelope, FaPhone, FaReceipt, FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const BusReviewInfo = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
     const [termsAccepted, setTermsAccepted] = useState(false);
+    const [dataLoaded, setDataLoaded] = useState(false);
 
+    // Enhanced data extraction with comprehensive fallbacks
     const {
-        bus,
-        selectedSeats,
-        totalPrice,
-        departTime,
-        arriveTime,
-        boarding,
-        fromCity,
-        toCity,
-        departDate,
-        passengerData,
-        contactData,
-        gstData, // GST data from traveller form
+        // Passenger and seat data
+        passengerData = [],
+        selectedSeats = [],
+        seatMapping = [],
+
+        // Contact information
+        contactData = {},
+
+        // GST information
+        gstData = null,
+        showGstinForm = false,
+
+        // Journey details
+        bus = {},
+        totalPrice = 0,
+        departTime = '',
+        arriveTime = '',
+        boarding = {},
+        fromCity = '',
+        toCity = '',
+        departDate = '',
+
+        // Booking status
+        blockSeatResponse = null,
+        seatsBlocked = false,
+        isBlockingSeats = false,
+
+        // Additional info
+        passengerCount = 0,
+        seatCount = 0,
+        hasGstDetails = false,
+
+        // Debug info
+        debugInfo = null
     } = state || {};
+
+    // Enhanced debugging and validation
+    useEffect(() => {
+        console.log("🔍 BusReviewInfo - Complete state data:", state);
+        console.log("📋 Enhanced Data Analysis:", {
+            passengerData: {
+                count: passengerData?.length || 0,
+                data: passengerData,
+                hasData: Array.isArray(passengerData) && passengerData.length > 0
+            },
+            selectedSeats: {
+                count: selectedSeats?.length || 0,
+                data: selectedSeats,
+                hasData: Array.isArray(selectedSeats) && selectedSeats.length > 0
+            },
+            contactData: {
+                hasEmail: !!contactData?.email,
+                hasMobile: !!contactData?.mobile,
+                data: contactData
+            },
+            gstData: {
+                hasGstData: !!gstData,
+                showForm: showGstinForm,
+                data: gstData
+            },
+            journey: {
+                totalPrice,
+                fromCity,
+                toCity,
+                departDate,
+                departTime
+            },
+            seatMapping: seatMapping
+        });
+
+        setDataLoaded(true);
+    }, [state, passengerData, contactData, gstData, selectedSeats, seatMapping]);
+
+    // Enhanced helper functions
+    const getSeatName = (seat, index) => {
+        if (!seat) return `Seat ${index + 1}`;
+
+        return seat.displayName ||
+            seat.SeatName ||
+            seat.SeatNo ||
+            seat.seatName ||
+            seat.seatNo ||
+            seat.Name ||
+            seat.name ||
+            `Seat ${index + 1}`;
+    };
+
+    const getPassengerFullName = (passenger) => {
+        if (!passenger) return 'Not provided';
+
+        const title = passenger.title || '';
+        const firstName = passenger.firstName || '';
+        const lastName = passenger.lastName || '';
+        const fullName = `${title} ${firstName} ${lastName}`.trim();
+
+        return fullName || 'Not provided';
+    };
+
+    const getPassengerDetails = (passenger, index) => {
+        if (!passenger) {
+            return {
+                name: 'Not provided',
+                age: 'N/A',
+                gender: 'N/A',
+                idType: 'N/A',
+                idNumber: 'N/A',
+                seatName: getSeatName(selectedSeats[index], index)
+            };
+        }
+
+        return {
+            name: getPassengerFullName(passenger),
+            age: passenger.age || 'N/A',
+            gender: passenger.gender || 'N/A',
+            idType: passenger.idType || 'N/A',
+            idNumber: passenger.idNumber || 'N/A',
+            seatName: getSeatName(selectedSeats[index], index),
+            isLead: passenger.isLeadPassenger || (index === 0)
+        };
+    };
+
+    // Enhanced seat display
+    const getSeatDisplayText = () => {
+        if (!selectedSeats || selectedSeats.length === 0) return 'No seats selected';
+
+        return selectedSeats.map((seat, index) => getSeatName(seat, index)).join(", ");
+    };
 
     const handlePayment = () => {
         if (!termsAccepted) {
             alert('Please accept the terms and conditions to continue.');
             return;
         }
-        navigate("/bus-payment", { state: { ...state, totalPrice } });
+
+        // Comprehensive data structure for payment page
+        const paymentData = {
+            // Original state data
+            ...state,
+            termsAccepted,
+
+            // Enhanced passenger data with seat mapping
+            passengerData: passengerData?.map((passenger, index) => ({
+                ...passenger,
+                fullName: getPassengerFullName(passenger),
+                seatDetails: selectedSeats[index] ? {
+                    ...selectedSeats[index],
+                    displayName: getSeatName(selectedSeats[index], index)
+                } : null,
+                isLeadPassenger: passenger.isLeadPassenger || (index === 0)
+            })),
+
+            // Enhanced contact data
+            contactData: {
+                ...contactData,
+                fullPhone: `${contactData?.countryCode || '+91'} ${contactData?.mobile || ''}`
+            },
+
+            // Enhanced seat data
+            selectedSeats: selectedSeats?.map((seat, index) => ({
+                ...seat,
+                displayName: getSeatName(seat, index),
+                passengerName: getPassengerFullName(passengerData[index]),
+                passengerIndex: index
+            })),
+
+            // Journey summary
+            journeyDetails: {
+                from: fromCity,
+                to: toCity,
+                date: departDate,
+                departTime,
+                arriveTime,
+                duration: bus?.duration,
+                operator: bus?.operator || bus?.name,
+                busType: bus?.busType,
+                boarding: {
+                    point: boarding?.CityPointName || boarding?.name,
+                    time: boarding?.DepTime || boarding?.time,
+                    address: boarding?.address
+                }
+            },
+
+            // Pricing details
+            pricing: {
+                basePrice: totalPrice,
+                seatCount: selectedSeats?.length || 0,
+                passengerCount: passengerData?.length || 0,
+                pricePerSeat: selectedSeats?.length ? (totalPrice / selectedSeats.length) : 0
+            },
+
+            // GST details (if available)
+            gstDetails: gstData && showGstinForm ? {
+                ...gstData,
+                isRequired: true
+            } : {
+                isRequired: false
+            },
+
+            // Booking metadata
+            bookingMeta: {
+                bookingSource: 'web',
+                platform: 'bus_booking',
+                createdAt: new Date().toISOString(),
+                sessionId: Date.now(),
+                seatsBlocked,
+                blockSeatResponse
+            },
+
+            // Validation flags
+            validation: {
+                hasPassengers: passengerData && passengerData.length > 0,
+                hasSeats: selectedSeats && selectedSeats.length > 0,
+                hasContact: contactData && (contactData.email || contactData.mobile),
+                hasPrice: totalPrice > 0,
+                termsAccepted: termsAccepted
+            }
+        };
+
+        // Debug logging
+        console.log("💳 Complete Payment Data Structure:", paymentData);
+        console.log("📊 Data Validation:", paymentData.validation);
+
+        // Navigate to payment with comprehensive data
+        navigate("/bus-payment", {
+            state: paymentData,
+            replace: false // Keep in navigation history
+        });
     };
 
     const handleEdit = () => {
+        // Navigate back with current state preserved
         navigate("/bus-traveller-details", { state });
     };
 
@@ -39,6 +249,7 @@ const BusReviewInfo = () => {
         navigate(-1);
     };
 
+    // Enhanced validation and error handling
     if (!state) {
         return (
             <div className="container py-5 text-center">
@@ -51,19 +262,68 @@ const BusReviewInfo = () => {
         );
     }
 
+    if (!dataLoaded) {
+        return (
+            <div className="container py-5 text-center">
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="mt-3">Loading booking details...</p>
+            </div>
+        );
+    }
+
+    if (!passengerData || passengerData.length === 0) {
+        return (
+            <div className="container py-5 text-center">
+                <Alert variant="warning">
+                    <h5>Passenger data missing</h5>
+                    <p>No passenger information found. Please go back and fill in passenger details.</p>
+                    <Button variant="primary" onClick={handleEdit}>Fill Passenger Details</Button>
+                </Alert>
+            </div>
+        );
+    }
+
+    if (!selectedSeats || selectedSeats.length === 0) {
+        return (
+            <div className="container py-5 text-center">
+                <Alert variant="warning">
+                    <h5>Seat data missing</h5>
+                    <p>No seat information found. Please go back and select seats.</p>
+                    <Button variant="primary" onClick={() => navigate(-2)}>Select Seats</Button>
+                </Alert>
+            </div>
+        );
+    }
+
     return (
         <div className="container my-4">
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h4 className="mb-1">Review Your Booking</h4>
-                    <p className="text-muted mb-0">Please review all details before proceeding to payment</p>
+                    <p className="text-muted mb-0">
+                        Please review all details before proceeding to payment
+                        {debugInfo && (
+                            <small className="d-block text-success">
+                                ✓ Data passed from {debugInfo.from} at {new Date(debugInfo.passedAt).toLocaleTimeString()}
+                            </small>
+                        )}
+                    </p>
                 </div>
                 <Button variant="outline-secondary" onClick={handleGoBack}>
                     <FaArrowLeft className="me-2" />
                     Back
                 </Button>
             </div>
+
+            {/* Data Summary Alert */}
+            <Alert variant="info" className="mb-4">
+                <FaCheckCircle className="me-2" />
+                <strong>Booking Summary:</strong> {passengerData.length} passenger(s) • {selectedSeats.length} seat(s) •
+                ₹{totalPrice?.toLocaleString()} • {hasGstDetails ? 'GST Invoice Required' : 'No GST Invoice'}
+            </Alert>
 
             {/* Route Info */}
             <Card className="mb-4 shadow-sm border-0" style={{ borderRadius: "10px" }}>
@@ -75,14 +335,16 @@ const BusReviewInfo = () => {
                         <Col md={4}>
                             <div className="d-flex align-items-center mb-2">
                                 <FaCity className="me-2 text-primary" />
-                                <strong className="fs-5">{fromCity}</strong>
+                                <strong className="fs-5">{fromCity || 'N/A'}</strong>
                             </div>
-                            <h4 className="fw-bold text-success">{departTime}</h4>
-                            <div className="text-muted">{new Date(departDate).toDateString()}</div>
+                            <h4 className="fw-bold text-success">{departTime || 'N/A'}</h4>
+                            <div className="text-muted">
+                                {departDate ? new Date(departDate).toDateString() : 'Date not available'}
+                            </div>
                             <hr />
                             <div>
                                 <div className="text-muted small">Bus Operator</div>
-                                <strong>{bus?.operator || 'N/A'}</strong>
+                                <strong>{bus?.operator || bus?.name || 'N/A'}</strong>
                             </div>
                         </Col>
 
@@ -94,11 +356,11 @@ const BusReviewInfo = () => {
                             </div>
                             <hr />
                             <div>
-                                <div className="text-muted small">Selected Seats</div>
+                                <div className="text-muted small">Selected Seats ({selectedSeats.length})</div>
                                 <div className="d-flex align-items-center justify-content-center gap-2 flex-wrap mt-2">
                                     <FaWheelchair className="text-danger" />
                                     <span className="fw-semibold">
-                                        {selectedSeats?.map(s => s.SeatName).join(", ")}
+                                        {getSeatDisplayText()}
                                     </span>
                                 </div>
                             </div>
@@ -106,16 +368,20 @@ const BusReviewInfo = () => {
 
                         <Col md={4} className="text-end">
                             <div className="d-flex justify-content-end align-items-center mb-2">
-                                <strong className="fs-5">{toCity}</strong>
+                                <strong className="fs-5">{toCity || 'N/A'}</strong>
                                 <FaCity className="ms-2 text-primary" />
                             </div>
-                            <h4 className="fw-bold text-success">{arriveTime}</h4>
-                            <div className="text-muted">{new Date(departDate).toDateString()}</div>
+                            <h4 className="fw-bold text-success">{arriveTime || 'N/A'}</h4>
+                            <div className="text-muted">
+                                {departDate ? new Date(departDate).toDateString() : 'Date not available'}
+                            </div>
                             <hr />
                             <div>
                                 <div className="text-muted small">Boarding Point</div>
-                                <strong>{boarding?.CityPointName || 'N/A'}</strong>
-                                <div className="text-muted small">Time: {boarding?.DepTime || 'N/A'}</div>
+                                <strong>{boarding?.CityPointName || boarding?.name || 'N/A'}</strong>
+                                <div className="text-muted small">
+                                    Time: {boarding?.DepTime || boarding?.time || 'N/A'}
+                                </div>
                             </div>
                         </Col>
                     </Row>
@@ -154,7 +420,7 @@ const BusReviewInfo = () => {
                                     <strong>Mobile Number</strong>
                                 </div>
                                 <div className="ps-4">
-                                    {contactData?.countryCode} {contactData?.mobile || 'Not provided'}
+                                    {(contactData?.countryCode || '+91')} {contactData?.mobile || 'Not provided'}
                                 </div>
                             </div>
                         </Col>
@@ -162,7 +428,7 @@ const BusReviewInfo = () => {
                 </Card.Body>
             </Card>
 
-            {/* Passenger Details */}
+            {/* Enhanced Passenger Details */}
             <Card className="mb-4 shadow-sm border-0">
                 <Card.Header className="bg-light d-flex justify-content-between align-items-center">
                     <h5 className="mb-0">
@@ -177,43 +443,49 @@ const BusReviewInfo = () => {
                     />
                 </Card.Header>
                 <Card.Body>
-                    {passengerData?.map((passenger, index) => (
-                        <Card key={index} className="border mb-3">
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <div className="d-flex align-items-center">
-                                        <Badge bg={index === 0 ? "primary" : "secondary"} className="me-2">
-                                            {index === 0 ? "Lead Passenger" : `Passenger ${index + 1}`}
-                                        </Badge>
-                                        <span className="fw-semibold">Seat {selectedSeats?.[index]?.SeatName}</span>
+                    {passengerData?.map((passenger, index) => {
+                        const details = getPassengerDetails(passenger, index);
+                        return (
+                            <Card key={index} className="border mb-3">
+                                <Card.Body>
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <div className="d-flex align-items-center">
+                                            <Badge bg={details.isLead ? "primary" : "secondary"} className="me-2">
+                                                {details.isLead ? "Lead Passenger" : `Passenger ${index + 1}`}
+                                            </Badge>
+                                            <span className="fw-semibold">Seat {details.seatName}</span>
+                                        </div>
+                                        {details.isLead && (
+                                            <small className="text-muted">* Primary contact person</small>
+                                        )}
                                     </div>
-                                </div>
-                                <Row>
-                                    <Col md={8}>
-                                        <div className="mb-2">
-                                            <strong>Name:</strong> {passenger.title} {passenger.firstName} {passenger.lastName}
-                                        </div>
-                                        <div className="mb-2">
-                                            <strong>Age:</strong> {passenger.age} years | <strong>Gender:</strong> {passenger.gender}
-                                        </div>
-                                    </Col>
-                                    <Col md={4}>
-                                        <div className="mb-2">
-                                            <strong>ID Type:</strong> {passenger.idType}
-                                        </div>
-                                        <div className="mb-2">
-                                            <strong>ID Number:</strong> {passenger.idNumber}
-                                        </div>
-                                    </Col>
-                                </Row>
-                            </Card.Body>
-                        </Card>
-                    ))}
+                                    <Row>
+                                        <Col md={8}>
+                                            <div className="mb-2">
+                                                <strong>Name:</strong> {details.name}
+                                            </div>
+                                            <div className="mb-2">
+                                                <strong>Age:</strong> {details.age} years | <strong>Gender:</strong> {details.gender}
+                                            </div>
+                                        </Col>
+                                        <Col md={4}>
+                                            <div className="mb-2">
+                                                <strong>ID Type:</strong> {details.idType}
+                                            </div>
+                                            <div className="mb-2">
+                                                <strong>ID Number:</strong> {details.idNumber}
+                                            </div>
+                                        </Col>
+                                    </Row>
+                                </Card.Body>
+                            </Card>
+                        );
+                    })}
                 </Card.Body>
             </Card>
 
             {/* GST Details (if provided) */}
-            {gstData && (
+            {gstData && showGstinForm && (
                 <Card className="mb-4 shadow-sm border-0">
                     <Card.Header className="bg-light d-flex justify-content-between align-items-center">
                         <h5 className="mb-0">
@@ -231,27 +503,27 @@ const BusReviewInfo = () => {
                         <Row>
                             <Col md={6}>
                                 <div className="mb-2">
-                                    <strong>GST Number:</strong> {gstData.gstNumber}
+                                    <strong>GST Number:</strong> {gstData.gstNumber || 'Not provided'}
                                 </div>
                                 <div className="mb-2">
-                                    <strong>Company Name:</strong> {gstData.companyName}
+                                    <strong>Company Name:</strong> {gstData.companyName || 'Not provided'}
                                 </div>
                                 <div className="mb-2">
-                                    <strong>Contact:</strong> {gstData.contactNo}
+                                    <strong>Contact:</strong> {gstData.contactNo || 'Not provided'}
                                 </div>
                             </Col>
                             <Col md={6}>
                                 <div className="mb-2">
-                                    <strong>Email:</strong> {gstData.email}
+                                    <strong>Email:</strong> {gstData.email || 'Not provided'}
                                 </div>
                                 <div className="mb-2">
-                                    <strong>Address:</strong> {gstData.address}
+                                    <strong>Address:</strong> {gstData.address || 'Not provided'}
                                 </div>
                                 <div className="mb-2">
-                                    <strong>City, State:</strong> {gstData.city}, {gstData.state}
+                                    <strong>City, State:</strong> {gstData.city || 'N/A'}, {gstData.state || 'N/A'}
                                 </div>
                                 <div className="mb-2">
-                                    <strong>Pincode:</strong> {gstData.pincode}
+                                    <strong>Pincode:</strong> {gstData.pincode || 'Not provided'}
                                 </div>
                             </Col>
                         </Row>
@@ -272,11 +544,11 @@ const BusReviewInfo = () => {
                                     <strong>Base Fare:</strong> {selectedSeats?.length || 0} × Seats
                                 </div>
                                 <div className="mb-2">
-                                    <strong>Seats:</strong> {selectedSeats?.map(s => s.SeatName).join(", ")}
+                                    <strong>Seats:</strong> {getSeatDisplayText()}
                                 </div>
-                                {gstData && (
+                                {gstData && showGstinForm && (
                                     <div className="text-muted small">
-                                        * GST invoice will be generated
+                                        * GST invoice will be generated for {gstData.companyName}
                                     </div>
                                 )}
                             </div>
