@@ -43,8 +43,6 @@ const SvgUpperBerthIcon = ({ fill = "#f8f9fa", stroke = "#6c757d", isSelected = 
   </svg>
 );
 
-
-
 const BusSeatSelect = ({ show, onHide, bus }) => {
   const navigate = useNavigate();
   const { fromCity, toCity, departDate } = useLocation().state || {};
@@ -517,6 +515,8 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
     );
   };
 
+  // In your BusSeatSelect component, update the handleContinue function:
+
   const handleContinue = () => {
     if (selectedSeats.length === 0) {
       alert("Please select at least one seat.");
@@ -533,11 +533,46 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
       return;
     }
 
-    // Navigate directly without blocking seats
+    // Debug selected seats before navigation
+    console.log("🎫 Selected seats before navigation:", selectedSeats);
+    selectedSeats.forEach((seat, index) => {
+      console.log(`Seat ${index}:`, {
+        SeatName: seat.SeatName,
+        SeatNo: seat.SeatNo,
+        fullObject: seat
+      });
+    });
+
+    // Ensure each selected seat has a proper seat name
+    const processedSeats = selectedSeats.map((seat, index) => {
+      let seatName = seat.SeatName || seat.SeatNo || seat.seatName || seat.seatNo || seat.Name || seat.name;
+
+      if (!seatName) {
+        console.error(`❌ No seat name found for seat at index ${index}:`, seat);
+        // Try to use the first available string property
+        const stringProps = Object.entries(seat).filter(([key, value]) =>
+          typeof value === 'string' && value.trim() !== ''
+        );
+        if (stringProps.length > 0) {
+          seatName = stringProps[0][1];
+          console.warn(`⚠️ Using fallback seat name "${seatName}" for seat ${index}`);
+        }
+      }
+
+      return {
+        ...seat,
+        SeatName: seatName // Ensure SeatName is properly set
+      };
+    });
+
+    console.log("✅ Processed seats with proper names:", processedSeats);
+
+    // Navigate with processed seats
     navigate("/bus-detail", {
       state: {
+        // Original bus data
         bus,
-        selectedSeats,
+        selectedSeats: processedSeats, // Use processed seats instead
         totalPrice,
         fromCity,
         toCity,
@@ -548,7 +583,48 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
         boarding,
         dropping,
         boardingTime: formatTime(boarding?.CityPointTime),
-        droppingTime: formatTime(dropping?.CityPointTime)
+        droppingTime: formatTime(dropping?.CityPointTime),
+
+        // Block Seat API payload parameters
+        blockSeatPayload: {
+          UserIp: bus.UserIp,
+          SearchTokenId: bus.SearchTokenId,
+          ResultIndex: bus.ResultIndex,
+          BoardingPointId: boarding?.CityPointId || boarding?.Id || 1,
+          DroppingPointId: dropping?.CityPointId || dropping?.Id || 1,
+          OriginId: bus.OriginId,
+          DestinationId: bus.DestinationId,
+          DateOfJourney: departDate,
+          // Passenger array will be built in the next component with actual passenger data
+          Passenger: processedSeats.map((seat, index) => ({
+            LeadPassenger: index === 0,
+            Title: "",
+            FirstName: "",
+            LastName: "",
+            Email: "",
+            Phoneno: "",
+            Gender: "",
+            IdType: null,
+            IdNumber: null,
+            Address: "",
+            Age: "",
+            SeatName: seat.SeatName // This should now be properly set
+          }))
+        },
+
+        // Additional parameters for easy access
+        userIp: bus.UserIp,
+        searchTokenId: bus.SearchTokenId,
+        resultIndex: bus.ResultIndex,
+        originId: bus.OriginId,
+        destinationId: bus.DestinationId,
+        boardingPointId: boarding?.CityPointId || boarding?.Id || 1,
+        droppingPointId: dropping?.CityPointId || dropping?.Id || 1,
+
+        // Additional derived parameters
+        numberOfPassengers: processedSeats.length,
+        seatNames: processedSeats.map(seat => seat.SeatName),
+        seatPrices: processedSeats.map(seat => seat?.Price?.PublishedPrice || seat?.PublishedPrice || 450)
       },
     });
   };

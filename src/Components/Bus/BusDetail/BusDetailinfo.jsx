@@ -21,7 +21,18 @@ const BusDetailinfo = () => {
         boardingTime,
         droppingTime,
         blockResponse,
-        passengerData
+        passengerData,
+        // Existing payload parameters
+        blockSeatPayload,
+        searchPayload,
+        seatLayoutPayload,
+        boardingPointPayload,
+        // Additional required parameters for block seat API
+        userIp,
+        searchTokenId,
+        resultIndex,
+        originId,
+        destinationId
     } = state || {};
 
     if (!state) {
@@ -38,9 +49,28 @@ const BusDetailinfo = () => {
         );
     }
 
+    // Prepare the complete block seat payload structure
+    const prepareBlockSeatPayload = () => {
+        return {
+            UserIp: userIp || "122.161.64.143", // Use actual IP or fallback
+            SearchTokenId: searchTokenId || "e703c52750f2a93d7bb5cc838f7074e225d63112", // From search results
+            ResultIndex: resultIndex || "TB-1", // From bus selection
+            BoardingPointId: boarding?.CityPointId || boarding?.Id || 1,
+            DroppingPointId: dropping?.CityPointId || dropping?.Id || 1,
+            OriginId: originId || "8463", // From search parameters
+            DestinationId: destinationId || "9573", // From search parameters
+            // Passenger array will be populated in traveller component with actual passenger details
+            Passenger: [] // This will be filled with actual passenger data in next component
+        };
+    };
+
     const handleContinue = () => {
+        // Prepare complete block seat payload structure
+        const completeBlockSeatPayload = prepareBlockSeatPayload();
+
         navigate("/bus-traveller-details", {
             state: {
+                // Original state
                 bus,
                 selectedSeats,
                 totalPrice,
@@ -54,7 +84,30 @@ const BusDetailinfo = () => {
                 boardingTime,
                 droppingTime,
                 blockResponse,
-                passengerData
+                passengerData,
+
+                // All existing payload parameters
+                blockSeatPayload,
+                searchPayload,
+                seatLayoutPayload,
+                boardingPointPayload,
+
+                // Complete block seat payload with correct structure
+                completeBlockSeatPayload,
+
+                // Individual API parameters for easy access
+                userIp: userIp || "122.161.64.143",
+                searchTokenId: searchTokenId || "e703c52750f2a93d7bb5cc838f7074e225d63112",
+                resultIndex: resultIndex || "TB-1",
+                originId: originId || "8463",
+                destinationId: destinationId || "9573",
+
+                // Additional derived parameters
+                numberOfPassengers: selectedSeats?.length || 0,
+                boardingPointId: boarding?.CityPointId || boarding?.Id || 1,
+                droppingPointId: dropping?.CityPointId || dropping?.Id || 1,
+                seatNames: selectedSeats?.map(seat => seat.SeatName) || [],
+                seatPrices: selectedSeats?.map(seat => seat?.Price?.PublishedPrice || seat?.PublishedPrice || 450) || []
             },
         });
     };
@@ -246,6 +299,7 @@ const BusDetailinfo = () => {
                                         Landmark: {boarding.CityPointLandmark}
                                     </div>
                                 )}
+
                             </div>
                         </Col>
 
@@ -268,6 +322,7 @@ const BusDetailinfo = () => {
                                         Landmark: {dropping.CityPointLandmark}
                                     </div>
                                 )}
+
                             </div>
                         </Col>
                     </Row>
@@ -314,7 +369,7 @@ const BusDetailinfo = () => {
 
             {/* Important Notes */}
             <div className="mt-4">
-                <Card className="border-warning bg-warning bg-opacity-10">
+                <Card className="border-danger bg-danger bg-opacity-10">
                     <Card.Body className="py-3">
                         <h6 className="text-warning mb-2">
                             📋 Important Information
@@ -323,11 +378,14 @@ const BusDetailinfo = () => {
                             <li>Please arrive at the boarding point at least 15 minutes before departure</li>
                             <li>Carry a valid ID proof for verification</li>
                             <li>Your seats have been temporarily reserved for 15 minutes</li>
+                            <li>All required API parameters are ready for seat blocking</li>
                             <li>Cancellation and refund policies apply as per operator terms</li>
                         </ul>
                     </Card.Body>
                 </Card>
             </div>
+
+
         </div>
     );
 };

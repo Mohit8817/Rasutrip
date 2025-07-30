@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, Form, Button, Row, Col, Alert, Badge, Spinner } from 'react-bootstrap';
 import { FaUser, FaEnvelope, FaPhone, FaIdCard, FaReceipt, FaArrowLeft } from 'react-icons/fa';
+import { blockSeats } from '../../APIS/BusApi/BusApis'; // Import your blockSeats API function
 
 const BusTravellerinfo = () => {
     const navigate = useNavigate();
@@ -11,10 +12,10 @@ const BusTravellerinfo = () => {
     // Initialize states
     const [showGstinForm, setShowGstinForm] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [seatsBlocked, setSeatsBlocked] = useState(false);
 
     const [passengerData, setPassengerData] = useState(
         selectedSeats.map((seat, index) => ({
-            seatName: seat.SeatName,
             title: '',
             firstName: '',
             lastName: '',
@@ -47,7 +48,8 @@ const BusTravellerinfo = () => {
     const [errors, setErrors] = useState({
         passenger: [],
         contact: {},
-        gst: {}
+        gst: {},
+        api: null
     });
 
     const [touchedFields, setTouchedFields] = useState({
@@ -55,6 +57,51 @@ const BusTravellerinfo = () => {
         contact: {},
         gst: {}
     });
+
+    // Debug function to analyze seat data
+    const debugSeatData = () => {
+        console.log("🔍 DEBUGGING SEAT DATA:");
+        console.log("Selected Seats Array:", selectedSeats);
+
+        selectedSeats.forEach((seat, index) => {
+            console.log(`Seat ${index}:`, {
+                fullSeatObject: seat,
+                SeatName: seat?.SeatName,
+                SeatNo: seat?.SeatNo,
+                seatName: seat?.seatName,
+                seatNo: seat?.seatNo,
+                Name: seat?.Name,
+                name: seat?.name,
+                allKeys: Object.keys(seat || {})
+            });
+        });
+    };
+
+    // Seat Debug Component
+    const SeatDebugComponent = () => {
+        const seatAnalysis = selectedSeats.map((seat, index) => {
+            const allKeys = Object.keys(seat || {});
+            const possibleSeatNames = allKeys.filter(key =>
+                key.toLowerCase().includes('seat') ||
+                key.toLowerCase().includes('name') ||
+                key.toLowerCase().includes('no') ||
+                key.toLowerCase().includes('number')
+            );
+
+            return {
+                index,
+                seat,
+                allKeys,
+                possibleSeatNames,
+                values: possibleSeatNames.reduce((acc, key) => {
+                    acc[key] = seat[key];
+                    return acc;
+                }, {})
+            };
+        });
+
+
+    };
 
     // Validation Functions
     const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -138,11 +185,12 @@ const BusTravellerinfo = () => {
         const newContactErrors = validateContact();
         const newGstErrors = validateGst();
 
-        setErrors({
+        setErrors(prev => ({
+            ...prev,
             passenger: newPassengerErrors,
             contact: newContactErrors,
             gst: newGstErrors
-        });
+        }));
     }, [passengerData, contactData, gstData, touchedFields, showGstinForm]);
 
     // Handle passenger data change
@@ -160,6 +208,289 @@ const BusTravellerinfo = () => {
     // Handle GST data change
     const handleGstChange = (field, value) => {
         setGstData(prev => ({ ...prev, [field]: value }));
+    };
+
+    // Function to validate seat names before API call
+    const validateSeatNames = () => {
+        console.log("🔍 Validating seat names before API call...");
+
+        const errors = [];
+
+        selectedSeats.forEach((seat, index) => {
+            const seatIdentifiers = [
+                seat?.SeatName, seat?.SeatNo, seat?.seatName, seat?.seatNo,
+                seat?.Name, seat?.name
+            ].filter(id => id && String(id).trim() !== '');
+
+            if (seatIdentifiers.length === 0) {
+                errors.push(`Seat ${index + 1}: No valid seat identifier found`);
+            } else {
+                console.log(`✅ Seat ${index + 1} has identifiers:`, seatIdentifiers);
+            }
+        });
+
+        if (errors.length > 0) {
+            console.error("❌ Seat validation errors:", errors);
+            return { valid: false, errors };
+        }
+
+        return { valid: true, errors: [] };
+    };
+
+    // Enhanced function to prepare passenger data for block seats API
+    const preparePassengerDataForAPI = () => {
+        console.log("🚀 Preparing passenger data for API...");
+
+        // Debug seat data first
+        debugSeatData();
+
+        return passengerData.map((passenger, index) => {
+            const correspondingSeat = selectedSeats[index];
+
+            if (!correspondingSeat) {
+                console.error(`❌ No corresponding seat found for passenger at index ${index}`);
+                throw new Error(`Data mismatch: No seat found for passenger ${index + 1}.`);
+            }
+
+            // Enhanced seat name extraction with multiple fallbacks
+            let seatName = null;
+
+            // Try different possible seat name fields
+            const possibleSeatFields = [
+                'SeatName', 'SeatNo', 'seatName', 'seatNo',
+                'Name', 'name', 'seat_name', 'seat_no',
+                'SeatNumber', 'seatNumber', 'number', 'Number'
+            ];
+
+            for (const field of possibleSeatFields) {
+                if (correspondingSeat[field] && String(correspondingSeat[field]).trim() !== '') {
+                    seatName = String(correspondingSeat[field]).trim();
+                    console.log(`✅ Found seat name using field '${field}': "${seatName}"`);
+                    break;
+                }
+            }
+
+            // If still no seat name found, try index-based approach
+            if (!seatName) {
+                console.warn(`⚠️ No seat name found in standard fields for seat ${index}`);
+                console.log("Available seat object keys:", Object.keys(correspondingSeat));
+
+                // Last resort: use the first non-null, non-empty value that might be a seat identifier
+                const values = Object.values(correspondingSeat).filter(val =>
+                    val !== null && val !== undefined && String(val).trim() !== ''
+                );
+
+                if (values.length > 0) {
+                    seatName = String(values[0]).trim();
+                    console.log(`🔧 Using fallback seat name: "${seatName}"`);
+                }
+            }
+
+            if (!seatName || seatName === '') {
+                console.error(`❌ Could not determine seat name for passenger ${index + 1}`);
+                console.error("Seat object:", correspondingSeat);
+                throw new Error(`Invalid SeatName for passenger ${index + 1}. Seat identifier not found.`);
+            }
+
+            // Validate seat name format (basic validation)
+            if (typeof seatName !== 'string' || seatName.length === 0) {
+                console.error(`❌ Invalid seat name format: "${seatName}" (type: ${typeof seatName})`);
+                throw new Error(`Invalid SeatName format for passenger ${index + 1}.`);
+            }
+
+            const passengerPayload = {
+                LeadPassenger: passenger.isLeadPassenger || (index === 0),
+                Title: passenger.title || "Mr",
+                FirstName: passenger.firstName?.trim() || "",
+                LastName: passenger.lastName?.trim() || "",
+                Email: contactData.email?.trim() || "",
+                Phoneno: contactData.mobile?.trim() || "",
+                Gender: passenger.gender === 'Male' ? "1" :
+                    passenger.gender === 'Female' ? "2" : "1",
+                IdType: passenger.idType || null,
+                IdNumber: passenger.idNumber || null,
+                Address: gstData.address?.trim() || "406, 4th Floor, Suncity Trade Tower, Sector 21 Gurgaon",
+                Age: passenger.age ? String(passenger.age) : "25",
+                SeatName: seatName // This should now be a proper string
+            };
+
+            console.log(`✅ Prepared Passenger ${index + 1}:`, {
+                name: `${passengerPayload.FirstName} ${passengerPayload.LastName}`,
+                seatName: passengerPayload.SeatName,
+                seatNameType: typeof passengerPayload.SeatName
+            });
+
+            return passengerPayload;
+        });
+    };
+
+    // Enhanced validation function to check seat data integrity
+    const validateBlockSeatData = () => {
+        const errors = [];
+
+        // Check passenger data
+        passengerData.forEach((passenger, index) => {
+            if (!passenger.firstName?.trim()) {
+                errors.push(`Passenger ${index + 1}: First name is required`);
+            }
+            if (!passenger.lastName?.trim()) {
+                errors.push(`Passenger ${index + 1}: Last name is required`);
+            }
+            if (!passenger.age || passenger.age < 1) {
+                errors.push(`Passenger ${index + 1}: Valid age is required`);
+            }
+            if (!passenger.gender) {
+                errors.push(`Passenger ${index + 1}: Gender is required`);
+            }
+        });
+
+        // Check contact data
+        if (!contactData.mobile?.trim()) {
+            errors.push("Contact mobile number is required");
+        }
+        if (!contactData.email?.trim()) {
+            errors.push("Contact email is required");
+        }
+
+        // Check selected seats and their names
+        if (!selectedSeats || selectedSeats.length === 0) {
+            errors.push("No seats selected");
+        } else {
+            selectedSeats.forEach((seat, index) => {
+                const seatName = seat.SeatName || seat.SeatNo || seat.seatName || seat.seatNo || seat.Name || seat.name;
+                if (!seatName) {
+                    errors.push(`Invalid seat name for seat ${index + 1}`);
+                }
+            });
+        }
+
+        // Validate passenger count matches seat count
+        if (passengerData.length !== selectedSeats.length) {
+            errors.push(`Passenger count (${passengerData.length}) doesn't match selected seats (${selectedSeats.length})`);
+        }
+
+        return errors;
+    };
+
+    // Enhanced function to call block seats API with better error handling
+    const callBlockSeatsAPI = async () => {
+        try {
+            console.log("🚀 Starting Block Seats API call...");
+
+            // First validate seat names
+            const seatValidation = validateSeatNames();
+            if (!seatValidation.valid) {
+                throw new Error(`Seat validation failed: ${seatValidation.errors.join(', ')}`);
+            }
+
+            // Debug the raw selectedSeats
+            console.log("🐛 Raw selectedSeats from state:", selectedSeats);
+
+            // Validate required state data
+            const requiredFields = {
+                'UserIp': state?.userIp || state?.completeBlockSeatPayload?.UserIp,
+                'SearchTokenId': state?.searchTokenId || state?.completeBlockSeatPayload?.SearchTokenId,
+                'ResultIndex': state?.resultIndex || state?.completeBlockSeatPayload?.ResultIndex,
+                'BoardingPointId': state?.boardingPointId || state?.completeBlockSeatPayload?.BoardingPointId,
+                'DroppingPointId': state?.droppingPointId || state?.completeBlockSeatPayload?.DroppingPointId,
+                'OriginId': state?.originId || state?.completeBlockSeatPayload?.OriginId,
+                'DestinationId': state?.destinationId || state?.completeBlockSeatPayload?.DestinationId
+            };
+
+            // Set defaults for missing values
+            requiredFields.UserIp = requiredFields.UserIp || "122.161.64.143";
+            requiredFields.BoardingPointId = requiredFields.BoardingPointId || 1;
+            requiredFields.DroppingPointId = requiredFields.DroppingPointId || 1;
+            requiredFields.OriginId = requiredFields.OriginId || "8463";
+            requiredFields.DestinationId = requiredFields.DestinationId || "9573";
+
+            const missingFields = Object.entries(requiredFields)
+                .filter(([, value]) => value === undefined || value === null ||
+                    (typeof value === 'string' && value.trim() === ''))
+                .map(([key]) => key);
+
+            if (missingFields.length > 0) {
+                throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+            }
+
+            // Prepare passenger data with enhanced seat name handling
+            const passengers = preparePassengerDataForAPI();
+
+            if (!passengers || passengers.length === 0) {
+                throw new Error("No passenger data prepared");
+            }
+
+            // Ensure lead passenger is set
+            const hasLeadPassenger = passengers.some(p => p.LeadPassenger === true);
+            if (!hasLeadPassenger) {
+                passengers[0].LeadPassenger = true;
+                console.warn("⚠️ No lead passenger set, making first passenger lead");
+            }
+
+            const blockSeatPayload = {
+                UserIp: requiredFields.UserIp,
+                SearchTokenId: requiredFields.SearchTokenId,
+                ResultIndex: requiredFields.ResultIndex,
+                BoardingPointId: parseInt(requiredFields.BoardingPointId),
+                DroppingPointId: parseInt(requiredFields.DroppingPointId),
+                OriginId: String(requiredFields.OriginId),
+                DestinationId: String(requiredFields.DestinationId),
+                Passenger: passengers
+            };
+
+            console.log("🔒 FINAL Block Seat Payload:");
+            console.log(JSON.stringify(blockSeatPayload, null, 2));
+
+            // Final validation of seat names in payload
+            const invalidSeats = blockSeatPayload.Passenger.filter(p =>
+                !p.SeatName || String(p.SeatName).trim() === ''
+            );
+
+            if (invalidSeats.length > 0) {
+                console.error("❌ Invalid seat names in final payload:", invalidSeats);
+                throw new Error("One or more passengers have invalid seat names");
+            }
+
+            // Log seat names being sent
+            console.log("🎫 Seat names being sent to API:",
+                blockSeatPayload.Passenger.map(p => p.SeatName)
+            );
+
+            const blockResponse = await blockSeats(blockSeatPayload);
+
+            console.log("📡 Block Seats API Response:", blockResponse);
+
+            if (blockResponse && blockResponse.ResponseStatus === 1) {
+                console.log("✅ Seats blocked successfully");
+                setSeatsBlocked(true);
+                return blockResponse;
+            } else {
+                const errorMessage = blockResponse?.Error?.ErrorMessage ||
+                    blockResponse?.message ||
+                    "Unknown API error";
+                console.error("❌ API returned error:", blockResponse);
+                throw new Error(`API Error: ${errorMessage}`);
+            }
+
+        } catch (error) {
+            console.error("❌ Block Seats API Call Failed:", error);
+
+            let userFriendlyError = "Failed to block seats. Please try again.";
+
+            if (error.message.includes("Invalid SeatName") ||
+                error.message.includes("seat name")) {
+                userFriendlyError = "There's an issue with the seat selection. Please go back and re-select your seats.";
+            } else if (error.message.includes("Missing required fields")) {
+                userFriendlyError = "Some booking information is missing. Please try restarting your booking.";
+            } else if (error.message.startsWith("API Error:")) {
+                userFriendlyError = error.message;
+            }
+
+            setErrors(prev => ({ ...prev, api: userFriendlyError }));
+            throw error;
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Validate all fields before submission
@@ -217,17 +548,19 @@ const BusTravellerinfo = () => {
         return { hasError, newPassengerErrors, newContactErrors, newGstErrors };
     };
 
+    // Modified handleContinue function - Navigate immediately after validation
     const handleContinue = async () => {
+        // First validate form data
         const validation = validateAll();
 
         if (validation.hasError) {
             setErrors({
                 passenger: validation.newPassengerErrors,
                 contact: validation.newContactErrors,
-                gst: validation.newGstErrors
+                gst: validation.newGstErrors,
+                api: null
             });
 
-            // Scroll to first error
             const firstErrorElement = document.querySelector('.is-invalid');
             if (firstErrorElement) {
                 firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -235,24 +568,42 @@ const BusTravellerinfo = () => {
             return;
         }
 
+        // Additional validation for block seat data
+        const blockSeatErrors = validateBlockSeatData();
+        if (blockSeatErrors.length > 0) {
+            setErrors(prev => ({
+                ...prev,
+                api: `Data validation failed: ${blockSeatErrors.join(', ')}`
+            }));
+            return;
+        }
+
         setIsSubmitting(true);
 
-        try {
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        // Navigate to next step immediately after validation passes
+        navigate("/bus-review", {
+            state: {
+                ...state,
+                passengerData,
+                contactData,
+                gstData: showGstinForm ? gstData : null,
+                blockSeatResponse: null, // Will be updated when API completes
+                seatsBlocked: false, // Will be updated when API completes
+                isBlockingSeats: true // Indicate that blocking is in progress
+            },
+        });
 
-            // Navigate to next step with all data
-            navigate("/bus-review", {
-                state: {
-                    ...state,
-                    passengerData,
-                    contactData,
-                    gstData: showGstinForm ? gstData : null,
-                },
-            });
+        // Call block seats API in background (optional - for actual seat blocking)
+        try {
+            const blockResponse = await callBlockSeatsAPI();
+            console.log("✅ Seats blocked successfully in background:", blockResponse);
+
+            // You can optionally update the state in the new page or store in context/redux
+            // For now, the navigation has already happened
+
         } catch (error) {
-            console.error("Error submitting passenger data:", error);
-            // Handle error appropriately
+            console.error("❌ Error blocking seats in background:", error);
+            // Handle error if needed - could show notification in the review page
         } finally {
             setIsSubmitting(false);
         }
@@ -276,6 +627,8 @@ const BusTravellerinfo = () => {
 
     return (
         <div className="container my-4">
+
+
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -314,6 +667,11 @@ const BusTravellerinfo = () => {
                 </Card.Body>
             </Card>
 
+            {/* Seat Debug Component */}
+            <SeatDebugComponent />
+
+
+
             {/* Passenger Details */}
             <Card className="mb-4 shadow-sm border-0">
                 <Card.Header className="bg-light">
@@ -331,7 +689,7 @@ const BusTravellerinfo = () => {
                                         <Badge bg={index === 0 ? "primary" : "secondary"} className="me-2">
                                             {index === 0 ? "Lead Passenger" : `Passenger ${index + 1}`}
                                         </Badge>
-                                        <span className="fw-semibold">Seat {seat.SeatName}</span>
+                                        <span className="fw-semibold">Seat {seat.SeatName || seat.SeatNo || seat.name || 'Unknown'}</span>
                                     </div>
                                     {index === 0 && (
                                         <small className="text-muted">* Primary contact person</small>
@@ -760,44 +1118,7 @@ const BusTravellerinfo = () => {
                 </Button>
             </div>
 
-            {/* Progress Indicator */}
-            <div className="mt-4">
-                <div className="d-flex justify-content-center">
-                    <div className="d-flex align-items-center text-muted small">
-                        <div className="d-flex align-items-center">
-                            <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center"
-                                style={{ width: '24px', height: '24px', fontSize: '12px' }}>
-                                ✓
-                            </div>
-                            <span className="mx-2">Seat Selection</span>
-                        </div>
-                        <div className="mx-2">→</div>
-                        <div className="d-flex align-items-center">
-                            <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center"
-                                style={{ width: '24px', height: '24px', fontSize: '12px' }}>
-                                ✓
-                            </div>
-                            <span className="mx-2">Review Details</span>
-                        </div>
-                        <div className="mx-2">→</div>
-                        <div className="d-flex align-items-center">
-                            <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
-                                style={{ width: '24px', height: '24px', fontSize: '12px' }}>
-                                3
-                            </div>
-                            <span className="mx-2 fw-semibold">Passenger Details</span>
-                        </div>
-                        <div className="mx-2">→</div>
-                        <div className="d-flex align-items-center">
-                            <div className="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center"
-                                style={{ width: '24px', height: '24px', fontSize: '12px' }}>
-                                4
-                            </div>
-                            <span className="mx-2">Payment</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
     );
 };
