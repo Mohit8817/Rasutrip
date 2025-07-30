@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { Button, Card, Container, Row, Col } from 'react-bootstrap';
-import { FaCheckCircle, FaUser, FaReceipt, FaRupeeSign } from 'react-icons/fa';
+import { FaCheckCircle, FaReceipt, FaRupeeSign } from 'react-icons/fa';
 import { fetchHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
 
 const HotelConfirmation = () => {

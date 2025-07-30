@@ -109,146 +109,171 @@ const HotelPaymentInfo = () => {
     return { leadWithGST, nonLeadWithGST };
   };
 
-  // ✅ Updated validation function for Postman structure
-  const validateBookingPayload = (payload) => {
-    const errors = [];
+// ✅ FIXED: Enhanced PAN cleaning and validation function
+const cleanAndValidatePAN = (pan, isAdult, passengerName = 'Unknown', roomIsPANMandatory = false) => {
+  console.log(`🔍 PAN Validation for ${passengerName}:`);
+  console.log(`   Original PAN: "${pan}" (type: ${typeof pan})`);
+  console.log(`   Is Adult: ${isAdult}`);
+  console.log(`   Room PAN Mandatory: ${roomIsPANMandatory}`);
 
-    // Basic payload structure validation
-    if (!payload || typeof payload !== 'object') {
-      errors.push('Invalid payload structure');
-      return errors;
-    }
+  // Children don't need PAN
+  if (!isAdult) {
+    console.log(`   ✅ Child passenger - PAN not required`);
+    return null;
+  }
 
-    // Required top-level fields
-    const requiredFields = {
-      'ResultIndex': payload.ResultIndex,
-      'HotelCode': payload.HotelCode,
-      'HotelName': payload.HotelName,
-      'SearchTokenId': payload.SearchTokenId,
-      'HotelRoomsDetails': payload.HotelRoomsDetails
-    };
+  // For adults, check if we have PAN data
+  if (!pan || typeof pan !== 'string') {
+    // ✅ CRITICAL FIX: Always require PAN for adults, regardless of room type
+    console.error(`   ❌ CRITICAL: Adult passenger "${passengerName}" missing PAN`);
+    throw new Error(`❌ CRITICAL ERROR: Adult passenger "${passengerName}" requires a valid PAN number. Please go back and add PAN number.`);
+  }
 
-    Object.entries(requiredFields).forEach(([field, value]) => {
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
-        errors.push(`Missing or empty required field: ${field}`);
-      }
-    });
+  const cleanPAN = pan.trim().toUpperCase();
+  console.log(`   Clean PAN: "${cleanPAN}"`);
 
-    // Validate HotelRoomsDetails structure
-    if (!payload.HotelRoomsDetails || !Array.isArray(payload.HotelRoomsDetails)) {
-      errors.push('HotelRoomsDetails must be an array');
-      return errors;
-    }
+  // Check for invalid values including empty spaces
+  const invalidValues = ['', 'NULL', 'UNDEFINED', 'N/A', 'NA', 'NONE'];
+  const isEmptyOrInvalid = invalidValues.includes(cleanPAN) ||
+    cleanPAN.replace(/\s/g, '') === '' ||
+    cleanPAN.length === 0;
 
-    if (payload.HotelRoomsDetails.length === 0) {
-      errors.push('At least one room with passenger info is required');
-      return errors;
-    }
+  if (isEmptyOrInvalid) {
+    // ✅ CRITICAL FIX: Always require valid PAN for adults
+    console.error(`   ❌ CRITICAL: Invalid PAN "${cleanPAN}" for adult passenger`);
+    throw new Error(`❌ CRITICAL ERROR: Adult passenger "${passengerName}" has invalid PAN "${pan}". Please go back and enter a valid PAN number.`);
+  }
 
-    let leadPassengerCount = 0;
-    let totalPassengers = 0;
+  // Validate PAN format: 5 letters + 4 digits + 1 letter
+  const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+  if (!panRegex.test(cleanPAN)) {
+    const errorMsg = `Invalid PAN format for "${passengerName}": "${cleanPAN}". Expected format: ABCDE1234F (5 letters + 4 digits + 1 letter)`;
+    console.error(`   ❌ CRITICAL: ${errorMsg}`);
+    throw new Error(`❌ CRITICAL ERROR: ${errorMsg}. Please go back and correct the PAN number.`);
+  }
 
-    payload.HotelRoomsDetails.forEach((room, roomIdx) => {
-      // Validate RoomIndex
-      if (!room.RoomIndex || typeof room.RoomIndex !== 'number') {
-        errors.push(`Room ${roomIdx + 1}: RoomIndex must be a number`);
-      }
+  console.log(`   ✅ Valid PAN: "${cleanPAN}"`);
+  return cleanPAN;
+};
 
-      if (!room.HotelPassenger || !Array.isArray(room.HotelPassenger)) {
-        errors.push(`Room ${roomIdx + 1}: HotelPassenger must be an array`);
-        return;
-      }
+// ✅ ENHANCED: Updated validation function with mandatory PAN for all adults
+const validatePANForAllAdults = (bookingData) => {
+  const errors = [];
+  let totalAdults = 0;
+  let adultsWithValidPAN = 0;
+  let adultsWithoutPAN = [];
 
-      if (room.HotelPassenger.length === 0) {
-        errors.push(`Room ${roomIdx + 1}: At least one passenger is required`);
-        return;
-      }
-
-      room.HotelPassenger.forEach((passenger, passengerIdx) => {
-        totalPassengers++;
-
-        // Check LeadPassenger (string in Postman structure)
-        if (passenger.LeadPassenger === "true") {
-          leadPassengerCount++;
-        }
-
-        // Required passenger fields
-        const requiredPassengerFields = {
-          'Title': passenger.Title,
-          'FirstName': passenger.FirstName,
-          'LastName': passenger.LastName,
-          'Email': passenger.Email,
-          'Phoneno': passenger.Phoneno,
-          'PaxType': passenger.PaxType
-        };
-
-        Object.entries(requiredPassengerFields).forEach(([field, value]) => {
-          if (!value || (typeof value === 'string' && value.trim() === '')) {
-            errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: ${field} is required`);
-          }
-        });
-
-        // PaxType validation (1=adult, 2=child, 3=infant)
-        if (passenger.PaxType && ![1, 2, 3].includes(parseInt(passenger.PaxType))) {
-          errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: Invalid PaxType (${passenger.PaxType}), must be 1, 2, or 3`);
-        }
-
-        // PAN validation for adults (PaxType = 1)
-        if (passenger.PaxType === 1 && (!passenger.PAN || passenger.PAN.trim() === '' || passenger.PAN.trim() === 'null')) {
-          errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: PAN is required for adults`);
-        }
-
-        // Email validation
-        if (passenger.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(passenger.Email)) {
-          errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: Invalid email format (${passenger.Email})`);
-        }
-
-        // Phone validation
-        if (passenger.Phoneno && !/^[0-9]{10}$/.test(passenger.Phoneno.replace(/\D/g, ''))) {
-          errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: Phone number must be 10 digits (${passenger.Phoneno})`);
-        }
-      });
-    });
-
-    // LeadPassenger validation
-    if (leadPassengerCount !== 1) {
-      errors.push(`Must have exactly 1 LeadPassenger, found ${leadPassengerCount}`);
-    }
-
-    if (totalPassengers === 0) {
-      errors.push('No passengers found in booking');
-    }
-
-    return errors;
+  const isValidPAN = (pan) => {
+    if (!pan || typeof pan !== 'string') return false;
+    const cleanPAN = pan.trim().toUpperCase();
+    // ✅ CRITICAL: Check for empty spaces and invalid values
+    if (cleanPAN === '' ||
+      cleanPAN === 'NULL' ||
+      cleanPAN === 'UNDEFINED' ||
+      cleanPAN.replace(/\s/g, '') === '' ||
+      cleanPAN.length === 0) return false;
+    // PAN format: 5 letters + 4 digits + 1 letter
+    return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPAN);
   };
 
-  // ✅ Updated format function for Postman structure with GST filtering
-  const formatBookingData = (bookingDetails) => {
-    // First apply GST filtering
-    const gstFilteredData = filterGSTForLeadPassengerOnly(bookingDetails);
+  // Check HotelRoomsDetails structure
+  if (bookingData.HotelRoomsDetails && Array.isArray(bookingData.HotelRoomsDetails)) {
+    bookingData.HotelRoomsDetails.forEach((room, roomIndex) => {
+      if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
+        room.HotelPassenger.forEach((passenger, passengerIndex) => {
+          // Check if passenger is adult (PaxType = 1 OR Age >= 18)
+          const isAdult = parseInt(passenger.PaxType) === 1 || passenger.Age >= 18;
 
-    // Then continue with existing formatting logic
-    const cleanedData = { ...gstFilteredData };
+          if (isAdult) {
+            totalAdults++;
+            console.log(`🔍 Adult Passenger: ${passenger.FirstName} ${passenger.LastName}`);
+            console.log(`   Age: ${passenger.Age}, PaxType: ${passenger.PaxType}`);
+            console.log(`   PAN: "${passenger.PAN}"`);
 
-    // Ensure required top-level fields exist (following Postman structure)
-    cleanedData.GuestNationality = cleanedData.GuestNationality || payload?.GuestNationality || reviewData?.GuestNationality || 'IN';
-    cleanedData.NoOfRooms = cleanedData.NoOfRooms || "1";
-    cleanedData.ClientReferenceNo = cleanedData.ClientReferenceNo || 0;
-    cleanedData.IsVoucherBooking = cleanedData.IsVoucherBooking || "true";
-    cleanedData.vendorCommission = cleanedData.vendorCommission || vendorCommission || 0;
-    cleanedData.CouponDiscount = cleanedData.CouponDiscount || 0;
-    cleanedData.UserIp = cleanedData.UserIp || "0.0.0.0";
+            if (isValidPAN(passenger.PAN)) {
+              adultsWithValidPAN++;
+              console.log(`   ✅ Valid PAN: ${passenger.PAN}`);
+            } else {
+              adultsWithoutPAN.push({
+                name: `${passenger.FirstName} ${passenger.LastName}`,
+                room: roomIndex + 1,
+                passenger: passengerIndex + 1,
+                pan: passenger.PAN
+              });
+              console.error(`   ❌ Invalid PAN: "${passenger.PAN}"`);
+            }
+          }
+        });
+      }
+    });
+  }
 
-    // ✅ Convert roomTravellerInfo to HotelRoomsDetails structure if needed
-    if (cleanedData.roomTravellerInfo && !cleanedData.HotelRoomsDetails) {
-      cleanedData.HotelRoomsDetails = cleanedData.roomTravellerInfo.map((room, index) => {
-        const roomData = {
-          RoomIndex: index + 1,
-          HotelPassenger: []
-        };
+  console.log(`\n📊 PAN Validation Summary:`);
+  console.log(`   Total Adults: ${totalAdults}`);
+  console.log(`   Adults with Valid PAN: ${adultsWithValidPAN}`);
+  console.log(`   Adults without Valid PAN: ${adultsWithoutPAN.length}`);
 
-        if (room.travellerInfo && Array.isArray(room.travellerInfo)) {
-          roomData.HotelPassenger = room.travellerInfo.map((traveller) => ({
+  // ✅ CRITICAL FIX: ALL adults must have valid PAN
+  if (totalAdults > 0 && adultsWithValidPAN !== totalAdults) {
+    errors.push(`❌ ALL adult passengers require valid PAN numbers. Found ${totalAdults} adults but only ${adultsWithValidPAN} have valid PAN.`);
+    
+    adultsWithoutPAN.forEach(adult => {
+      errors.push(`${adult.name} (Room ${adult.room}) - Invalid/Missing PAN: "${adult.pan || 'Not provided'}"`);
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    summary: {
+      totalAdults,
+      adultsWithValidPAN,
+      adultsWithoutPAN: adultsWithoutPAN.length
+    }
+  };
+};
+
+// ✅ UPDATED: Enhanced format function with strict PAN requirements
+const formatBookingData = (bookingDetails) => {
+  console.log('🏗️ Starting booking data formatting...');
+  console.log('📦 Input booking details:', bookingDetails);
+
+  // First apply GST filtering
+  const gstFilteredData = filterGSTForLeadPassengerOnly(bookingDetails);
+  const cleanedData = { ...gstFilteredData };
+
+  // Ensure required top-level fields exist with proper values
+  cleanedData.ResultIndex = cleanedData.ResultIndex || payload?.ResultIndex || '';
+  cleanedData.HotelCode = cleanedData.HotelCode || payload?.HotelCode || '';
+  cleanedData.HotelName = cleanedData.HotelName || payload?.HotelName || '';
+  cleanedData.SearchTokenId = cleanedData.SearchTokenId || payload?.SearchTokenId || '';
+  cleanedData.GuestNationality = cleanedData.GuestNationality || payload?.GuestNationality || reviewData?.GuestNationality || 'IN';
+  cleanedData.NoOfRooms = cleanedData.NoOfRooms || "1";
+  cleanedData.ClientReferenceNo = cleanedData.ClientReferenceNo || 0;
+  cleanedData.IsVoucherBooking = cleanedData.IsVoucherBooking || "true";
+  cleanedData.vendorCommission = cleanedData.vendorCommission || vendorCommission || 0;
+  cleanedData.CouponDiscount = cleanedData.CouponDiscount || 0;
+  cleanedData.UserIp = cleanedData.UserIp || "49.36.217.215";
+
+  // ✅ CRITICAL FIX: Convert roomTravellerInfo to HotelRoomsDetails if needed
+  if (cleanedData.roomTravellerInfo && !cleanedData.HotelRoomsDetails) {
+    console.log('🔄 Converting roomTravellerInfo to HotelRoomsDetails...');
+
+    cleanedData.HotelRoomsDetails = cleanedData.roomTravellerInfo.map((room, index) => {
+      const roomData = {
+        RoomIndex: index + 1,
+        HotelPassenger: []
+      };
+
+      if (room.travellerInfo && Array.isArray(room.travellerInfo)) {
+        roomData.HotelPassenger = room.travellerInfo.map((traveller, travellerIndex) => {
+          const isAdult = parseInt(traveller.PaxType) === 1 || traveller.Age >= 18;
+          const passengerName = `${traveller.FirstName} ${traveller.LastName}`;
+          
+          // ✅ CRITICAL FIX: Always require PAN for adults
+          const cleanPAN = cleanAndValidatePAN(traveller.PAN, isAdult, passengerName, true);
+
+          const passengerData = {
             Title: String(traveller.Title || "Mr").trim(),
             FirstName: String(traveller.FirstName || "").trim(),
             MiddleName: String(traveller.MiddleName || "").trim(),
@@ -256,7 +281,7 @@ const HotelPaymentInfo = () => {
             Phoneno: String(traveller.Phoneno || "").replace(/\D/g, ''),
             Email: String(traveller.Email || "").trim().toLowerCase(),
             PaxType: parseInt(traveller.PaxType) || 1,
-            LeadPassenger: traveller.LeadPassenger ? "true" : "false", // Convert to string
+            LeadPassenger: traveller.LeadPassenger ? "true" : "false",
             Age: traveller.Age && !isNaN(traveller.Age) ? parseInt(traveller.Age) : 0,
 
             // Passport fields - always null for domestic bookings
@@ -264,74 +289,256 @@ const HotelPaymentInfo = () => {
             PassportIssueDate: null,
             PassportExpDate: null,
 
-            // PAN - required for adults
-            PAN: traveller.PAN ? String(traveller.PAN).trim().toUpperCase() : null,
+            // ✅ CRITICAL FIX: PAN is mandatory for all adults
+            PAN: isAdult ? cleanPAN : null,
 
-            // ✅ GST fields - already filtered by filterGSTForLeadPassengerOnly
+            // GST fields - already filtered by filterGSTForLeadPassengerOnly
             GSTCompanyAddress: traveller.GSTCompanyAddress ? String(traveller.GSTCompanyAddress).trim() : null,
             GSTCompanyContactNumber: traveller.GSTCompanyContactNumber ? String(traveller.GSTCompanyContactNumber).trim() : null,
             GSTCompanyEmail: traveller.GSTCompanyEmail ? String(traveller.GSTCompanyEmail).trim() : null,
             GSTCompanyName: traveller.GSTCompanyName ? String(traveller.GSTCompanyName).trim() : null,
             GSTNumber: traveller.GSTNumber ? String(traveller.GSTNumber).trim() : null
-          }));
-        }
+          };
 
-        return roomData;
-      });
+          console.log(`🔍 Processed Passenger: ${passengerData.FirstName} ${passengerData.LastName}`);
+          console.log(`   IsAdult: ${isAdult}, PAN: ${passengerData.PAN || 'NULL'}`);
 
-      // Remove old structure
-      delete cleanedData.roomTravellerInfo;
+          return passengerData;
+        });
+      }
+
+      console.log(`🏠 Room ${index + 1} processed with ${roomData.HotelPassenger.length} passengers`);
+      return roomData;
+    });
+
+    // Remove old structure
+    delete cleanedData.roomTravellerInfo;
+  }
+
+  // ✅ CRITICAL FIX: Process existing HotelRoomsDetails if present
+  if (cleanedData.HotelRoomsDetails && Array.isArray(cleanedData.HotelRoomsDetails)) {
+    console.log('🔄 Processing existing HotelRoomsDetails...');
+
+    cleanedData.HotelRoomsDetails = cleanedData.HotelRoomsDetails.map((room, index) => {
+      const processedRoom = {
+        RoomIndex: room.RoomIndex || (index + 1),
+        HotelPassenger: []
+      };
+
+      if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
+        processedRoom.HotelPassenger = room.HotelPassenger.map((passenger, passengerIndex) => {
+          const isAdult = parseInt(passenger.PaxType) === 1 || passenger.Age >= 18;
+          const passengerName = `${passenger.FirstName} ${passenger.LastName}`;
+          
+          // ✅ CRITICAL FIX: Always require PAN for adults
+          const cleanPAN = cleanAndValidatePAN(passenger.PAN, isAdult, passengerName, true);
+
+          const processedPassenger = {
+            Title: String(passenger.Title || "Mr").trim(),
+            FirstName: String(passenger.FirstName || "").trim(),
+            MiddleName: String(passenger.MiddleName || "").trim(),
+            LastName: String(passenger.LastName || "").trim(),
+            Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
+            Email: String(passenger.Email || "").trim().toLowerCase(),
+            PaxType: parseInt(passenger.PaxType) || 1,
+            LeadPassenger: passenger.LeadPassenger === true || passenger.LeadPassenger === "true" ? "true" : "false",
+            Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 0,
+
+            // Passport fields - always null for domestic bookings
+            PassportNo: null,
+            PassportIssueDate: null,
+            PassportExpDate: null,
+
+            // ✅ CRITICAL FIX: PAN is mandatory for all adults
+            PAN: isAdult ? cleanPAN : null,
+
+            // GST fields - already filtered
+            GSTCompanyAddress: passenger.GSTCompanyAddress ? String(passenger.GSTCompanyAddress).trim() : null,
+            GSTCompanyContactNumber: passenger.GSTCompanyContactNumber ? String(passenger.GSTCompanyContactNumber).trim() : null,
+            GSTCompanyEmail: passenger.GSTCompanyEmail ? String(passenger.GSTCompanyEmail).trim() : null,
+            GSTCompanyName: passenger.GSTCompanyName ? String(passenger.GSTCompanyName).trim() : null,
+            GSTNumber: passenger.GSTNumber ? String(passenger.GSTNumber).trim() : null
+          };
+
+          console.log(`🔍 Processed Passenger: ${processedPassenger.FirstName} ${processedPassenger.LastName}`);
+          console.log(`   IsAdult: ${isAdult}, PAN: ${processedPassenger.PAN || 'NULL'}`);
+
+          return processedPassenger;
+        });
+      } else {
+        console.error(`❌ Room ${index + 1} is missing HotelPassenger array!`);
+        throw new Error(`Room ${index + 1} is missing passenger information. Please go back and add passenger details.`);
+      }
+
+      console.log(`🏠 Room ${index + 1} processed with ${processedRoom.HotelPassenger.length} passengers`);
+      return processedRoom;
+    });
+  } else {
+    console.error('❌ No HotelRoomsDetails found in booking data!');
+    throw new Error('No room and passenger information found. Please go back and complete the booking form.');
+  }
+
+  // ✅ CRITICAL: Remove any top-level HotelPassenger to avoid confusion
+  delete cleanedData.HotelPassenger;
+
+  // ✅ Final validation to ensure structure is correct
+  if (!cleanedData.HotelRoomsDetails || cleanedData.HotelRoomsDetails.length === 0) {
+    throw new Error('No rooms found in booking data');
+  }
+
+  cleanedData.HotelRoomsDetails.forEach((room, index) => {
+    if (!room.HotelPassenger || room.HotelPassenger.length === 0) {
+      throw new Error(`Room ${index + 1} has no passengers`);
     }
+  });
 
-    // ✅ Process existing HotelRoomsDetails if present
-    if (cleanedData.HotelRoomsDetails && Array.isArray(cleanedData.HotelRoomsDetails)) {
-      cleanedData.HotelRoomsDetails = cleanedData.HotelRoomsDetails.map((room, index) => {
-        const processedRoom = {
-          RoomIndex: room.RoomIndex || (index + 1),
-          HotelPassenger: []
-        };
+  console.log('✅ Booking data formatting completed');
+  return cleanedData;
+};
 
-        if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
-          processedRoom.HotelPassenger = room.HotelPassenger.map((passenger) => {
-            // Clean and format each passenger
-            const processedPassenger = {
-              Title: String(passenger.Title || "Mr").trim(),
-              FirstName: String(passenger.FirstName || "").trim(),
-              MiddleName: String(passenger.MiddleName || "").trim(),
-              LastName: String(passenger.LastName || "").trim(),
-              Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
-              Email: String(passenger.Email || "").trim().toLowerCase(),
-              PaxType: parseInt(passenger.PaxType) || 1,
-              LeadPassenger: passenger.LeadPassenger === true || passenger.LeadPassenger === "true" ? "true" : "false",
-              Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 0,
+// ✅ UPDATED: Enhanced booking payload validation with mandatory PAN check
+const validateBookingPayload = (payload) => {
+  const errors = [];
 
-              // Passport fields - always null for domestic bookings
-              PassportNo: null,
-              PassportIssueDate: null,
-              PassportExpDate: null,
+  // Basic payload structure validation
+  if (!payload || typeof payload !== 'object') {
+    errors.push('Invalid payload structure');
+    return errors;
+  }
 
-              // PAN - required for adults, validate format
-              PAN: passenger.PAN && passenger.PAN.trim() !== '' ? String(passenger.PAN).trim().toUpperCase() : null,
-
-              // ✅ GST fields - already filtered by filterGSTForLeadPassengerOnly
-              GSTCompanyAddress: passenger.GSTCompanyAddress ? String(passenger.GSTCompanyAddress).trim() : null,
-              GSTCompanyContactNumber: passenger.GSTCompanyContactNumber ? String(passenger.GSTCompanyContactNumber).trim() : null,
-              GSTCompanyEmail: passenger.GSTCompanyEmail ? String(passenger.GSTCompanyEmail).trim() : null,
-              GSTCompanyName: passenger.GSTCompanyName ? String(passenger.GSTCompanyName).trim() : null,
-              GSTNumber: passenger.GSTNumber ? String(passenger.GSTNumber).trim() : null
-            };
-
-            return processedPassenger;
-          });
-        }
-
-        return processedRoom;
-      });
-    }
-
-    return cleanedData;
+  // Required top-level fields
+  const requiredFields = {
+    'ResultIndex': payload.ResultIndex,
+    'HotelCode': payload.HotelCode,
+    'HotelName': payload.HotelName,
+    'SearchTokenId': payload.SearchTokenId,
+    'HotelRoomsDetails': payload.HotelRoomsDetails
   };
 
+  Object.entries(requiredFields).forEach(([field, value]) => {
+    if (!value || (typeof value === 'string' && value.trim() === '')) {
+      errors.push(`Missing or empty required field: ${field}`);
+    }
+  });
+
+  // Validate HotelRoomsDetails structure
+  if (!payload.HotelRoomsDetails || !Array.isArray(payload.HotelRoomsDetails)) {
+    errors.push('HotelRoomsDetails must be an array');
+    return errors;
+  }
+
+  if (payload.HotelRoomsDetails.length === 0) {
+    errors.push('At least one room with passenger info is required');
+    return errors;
+  }
+
+  let leadPassengerCount = 0;
+  let totalPassengers = 0;
+  let totalAdults = 0;
+  let adultsWithPAN = 0;
+
+  payload.HotelRoomsDetails.forEach((room, roomIdx) => {
+    // Validate RoomIndex
+    if (!room.RoomIndex || typeof room.RoomIndex !== 'number') {
+      errors.push(`Room ${roomIdx + 1}: RoomIndex must be a number`);
+    }
+
+    if (!room.HotelPassenger || !Array.isArray(room.HotelPassenger)) {
+      errors.push(`Room ${roomIdx + 1}: HotelPassenger must be an array`);
+      return;
+    }
+
+    if (room.HotelPassenger.length === 0) {
+      errors.push(`Room ${roomIdx + 1}: At least one passenger is required`);
+      return;
+    }
+
+    room.HotelPassenger.forEach((passenger, passengerIdx) => {
+      totalPassengers++;
+
+      // Check LeadPassenger
+      if (passenger.LeadPassenger === "true") {
+        leadPassengerCount++;
+      }
+
+      // Required passenger fields
+      const requiredPassengerFields = {
+        'Title': passenger.Title,
+        'FirstName': passenger.FirstName,
+        'LastName': passenger.LastName,
+        'Email': passenger.Email,
+        'Phoneno': passenger.Phoneno,
+        'PaxType': passenger.PaxType
+      };
+
+      Object.entries(requiredPassengerFields).forEach(([field, value]) => {
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
+          errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: ${field} is required`);
+        }
+      });
+
+      // PaxType validation
+      if (passenger.PaxType && ![1, 2, 3].includes(parseInt(passenger.PaxType))) {
+        errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: Invalid PaxType (${passenger.PaxType}), must be 1, 2, or 3`);
+      }
+
+      // ✅ CRITICAL FIX: Mandatory PAN validation for ALL adults
+      const isAdult = parseInt(passenger.PaxType) === 1 || passenger.Age >= 18;
+
+      if (isAdult) {
+        totalAdults++;
+
+        // Check if PAN exists and is valid
+        const hasPAN = passenger.PAN &&
+          typeof passenger.PAN === 'string' &&
+          passenger.PAN.trim() !== '' &&
+          passenger.PAN.trim().toUpperCase() !== 'NULL' &&
+          passenger.PAN.trim().toUpperCase() !== 'UNDEFINED' &&
+          passenger.PAN.replace(/\s/g, '') !== '';
+
+        if (hasPAN) {
+          adultsWithPAN++;
+          // Validate PAN format
+          const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+          if (!panRegex.test(passenger.PAN.trim().toUpperCase())) {
+            errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: Invalid PAN format (${passenger.PAN}). Expected format: ABCDE1234F`);
+          }
+        } else {
+          // ✅ CRITICAL: PAN is now mandatory for ALL adults
+          errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: PAN is MANDATORY for all adults (Age: ${passenger.Age}, PaxType: ${passenger.PaxType})`);
+        }
+      }
+
+      // Email validation
+      if (passenger.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(passenger.Email)) {
+        errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: Invalid email format (${passenger.Email})`);
+      }
+
+      // Phone validation
+      if (passenger.Phoneno && !/^[0-9]{10}$/.test(passenger.Phoneno.replace(/\D/g, ''))) {
+        errors.push(`Room ${roomIdx + 1}, Passenger ${passengerIdx + 1}: Phone number must be 10 digits (${passenger.Phoneno})`);
+      }
+    });
+  });
+
+  // LeadPassenger validation
+  if (leadPassengerCount !== 1) {
+    errors.push(`Must have exactly 1 LeadPassenger, found ${leadPassengerCount}`);
+  }
+
+  if (totalPassengers === 0) {
+    errors.push('No passengers found in booking');
+  }
+
+  // ✅ CRITICAL: Ensure ALL adults have PAN
+  if (totalAdults > 0 && adultsWithPAN !== totalAdults) {
+    errors.push(`❌ CRITICAL: ALL ${totalAdults} adult passengers must have valid PAN numbers. Currently only ${adultsWithPAN} have PAN.`);
+  }
+
+  console.log(`📊 Final Validation: ${adultsWithPAN}/${totalAdults} adults have valid PAN numbers`);
+
+  return errors;
+};
   // ✅ Enhanced API error handler
   const handleApiError = (error, context = 'API') => {
     let errorMessage = `${context} failed. Please try again.`;
@@ -424,239 +631,295 @@ const HotelPaymentInfo = () => {
     });
   };
 
-  // ✅ Updated handlePayment function with React Toastify instead of page navigation
+  // ✅ UPDATED: Enhanced handlePayment function with PAN-mandatory room support
   const handlePayment = async () => {
     setLoading(true);
     setError('');
 
     try {
+      console.log('🚀 Starting payment process...');
+      console.log('📦 Original booking details:', hotelBookingDetails);
+
       const gstFilteredData = filterGSTForLeadPassengerOnly(hotelBookingDetails);
       verifyGSTFiltering(gstFilteredData);
 
-      const formattedBookingData = formatBookingData(gstFilteredData);
-      const validationErrors = validateBookingPayload(formattedBookingData);
+      // ✅ Get room PAN requirement info
+      const roomIsPANMandatory = location.state?.isPANMandatory ||
+        location.state?.room?.IsPANMandatory ||
+        false;
 
-      if (validationErrors.length > 0) {
-        const errorMessage = `Booking validation failed:\n• ${validationErrors.join('\n• ')}`;
-        setError(errorMessage);
-        showErrorToast('Booking Validation Failed', validationErrors.join('\n• '));
-        setLoading(false);
-        return;
-      }
+      console.log('🔍 Room PAN Mandatory:', roomIsPANMandatory);
 
-      // ✅ PAYLOAD CONSOLE - Final booking data with GST filtering
-      console.log('📦 Final booking payload with GST filtering:', formattedBookingData);
+      try {
+        const formattedBookingData = formatBookingData(gstFilteredData);
 
-      const razorpayLoaded = await loadRazorpayScript();
-      if (!razorpayLoaded) {
-        const errorMsg = 'Payment system failed to load. Please refresh and try again.';
-        setError(errorMsg);
-        showErrorToast('Payment System Error', errorMsg);
-        setLoading(false);
-        return;
-      }
+        // ✅ Additional PAN validation for PAN-mandatory rooms
+        if (roomIsPANMandatory) {
+          console.log('🔍 Performing additional PAN validation for PAN-mandatory room...');
 
-      const orderResponse = await createHotelOrder(roundedTotal);
-      const order = orderResponse?.order;
+          let adultsCount = 0;
+          let adultsWithValidPAN = 0;
 
-      if (!order?.id) {
-        throw new Error('Failed to create payment order');
-      }
-
-      const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_glwdvx2PlFDStN',
-        amount: order.amount,
-        currency: order.currency,
-        name: 'TTS Travels',
-        description: 'Hotel Booking Payment',
-        order_id: order.id,
-        handler: async (response) => {
-          try {
-            const validatePayload = {
-              amount: roundedTotal,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              bookingType: 'HOTEL',
-              Hotel: formattedBookingData,
-            };
-
-            const validation = await validateHotelPayment(validatePayload);
-
-            if (
-              validation?.message === 'Payment verified successfully' &&
-              validation?.payment?.status === 'success'
-            ) {
-              const finalPayload = { ...formattedBookingData };
-
-              // ✅ PAYLOAD CONSOLE - Final booking payload (sanitized for security)
-              console.log('📦 Final booking payload (sanitized):', {
-                ...finalPayload,
-                HotelRoomsDetails: finalPayload.HotelRoomsDetails?.map(room => ({
-                  ...room,
-                  HotelPassenger: room.HotelPassenger?.map(passenger => ({
-                    ...passenger,
-                    PAN: passenger.PAN ? '***HIDDEN***' : null,
-                    Email: passenger.Email ? passenger.Email.replace(/(.{2}).*(@.*)/, '$1***$2') : null,
-                    GSTNumber: passenger.GSTNumber ? '***HIDDEN***' : null
-                  }))
-                }))
-              });
-
-              // ✅ FIXED: Hotel booking API call with proper status check
-              try {
-                const bookingResponse = await bookHotel(finalPayload);
-
-                // ✅ PAYLOAD CONSOLE - Booking API response
-                console.log('📦 Booking API response:', bookingResponse);
-
-                // ✅ FIXED: Updated robust booking status check for your specific API response
-                const isBookingSuccessful =
-                  // Primary check for your API response structure
-                  (bookingResponse?.message === "Hotel booking processed successfully") ||
-
-                  // Additional success message patterns (case-insensitive)
-                  (bookingResponse?.message &&
-                    bookingResponse.message.toLowerCase().includes('successfully')) ||
-                  (bookingResponse?.message &&
-                    bookingResponse.message.toLowerCase().includes('processed successfully')) ||
-                  (bookingResponse?.message &&
-                    bookingResponse.message.toLowerCase().includes('confirmed')) ||
-
-                  // Legacy checks (keeping for backward compatibility)
-                  bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
-                  bookingResponse?.Status?.toLowerCase() === 'success' ||
-                  bookingResponse?.success === true;
-
-                // ✅ FIXED: Check for required booking data from your API
-                const hasRequiredBookingData =
-                  bookingResponse?.userId &&
-                  bookingResponse?.SearchTokenId &&
-                  bookingResponse?.UserIp;
-
-                // ✅ ADDED: Additional validation for complete booking response
-                const isCompleteBookingResponse =
-                  bookingResponse?.message &&
-                  hasRequiredBookingData;
-
-                // ✅ FIXED: Final booking success validation
-                if (isBookingSuccessful && isCompleteBookingResponse) {
-                  // ✅ Show success toast and navigate to confirmation page
-                  showSuccessToast('🎉 Hotel booking confirmed successfully!');
-
-                  // ✅ Navigate to confirmation page with all necessary data
-                  navigate('/hotel/confirmation', {
-                    state: {
-                      booking: bookingResponse,
-                      amount: roundedTotal,
-                      reviewData,
-                      hotelDetails: { 
-                        name: formattedBookingData?.HotelName,
-                        code: formattedBookingData?.HotelCode,
-                      },
-                      paymentDetails: {
-                        orderId: response.razorpay_order_id,
-                        paymentId: response.razorpay_payment_id
-                      },
-                      // ✅ Your specific booking confirmation details
-                      confirmationDetails: {
-                        userId: bookingResponse.userId,
-                        searchTokenId: bookingResponse.SearchTokenId,
-                        bookingId: bookingResponse.BookingID,          // ✅ Added
-                        userIp: bookingResponse.UserIp,
-                        message: bookingResponse.message,
-                        bookingTime: new Date().toISOString()
-                      }
-                    }
-                  });
-
-
-                } else {
-                  // ❌ Handle booking failure with toast - NO PAGE NAVIGATION
-                  let errorMessage = 'Booking failed. Please contact support with your payment details.';
-
-                  // ✅ Better error message extraction for your API
-                  if (bookingResponse?.Error?.ErrorMessage) {
-                    errorMessage = bookingResponse.Error.ErrorMessage;
-                  } else if (bookingResponse?.error?.message) {
-                    errorMessage = bookingResponse.error.message;
-                  } else if (bookingResponse?.message && !bookingResponse.message.toLowerCase().includes('successfully')) {
-                    errorMessage = `Booking Issue: ${bookingResponse.message}`;
-                  } else if (typeof bookingResponse?.error === 'string') {
-                    errorMessage = bookingResponse.error;
-                  } else if (!hasRequiredBookingData) {
-                    errorMessage = 'Booking response is missing required confirmation data (userId, SearchTokenId, or UserIp). Please contact support.';
-                  } else if (!isBookingSuccessful) {
-                    errorMessage = 'Booking status could not be confirmed. Please contact support to verify your booking.';
+          if (formattedBookingData.HotelRoomsDetails) {
+            formattedBookingData.HotelRoomsDetails.forEach(room => {
+              room.HotelPassenger?.forEach(passenger => {
+                const isAdult = parseInt(passenger.PaxType) === 1 || passenger.Age >= 18;
+                if (isAdult) {
+                  adultsCount++;
+                  if (passenger.PAN && passenger.PAN.length === 10) {
+                    adultsWithValidPAN++;
                   }
-
-                  // ✅ Show error toast instead of navigating
-                  showErrorToast('❌ Booking Failed', errorMessage);
-                  setError(`Booking Failed: ${errorMessage}`);
-
-                  // ✅ Additional info for debugging (optional - can be removed in production)
-                  console.error('Booking failure details:', {
-                    isBookingSuccessful,
-                    hasRequiredBookingData,
-                    isCompleteBookingResponse,
-                    responseMessage: bookingResponse?.message,
-                    fullResponse: bookingResponse
-                  });
                 }
-              } catch (bookingError) {
-                // ✅ Handle booking API error with toast - NO PAGE NAVIGATION
-                const { message: errorMessage, details } = handleApiError(bookingError, 'Hotel Booking');
-                setError(`Booking Error: ${errorMessage}`);
-                showErrorToast('❌ Booking API Error', errorMessage);
-
-                console.error('Booking API Error:', { error: bookingError, details });
-              }
-            } else {
-              // ✅ Handle payment validation failure with toast - NO PAGE NAVIGATION
-              const validationError = validation?.message || 'Payment validation failed.';
-              setError(validationError);
-              showErrorToast('❌ Payment Validation Failed', validationError);
-            }
-          } catch (err) {
-            // ✅ Handle payment processing error with toast
-            const { message: errorMessage } = handleApiError(err, 'Payment Processing');
-            setError(errorMessage);
-            showErrorToast('❌ Payment Processing Error', errorMessage);
-          } finally {
-            setLoading(false);
+              });
+            });
           }
-        },
-        prefill: {
-          name: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.FirstName || 'Guest',
-          email: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.Email || 'guest@example.com',
-          contact: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.Phoneno || '9999999999',
-        },
-        notes: {
-          address: 'Hotel Booking Payment',
-          hotelName: formattedBookingData?.HotelName || 'Hotel Booking',
-        },
-        theme: {
-          color: '#c90d26',
-        },
-        modal: {
-          ondismiss: function () {
+
+          console.log(`📊 PAN Check: ${adultsWithValidPAN}/${adultsCount} adults have valid PAN`);
+
+          if (adultsCount > 0 && adultsWithValidPAN !== adultsCount) {
+            const errorMessage = `❌ PAN Validation Failed for PAN-Mandatory Room:\n\n${adultsCount - adultsWithValidPAN} adult passenger(s) are missing valid PAN numbers.\n\nThis room requires PAN numbers for ALL adult guests.\n\nPlease go back and ensure all adults have valid PAN numbers in format: ABCDE1234F`;
+            setError(errorMessage);
+            showErrorToast('PAN Required for Room', errorMessage);
             setLoading(false);
-            showErrorToast('⚠️ Payment Cancelled', 'Payment was cancelled by user');
+            return;
           }
         }
-      };
 
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', function (response) {
-        const failureMessage = `Payment failed: ${response.error.description || 'Unknown error'}`;
-        setError(failureMessage);
-        showErrorToast('❌ Payment Failed', response.error.description || 'Unknown payment error occurred');
-        setLoading(false);
-      });
+        // Continue with existing validation...
+        const panValidation = validatePANForAllAdults(formattedBookingData);
 
-      rzp.open();
+        if (!panValidation.isValid) {
+          const errorMessage = `❌ PAN Validation Failed:\n\n${panValidation.errors.join('\n\n')}`;
+          setError(errorMessage);
+          showErrorToast('PAN Validation Failed', panValidation.errors.join('\n'));
+          setLoading(false);
+          return;
+        }
+
+        console.log('✅ PAN validation passed:', panValidation.summary);
+
+        // ✅ Additional payload validation
+        const validationErrors = validateBookingPayload(formattedBookingData);
+
+        if (validationErrors.length > 0) {
+          const errorMessage = `Booking validation failed:\n• ${validationErrors.join('\n• ')}`;
+          setError(errorMessage);
+          showErrorToast('Booking Validation Failed', validationErrors.join('\n• '));
+          setLoading(false);
+          return;
+        }
+
+        const razorpayLoaded = await loadRazorpayScript();
+        if (!razorpayLoaded) {
+          const errorMsg = 'Payment system failed to load. Please refresh and try again.';
+          setError(errorMsg);
+          showErrorToast('Payment System Error', errorMsg);
+          setLoading(false);
+          return;
+        }
+
+        const orderResponse = await createHotelOrder(roundedTotal);
+        const order = orderResponse?.order;
+
+        if (!order?.id) {
+          throw new Error('Failed to create payment order');
+        }
+
+        const options = {
+          key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_glwdvx2PlFDStN',
+          amount: order.amount,
+          currency: order.currency,
+          name: 'TTS Travels',
+          description: 'Hotel Booking Payment',
+          order_id: order.id,
+          handler: async (response) => {
+            try {
+              const validatePayload = {
+                amount: roundedTotal,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                bookingType: 'HOTEL',
+                Hotel: formattedBookingData,
+              };
+
+              const validation = await validateHotelPayment(validatePayload);
+
+              if (
+                validation?.message === 'Payment verified successfully' &&
+                validation?.payment?.status === 'success'
+              ) {
+                const finalPayload = { ...formattedBookingData };
+
+                // ✅ CRITICAL FIX: Keep the structure intact, just create logging version
+                const loggingPayload = {
+                  ...finalPayload,
+                  HotelRoomsDetails: finalPayload.HotelRoomsDetails?.map(room => ({
+                    ...room,
+                    HotelPassenger: room.HotelPassenger?.map(passenger => ({
+                      ...passenger,
+                      PAN: passenger.PAN ? '***HIDDEN***' : null,
+                      Email: passenger.Email ? passenger.Email.replace(/(.{2}).*(@.*)/, '$1***$2') : null,
+                      GSTNumber: passenger.GSTNumber ? '***HIDDEN***' : null
+                    }))
+                  }))
+                };
+
+                console.log('📦 Final booking payload (PAN hidden for logging):', loggingPayload);
+
+                // ✅ CRITICAL: Use the original finalPayload for API call, not the logging version
+                try {
+                  const bookingResponse = await bookHotel(finalPayload);
+
+                  console.log('📦 Booking API response:', bookingResponse);
+
+                  // ✅ ENHANCED: Robust booking status check
+                  const isBookingSuccessful =
+                    // Primary check for API response structure
+                    (bookingResponse?.message === "Hotel booking processed successfully") ||
+
+                    // Additional success message patterns (case-insensitive)
+                    (bookingResponse?.message &&
+                      bookingResponse.message.toLowerCase().includes('successfully')) ||
+                    (bookingResponse?.message &&
+                      bookingResponse.message.toLowerCase().includes('processed successfully')) ||
+                    (bookingResponse?.message &&
+                      bookingResponse.message.toLowerCase().includes('confirmed')) ||
+
+                    // Legacy checks (keeping for backward compatibility)
+                    bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
+                    bookingResponse?.Status?.toLowerCase() === 'success' ||
+                    bookingResponse?.success === true;
+
+                  // ✅ Check for required booking data
+                  const hasRequiredBookingData =
+                    bookingResponse?.userId &&
+                    bookingResponse?.SearchTokenId &&
+                    bookingResponse?.UserIp;
+
+                  // ✅ Additional validation for complete booking response
+                  const isCompleteBookingResponse =
+                    bookingResponse?.message &&
+                    hasRequiredBookingData;
+
+                  if (isBookingSuccessful && isCompleteBookingResponse) {
+                    showSuccessToast('🎉 Hotel booking confirmed successfully!');
+
+                    navigate('/hotel/confirmation', {
+                      state: {
+                        booking: bookingResponse,
+                        amount: roundedTotal,
+                        reviewData,
+                        hotelDetails: {
+                          name: finalPayload?.HotelName,
+                          code: finalPayload?.HotelCode,
+                        },
+                        paymentDetails: {
+                          orderId: response.razorpay_order_id,
+                          paymentId: response.razorpay_payment_id
+                        },
+                        confirmationDetails: {
+                          userId: bookingResponse.userId,
+                          searchTokenId: bookingResponse.SearchTokenId,
+                          bookingId: bookingResponse.BookingID,
+                          userIp: bookingResponse.UserIp,
+                          message: bookingResponse.message,
+                          bookingTime: new Date().toISOString()
+                        }
+                      }
+                    });
+
+                  } else {
+                    // ❌ Handle booking failure with detailed error messaging
+                    let errorMessage = 'Booking failed. Please contact support with your payment details.';
+
+                    if (bookingResponse?.Error?.ErrorMessage) {
+                      errorMessage = bookingResponse.Error.ErrorMessage;
+                    } else if (bookingResponse?.error?.message) {
+                      errorMessage = bookingResponse.error.message;
+                    } else if (bookingResponse?.message && !bookingResponse.message.toLowerCase().includes('successfully')) {
+                      errorMessage = `Booking Issue: ${bookingResponse.message}`;
+                    } else if (typeof bookingResponse?.error === 'string') {
+                      errorMessage = bookingResponse.error;
+                    } else if (!hasRequiredBookingData) {
+                      errorMessage = 'Booking response is missing required confirmation data. Please contact support.';
+                    } else if (!isBookingSuccessful) {
+                      errorMessage = 'Booking status could not be confirmed. Please contact support.';
+                    }
+
+                    showErrorToast('❌ Booking Failed', errorMessage);
+                    setError(`Booking Failed: ${errorMessage}`);
+
+                    console.error('Booking failure details:', {
+                      isBookingSuccessful,
+                      hasRequiredBookingData,
+                      isCompleteBookingResponse,
+                      responseMessage: bookingResponse?.message,
+                      fullResponse: bookingResponse
+                    });
+                  }
+                } catch (bookingError) {
+                  const { message: errorMessage, details } = handleApiError(bookingError, 'Hotel Booking');
+                  setError(`Booking Error: ${errorMessage}`);
+                  showErrorToast('❌ Booking API Error', errorMessage);
+
+                  console.error('Booking API Error:', { error: bookingError, details });
+                }
+              } else {
+                const validationError = validation?.message || 'Payment validation failed.';
+                setError(validationError);
+                showErrorToast('❌ Payment Validation Failed', validationError);
+              }
+            } catch (err) {
+              const { message: errorMessage } = handleApiError(err, 'Payment Processing');
+              setError(errorMessage);
+              showErrorToast('❌ Payment Processing Error', errorMessage);
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.FirstName || 'Guest',
+            email: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.Email || 'guest@example.com',
+            contact: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.Phoneno || '9999999999',
+          },
+          notes: {
+            address: 'Hotel Booking Payment',
+            hotelName: formattedBookingData?.HotelName || 'Hotel Booking',
+          },
+          theme: {
+            color: '#c90d26',
+          },
+          modal: {
+            ondismiss: function () {
+              setLoading(false);
+              showErrorToast('⚠️ Payment Cancelled', 'Payment was cancelled by user');
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response) {
+          const failureMessage = `Payment failed: ${response.error.description || 'Unknown error'}`;
+          setError(failureMessage);
+          showErrorToast('❌ Payment Failed', response.error.description || 'Unknown payment error occurred');
+          setLoading(false);
+        });
+
+        rzp.open();
+
+      } catch (formatError) {
+        // ✅ Handle PAN validation errors specifically
+        if (formatError.message.includes('CRITICAL ERROR')) {
+          setError(formatError.message);
+          showErrorToast('❌ PAN Validation Error', formatError.message);
+          setLoading(false);
+          return;
+        }
+        throw formatError; // Re-throw other errors
+      }
+
     } catch (err) {
-      // ✅ Handle payment initialization error with toast
       const { message: errorMessage } = handleApiError(err, 'Payment Initialization');
       setError(errorMessage);
       showErrorToast('❌ Payment Initialization Failed', errorMessage);

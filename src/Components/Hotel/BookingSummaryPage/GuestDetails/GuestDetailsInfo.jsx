@@ -72,9 +72,32 @@ const GuestDetailsInfo = () => {
   const isValidPAN = pan => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan?.trim());
   const isValidGST = gst => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gst?.trim());
 
+  // ✅ FIXED: Enhanced PAN input handler
   const handleInputChange = (roomIndex, type, personIndex, field, value) => {
     const updatedInputs = [...guestInputs];
-    updatedInputs[roomIndex][type][personIndex][field] = value;
+    
+    // ✅ Special handling for PAN field
+    if (field === 'panNumber') {
+      // Remove spaces and convert to uppercase
+      const cleanValue = value.replace(/\s/g, '').toUpperCase();
+      updatedInputs[roomIndex][type][personIndex][field] = cleanValue;
+      
+      // Real-time PAN validation feedback
+      const errorKey = `${type === 'adults' ? 'adult' : 'child'}-${roomIndex}-${personIndex}-pan`;
+      if (cleanValue && cleanValue.length === 10 && isValidPAN(cleanValue)) {
+        // Valid PAN - clear any existing error
+        if (errors[errorKey]) {
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[errorKey];
+            return newErrors;
+          });
+        }
+      }
+    } else {
+      updatedInputs[roomIndex][type][personIndex][field] = value;
+    }
+    
     setGuestInputs(updatedInputs);
 
     // ✅ Clear specific field error when user starts typing
@@ -88,6 +111,7 @@ const GuestDetailsInfo = () => {
     }
   };
 
+  // ✅ CRITICAL FIX: Enhanced PAN validation in Guest Details form
   const validateFields = () => {
     const newErrors = {};
 
@@ -102,22 +126,34 @@ const GuestDetailsInfo = () => {
       // Validate adults
       if (room.adults && room.adults.length > 0) {
         room.adults.forEach((guest, i) => {
+          // First Name validation
           if (!guest.firstName?.trim() || !isAlpha(guest.firstName)) {
             newErrors[`adult-${roomIdx}-${i}-first`] = 'Only letters allowed';
           }
+          
+          // Last Name validation
           if (!guest.lastName?.trim() || !isAlpha(guest.lastName)) {
             newErrors[`adult-${roomIdx}-${i}-last`] = 'Only letters allowed';
           }
-          if (!guest.panNumber?.trim() || !isValidPAN(guest.panNumber)) {
+          
+          // ✅ ENHANCED PAN validation - specifically handles empty spaces
+          const panValue = guest.panNumber?.trim() || '';
+          
+          // Check if PAN is empty or contains only spaces
+          if (!panValue || panValue.replace(/\s/g, '') === '') {
+            newErrors[`adult-${roomIdx}-${i}-pan`] = 'PAN number is required for all adults';
+          } else if (!isValidPAN(panValue)) {
             newErrors[`adult-${roomIdx}-${i}-pan`] = 'Enter valid PAN (e.g. ABCDE1234F)';
           }
+          
+          // Age validation
           if (!guest.age || isNaN(guest.age) || parseInt(guest.age) < 18) {
             newErrors[`adult-${roomIdx}-${i}-age`] = 'Enter valid age (18+)';
           }
         });
       }
 
-      // Validate children
+      // Validate children (existing code remains same)
       if (room.children && room.children.length > 0) {
         room.children.forEach((guest, i) => {
           if (!guest.firstName?.trim() || !isAlpha(guest.firstName)) {
@@ -133,7 +169,7 @@ const GuestDetailsInfo = () => {
       }
     });
 
-    // ✅ Validate contact information
+    // ✅ Contact information validation
     if (!isMobile(mobile)) {
       newErrors.mobile = 'Enter a valid 10-digit number';
     }
@@ -141,7 +177,7 @@ const GuestDetailsInfo = () => {
       newErrors.email = 'Enter a valid email';
     }
 
-    // ✅ GST validation if form is shown and GST number is entered
+    // ✅ GST validation
     if (showGstinForm && gstData.gstNumber?.trim()) {
       if (!isValidGST(gstData.gstNumber)) {
         newErrors.gstGstNumber = 'Enter valid GST number';
@@ -164,9 +200,9 @@ const GuestDetailsInfo = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✅ NEW: Function to create booking payload with GST only for lead passenger
+  // ✅ FIXED: Function to create booking payload with proper PAN for all adults
   const createBookingPayload = (updatedGuestInputs, emailValue, mobileValue, gstInfo) => {
-    console.log('🏗️ Creating booking payload with GST filtering...');
+    console.log('🏗️ Creating booking payload with proper PAN handling...');
 
     // Create HotelRoomsDetails structure
     const HotelRoomsDetails = updatedGuestInputs.map((room, roomIndex) => {
@@ -192,6 +228,7 @@ const GuestDetailsInfo = () => {
           PassportNo: null,
           PassportIssueDate: null,
           PassportExpDate: null,
+          // ✅ CRITICAL FIX: PAN is required for ALL adults, not just lead passenger
           PAN: adult.panNumber?.trim().toUpperCase(),
 
           // ✅ GST fields - ONLY for lead passenger
@@ -202,9 +239,14 @@ const GuestDetailsInfo = () => {
           GSTNumber: (isLeadPassenger && gstInfo?.gstNumber) ? gstInfo.gstNumber.trim().toUpperCase() : null
         };
 
-        console.log(`${isLeadPassenger ? '👑' : '👤'} ${isLeadPassenger ? 'Lead ' : ''}Passenger: ${passengerData.FirstName} ${passengerData.LastName}`);
+        console.log(`${isLeadPassenger ? '👑' : '👤'} ${isLeadPassenger ? 'Lead ' : ''}Adult: ${passengerData.FirstName} ${passengerData.LastName}`);
+        console.log(`   PAN: ${passengerData.PAN || 'MISSING!'}`);
         console.log(`   GST Number: ${passengerData.GSTNumber || 'null'}`);
-        console.log(`   GST Company: ${passengerData.GSTCompanyName || 'null'}`);
+
+        // ✅ VALIDATION: Ensure PAN exists for adults
+        if (!passengerData.PAN) {
+          console.error(`❌ CRITICAL: Missing PAN for adult: ${passengerData.FirstName} ${passengerData.LastName}`);
+        }
 
         roomData.HotelPassenger.push(passengerData);
       });
@@ -224,6 +266,7 @@ const GuestDetailsInfo = () => {
           PassportNo: null,
           PassportIssueDate: null,
           PassportExpDate: null,
+          // ✅ Children don't need PAN
           PAN: null,
 
           // ✅ GST fields - NULL for children
@@ -257,33 +300,39 @@ const GuestDetailsInfo = () => {
       HotelRoomsDetails
     };
 
-    // ✅ Verify GST assignment
-    console.log('\n=== GST Assignment Verification ===');
+    // ✅ Verify PAN assignment for all adults
+    console.log('\n=== PAN Assignment Verification ===');
+    let adultsWithPAN = 0;
+    let adultsWithoutPAN = 0;
     let leadWithGST = 0;
-    let nonLeadWithGST = 0;
 
     HotelRoomsDetails.forEach((room, roomIndex) => {
       room.HotelPassenger.forEach((passenger, passengerIndex) => {
-        if (passenger.LeadPassenger === "true") {
-          if (passenger.GSTNumber) {
+        if (passenger.PaxType === 1) { // Adult
+          if (passenger.PAN) {
+            adultsWithPAN++;
+            console.log(`✅ Adult with PAN: ${passenger.FirstName} ${passenger.LastName} - ${passenger.PAN}`);
+          } else {
+            adultsWithoutPAN++;
+            console.error(`❌ Adult WITHOUT PAN: ${passenger.FirstName} ${passenger.LastName}`);
+          }
+
+          if (passenger.LeadPassenger === "true" && passenger.GSTNumber) {
             leadWithGST++;
             console.log(`✅ Lead passenger has GST: ${passenger.FirstName} ${passenger.LastName}`);
-          } else {
-            console.log(`ℹ️ Lead passenger without GST: ${passenger.FirstName} ${passenger.LastName}`);
           }
-        } else if (passenger.GSTNumber) {
-          nonLeadWithGST++;
-          console.log(`❌ Non-lead passenger has GST: ${passenger.FirstName} ${passenger.LastName}`);
         }
       });
     });
 
-    console.log(`\n📊 GST Summary: ${leadWithGST} lead with GST, ${nonLeadWithGST} non-lead with GST`);
+    console.log(`\n📊 PAN Summary: ${adultsWithPAN} adults with PAN, ${adultsWithoutPAN} adults without PAN`);
+    console.log(`📊 GST Summary: ${leadWithGST} lead with GST`);
 
-    if (nonLeadWithGST > 0) {
-      console.error('🚨 ERROR: Non-lead passengers have GST details!');
+    if (adultsWithoutPAN > 0) {
+      console.error('🚨 CRITICAL ERROR: Some adults are missing PAN numbers!');
+      throw new Error(`${adultsWithoutPAN} adult(s) are missing PAN numbers. All adults must have PAN numbers.`);
     } else {
-      console.log('✅ GST filtering successful - only lead passenger has GST details');
+      console.log('✅ PAN validation successful - all adults have PAN numbers');
     }
 
     return bookingPayload;
@@ -427,154 +476,157 @@ const GuestDetailsInfo = () => {
 
       <Card className="mb-4 shadow-sm border-0">
         <Card.Body>
-          <h5 className="fw-bold mb-2">Guest Details</h5>
-          <p className="text-muted small mb-4">Please enter names as per Government ID. All fields are mandatory.</p>
+          <Form autoComplete="on">
+            <h5 className="fw-bold mb-2">Guest Details</h5>
+            <p className="text-muted small mb-4">Please enter names as per Government ID. All fields are mandatory.</p>
 
-          {roomDetails.map((room, roomIndex) => (
-            <div key={roomIndex} className="border rounded p-3 mb-4">
-              <div className="mb-3 fw-bold text-primary">
-                <FaEnvelope className="me-2" />
-                Room {roomIndex + 1} - {room.adults} Adult(s){room.children > 0 && `, ${room.children} Child(ren)`}
+            {roomDetails.map((room, roomIndex) => (
+              <div key={roomIndex} className="border rounded p-3 mb-4">
+                <div className="mb-3 fw-bold text-primary">
+                  <FaEnvelope className="me-2" />
+                  Room {roomIndex + 1} - {room.adults} Adult(s){room.children > 0 && `, ${room.children} Child(ren)`}
+                </div>
+
+                {/* Adults */}
+                {guestInputs[roomIndex]?.adults?.map((guest, i) => (
+                  <div key={`adult-${roomIndex}-${i}`} className="mb-4 p-3 bg-light rounded">
+                    <Row className="align-items-center mb-3">
+                      <Col lg={2} className="fw-bold">
+                        Adult {i + 1}
+                        {roomIndex === 0 && i === 0 && (
+                          <span className="badge bg-primary ms-2 small">Lead Guest</span>
+                        )}
+                      </Col>
+                      <Col lg={2}>
+                        <Form.Select
+                          value={guest.title}
+                          onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'title', e.target.value)}
+                        >
+                          <option value="Mr">Mr</option>
+                          <option value="Ms">Ms</option>
+                          <option value="Mrs">Mrs</option>
+                        </Form.Select>
+                      </Col>
+                      <Col lg={4}>
+                        <Form.Control
+                          type="text"
+                          placeholder="First Name *"
+                          value={guest.firstName}
+                          onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'firstName', e.target.value)}
+                          isInvalid={!!errors[`adult-${roomIndex}-${i}-first`]}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors[`adult-${roomIndex}-${i}-first`]}
+                        </Form.Control.Feedback>
+                      </Col>
+                      <Col lg={4}>
+                        <Form.Control
+                          type="text"
+                          placeholder="Last Name *"
+                          value={guest.lastName}
+                          onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'lastName', e.target.value)}
+                          isInvalid={!!errors[`adult-${roomIndex}-${i}-last`]}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors[`adult-${roomIndex}-${i}-last`]}
+                        </Form.Control.Feedback>
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col md={6}>
+                        <Form.Control
+                          type="text"
+                          placeholder="PAN Number (ABCDE1234F) *"
+                          value={guest.panNumber}
+                          onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'panNumber', e.target.value.toUpperCase())}
+                          isInvalid={!!errors[`adult-${roomIndex}-${i}-pan`]}
+                          maxLength={10}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors[`adult-${roomIndex}-${i}-pan`]}
+                        </Form.Control.Feedback>
+                      </Col>
+                      <Col md={6}>
+                        <Form.Control
+                          type="number"
+                          placeholder="Age (18+) *"
+                          value={guest.age}
+                          onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'age', e.target.value)}
+                          isInvalid={!!errors[`adult-${roomIndex}-${i}-age`]}
+                          min="18"
+                          max="99"
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors[`adult-${roomIndex}-${i}-age`]}
+                        </Form.Control.Feedback>
+                      </Col>
+                    </Row>
+                  </div>
+                ))}
+
+                {/* Children */}
+                {guestInputs[roomIndex]?.children?.map((guest, i) => (
+                  <div key={`child-${roomIndex}-${i}`} className="mb-4 p-3 bg-warning bg-opacity-10 rounded">
+                    <Row className="align-items-center mb-3">
+                      <Col lg={2} className="fw-bold">
+                        Child {i + 1}
+                      </Col>
+                      <Col lg={2}>
+                        <Form.Select
+                          value={guest.title}
+                          onChange={(e) => handleInputChange(roomIndex, 'children', i, 'title', e.target.value)}
+                        >
+                          <option value="Master">Master</option>
+                          <option value="Miss">Miss</option>
+                        </Form.Select>
+                      </Col>
+                      <Col lg={4}>
+                        <Form.Control
+                          type="text"
+                          placeholder="First Name *"
+                          value={guest.firstName}
+                          onChange={(e) => handleInputChange(roomIndex, 'children', i, 'firstName', e.target.value)}
+                          isInvalid={!!errors[`child-${roomIndex}-${i}-first`]}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors[`child-${roomIndex}-${i}-first`]}
+                        </Form.Control.Feedback>
+                      </Col>
+                      <Col lg={4}>
+                        <Form.Control
+                          type="text"
+                          placeholder="Last Name *"
+                          value={guest.lastName}
+                          onChange={(e) => handleInputChange(roomIndex, 'children', i, 'lastName', e.target.value)}
+                          isInvalid={!!errors[`child-${roomIndex}-${i}-last`]}
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors[`child-${roomIndex}-${i}-last`]}
+                        </Form.Control.Feedback>
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col md={6}>
+                        <Form.Control
+                          type="number"
+                          placeholder="Child Age (1-17) *"
+                          value={guest.age}
+                          onChange={(e) => handleInputChange(roomIndex, 'children', i, 'age', e.target.value)}
+                          isInvalid={!!errors[`child-${roomIndex}-${i}-age`]}
+                          min="1"
+                          max="17"
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors[`child-${roomIndex}-${i}-age`]}
+                        </Form.Control.Feedback>
+                      </Col>
+                    </Row>
+                  </div>
+                ))}
               </div>
+            ))}
 
-              {/* Adults */}
-              {guestInputs[roomIndex]?.adults?.map((guest, i) => (
-                <div key={`adult-${roomIndex}-${i}`} className="mb-4 p-3 bg-light rounded">
-                  <Row className="align-items-center mb-3">
-                    <Col lg={2} className="fw-bold">
-                      Adult {i + 1}
-                      {roomIndex === 0 && i === 0 && (
-                        <span className="badge bg-primary ms-2 small">Lead Guest</span>
-                      )}
-                    </Col>
-                    <Col lg={2}>
-                      <Form.Select
-                        value={guest.title}
-                        onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'title', e.target.value)}
-                      >
-                        <option value="Mr">Mr</option>
-                        <option value="Ms">Ms</option>
-                        <option value="Mrs">Mrs</option>
-                      </Form.Select>
-                    </Col>
-                    <Col lg={4}>
-                      <Form.Control
-                        type="text"
-                        placeholder="First Name *"
-                        value={guest.firstName}
-                        onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'firstName', e.target.value)}
-                        isInvalid={!!errors[`adult-${roomIndex}-${i}-first`]}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors[`adult-${roomIndex}-${i}-first`]}
-                      </Form.Control.Feedback>
-                    </Col>
-                    <Col lg={4}>
-                      <Form.Control
-                        type="text"
-                        placeholder="Last Name *"
-                        value={guest.lastName}
-                        onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'lastName', e.target.value)}
-                        isInvalid={!!errors[`adult-${roomIndex}-${i}-last`]}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors[`adult-${roomIndex}-${i}-last`]}
-                      </Form.Control.Feedback>
-                    </Col>
-                  </Row>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Control
-                        type="text"
-                        placeholder="PAN Number (ABCDE1234F) *"
-                        value={guest.panNumber}
-                        onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'panNumber', e.target.value.toUpperCase())}
-                        isInvalid={!!errors[`adult-${roomIndex}-${i}-pan`]}
-                        maxLength={10}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors[`adult-${roomIndex}-${i}-pan`]}
-                      </Form.Control.Feedback>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Control
-                        type="number"
-                        placeholder="Age (18+) *"
-                        value={guest.age}
-                        onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'age', e.target.value)}
-                        isInvalid={!!errors[`adult-${roomIndex}-${i}-age`]}
-                        min="18"
-                        max="99"
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors[`adult-${roomIndex}-${i}-age`]}
-                      </Form.Control.Feedback>
-                    </Col>
-                  </Row>
-                </div>
-              ))}
-
-              {/* Children */}
-              {guestInputs[roomIndex]?.children?.map((guest, i) => (
-                <div key={`child-${roomIndex}-${i}`} className="mb-4 p-3 bg-warning bg-opacity-10 rounded">
-                  <Row className="align-items-center mb-3">
-                    <Col lg={2} className="fw-bold">
-                      Child {i + 1}
-                    </Col>
-                    <Col lg={2}>
-                      <Form.Select
-                        value={guest.title}
-                        onChange={(e) => handleInputChange(roomIndex, 'children', i, 'title', e.target.value)}
-                      >
-                        <option value="Master">Master</option>
-                        <option value="Miss">Miss</option>
-                      </Form.Select>
-                    </Col>
-                    <Col lg={4}>
-                      <Form.Control
-                        type="text"
-                        placeholder="First Name *"
-                        value={guest.firstName}
-                        onChange={(e) => handleInputChange(roomIndex, 'children', i, 'firstName', e.target.value)}
-                        isInvalid={!!errors[`child-${roomIndex}-${i}-first`]}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors[`child-${roomIndex}-${i}-first`]}
-                      </Form.Control.Feedback>
-                    </Col>
-                    <Col lg={4}>
-                      <Form.Control
-                        type="text"
-                        placeholder="Last Name *"
-                        value={guest.lastName}
-                        onChange={(e) => handleInputChange(roomIndex, 'children', i, 'lastName', e.target.value)}
-                        isInvalid={!!errors[`child-${roomIndex}-${i}-last`]}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors[`child-${roomIndex}-${i}-last`]}
-                      </Form.Control.Feedback>
-                    </Col>
-                  </Row>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Control
-                        type="number"
-                        placeholder="Child Age (1-17) *"
-                        value={guest.age}
-                        onChange={(e) => handleInputChange(roomIndex, 'children', i, 'age', e.target.value)}
-                        isInvalid={!!errors[`child-${roomIndex}-${i}-age`]}
-                        min="1"
-                        max="17"
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors[`child-${roomIndex}-${i}-age`]}
-                      </Form.Control.Feedback>
-                    </Col>
-                  </Row>
-                </div>
-              ))}
-            </div>
-          ))}
+          </Form>
         </Card.Body>
       </Card>
 

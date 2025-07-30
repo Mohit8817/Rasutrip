@@ -34,14 +34,52 @@ const HotelReviewInfo = () => {
             0
         ) || 0;
 
+    // ✅ PAN validation function
+    const validateAllAdultsPAN = (guestInputs) => {
+        const panErrors = [];
+        
+        guestInputs?.forEach((room, roomIndex) => {
+            room.adults?.forEach((adult, adultIndex) => {
+                const panValue = adult.panNumber?.trim() || '';
+                const adultName = `${adult.firstName} ${adult.lastName}`;
+                
+                // Check if PAN is empty or contains only spaces
+                if (!panValue || panValue.replace(/\s/g, '') === '') {
+                    panErrors.push(`❌ ${adultName} (Room ${roomIndex + 1}): PAN number is missing`);
+                } else {
+                    // Validate PAN format
+                    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+                    if (!panRegex.test(panValue)) {
+                        panErrors.push(`❌ ${adultName} (Room ${roomIndex + 1}): Invalid PAN format "${panValue}"`);
+                    }
+                }
+            });
+        });
+        
+        return panErrors;
+    };
+
+    // ✅ Updated handleContinue function with enhanced PAN validation
     const handleContinue = () => {
+        // ✅ CRITICAL: Validate PAN numbers before proceeding
+        const panValidationErrors = validateAllAdultsPAN(guestInputs);
+        
+        if (panValidationErrors.length > 0) {
+            const errorMessage = `PAN Validation Failed:\n\n${panValidationErrors.join('\n')}`;
+            alert(errorMessage);
+            console.error('❌ PAN validation failed:', panValidationErrors);
+            return; // Don't proceed if PAN validation fails
+        }
+
+        console.log('✅ All adults have valid PAN numbers');
+
         const totalPrice = roomDetails?.Amount || 0;
         const vendorCommission = priceDetails?.vendorCommission || 0;
         const couponDiscount = priceDetails?.discount || 0;
-        const userIp = "49.36.217.215"; // Consider making this dynamic
+        const userIp = "49.36.217.215";
 
         try {
-            // ✅ FIXED: Create proper traveller structure for API with correct field names
+            // ✅ FIXED: Create proper traveller structure for API with PAN for all adults
             const roomTravellerInfo = guestInputs?.map((roomGuests, roomIdx) => {
                 // Combine adults and children for this room
                 const allPassengers = [...roomGuests.adults, ...roomGuests.children];
@@ -49,36 +87,69 @@ const HotelReviewInfo = () => {
                 const travellerInfo = allPassengers.map((guest, passengerIndex) => {
                     // ✅ Only first passenger of first room is LeadPassenger
                     const isLeadPassenger = roomIdx === 0 && passengerIndex === 0;
+                    const isAdult = guest.age >= 18 || roomGuests.adults.includes(guest);
+                    
+                    // ✅ CRITICAL: Enhanced PAN handling with validation
+                    let panNumber = null;
+                    if (isAdult && guest.panNumber) {
+                        const cleanPAN = guest.panNumber.trim().toUpperCase();
+                        // Ensure PAN is not empty spaces
+                        if (cleanPAN && cleanPAN.replace(/\s/g, '') !== '' && cleanPAN !== 'NULL') {
+                            panNumber = cleanPAN;
+                        }
+                    }
+                    
+                    // ✅ Double-check: If adult doesn't have PAN, throw error
+                    if (isAdult && !panNumber) {
+                        throw new Error(`CRITICAL: Adult "${guest.firstName} ${guest.lastName}" in room ${roomIdx + 1} has no valid PAN number.`);
+                    }
                     
                     return {
                         Title: guest.title || "Mr",
                         FirstName: guest.firstName?.trim() || "",
-                        MiddleName: "", // Always empty string as per API requirement
+                        MiddleName: "",
                         LastName: guest.lastName?.trim() || "",
                         Phoneno: mobile?.trim() || "",
                         Email: email?.trim() || "",
-                        PaxType: 1, // Always 1 for hotel bookings
-                        LeadPassenger: isLeadPassenger, // ✅ Boolean format instead of string
-                        Age: parseInt(guest.age) || 18, // ✅ Default to 18 if missing
+                        PaxType: isAdult ? 1 : 2, // 1 for adults, 2 for children
+                        LeadPassenger: isLeadPassenger,
+                        Age: parseInt(guest.age) || 18,
                         PassportNo: null,
                         PassportIssueDate: null,
                         PassportExpDate: null,
-                        PAN: guest.panNumber?.trim() || "",
-                        // GST fields - only add if GST data exists
-                        GSTCompanyAddress: gstData?.address?.trim() || null,
-                        GSTCompanyContactNumber: gstData?.contactNo?.trim() || null,
-                        GSTCompanyEmail: gstData?.email?.trim() || null,
-                        GSTCompanyName: gstData?.companyName?.trim() || null,
-                        GSTNumber: gstData?.gstNumber?.trim() || null,
+                        // ✅ CRITICAL FIX: PAN for all adults, null for children
+                        PAN: panNumber,
+                        
+                        // ✅ GST fields - only for lead passenger
+                        GSTCompanyAddress: (isLeadPassenger && gstData?.address) ? gstData.address.trim() : null,
+                        GSTCompanyContactNumber: (isLeadPassenger && gstData?.contactNo) ? gstData.contactNo.trim() : null,
+                        GSTCompanyEmail: (isLeadPassenger && gstData?.email) ? gstData.email.trim() : null,
+                        GSTCompanyName: (isLeadPassenger && gstData?.companyName) ? gstData.companyName.trim() : null,
+                        GSTNumber: (isLeadPassenger && gstData?.gstNumber) ? gstData.gstNumber.trim().toUpperCase() : null,
                     };
                 });
 
                 return {
-                    travellerInfo: travellerInfo, // ✅ Correct field name for API
+                    travellerInfo: travellerInfo,
                 };
             });
 
-            // ✅ FIXED: Create proper hotel booking details with correct structure
+            // ✅ Final validation: Check that all adults have PAN
+            let adultsWithoutPAN = [];
+            roomTravellerInfo.forEach((room, roomIdx) => {
+                room.travellerInfo.forEach((pax, paxIdx) => {
+                    if (pax.PaxType === 1 && !pax.PAN) { // Adult without PAN
+                        adultsWithoutPAN.push(`Room ${roomIdx + 1}, Guest ${paxIdx + 1}: ${pax.FirstName} ${pax.LastName}`);
+                    }
+                });
+            });
+
+            if (adultsWithoutPAN.length > 0) {
+                console.error("❌ Adults missing PAN:", adultsWithoutPAN);
+                alert(`❌ PAN numbers required for all adults:\n${adultsWithoutPAN.join('\n')}`);
+                return;
+            }
+
             const hotelBookingDetails = {
                 ResultIndex: hotel?.ResultIndex || "",
                 HotelCode: hotel?.HotelCode || "",
@@ -90,7 +161,7 @@ const HotelReviewInfo = () => {
                 NoOfRooms: hotel?.rooms?.toString() || "1",
                 ClientReferenceNo: 0,
                 IsVoucherBooking: "true",
-                roomTravellerInfo: roomTravellerInfo || [], // ✅ Correct field name
+                roomTravellerInfo: roomTravellerInfo || [],
                 UserIp: userIp,
             };
 
@@ -110,26 +181,7 @@ const HotelReviewInfo = () => {
                 return;
             }
 
-            // ✅ Validate required fields
-            const missingFields = [];
-            hotelBookingDetails.roomTravellerInfo.forEach((room, roomIdx) => {
-                room.travellerInfo.forEach((pax, paxIdx) => {
-                    if (!pax.FirstName) missingFields.push(`Room ${roomIdx + 1}, Guest ${paxIdx + 1}: First Name`);
-                    if (!pax.LastName) missingFields.push(`Room ${roomIdx + 1}, Guest ${paxIdx + 1}: Last Name`);
-                    if (!pax.Email) missingFields.push(`Room ${roomIdx + 1}, Guest ${paxIdx + 1}: Email`);
-                    if (!pax.Phoneno) missingFields.push(`Room ${roomIdx + 1}, Guest ${paxIdx + 1}: Phone`);
-                    if (!pax.Age || pax.Age < 1) missingFields.push(`Room ${roomIdx + 1}, Guest ${paxIdx + 1}: Age`);
-                    if (pax.Age >= 18 && !pax.PAN) missingFields.push(`Room ${roomIdx + 1}, Guest ${paxIdx + 1}: PAN (required for adults)`);
-                });
-            });
-
-            if (missingFields.length > 0) {
-                console.error("❌ Missing required fields:", missingFields);
-                alert(`❌ Missing required information:\n${missingFields.join('\n')}`);
-                return;
-            }
-
-            console.log("🚀 Final Payload:", JSON.stringify(hotelBookingDetails, null, 2));
+            console.log("🚀 Final Payload with PAN validation:", JSON.stringify(hotelBookingDetails, null, 2));
 
             navigate("/HotelPayment", {
                 state: {
@@ -153,7 +205,7 @@ const HotelReviewInfo = () => {
             });
         } catch (error) {
             console.error("❌ Error creating booking payload:", error);
-            alert("Error preparing booking data. Please try again.");
+            alert("Error preparing booking data: " + error.message);
         }
     };
 
