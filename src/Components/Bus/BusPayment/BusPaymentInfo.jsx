@@ -5,7 +5,7 @@ import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstr
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { createBusPaymentOrder, validateBusPayment } from '../../APIS/BusApi/BusApis';
+import { createBusPaymentOrder, validateBusPayment, bookBus, downloadBusInvoice } from '../../APIS/BusApi/BusApis';
 
 const BusPaymentInfo = () => {
     const { state } = useLocation();
@@ -34,7 +34,8 @@ const BusPaymentInfo = () => {
         selectedDroppingPoint = {},
         boardingPoint = {},
         droppingPoint = {},
-        couponDiscount = 0
+        couponDiscount = 0,
+        vendorCommission = 10.97
     } = state || {};
 
     const convenienceFee = 0;
@@ -48,7 +49,7 @@ const BusPaymentInfo = () => {
                 resolve(true);
                 return;
             }
-            
+
             const script = document.createElement('script');
             script.src = 'https://checkout.razorpay.com/v1/checkout.js';
             script.onload = () => resolve(true);
@@ -154,16 +155,92 @@ const BusPaymentInfo = () => {
         console.log('Type:', typeof response);
         console.log('Keys:', response ? Object.keys(response) : 'null/undefined');
         console.log('Full Response:', response);
-        
+
         if (response?.data) {
             console.log('Data Keys:', Object.keys(response.data));
             console.log('Data Content:', response.data);
         }
-        
+
         if (response?.order) {
             console.log('Order Keys:', Object.keys(response.order));
             console.log('Order Content:', response.order);
         }
+    };
+
+    // ✅ Helper function to get valid address
+    const getValidAddress = (passenger, contactData, fromCity, toCity) => {
+        // Priority order: passenger address > contact address > city-based fallback
+        if (passenger?.address && passenger.address.trim()) {
+            return passenger.address.trim();
+        }
+
+        if (contactData?.address && contactData.address.trim()) {
+            return contactData.address.trim();
+        }
+
+        // Default fallback address based on cities
+        return `${fromCity || 'Delhi'}, India`;
+    };
+
+    // ✅ FIXED: Enhanced seat name extraction function
+    const extractSeatName = (seat, index) => {
+        console.log(`🪑 Raw seat data for index ${index}:`, seat);
+
+        // If seat is null/undefined, use fallback
+        if (!seat) {
+            console.warn(`⚠️ No seat data for index ${index}, using fallback`);
+            return `S${index + 1}`;
+        }
+
+        // Try different seat name properties in priority order
+        let seatName = seat.SeatName || 
+                      seat.seatName || 
+                      seat.seatNumber || 
+                      seat.name || 
+                      seat.id || 
+                      seat.number || 
+                      seat;
+
+        console.log(`🔍 Extracted seat name: "${seatName}" (type: ${typeof seatName})`);
+
+        // If it's already a valid string format, keep it
+        if (typeof seatName === 'string' && seatName.trim()) {
+            const trimmedSeat = seatName.trim();
+            
+            // Check if it matches common seat patterns (A1, B2, 1A, 2B, etc.)
+            if (/^[A-Z]\d+$|^\d+[A-Z]$|^[A-Z]\d+[A-Z]$|^[0-9]+$/.test(trimmedSeat)) {
+                console.log(`✅ Valid seat format found: "${trimmedSeat}"`);
+                return trimmedSeat;
+            }
+            
+            // If it contains alphanumeric characters, keep as is
+            if (/[A-Za-z0-9]/.test(trimmedSeat)) {
+                console.log(`✅ Alphanumeric seat name: "${trimmedSeat}"`);
+                return trimmedSeat;
+            }
+        }
+
+        // If it's a number, convert to string
+        if (typeof seatName === 'number' && !isNaN(seatName)) {
+            const numSeat = seatName.toString();
+            console.log(`✅ Number converted to string: "${numSeat}"`);
+            return numSeat;
+        }
+
+        // Try to extract number from string if it exists
+        if (typeof seatName === 'string') {
+            const numberMatch = seatName.match(/\d+/);
+            if (numberMatch) {
+                const extractedNumber = numberMatch[0];
+                console.log(`📊 Extracted number from string: "${extractedNumber}"`);
+                return extractedNumber;
+            }
+        }
+
+        // Final fallback - use index-based seat name
+        const fallbackSeat = `S${index + 1}`;
+        console.warn(`⚠️ Using fallback seat name: "${fallbackSeat}"`);
+        return fallbackSeat;
     };
 
     const formatBusOrderData = (bookingState, amount) => ({
@@ -175,8 +252,8 @@ const BusPaymentInfo = () => {
             travel_date: bookingState.departDate,
             bus_operator: bookingState.bus?.operator,
             bus_type: bookingState.bus?.busType,
-            selected_seats: bookingState.selectedSeats?.map(seat =>
-                seat.SeatName || seat.seatNumber || seat.id
+            selected_seats: bookingState.selectedSeats?.map((seat, index) => 
+                extractSeatName(seat, index)
             ),
             passenger_count: bookingState.passengerData?.length || 0,
             base_fare: bookingState.totalPrice,
@@ -190,42 +267,130 @@ const BusPaymentInfo = () => {
         }
     });
 
+    // ✅ FIXED: Format validate payment data with enhanced seat name handling
     const formatValidatePaymentData = (bookingState, paymentResponse, orderData) => {
-        const passengers = bookingState.passengerData?.map((passenger, index) => ({
-            LeadPassenger: index === 0,
-            Title: passenger.title || (passenger.gender === 'Male' ? 'Mr' : 'Ms'),
-            FirstName: passenger.firstName,
-            LastName: passenger.lastName,
-            Email: bookingState.contactData?.email || passenger.email || '',
-            Phoneno: bookingState.contactData?.mobile || passenger.phone || '',
-            Gender: passenger.gender === 'Male' ? '1' : '2',
-            IdType: passenger.idType || null,
-            IdNumber: passenger.idNumber || null,
-            Address: passenger.address || bookingState.contactData?.address || '',
-            Age: passenger.age?.toString(),
-            SeatName: bookingState.selectedSeats?.[index]?.SeatName ||
-                bookingState.selectedSeats?.[index]?.seatNumber ||
-                bookingState.selectedSeats?.[index]?.id ||
-                bookingState.selectedSeats?.[index]
-        })) || [];
+        console.log('🎫 Formatting validate payment data...');
+        console.log('🪑 Available seats:', bookingState.selectedSeats);
+        console.log('👥 Passenger count:', bookingState.passengerData?.length);
 
-        return {
+        const passengers = bookingState.passengerData?.map((passenger, index) => {
+            // ✅ FIXED: Use enhanced seat name extraction
+            const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
+            
+            console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}"`);
+
+            // ✅ Ensure address is always provided and not empty
+            const validAddress = getValidAddress(passenger, bookingState.contactData, bookingState.fromCity, bookingState.toCity);
+
+            // ✅ Better email handling with validation
+            const emailAddress = bookingState.contactData?.email || passenger.email || '';
+            const phoneNumber = bookingState.contactData?.mobile || passenger.phone || '';
+
+            // ✅ Debug email and phone data
+            console.log(`📧 Contact info for passenger ${index + 1}:`, {
+                email: emailAddress,
+                phone: phoneNumber,
+                isLead: index === 0
+            });
+
+            return {
+                LeadPassenger: index === 0,
+                Title: passenger.title || (passenger.gender === 'Male' ? 'Mr' : 'Ms'),
+                FirstName: passenger.firstName,
+                LastName: passenger.lastName,
+                Email: emailAddress.trim(),
+                Phoneno: phoneNumber.replace(/\D/g, ''),
+                Gender: passenger.gender === 'Male' ? '1' : '2',
+                IdType: passenger.idType || null,
+                IdNumber: passenger.idNumber || null,
+                Address: validAddress,
+                Age: passenger.age?.toString(),
+                SeatName: seatName // ✅ This is now guaranteed to be a valid string
+            };
+        }) || [];
+
+        const validationData = {
             amount: parseFloat(finalAmount),
             razorpay_order_id: paymentResponse.razorpay_order_id,
             razorpay_payment_id: paymentResponse.razorpay_payment_id,
             razorpay_signature: paymentResponse.razorpay_signature,
             bookingType: "BUS",
             Bus: {
-                ResultIndex: bookingState.busBookingData?.ResultIndex || bookingState.bus?.ResultIndex || "TB-1",
+                ResultIndex: bookingState.busBookingData?.ResultIndex ||
+                    bookingState.bus?.ResultIndex ||
+                    "TB-1",
                 BoardingPointId: bookingState.selectedBoardingPoint?.BoardingPointId ||
-                    bookingState.boardingPoint?.id || 1,
+                    bookingState.boardingPoint?.BoardingPointId ||
+                    bookingState.boardingPoint?.id ||
+                    1,
                 DroppingPointId: bookingState.selectedDroppingPoint?.DroppingPointId ||
-                    bookingState.droppingPoint?.id || 1,
-                SearchTokenId: bookingState.searchTokenId || bookingState.bus?.SearchTokenId || "",
+                    bookingState.droppingPoint?.DroppingPointId ||
+                    bookingState.droppingPoint?.id ||
+                    1,
+                SearchTokenId: bookingState.searchTokenId ||
+                    bookingState.bus?.SearchTokenId ||
+                    "",
                 CouponDiscount: bookingState.couponDiscount || 0,
                 Passenger: passengers
             }
         };
+
+        console.log('📤 Final validation data:', JSON.stringify(validationData, null, 2));
+        console.log('🪑 Seat names in validation:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName })));
+
+        return validationData;
+    };
+
+    // ✅ FIXED: Format booking data with enhanced seat name handling
+    const formatBookingData = (bookingState) => {
+        console.log('🎫 Formatting booking data...');
+        console.log('🪑 Available seats:', bookingState.selectedSeats);
+        console.log('👥 Passenger count:', bookingState.passengerData?.length);
+
+        const passengers = bookingState.passengerData?.map((passenger, index) => {
+            // ✅ FIXED: Use enhanced seat name extraction
+            const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
+            
+            console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}"`);
+
+            // ✅ Ensure address is always provided and not empty
+            const validAddress = getValidAddress(passenger, bookingState.contactData, bookingState.fromCity, bookingState.toCity);
+
+            // ✅ Better email handling with validation
+            const emailAddress = bookingState.contactData?.email || passenger.email || '';
+            const phoneNumber = bookingState.contactData?.mobile || passenger.phone || '';
+
+            return {
+                LeadPassenger: index === 0,
+                Title: passenger.title || (passenger.gender === 'Male' ? 'Mr' : 'Ms'),
+                FirstName: passenger.firstName,
+                LastName: passenger.lastName,
+                Email: emailAddress.trim(),
+                Phoneno: phoneNumber.replace(/\D/g, ''),
+                Gender: passenger.gender === 'Male' ? '1' : '2',
+                IdType: passenger.idType || null,
+                IdNumber: passenger.idNumber || null,
+                Address: validAddress,
+                Age: passenger.age?.toString(),
+                SeatName: seatName // ✅ This is now guaranteed to be a valid string
+            };
+        }) || [];
+
+        const bookingData = {
+            UserIp: "122.161.64.143",
+            SearchTokenId: bookingState.searchTokenId || bookingState.bus?.SearchTokenId || "",
+            ResultIndex: bookingState.busBookingData?.ResultIndex || bookingState.bus?.ResultIndex || "TB-1",
+            BoardingPointId: bookingState.selectedBoardingPoint?.BoardingPointId || bookingState.boardingPoint?.BoardingPointId || bookingState.boardingPoint?.id || 1,
+            DroppingPointId: bookingState.selectedDroppingPoint?.DroppingPointId || bookingState.droppingPoint?.DroppingPointId || bookingState.droppingPoint?.id || 1,
+            vendorCommission: bookingState.vendorCommission || vendorCommission,
+            CouponDiscount: bookingState.couponDiscount || 0,
+            Passenger: passengers
+        };
+
+        console.log('📤 Final booking data:', JSON.stringify(bookingData, null, 2));
+        console.log('🪑 Seat names in booking:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName })));
+
+        return bookingData;
     };
 
     // ✅ Enhanced Razorpay options with better error handling
@@ -244,12 +409,12 @@ const BusPaymentInfo = () => {
         notes: {
             route: `${fromCity} to ${toCity}`,
             travel_date: departDate,
-            seats: selectedSeats.map(seat => seat.SeatName || seat.seatNumber || seat.id).join(', '),
+            seats: selectedSeats.map((seat, index) => extractSeatName(seat, index)).join(', '),
             passenger_count: passengerData.length,
             bus_operator: bus?.operator || 'N/A'
         },
-        theme: { 
-            color: '#dc3545' 
+        theme: {
+            color: '#dc3545'
         },
         modal: {
             ondismiss: function () {
@@ -259,13 +424,15 @@ const BusPaymentInfo = () => {
         },
     });
 
-    // ✅ Enhanced payment handler with better error handling and validation
+    // ✅ Enhanced payment handler with booking API integration
     const handlePayment = async () => {
         setError(null);
         setLoading(true);
 
         try {
             console.log('🚀 Starting bus payment process...');
+            console.log('🪑 Selected seats debug:', selectedSeats);
+            console.log('👥 Passenger data debug:', passengerData);
 
             // ✅ Load Razorpay script
             const razorpayLoaded = await loadRazorpayScript();
@@ -284,46 +451,38 @@ const BusPaymentInfo = () => {
             const orderResponse = await createBusPaymentOrder(orderData);
             debugApiResponse(orderResponse, 'createBusPaymentOrder');
 
-            // ✅ Enhanced order ID extraction - check multiple possible response structures
+            // ✅ Enhanced order ID extraction
             let orderId, orderAmount, orderObject;
 
-            // Check various possible response structures
             if (orderResponse?.data?.order?.id) {
-                // Structure: { data: { order: { id, amount } } }
                 orderObject = orderResponse.data.order;
                 orderId = orderObject.id;
                 orderAmount = orderObject.amount;
             } else if (orderResponse?.order?.id) {
-                // Structure: { order: { id, amount } }
-                orderObject = orderResponse.order; 
+                orderObject = orderResponse.order;
                 orderId = orderObject.id;
                 orderAmount = orderObject.amount;
             } else if (orderResponse?.data?.id) {
-                // Structure: { data: { id, amount } }
                 orderObject = orderResponse.data;
                 orderId = orderObject.id;
                 orderAmount = orderObject.amount;
             } else if (orderResponse?.id) {
-                // Structure: { id, amount }
                 orderObject = orderResponse;
                 orderId = orderResponse.id;
                 orderAmount = orderResponse.amount;
             } else {
-                // Log the actual response structure for debugging
                 console.error('❌ Unexpected order response structure:', {
                     responseKeys: Object.keys(orderResponse || {}),
                     fullResponse: orderResponse
                 });
-                throw new Error(`Failed to create payment order - Invalid response structure. Expected order ID but received: ${JSON.stringify(orderResponse)}`);
+                throw new Error(`Failed to create payment order - Invalid response structure`);
             }
 
-            // Validate that we have the required data
             if (!orderId) {
                 console.error('❌ No order ID found in response:', orderResponse);
                 throw new Error('Failed to create payment order - No order ID received');
             }
 
-            // Use finalAmount if orderAmount is not available from response
             if (!orderAmount) {
                 console.warn('⚠️ No amount in order response, using calculated amount:', finalAmount);
                 orderAmount = parseFloat(finalAmount);
@@ -331,28 +490,68 @@ const BusPaymentInfo = () => {
 
             console.log('✅ Payment order created:', { orderId, orderAmount });
 
-            // ✅ Enhanced success handler
+            // ✅ UPDATED: Enhanced success handler with booking API
             const handleSuccess = async (response) => {
                 try {
                     console.log('✅ Payment successful, validating...', response);
-                    
+
                     const validateData = formatValidatePaymentData(state, response, orderObject);
-                    console.log('📦 Validating payment with data:', validateData);
+                    console.log('📤 Validation data being sent:', validateData);
 
                     const validationResult = await validateBusPayment(validateData);
                     console.log('✅ Payment validation result:', validationResult);
 
-                    // ✅ Check if validation was successful
-                    const isValidationSuccessful = 
+                    const isValidationSuccessful =
                         validationResult?.message === 'Payment verified successfully' ||
                         validationResult?.payment?.status === 'success' ||
                         validationResult?.status === 'success' ||
                         validationResult?.success === true;
 
                     if (isValidationSuccessful) {
-                        showSuccessToast('🎉 Bus booking confirmed successfully!');
+                        // ✅ FIXED: Call book API after successful validation
+                        console.log('🎫 Proceeding to book bus...');
+                        const bookingData = formatBookingData(state);
 
-                        navigate('/booking-success', {
+                        // ✅ Final validation before booking API call
+                        const invalidSeats = bookingData.Passenger.filter(p => !p.SeatName || p.SeatName.trim() === '');
+                        if (invalidSeats.length > 0) {
+                            console.error('❌ Invalid seat names found:', invalidSeats);
+                            throw new Error('Invalid seat assignment. Please try booking again.');
+                        }
+
+                        console.log('📤 Booking data being sent:', JSON.stringify(bookingData, null, 2));
+
+                        const bookingResult = await bookBus(bookingData);
+                        console.log('✅ Bus booking result:', bookingResult);
+
+                        // ✅ NEW: Download invoice after successful booking
+                        let invoiceDownloaded = false;
+                        try {
+                            if (bookingResult?.data?.BookingId || bookingResult?.BookingId) {
+                                const bookingId = bookingResult?.data?.BookingId || bookingResult?.BookingId;
+                                console.log('📄 Downloading invoice for BookingId:', bookingId);
+
+                                const invoiceData = {
+                                    UserIp: "122.161.64.143",
+                                    SearchTokenId: bookingData.SearchTokenId,
+                                    BookingId: bookingId,
+                                    receiverEmail: bookingData.Passenger?.[0]?.Email || contactData?.email
+                                };
+
+                                await downloadBusInvoice(invoiceData);
+                                invoiceDownloaded = true;
+                                console.log('✅ Invoice downloaded successfully');
+                                showSuccessToast('🎉 Bus booking confirmed! Invoice downloaded successfully!');
+                            } else {
+                                console.warn('⚠️ No BookingId found in booking result, skipping invoice download');
+                                showSuccessToast('🎉 Bus booking confirmed successfully!');
+                            }
+                        } catch (invoiceError) {
+                            console.error('⚠️ Invoice download failed:', invoiceError);
+                            showSuccessToast('🎉 Bus booking confirmed! (Invoice download failed - you can download it later)');
+                        }
+
+                        navigate('/bus-confirm', {
                             state: {
                                 paymentId: response.razorpay_payment_id,
                                 orderId: response.razorpay_order_id,
@@ -361,25 +560,33 @@ const BusPaymentInfo = () => {
                                 finalAmount,
                                 orderData: orderObject,
                                 validationResult,
+                                bookingResult,
                                 isValidated: true,
+                                isBooked: true,
+                                invoiceDownloaded,
                                 bookingType: 'bus'
                             },
                         });
                     } else {
-                        // ✅ Handle validation failure
-                        const validationError = validationResult?.message || 
-                                              validationResult?.error?.message || 
-                                              'Payment validation failed';
-                        
+                        const validationError = validationResult?.message ||
+                            validationResult?.error?.message ||
+                            'Payment validation failed';
+
                         setError(`Payment completed but validation failed: ${validationError}`);
                         showErrorToast('❌ Payment Validation Failed', validationError);
                     }
 
                 } catch (err) {
-                    console.error('❌ Payment validation error:', err);
-                    const { message: errorMessage } = handleApiError(err, 'Payment Validation');
-                    setError(`Payment completed but validation failed: ${errorMessage}`);
-                    showErrorToast('❌ Payment Validation Error', errorMessage);
+                    console.error('❌ Payment validation/booking error:', err);
+
+                    if (err.message && err.message.includes('bookBus')) {
+                        setError(`Payment validated but booking failed: ${err.message}`);
+                        showErrorToast('❌ Booking Failed', 'Payment was successful but booking could not be completed');
+                    } else {
+                        const { message: errorMessage } = handleApiError(err, 'Payment Validation/Booking');
+                        setError(`Payment completed but processing failed: ${errorMessage}`);
+                        showErrorToast('❌ Booking Process Failed', errorMessage);
+                    }
                 } finally {
                     setLoading(false);
                 }
@@ -470,8 +677,8 @@ const BusPaymentInfo = () => {
                             <Col md={3}>
                                 <div><strong>Seats:</strong></div>
                                 <div className="fw-bold text-success">
-                                    {selectedSeats.map(seat => 
-                                        seat.SeatName || seat.seatNumber || seat.id
+                                    {selectedSeats.map((seat, index) => 
+                                        extractSeatName(seat, index)
                                     ).join(', ')}
                                 </div>
                             </Col>
@@ -496,12 +703,7 @@ const BusPaymentInfo = () => {
                                     <strong>Age:</strong> {passenger.age}
                                 </Col>
                                 <Col md={3}>
-                                    <strong>Seat:</strong> {
-                                        selectedSeats[index]?.SeatName ||
-                                        selectedSeats[index]?.seatNumber ||
-                                        selectedSeats[index]?.id ||
-                                        'N/A'
-                                    }
+                                    <strong>Seat:</strong> {extractSeatName(selectedSeats[index], index)}
                                 </Col>
                                 <Col md={3}>
                                     <strong>Gender:</strong> {passenger.gender}
@@ -606,7 +808,7 @@ const BusPaymentInfo = () => {
                                     Processing Payment...
                                 </>
                             ) : (
-                                `💳 Pay Now ₹${finalAmount}`
+                                `Pay Now ₹${finalAmount}`
                             )}
                         </Button>
                     </div>

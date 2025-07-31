@@ -33,13 +33,14 @@ import SetResetMPIN from './Components/Login/SetResetMPIN';
 import CustomerLogin from './Components/Login/CustomerLogin';
 import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
 import HotelConfirmation from './Components/Hotel/BookingSummaryPage/HotelConfirmation/HotelConfirmation';
+import Bookingconfirm from './Components/Bus/Bookingconfirm/Bookingconfirm';
 
 function App() {
   return (
     <>
       <Header />
-          
-<ScrollToTop/>
+
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/flight-results" element={<FlightResultsPage />} />
@@ -66,11 +67,11 @@ function App() {
         <Route path="/bus-traveller-details" element={<BusTravellerDetails />} />
         <Route path="/bus-review" element={<BusReview />} />
         <Route path="/bus-payment" element={<BusPayment />} />
+        <Route path="/bus-confirm" element={<Bookingconfirm />} />
+
 
         {/* Login */}
-        {/* <Route path="/login/customer" element={<CustomerLogin />} />
 
-        <Route path="/login/agent" element={<AgentLogin />} /> */}
 
 
         {/* ✅ Customer & Agent Login */}
