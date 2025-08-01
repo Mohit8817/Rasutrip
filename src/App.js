@@ -168,55 +168,55 @@ function App() {
   return (
     <>
       {/* <Router> */}
-        <Header />
-        <ScrollToTop className="mb-4" />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/flight-results" element={<FlightResultsPage />} />
-          <Route path="/flight-details" element={<FlightDetails />} />
-          <Route path="/traveller-details" element={<FlightTravellerDetails />} />
-          <Route path="/addons" element={<FlightAddon />} />
-          <Route path="/review" element={<FlightReview />} />
-          <Route path="/payment" element={<FlightPayment />} />
-          <Route path="/booking/success" element={<BookingSuccess />} />
-          <Route path="/booking/invoice" element={<InvoiceTemplate />} />
+      <Header />
+      <ScrollToTop className="mb-4" />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/flight-results" element={<FlightResultsPage />} />
+        <Route path="/flight-details" element={<FlightDetails />} />
+        <Route path="/traveller-details" element={<FlightTravellerDetails />} />
+        <Route path="/addons" element={<FlightAddon />} />
+        <Route path="/review" element={<FlightReview />} />
+        <Route path="/payment" element={<FlightPayment />} />
+        <Route path="/booking/success" element={<BookingSuccess />} />
+        <Route path="/booking/invoice" element={<InvoiceTemplate />} />
 
 
-          {/* Hotel */}
-          <Route path="/hotel-results" element={<HotelResultsPage />} />
-          <Route path="/HotelDetailsPage/:id" element={<HotelDetailsPage />} />
-          <Route path="/HotelDetail" element={<HotelDetail />} />
-          <Route path="/guest-details" element={<GuestDetails />} />
-          <Route path="/Hotelreview" element={<HotelReview />} />
-          <Route path="/HotelPayment" element={<HotelPayment />} />
-          <Route path="/hotel/confirmation" element={<HotelConfirmation />} />
+        {/* Hotel */}
+        <Route path="/hotel-results" element={<HotelResultsPage />} />
+        <Route path="/HotelDetailsPage/:id" element={<HotelDetailsPage />} />
+        <Route path="/HotelDetail" element={<HotelDetail />} />
+        <Route path="/guest-details" element={<GuestDetails />} />
+        <Route path="/Hotelreview" element={<HotelReview />} />
+        <Route path="/HotelPayment" element={<HotelPayment />} />
+        <Route path="/hotel/confirmation" element={<HotelConfirmation />} />
 
-          {/* Bus */}
-          <Route path="/bus-results" element={<BusResultPage />} />
-          <Route path="/bus-detail" element={<BusDetail />} />
-          <Route path="/bus-traveller-details" element={<BusTravellerDetails />} />
-          <Route path="/bus-review" element={<BusReview />} />
-          <Route path="/bus-payment" element={<BusPayment />} />
-               <Route path="/bus-confirm" element={<Bookingconfirm />} />
+        {/* Bus */}
+        <Route path="/bus-results" element={<BusResultPage />} />
+        <Route path="/bus-detail" element={<BusDetail />} />
+        <Route path="/bus-traveller-details" element={<BusTravellerDetails />} />
+        <Route path="/bus-review" element={<BusReview />} />
+        <Route path="/bus-payment" element={<BusPayment />} />
+        <Route path="/bus-confirm" element={<Bookingconfirm />} />
 
-          {/* Login */}
-          <Route path="/login/customer" element={<CustomerLogin />} />
-          <Route path="/login/agent" element={<AgentLogin />} />
-          <Route path="/set-mpin" element={<SetResetMPIN />} />
+        {/* Login */}
+        <Route path="/login/customer" element={<CustomerLogin />} />
+        <Route path="/login/agent" element={<AgentLogin />} />
+        <Route path="/set-mpin" element={<SetResetMPIN />} />
 
-          {/* Dashboard */}
-          <Route path="/dashboard" element={<h1>Welcome to Dashboard</h1>} />
+        {/* Dashboard */}
+        <Route path="/dashboard" element={<h1>Welcome to Dashboard</h1>} />
 
-          {/* Footer Pages */}
-          <Route path="/Aboutus" element={<AboutUs />} />
-          <Route path="/terms-and-conditions" element={<TermsandConditions />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/disclaimer" element={<Declaration />} />
-          <Route path="/UserAgreement" element={<UserAgreement />} />
-          <Route path="/CancellationRefundpolicy" element={<CancellationRefundpolicy />} />
-          <Route path="/faq" element={<FAQ />} />
-        </Routes>
-        <Footer />
+        {/* Footer Pages */}
+        <Route path="/Aboutus" element={<AboutUs />} />
+        <Route path="/terms-and-conditions" element={<TermsandConditions />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/disclaimer" element={<Declaration />} />
+        <Route path="/UserAgreement" element={<UserAgreement />} />
+        <Route path="/CancellationRefundpolicy" element={<CancellationRefundpolicy />} />
+        <Route path="/faq" element={<FAQ />} />
+      </Routes>
+      <Footer />
       {/* </Router> */}
       <ToastContainer position="top-right" autoClose={3000} />
     </>
