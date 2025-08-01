@@ -13,10 +13,40 @@ const RoomCard = ({
   const navigate = useNavigate();
   const [loadingRoomId, setLoadingRoomId] = useState(null);
 
+  const isPANMandatory = (room) => {
+    return (
+      room?.IsPANMandatory === true ||
+      room?.IsPANMandatory === "true" ||
+      room?.IsPANMandatory === 1
+    );
+  };
+
+  const isValidPANFormat = (pan) => {
+    if (!pan || typeof pan !== "string") return false;
+    const cleanPAN = pan.trim().toUpperCase();
+
+    if (
+      cleanPAN === "" ||
+      cleanPAN === "NULL" ||
+      cleanPAN === "UNDEFINED" ||
+      cleanPAN.replace(/\s/g, "") === ""
+    ) {
+      return false;
+    }
+
+    return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPAN);
+  };
+
   const handleBookNow = async (room) => {
     if (room.AvailabilityType !== "Confirm") {
       alert("⚠️ This room is not available. Please choose another.");
       return;
+    }
+
+    if (isPANMandatory(room)) {
+      alert(
+        "⚠️ This room requires PAN numbers for all adult guests.\n\nPlease ensure all adult passengers have valid PAN numbers before proceeding to payment.\n\nPAN format: ABCDE1234F (5 letters + 4 digits + 1 letter)"
+      );
     }
 
     setLoadingRoomId(room.RoomId);
@@ -28,7 +58,11 @@ const RoomCard = ({
       SearchTokenId: payload.SearchTokenId,
       HotelName: hotel?.HotelName,
       NoOfRooms: 1,
-      HotelRoomsDetails: [room],
+      HotelRoomsDetails: [
+        {
+          RoomIndex: room.RoomIndex || 1,
+        },
+      ],
     };
 
     try {
@@ -45,6 +79,7 @@ const RoomCard = ({
           gst: 0,
           room,
           hotel,
+          isPANMandatory: isPANMandatory(room),
         });
 
         onBlockStatusChange?.("success");
@@ -71,6 +106,7 @@ const RoomCard = ({
             },
             payload,
             blockedRoomData: blockRes?.Result,
+            isPANMandatory: isPANMandatory(room),
           },
         });
       } else if (blockRes?.Error?.ErrorCode === 5) {
@@ -100,6 +136,7 @@ const RoomCard = ({
       {availableRooms.length > 0 ? (
         availableRooms.map((room, idx) => {
           const offeredPrice = Number(room?.Price?.OfferedPrice || 0);
+          const panMandatory = isPANMandatory(room);
 
           return (
             <div
@@ -109,8 +146,7 @@ const RoomCard = ({
               <div>
                 <div className="fw-bold">{room.RoomTypeName || "Room"}</div>
                 <div className="small text-muted mb-1">
-                  {hotel.checkInDate} → {hotel.checkOutDate} •{" "}
-                  {hotel.nights} Night
+                  {hotel.checkInDate} → {hotel.checkOutDate} • {hotel.nights} Night
                 </div>
                 <div className="small text-muted mb-2">
                   {hotel.guests} Guest • {hotel.rooms} Room
@@ -119,7 +155,7 @@ const RoomCard = ({
                   ₹{offeredPrice.toLocaleString()}
                 </div>
 
-                {room?.IsPANMandatory && (
+                {panMandatory && (
                   <div className="text-danger small">
                     ⚠️ PAN card is mandatory for booking this room.
                   </div>
@@ -130,9 +166,7 @@ const RoomCard = ({
                 <div className="text-success d-flex align-items-center mb-2">
                   <CheckCircle size={16} className="me-1" />
                   <span className="small">
-                    {room.Inclusion?.[0] ||
-                      room.RatePlanName ||
-                      "ROOM ONLY"}
+                    {room.Inclusion?.[0] || room.RatePlanName || "ROOM ONLY"}
                   </span>
                 </div>
 
@@ -140,6 +174,11 @@ const RoomCard = ({
                   className="btn btn-danger btn-sm px-4"
                   onClick={() => handleBookNow(room)}
                   disabled={loadingRoomId === room.RoomId}
+                  title={
+                    panMandatory
+                      ? "Ensure all adults have valid PAN numbers"
+                      : "Book this room"
+                  }
                 >
                   {loadingRoomId === room.RoomId ? "Blocking..." : "Book"}
                 </button>
@@ -155,3 +194,4 @@ const RoomCard = ({
 };
 
 export default RoomCard;
+  

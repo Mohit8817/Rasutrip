@@ -20,22 +20,57 @@ const BusDetailinfo = () => {
         departDate,
         boardingTime,
         droppingTime,
+        blockResponse,
+        passengerData,
+        // Existing payload parameters
+        blockSeatPayload,
+        searchPayload,
+        seatLayoutPayload,
+        boardingPointPayload,
+        // Additional required parameters for block seat API
+        userIp,
+        searchTokenId,
+        resultIndex,
+        originId,
+        destinationId
     } = state || {};
 
     if (!state) {
         return (
-            <div className="p-3">
-                <h5 className="text-danger">No booking data found. Please select your seats first.</h5>
-                <Button variant="secondary" onClick={() => navigate("/")}>
-                    Go to Home
-                </Button>
+            <div className="container p-3">
+                <div className="text-center py-5">
+                    <h5 className="text-danger mb-3">No booking data found</h5>
+                    <p className="text-muted mb-4">Please select your seats first to continue with the booking process.</p>
+                    <Button variant="secondary" onClick={() => navigate("/")}>
+                        Go to Home
+                    </Button>
+                </div>
             </div>
         );
     }
 
+    // Prepare the complete block seat payload structure
+    const prepareBlockSeatPayload = () => {
+        return {
+            UserIp: userIp || "122.161.64.143", // Use actual IP or fallback
+            SearchTokenId: searchTokenId || "e703c52750f2a93d7bb5cc838f7074e225d63112", // From search results
+            ResultIndex: resultIndex || "TB-1", // From bus selection
+            BoardingPointId: boarding?.CityPointId || boarding?.Id || 1,
+            DroppingPointId: dropping?.CityPointId || dropping?.Id || 1,
+            OriginId: originId || "8463", // From search parameters
+            DestinationId: destinationId || "9573", // From search parameters
+            // Passenger array will be populated in traveller component with actual passenger details
+            Passenger: [] // This will be filled with actual passenger data in next component
+        };
+    };
+
     const handleContinue = () => {
+        // Prepare complete block seat payload structure
+        const completeBlockSeatPayload = prepareBlockSeatPayload();
+
         navigate("/bus-traveller-details", {
             state: {
+                // Original state
                 bus,
                 selectedSeats,
                 totalPrice,
@@ -48,103 +83,309 @@ const BusDetailinfo = () => {
                 departDate,
                 boardingTime,
                 droppingTime,
+                blockResponse,
+                passengerData,
+
+                // All existing payload parameters
+                blockSeatPayload,
+                searchPayload,
+                seatLayoutPayload,
+                boardingPointPayload,
+
+                // Complete block seat payload with correct structure
+                completeBlockSeatPayload,
+
+                // Individual API parameters for easy access
+                userIp: userIp || "122.161.64.143",
+                searchTokenId: searchTokenId || "e703c52750f2a93d7bb5cc838f7074e225d63112",
+                resultIndex: resultIndex || "TB-1",
+                originId: originId || "8463",
+                destinationId: destinationId || "9573",
+
+                // Additional derived parameters
+                numberOfPassengers: selectedSeats?.length || 0,
+                boardingPointId: boarding?.CityPointId || boarding?.Id || 1,
+                droppingPointId: dropping?.CityPointId || dropping?.Id || 1,
+                seatNames: selectedSeats?.map(seat => seat.SeatName) || [],
+                seatPrices: selectedSeats?.map(seat => seat?.Price?.PublishedPrice || seat?.PublishedPrice || 450) || []
             },
         });
     };
 
+    const handleGoBack = () => {
+        navigate(-1); // Go back to previous page
+    };
+
+    // Format date helper
+    const formatDate = (dateString) => {
+        if (!dateString) return "-";
+        try {
+            return new Date(dateString).toLocaleDateString('en-GB', {
+                weekday: 'short',
+                day: '2-digit',
+                month: 'short',
+                year: '2-digit'
+            });
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    // Calculate journey duration
+    const calculateDuration = (departTime, arriveTime) => {
+        if (!departTime || !arriveTime) return bus?.duration || "-";
+
+        try {
+            const dept = new Date(`1970-01-01 ${departTime}`);
+            const arr = new Date(`1970-01-01 ${arriveTime}`);
+
+            if (arr < dept) {
+                arr.setDate(arr.getDate() + 1); // Next day arrival
+            }
+
+            const diffMs = arr - dept;
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+            return `${hours}h ${minutes}m`;
+        } catch (e) {
+            return bus?.duration || "-";
+        }
+    };
+
     return (
-        <div className="bus-review-wrapper p-3">
+        <div className="bus-review-wrapper container py-4">
             {/* Header */}
-            <div className="bg-secondary-subtle text-dark px-3 py-2 mb-3 fw-semibold border rounded">
-                Review Your Bus Details
+            <div className="bg-light text-dark px-4 py-3 mb-4 fw-semibold border rounded shadow-sm">
+                <div className="d-flex justify-content-between align-items-center">
+                    <h5 className="mb-0">
+                        <FaClock className="me-2 text-primary" />
+                        Review Your Bus Details
+                    </h5>
+                    <Button variant="outline-secondary" size="sm" onClick={handleGoBack}>
+                        ← Back
+                    </Button>
+                </div>
             </div>
 
-            {/* Card Section */}
-            <Card className="p-3 border shadow-sm">
-                {/* Route and Times */}
-                <Row className="mb-3 align-items-center">
-                    <Col md={4} className="text-center text-md-start mb-3 mb-md-0">
-                        <div className="fw-semibold mb-1">
-                            <FaCity className="me-1" /> {fromCity}
-                        </div>
-                        <div className="fs-4 fw-bold text-dark">{departTime}</div>
-                        <div className="text-muted small">
-                            {departDate ? new Date(departDate).toDateString() : "-"}
-                        </div>
-                    </Col>
+            {/* Main Card Section */}
+            <Card className="shadow-sm border-0">
+                <Card.Body className="p-4">
+                    {/* Route and Times Section */}
+                    <Row className="mb-4 align-items-center">
+                        <Col md={4} className="text-center text-md-start mb-3 mb-md-0">
+                            <div className="fw-semibold mb-2 text-muted">
+                                <FaCity className="me-2" /> Departure
+                            </div>
+                            <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.8rem' }}>
+                                {departTime || "-"}
+                            </div>
+                            <div className="fw-semibold text-dark mb-1">
+                                {fromCity || "-"}
+                            </div>
+                            <div className="text-muted small">
+                                {formatDate(departDate)}
+                            </div>
+                        </Col>
 
-                    <Col md={4} className="text-center">
-                        <div className="fw-semibold text-dark mb-1">
-                            {/* <FaClock className="" /> */}
-                            {bus?.duration || "-"}
-                        </div>
-                    </Col>
+                        <Col md={4} className="text-center">
+                            <div className="text-muted small mb-2">Journey Duration</div>
+                            <div className="fw-bold text-primary mb-2" style={{ fontSize: '1.2rem' }}>
+                                {calculateDuration(departTime, arriveTime)}
+                            </div>
+                            <div className="text-center">
+                                <div style={{
+                                    height: '2px',
+                                    background: 'linear-gradient(to right, #007bff, #28a745)',
+                                    margin: '0 20px',
+                                    position: 'relative'
+                                }}>
+                                    <div style={{
+                                        position: 'absolute',
+                                        left: '0',
+                                        top: '-4px',
+                                        width: '10px',
+                                        height: '10px',
+                                        backgroundColor: '#007bff',
+                                        borderRadius: '50%'
+                                    }}></div>
+                                    <div style={{
+                                        position: 'absolute',
+                                        right: '0',
+                                        top: '-4px',
+                                        width: '10px',
+                                        height: '10px',
+                                        backgroundColor: '#28a745',
+                                        borderRadius: '50%'
+                                    }}></div>
+                                </div>
+                            </div>
+                        </Col>
 
-                    <Col md={4} className="text-center text-md-end">
-                        <div className="fw-semibold mb-1">
-                            {/* <FaCity className="me-1" /> */}
-                            {toCity}
-                        </div>
-                        <div className="fs-4 fw-bold text-dark">{arriveTime}</div>
-                        <div className="text-muted small">Fri, 01 Aug 25</div>
-                    </Col>
-                </Row>
+                        <Col md={4} className="text-center text-md-end">
+                            <div className="fw-semibold mb-2 text-muted">
+                                <FaCity className="me-2" /> Arrival
+                            </div>
+                            <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.8rem' }}>
+                                {arriveTime || "-"}
+                            </div>
+                            <div className="fw-semibold text-dark mb-1">
+                                {toCity || "-"}
+                            </div>
+                            <div className="text-muted small">
+                                {formatDate(departDate)} {/* Assuming same day for now, could be next day */}
+                            </div>
+                        </Col>
+                    </Row>
 
-                <hr />
+                    <hr className="my-4" />
 
-                {/* Operator, Seat(s), Boarding */}
-                <Row className="mb-3">
-                    <Col md={4} className="mb-3 mb-md-0">
-                        <div className="text-muted small">Operator</div>
-                        <div className="fw-semibold text-dark">{bus?.operator || "-"}</div>
-                    </Col>
+                    {/* Bus Details Section */}
+                    <Row className="mb-4">
+                        <Col md={4} className="mb-3 mb-md-0">
+                            <div className="text-muted small mb-1">Bus Operator</div>
+                            <div className="fw-bold text-dark" style={{ fontSize: '1.1rem' }}>
+                                {bus?.operator || bus?.TravelName || "-"}
+                            </div>
+                            <div className="text-muted small mt-1">
+                                {bus?.busType || bus?.BusType || "AC Seater"}
+                            </div>
+                        </Col>
 
-                    <Col
-                        md={4}
-                        className="mb-3 mb-md-0 d-flex flex-column align-items-center justify-content-center text-center"
-                    >
-                        <div className="text-muted small">Seat no(s)</div>
-                        <div className="text-danger d-flex align-items-center justify-content-center flex-wrap">
-                            <FaWheelchair className="me-1" />
-                            <span>{selectedSeats?.map((s) => s.SeatName).join(", ") || "-"}</span>
-                        </div>
-                    </Col>
+                        <Col md={4} className="mb-3 mb-md-0 text-center">
+                            <div className="text-muted small mb-1">Selected Seat(s)</div>
+                            <div className="text-danger d-flex align-items-center justify-content-center flex-wrap">
+                                <FaWheelchair className="me-2" />
+                                <span className="fw-bold" style={{ fontSize: '1.1rem' }}>
+                                    {selectedSeats?.map((s) => s.SeatName).join(", ") || "-"}
+                                </span>
+                            </div>
+                            <div className="text-muted small mt-1">
+                                {selectedSeats?.length || 0} seat{selectedSeats?.length !== 1 ? 's' : ''} selected
+                            </div>
+                        </Col>
 
-                    <Col md={4} className="text-md-end">
-                        <div className="text-muted small">Boarding Point & Time</div>
-                        <div className="fw-semibold text-dark">
-                            {boarding?.CityPointName || "-"} / {boardingTime || "-"}
-                        </div>
-                    </Col>
-                </Row>
+                        <Col md={4} className="text-md-end">
+                            <div className="text-muted small mb-1">Total Fare</div>
+                            <div className="fw-bold text-success" style={{ fontSize: '1.5rem' }}>
+                                ₹ {totalPrice?.toLocaleString() || "-"}
+                            </div>
+                            <div className="text-muted small mt-1">
+                                Including all taxes
+                            </div>
+                        </Col>
+                    </Row>
 
-                <Row className="mb-3">
-                    <Col md={6}>
-                        <div className="text-muted small">Dropping Point & Time</div>
-                        <div className="fw-semibold text-dark">
-                            {dropping?.CityPointName || "-"} / {droppingTime || "-"}
-                        </div>
-                    </Col>
+                    <hr className="my-4" />
 
-                    <Col md={6} className="text-md-end">
-                        <div className="text-muted small">Total Fare</div>
-                        <div className="fw-semibold text-dark">₹ {totalPrice || "-"}</div>
-                    </Col>
-                </Row>
+                    {/* Boarding and Dropping Points Section */}
+                    <Row className="mb-4">
+                        <Col md={6} className="mb-3 mb-md-0">
+                            <div className="border rounded p-3 bg-light">
+                                <div className="text-muted small mb-1">Boarding Point</div>
+                                <div className="fw-bold text-dark mb-1">
+                                    {boarding?.CityPointName || "-"}
+                                </div>
+                                <div className="text-primary fw-semibold mb-1">
+                                    Time: {boardingTime || "-"}
+                                </div>
+                                {boarding?.CityPointAddress && (
+                                    <div className="text-muted small">
+                                        {boarding.CityPointAddress}
+                                    </div>
+                                )}
+                                {boarding?.CityPointLandmark && (
+                                    <div className="text-muted small">
+                                        Landmark: {boarding.CityPointLandmark}
+                                    </div>
+                                )}
 
+                            </div>
+                        </Col>
 
+                        <Col md={6}>
+                            <div className="border rounded p-3 bg-light">
+                                <div className="text-muted small mb-1">Dropping Point</div>
+                                <div className="fw-bold text-dark mb-1">
+                                    {dropping?.CityPointName || "-"}
+                                </div>
+                                <div className="text-success fw-semibold mb-1">
+                                    Time: {droppingTime || "-"}
+                                </div>
+                                {dropping?.CityPointAddress && (
+                                    <div className="text-muted small">
+                                        {dropping.CityPointAddress}
+                                    </div>
+                                )}
+                                {dropping?.CityPointLandmark && (
+                                    <div className="text-muted small">
+                                        Landmark: {dropping.CityPointLandmark}
+                                    </div>
+                                )}
 
+                            </div>
+                        </Col>
+                    </Row>
+
+                    {/* Booking Summary Card */}
+                    <div className="border rounded p-3 bg-primary bg-opacity-10">
+                        <Row className="align-items-center">
+                            <Col md={8}>
+                                <h6 className="mb-1 text-dark">Booking Summary</h6>
+                                <div className="text-muted small">
+                                    {selectedSeats?.length || 0} passenger{selectedSeats?.length !== 1 ? 's' : ''} •
+                                    {fromCity} to {toCity} •
+                                    {formatDate(departDate)}
+                                </div>
+                            </Col>
+                            <Col md={4} className="text-md-end">
+                                <div className="fw-bold text-dark" style={{ fontSize: '1.3rem' }}>
+                                    Total: ₹ {totalPrice?.toLocaleString() || "-"}
+                                </div>
+                            </Col>
+                        </Row>
+                    </div>
+                </Card.Body>
             </Card>
 
-            {/* Continue Button */}
-            <div className="text-start mt-4">
+            {/* Action Buttons */}
+            <div className="d-flex justify-content-between align-items-center mt-4">
+                <Button
+                    variant="outline-secondary"
+                    onClick={handleGoBack}
+                    className="px-4"
+                > ← Modify Selection
+                </Button>
+
                 <Button
                     variant="primary"
-                    className="btn-red"
-                    onClick={handleContinue}>
-                    Continue Booking
+                    className="btn-red px-5 py-2"
+                    onClick={handleContinue}
+                    style={{ fontSize: '1.1rem' }}
+                >
+                    Continue to Passenger Details →
                 </Button>
             </div>
+
+            {/* Important Notes */}
+            <div className="mt-4">
+                <Card className="border-danger bg-danger bg-opacity-10">
+                    <Card.Body className="py-3">
+                        <h6 className="text-warning mb-2">
+                            📋 Important Information
+                        </h6>
+                        <ul className="text-muted small mb-0 ps-3">
+                            <li>Please arrive at the boarding point at least 15 minutes before departure</li>
+                            <li>Carry a valid ID proof for verification</li>
+                            <li>Your seats have been temporarily reserved for 15 minutes</li>
+                            <li>All required API parameters are ready for seat blocking</li>
+                            <li>Cancellation and refund policies apply as per operator terms</li>
+                        </ul>
+                    </Card.Body>
+                </Card>
+            </div>
+
+
         </div>
     );
 };
