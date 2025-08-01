@@ -1,12 +1,13 @@
 /* -----------------------------------------------
    BusDetailsList.jsx  –  merged & enhanced version
 ------------------------------------------------ */
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useContext } from "react";
 import { useLocation } from "react-router-dom";
 import { Container } from "react-bootstrap";
 import BusDetailsCard from "./BusDetailsCard";
 import BusSeatSelect from "./BusSeatSelect";
 import { fetchBusResults } from "../../APIS/BusApi/BusApis";
+import { LocationContext } from "../../Context/LocationContext"; // Add this import
 import "../../../Style/Pagescss/BusResultPage.css";
 import Busloader from "../Busloader/Busloader";
 
@@ -21,13 +22,18 @@ const BusDetailsList = ({
   setAvailableBusTypes,
 }) => {
   const { state } = useLocation();
+  const { locationData } = useContext(LocationContext); // Add this line
+  
+  // Get initial values from navigation state
   const from = state?.fromCity ?? null;
   const to = state?.toCity ?? null;
-  const formattedDate = state?.departDate ?? null;
-  const DateOfJourney = formattedDate?.split("T")[0];
   const OriginId = state?.fromCityId;
   const DestinationId = state?.toCityId;
   const UserIp = USER_IP_FALLBACK;
+
+  // Use date from LocationContext (updated by calendar) instead of navigation state
+  const formattedDate = locationData?.departDate ?? state?.departDate ?? null;
+  const DateOfJourney = formattedDate ? new Date(formattedDate).toISOString().split("T")[0] : null;
 
   const [masterBusList, setMasterBusList] = useState([]);
   const [busList, setBusList] = useState([]);
@@ -47,6 +53,8 @@ const BusDetailsList = ({
       if (!from || !to || !DateOfJourney) return;
       setLoading(true);
       try {
+        console.log("Fetching buses for date:", DateOfJourney); // Debug log
+        
         const apiResult = await fetchBusResults(
           DateOfJourney,
           OriginId,
@@ -103,7 +111,7 @@ const BusDetailsList = ({
 
     getBusData();
   }, [
-    DateOfJourney,
+    DateOfJourney, // This will now trigger when date changes in LocationContext
     DestinationId,
     OriginId,
     UserIp,
@@ -138,7 +146,7 @@ const BusDetailsList = ({
   return (
     <Container className="bus-list-container">
       <div className="sort-header d-flex p-2 mb-2">
-        <div className="flex-fill text-center">Sort By:</div>
+        <div className="flex-fill text-center">Sort By:</div>
         <div className="flex-fill text-center fw-bold">Depart</div>
         <div className="flex-fill text-center fw-bold">Duration</div>
         <div className="flex-fill text-center fw-bold">Arrive</div>
