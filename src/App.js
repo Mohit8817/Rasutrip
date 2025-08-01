@@ -23,7 +23,7 @@ import BusDetail from './Components/Bus/BusDetail/BusDetail';
 import BusTravellerDetails from './Components/Bus/BusTravellerDetails/BusTravellerDetails';
 import BusReview from './Components/Bus/BusReview/BusReview';
 import BusPayment from './Components/Bus/BusPayment/BusPayment';
-
+import Bookingconfirm from './Components/Bus/Bookingconfirm/Bookingconfirm';
 import AgentLogin from './Components/Login/AgentLogin';
 import CustomerLogin from './Components/Login/CustomerLogin';
 import SetResetMPIN from './Components/Login/SetResetMPIN';
@@ -77,6 +77,7 @@ function App() {
           <Route path="/bus-traveller-details" element={<BusTravellerDetails />} />
           <Route path="/bus-review" element={<BusReview />} />
           <Route path="/bus-payment" element={<BusPayment />} />
+          <Route path="/bus-confirm" element={<Bookingconfirm />} />
 
           {/* Login */}
           <Route path="/login/customer" element={<CustomerLogin />} />
