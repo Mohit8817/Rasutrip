@@ -52,12 +52,12 @@ const BusPaymentInfo = () => {
 
     // ✅ Enhanced BookingId validation function
     const isValidBookingId = (id) => {
-        return id !== null && 
-               id !== undefined && 
-               id !== 'undefined' && 
-               id !== 'null' && 
-               String(id).trim() !== '' &&
-               !isNaN(Number(id));
+        return id !== null &&
+            id !== undefined &&
+            id !== 'undefined' &&
+            id !== 'null' &&
+            String(id).trim() !== '' &&
+            !isNaN(Number(id));
     };
 
     // ✅ BookingId format validation
@@ -197,12 +197,12 @@ const BusPaymentInfo = () => {
         debugLog('📊 Full Result:', bookingResult);
         debugLog('📋 Type:', typeof bookingResult);
         debugLog('🔑 Keys:', bookingResult ? Object.keys(bookingResult) : 'null');
-        
+
         if (bookingResult?.data) {
             debugLog('📁 Data Keys:', Object.keys(bookingResult.data));
             debugLog('📁 Data Content:', bookingResult.data);
         }
-        
+
         // Check all possible BookingId locations
         const possibleIds = [
             bookingResult?.data?.BookingId,
@@ -212,7 +212,7 @@ const BusPaymentInfo = () => {
             bookingResult?.data?.id,
             bookingResult?.id
         ];
-        
+
         debugLog('🆔 All possible BookingId values:', possibleIds);
         debugLog('✅ Valid BookingIds:', possibleIds.filter(id => id && id !== 'undefined' && id !== undefined));
     };
@@ -243,26 +243,26 @@ const BusPaymentInfo = () => {
         }
 
         // Try different seat name properties in priority order
-        let seatName = seat.SeatName || 
-                      seat.seatName || 
-                      seat.seatNumber || 
-                      seat.name || 
-                      seat.id || 
-                      seat.number || 
-                      seat;
+        let seatName = seat.SeatName ||
+            seat.seatName ||
+            seat.seatNumber ||
+            seat.name ||
+            seat.id ||
+            seat.number ||
+            seat;
 
         debugLog(`🔍 Extracted seat name: "${seatName}" (type: ${typeof seatName})`);
 
         // If it's already a valid string format, keep it
         if (typeof seatName === 'string' && seatName.trim()) {
             const trimmedSeat = seatName.trim();
-            
+
             // Check if it matches common seat patterns (A1, B2, 1A, 2B, etc.)
             if (/^[A-Z]\d+$|^\d+[A-Z]$|^[A-Z]\d+[A-Z]$|^[0-9]+$/.test(trimmedSeat)) {
                 debugLog(`✅ Valid seat format found: "${trimmedSeat}"`);
                 return trimmedSeat;
             }
-            
+
             // If it contains alphanumeric characters, keep as is
             if (/[A-Za-z0-9]/.test(trimmedSeat)) {
                 debugLog(`✅ Alphanumeric seat name: "${trimmedSeat}"`);
@@ -303,7 +303,7 @@ const BusPaymentInfo = () => {
             travel_date: bookingState.departDate,
             bus_operator: bookingState.bus?.operator,
             bus_type: bookingState.bus?.busType,
-            selected_seats: bookingState.selectedSeats?.map((seat, index) => 
+            selected_seats: bookingState.selectedSeats?.map((seat, index) =>
                 extractSeatName(seat, index)
             ),
             passenger_count: bookingState.passengerData?.length || 0,
@@ -327,7 +327,7 @@ const BusPaymentInfo = () => {
         const passengers = bookingState.passengerData?.map((passenger, index) => {
             // ✅ Use enhanced seat name extraction
             const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
-            
+
             console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}"`);
 
             // ✅ Ensure address is always provided and not empty
@@ -401,7 +401,7 @@ const BusPaymentInfo = () => {
         const passengers = bookingState.passengerData?.map((passenger, index) => {
             // ✅ Use enhanced seat name extraction
             const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
-            
+
             console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}"`);
 
             // ✅ Ensure address is always provided and not empty
@@ -450,7 +450,7 @@ const BusPaymentInfo = () => {
         amount: orderAmount * 100,
         currency: 'INR',
         order_id: orderId,
-        name: 'TTS Travels',
+        name: 'RASUTRIP',
         description: `${fromCity} to ${toCity} - ${bus?.operator || 'Bus Service'}`,
         prefill: {
             name: `${passengerData[0]?.firstName || ''} ${passengerData[0]?.lastName || ''}`.trim(),
@@ -519,7 +519,7 @@ const BusPaymentInfo = () => {
 
             } catch (error) {
                 console.error(`❌ Invoice download attempt ${attempt} failed:`, error);
-                
+
                 if (attempt === maxRetries) {
                     return {
                         success: false,
@@ -527,7 +527,7 @@ const BusPaymentInfo = () => {
                         attempts: maxRetries
                     };
                 }
-                
+
                 // Exponential backoff
                 await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
             }
@@ -637,7 +637,7 @@ const BusPaymentInfo = () => {
 
                         // ✅ ENHANCED: BookingId extraction with comprehensive fallback strategies
                         let extractedBookingId = null;
-                        
+
                         console.log('🔍 Analyzing booking result structure:', {
                             hasData: !!bookingResult?.data,
                             dataKeys: bookingResult?.data ? Object.keys(bookingResult.data) : [],
@@ -670,10 +670,10 @@ const BusPaymentInfo = () => {
                         if (!isValidBookingId(extractedBookingId)) {
                             console.error('❌ No valid BookingId found in booking result');
                             console.error('📋 Full booking result for debugging:', JSON.stringify(bookingResult, null, 2));
-                            
+
                             // Show success but warn about invoice
                             showSuccessToast('🎉 Bus booking confirmed! (Invoice download may not be available)');
-                            
+
                             // Navigate without invoice download
                             navigate('/bus-confirm', {
                                 state: {
@@ -698,18 +698,18 @@ const BusPaymentInfo = () => {
 
                         // ✅ Invoice download with validated BookingId and retry mechanism
                         let invoiceDownloadResult = { success: false };
-                        
+
                         if (extractedBookingId && bookingData.SearchTokenId) {
                             const contactEmail = contactData?.email || passengerData[0]?.email || "ay942115@gmail.com";
-                            
+
                             console.log('📄 Attempting invoice download with validated data:');
                             console.log('📋 BookingId:', extractedBookingId, '(type:', typeof extractedBookingId, ')');
                             console.log('🔑 SearchTokenId:', bookingData.SearchTokenId);
                             console.log('📧 Email:', contactEmail);
 
                             invoiceDownloadResult = await downloadInvoiceWithRetry(
-                                extractedBookingId, 
-                                bookingData.SearchTokenId, 
+                                extractedBookingId,
+                                bookingData.SearchTokenId,
                                 contactEmail
                             );
 
@@ -838,7 +838,7 @@ const BusPaymentInfo = () => {
                 <Card.Header className="bg-danger text-white">
                     <div className="d-flex align-items-center">
                         <FaShieldAlt className="me-2" />
-                        <h5 className="fw-bold mb-0">🚌 Bus Booking Summary</h5>
+                        <h5 className="fw-bold mb-0"> Bus Booking Summary</h5>
                     </div>
                 </Card.Header>
                 <Card.Body>
@@ -846,7 +846,7 @@ const BusPaymentInfo = () => {
                         <Row>
                             <Col md={3}>
                                 <div><strong>Route:</strong></div>
-                                <div className="text-primary fw-bold">{fromCity} → {toCity}</div>
+                                <div className="fw-bold">{fromCity} → {toCity}</div>
                                 <small className="text-muted">{bus?.operator || 'N/A'} - {bus?.busType || 'N/A'}</small>
                             </Col>
                             <Col md={3}>
@@ -860,7 +860,7 @@ const BusPaymentInfo = () => {
                             <Col md={3}>
                                 <div><strong>Seats:</strong></div>
                                 <div className="fw-bold text-success">
-                                    {selectedSeats.map((seat, index) => 
+                                    {selectedSeats.map((seat, index) =>
                                         extractSeatName(seat, index)
                                     ).join(', ')}
                                 </div>
@@ -874,7 +874,7 @@ const BusPaymentInfo = () => {
             {passengerData.length > 0 && (
                 <Card className="mb-3 shadow-sm">
                     <Card.Header className="bg-white">
-                        <h6 className="fw-bold mb-0">👥 Passenger Details</h6>
+                        <h6 className="fw-bold mb-0">Passenger Details</h6>
                     </Card.Header>
                     <Card.Body>
                         {passengerData.map((passenger, index) => (
@@ -901,12 +901,12 @@ const BusPaymentInfo = () => {
             {contactData && Object.keys(contactData).length > 0 && (
                 <Card className="mb-4 shadow-sm">
                     <Card.Header className="bg-white">
-                        <h6 className="fw-bold mb-0">📞 Contact Information</h6>
+                        <h6 className="fw-bold mb-0"> Contact Information</h6>
                     </Card.Header>
                     <Card.Body>
                         <Row>
-                            <Col md={6}><strong>📞 Contact:</strong> {contactData.mobile || 'N/A'}</Col>
-                            <Col md={6}><strong>✉️ Email:</strong> {contactData.email || 'N/A'}</Col>
+                            <Col md={6}><strong>Contact:</strong> {contactData.mobile || 'N/A'}</Col>
+                            <Col md={6}><strong> Email:</strong> {contactData.email || 'N/A'}</Col>
                         </Row>
                     </Card.Body>
                 </Card>
@@ -915,7 +915,7 @@ const BusPaymentInfo = () => {
             {/* ✅ Enhanced Payment Summary */}
             <Card className="mb-4 shadow-sm">
                 <Card.Header className="bg-white">
-                    <h6 className="fw-bold mb-0">💰 Payment Summary</h6>
+                    <h6 className="fw-bold mb-0">Payment Summary</h6>
                 </Card.Header>
                 <Card.Body>
                     <Row className="mb-2">
@@ -941,47 +941,24 @@ const BusPaymentInfo = () => {
                         <Col xs={8}>Total Amount</Col>
                         <Col xs={4} className="text-end text-danger">₹{finalAmount}</Col>
                     </Row>
-                </Card.Body>
-
-                {/* ✅ Payment Security Info */}
-                <Card.Body className="pt-0">
-                    <div className="alert alert-info mb-0">
-                        <div className="d-flex align-items-center mb-2">
-                            <FaShieldAlt className="me-2" />
-                            <strong>Secure Payment</strong>
-                        </div>
-                        <small>
-                            Your payment is secured by Razorpay with 256-bit SSL encryption.
-                            We accept all major credit cards, debit cards, UPI, and net banking.
-                        </small>
-                    </div>
-                </Card.Body>
+                </Card.Body>              
             </Card>
 
             {/* ✅ Enhanced Payment Button Section */}
             <Card className="shadow-sm">
                 <Card.Body>
-                    <div className="text-center mb-3">
+                    <div className=" mb-3">
                         <p className="text-muted small mb-0">
                             <strong>Please note:</strong> By placing this order, you agree to our{' '}
-                            <a href="#" onClick={(e) => e.preventDefault()}>Terms Of Use</a> and{' '}
-                            <a href="#" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
+                            <a href="#"  className='text-danger' onClick={(e) => e.preventDefault()}>Terms Of Use</a> and{' '}
+                            <a href="#"  className='text-danger' onClick={(e) => e.preventDefault()}>Privacy Policy</a>
                         </p>
                     </div>
-
-                    <div className="d-flex gap-3 justify-content-between align-items-center">
-                        <Button
-                            variant="outline-secondary"
-                            onClick={() => navigate(-1)}
-                            disabled={loading}
-                        >
-                            ← Go Back
-                        </Button>
+                    <div className="d-flex gap-3 justify-content-between align-items-center">                     
 
                         <Button
                             variant="danger"
-                            size="lg"
-                            className="px-5 fw-bold"
+                            className="btn-red"
                             disabled={!totalPrice || loading || !!error}
                             onClick={handlePayment}
                         >
@@ -994,13 +971,7 @@ const BusPaymentInfo = () => {
                                 `Pay Now ₹${finalAmount}`
                             )}
                         </Button>
-                    </div>
-
-                    <div className="text-center mt-3">
-                        <small className="text-muted">
-                            Powered by Razorpay - India's most trusted payment gateway
-                        </small>
-                    </div>
+                    </div>                    
                 </Card.Body>
             </Card>
         </Container>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, Form, Button, Row, Col, Alert, Badge, Spinner } from 'react-bootstrap';
-import { FaUser, FaEnvelope, FaPhone, FaIdCard, FaReceipt, FaArrowLeft } from 'react-icons/fa';
+import { Card, Form, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
+import { FaArrowLeft } from 'react-icons/fa';
 import { blockSeats } from '../../APIS/BusApi/BusApis'; // Import your blockSeats API function
 
 const BusTravellerinfo = () => {

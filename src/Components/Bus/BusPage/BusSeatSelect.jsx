@@ -614,7 +614,6 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
         <Row>
           <Col md={6}>
             <h5 className="mb-4 fw-bold">Select Seats</h5>
-
             {loading ? (
               <div className="text-center py-5">
                 <Spinner animation="border" size="sm" />
@@ -684,7 +683,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
           {/* Booking Info */}
           <Col md={4}>
             <Card className="p-3 mb-3 shadow-sm">
-              <h6 className="text-primary">{bus?.operator}</h6>
+              <h5 className="text-danger fw-bold">{bus?.operator}</h5>
               <div className="text-muted small mb-3">
                 {bus?.departDate} | {bus?.departTime} - {bus?.arriveTime} | {bus?.busType}
               </div>
@@ -764,29 +763,20 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
               </div>
 
               {/* Price Breakdown */}
-              <div className="price-breakdown p-3 mb-3" style={{ backgroundColor: '#e8f5e8', borderRadius: '8px', border: '1px solid #28a745' }}>
+              <div className="price-breakdown p-3 mb-3">
                 <div className="d-flex justify-content-between align-items-center">
-                  <strong className="text-success">Total Amount:</strong>
+                  <strong className="text-dark">Total Amount:</strong>
                   <strong className="text-success fs-5">₹ {totalPrice.toFixed(2)}</strong>
                 </div>
-                {selectedSeats.length > 0 && (
-                  <div className="mt-2">
-                    <small className="text-muted">
-                      {selectedSeats.length} seat{selectedSeats.length !== 1 ? 's' : ''} × ₹{selectedSeats.length > 0 ? Math.round(totalPrice / selectedSeats.length) : 0}
-                    </small>
-                  </div>
-                )}
               </div>
 
               {/* Continue Button */}
               <Button
                 className="w-100 py-2 btn-red"
-                variant=""
                 onClick={handleContinue}
                 disabled={!boarding || !dropping || selectedSeats.length === 0}
-              >
-                <i className="bi bi-arrow-right-circle me-2 btn-red"></i>
-                Continue ({selectedSeats.length} seat{selectedSeats.length !== 1 ? 's' : ''})
+              >               
+                Continue
               </Button>
 
               {/* Quick Info */}

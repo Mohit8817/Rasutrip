@@ -14,7 +14,6 @@ const BusReviewInfo = () => {
         // Passenger and seat data
         passengerData = [],
         selectedSeats = [],
-        seatMapping = [],
 
         // Contact information
         contactData = {},
@@ -29,9 +28,16 @@ const BusReviewInfo = () => {
         departTime = '',
         arriveTime = '',
         boarding = {},
+        dropping = {},
         fromCity = '',
         toCity = '',
         departDate = '',
+        arriveDate = '',
+        boardingTime = '',
+        droppingTime = '',
+
+        // Enhanced journey details from traveller page
+        enhancedJourneyDetails = {},
 
         // Booking status
         blockSeatResponse = null,
@@ -44,7 +50,7 @@ const BusReviewInfo = () => {
         hasGstDetails = false,
 
         // Debug info
-        debugInfo = null
+        metadata = null
     } = state || {};
 
     // Enhanced debugging and validation
@@ -71,18 +77,12 @@ const BusReviewInfo = () => {
                 showForm: showGstinForm,
                 data: gstData
             },
-            journey: {
-                totalPrice,
-                fromCity,
-                toCity,
-                departDate,
-                departTime
-            },
-            seatMapping: seatMapping
+            enhancedJourneyDetails: enhancedJourneyDetails,
+            metadata: metadata
         });
 
         setDataLoaded(true);
-    }, [state, passengerData, contactData, gstData, selectedSeats, seatMapping]);
+    }, [state, passengerData, contactData, gstData, selectedSeats, enhancedJourneyDetails]);
 
     // Enhanced helper functions
     const getSeatName = (seat, index) => {
@@ -127,7 +127,7 @@ const BusReviewInfo = () => {
             gender: passenger.gender || 'N/A',
             idType: passenger.idType || 'N/A',
             idNumber: passenger.idNumber || 'N/A',
-            seatName: getSeatName(selectedSeats[index], index),
+            seatName: passenger.seatName || getSeatName(selectedSeats[index], index),
             isLead: passenger.isLeadPassenger || (index === 0)
         };
     };
@@ -138,6 +138,51 @@ const BusReviewInfo = () => {
 
         return selectedSeats.map((seat, index) => getSeatName(seat, index)).join(", ");
     };
+
+    // Enhanced date formatting
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-IN', {
+                weekday: 'short',
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    // Get journey details with enhanced fallbacks
+    const getJourneyDetails = () => {
+        return {
+            fromCity: enhancedJourneyDetails?.fromCity || fromCity || 'N/A',
+            toCity: enhancedJourneyDetails?.toCity || toCity || 'N/A',
+            departDate: enhancedJourneyDetails?.departDate || departDate || 'N/A',
+            arriveDate: enhancedJourneyDetails?.arriveDate || arriveDate || departDate || 'N/A',
+            departTime: enhancedJourneyDetails?.departTime || departTime || 'N/A',
+            arriveTime: enhancedJourneyDetails?.arriveTime || arriveTime || 'N/A',
+            duration: enhancedJourneyDetails?.duration || bus?.duration || 'N/A',
+            operator: enhancedJourneyDetails?.operator || bus?.operator || bus?.TravelName || bus?.name || 'N/A',
+            busType: enhancedJourneyDetails?.busType || bus?.busType || bus?.BusType || 'AC Seater',
+            boardingPoint: {
+                name: enhancedJourneyDetails?.boardingPoint?.name || boarding?.CityPointName || boarding?.name || 'Boarding Point',
+                time: enhancedJourneyDetails?.boardingPoint?.time || boardingTime || boarding?.DepTime || boarding?.time || departTime || 'N/A',
+                address: enhancedJourneyDetails?.boardingPoint?.address || boarding?.CityPointAddress || boarding?.address || '',
+                landmark: enhancedJourneyDetails?.boardingPoint?.landmark || boarding?.CityPointLandmark || boarding?.landmark || ''
+            },
+            droppingPoint: {
+                name: enhancedJourneyDetails?.droppingPoint?.name || dropping?.CityPointName || dropping?.name || 'Dropping Point',
+                time: enhancedJourneyDetails?.droppingPoint?.time || droppingTime || dropping?.ArrTime || dropping?.time || arriveTime || 'N/A',
+                address: enhancedJourneyDetails?.droppingPoint?.address || dropping?.CityPointAddress || dropping?.address || '',
+                landmark: enhancedJourneyDetails?.droppingPoint?.landmark || dropping?.CityPointLandmark || dropping?.landmark || ''
+            }
+        };
+    };
+
+    const journeyDetails = getJourneyDetails();
 
     const handlePayment = () => {
         if (!termsAccepted) {
@@ -176,22 +221,8 @@ const BusReviewInfo = () => {
                 passengerIndex: index
             })),
 
-            // Journey summary
-            journeyDetails: {
-                from: fromCity,
-                to: toCity,
-                date: departDate,
-                departTime,
-                arriveTime,
-                duration: bus?.duration,
-                operator: bus?.operator || bus?.name,
-                busType: bus?.busType,
-                boarding: {
-                    point: boarding?.CityPointName || boarding?.name,
-                    time: boarding?.DepTime || boarding?.time,
-                    address: boarding?.address
-                }
-            },
+            // Journey summary with enhanced details
+            journeyDetails: journeyDetails,
 
             // Pricing details
             pricing: {
@@ -236,7 +267,7 @@ const BusReviewInfo = () => {
         // Navigate to payment with comprehensive data
         navigate("/bus-payment", {
             state: paymentData,
-            replace: false // Keep in navigation history
+            replace: false
         });
     };
 
@@ -300,32 +331,21 @@ const BusReviewInfo = () => {
     return (
         <div className="container my-4">
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <Card className="p-2 mb-4">
                 <div>
-                    <h4 className="mb-1">Review Your Booking</h4>
+                    <h5 className="mb-1">Review Your Booking</h5>
                     <p className="text-muted mb-0">
                         Please review all details before proceeding to payment
-                        {debugInfo && (
+                        {metadata && (
                             <small className="d-block text-success">
-                                ✓ Data passed from {debugInfo.from} at {new Date(debugInfo.passedAt).toLocaleTimeString()}
+                                ✓ Data passed from {metadata.passedFrom} at {new Date(metadata.passedAt).toLocaleTimeString()}
                             </small>
                         )}
                     </p>
                 </div>
-                <Button variant="outline-secondary" onClick={handleGoBack}>
-                    <FaArrowLeft className="me-2" />
-                    Back
-                </Button>
-            </div>
+            </Card>
 
-            {/* Data Summary Alert */}
-            <Alert variant="info" className="mb-4">
-                <FaCheckCircle className="me-2" />
-                <strong>Booking Summary:</strong> {passengerData.length} passenger(s) • {selectedSeats.length} seat(s) •
-                ₹{totalPrice?.toLocaleString()} • {hasGstDetails ? 'GST Invoice Required' : 'No GST Invoice'}
-            </Alert>
-
-            {/* Route Info */}
+            {/* Enhanced Route Info */}
             <Card className="mb-4 shadow-sm border-0" style={{ borderRadius: "10px" }}>
                 <Card.Header className="bg-danger text-white">
                     <h5 className="mb-0">Journey Details</h5>
@@ -334,28 +354,29 @@ const BusReviewInfo = () => {
                     <Row className="align-items-center">
                         <Col md={4}>
                             <div className="d-flex align-items-center mb-2">
-                                <FaCity className="me-2 text-primary" />
-                                <strong className="fs-5">{fromCity || 'N/A'}</strong>
+                                <FaCity className="me-2 text-danger" />
+                                <strong className="fs-5">{journeyDetails.fromCity}</strong>
                             </div>
-                            <h4 className="fw-bold text-success">{departTime || 'N/A'}</h4>
+                            <h4 className="fw-bold text-success">{journeyDetails.departTime}</h4>
                             <div className="text-muted">
-                                {departDate ? new Date(departDate).toDateString() : 'Date not available'}
+                                {formatDate(journeyDetails.departDate)}
                             </div>
                             <hr />
                             <div>
                                 <div className="text-muted small">Bus Operator</div>
-                                <strong>{bus?.operator || bus?.name || 'N/A'}</strong>
+                                <strong>{journeyDetails.operator}</strong>
+                                <div className="text-muted small">{journeyDetails.busType}</div>
                             </div>
                         </Col>
 
                         <Col md={4} className="text-center">
                             <div className="d-flex flex-column align-items-center">
-                                <FaClock className="mb-2 text-primary" size={20} />
-                                <div className="fw-bold">{bus?.duration || '--h --m'}</div>
+                                <FaClock className="mb-2 text-danger" size={20} />
+                                <div className="fw-bold">{journeyDetails.duration}</div>
                                 <div className="text-muted small">Duration</div>
                             </div>
                             <hr />
-                            <div>
+                            <div className=''>
                                 <div className="text-muted small">Selected Seats ({selectedSeats.length})</div>
                                 <div className="d-flex align-items-center justify-content-center gap-2 flex-wrap mt-2">
                                     <FaWheelchair className="text-danger" />
@@ -363,25 +384,79 @@ const BusReviewInfo = () => {
                                         {getSeatDisplayText()}
                                     </span>
                                 </div>
+                                {/* <div className="text-success fw-bold mt-2" style={{ fontSize: '1.3rem' }}>
+                                    ₹ {totalPrice?.toLocaleString() || 0}
+                                </div>
+                                <div className="text-muted small">Total Fare</div> */}
                             </div>
                         </Col>
 
                         <Col md={4} className="text-end">
                             <div className="d-flex justify-content-end align-items-center mb-2">
-                                <strong className="fs-5">{toCity || 'N/A'}</strong>
-                                <FaCity className="ms-2 text-primary" />
+                                <strong className="fs-5">{journeyDetails.toCity}</strong>
+                                <FaCity className="ms-2 text-danger" />
                             </div>
-                            <h4 className="fw-bold text-success">{arriveTime || 'N/A'}</h4>
+                            <h4 className="fw-bold text-success">{journeyDetails.arriveTime}</h4>
                             <div className="text-muted">
-                                {departDate ? new Date(departDate).toDateString() : 'Date not available'}
+                                {formatDate(journeyDetails.arriveDate)}
                             </div>
                             <hr />
                             <div>
                                 <div className="text-muted small">Boarding Point</div>
-                                <strong>{boarding?.CityPointName || boarding?.name || 'N/A'}</strong>
+                                <strong>{journeyDetails.boardingPoint.name}</strong>
                                 <div className="text-muted small">
-                                    Time: {boarding?.DepTime || boarding?.time || 'N/A'}
+                                    Time: {journeyDetails.boardingPoint.time}
                                 </div>
+                            </div>
+                        </Col>
+                    </Row>
+
+                    {/* Enhanced Boarding/Dropping Points */}
+                    <hr className="my-4" />
+                    <Row>
+                        <Col md={6}>
+                            <div className="border rounded p-3 bg-light">
+                                <div className="d-flex align-items-center mb-2">
+                                    <FaCity className="me-2 text-success" />
+                                    <strong>Boarding Point</strong>
+                                </div>
+                                <div className="fw-bold mb-1">{journeyDetails.boardingPoint.name}</div>
+                                <div className="text-primary fw-semibold mb-2">
+                                    Time: {journeyDetails.boardingPoint.time}
+                                </div>
+                                {journeyDetails.boardingPoint.address && (
+                                    <div className="text-muted small mb-1">
+                                        <strong>Address:</strong> {journeyDetails.boardingPoint.address}
+                                    </div>
+                                )}
+                                {journeyDetails.boardingPoint.landmark && (
+                                    <div className="text-muted small">
+                                        <strong>Landmark:</strong> {journeyDetails.boardingPoint.landmark}
+                                    </div>
+                                )}
+                            </div>
+                        </Col>
+
+                        <Col md={6}>
+                            <div className="border rounded p-3 bg-light">
+                                <div className="d-flex align-items-center mb-2">
+                                    <FaCity className="me-2 text-danger" />
+                                    <strong>Dropping Point</strong>
+                                </div>
+                                <div className="fw-bold mb-1">{journeyDetails.droppingPoint.name}</div>
+                                <div className="text-success fw-semibold mb-2">
+                                    Time: {journeyDetails.droppingPoint.time}
+                                </div>
+                                {journeyDetails.droppingPoint.address && (
+                                    <div className="text-muted small mb-1">
+                                        <strong>Address:</strong> {journeyDetails.droppingPoint.address}
+                                    </div>
+                                )}
+                                {journeyDetails.droppingPoint.landmark && (
+                                    <div className="text-muted small">
+                                        <strong>Landmark:</strong> {journeyDetails.droppingPoint.landmark}
+                                    </div>
+                                )}
                             </div>
                         </Col>
                     </Row>
@@ -391,10 +466,7 @@ const BusReviewInfo = () => {
             {/* Contact Information */}
             <Card className="mb-4 shadow-sm border-0">
                 <Card.Header className="bg-light d-flex justify-content-between align-items-center">
-                    <h5 className="mb-0">
-                        <FaPhone className="me-2" />
-                        Contact Information
-                    </h5>
+                    <h5 className="mb-0">Contact Information</h5>
                     <FaEdit
                         style={{ cursor: "pointer" }}
                         onClick={handleEdit}
@@ -407,19 +479,17 @@ const BusReviewInfo = () => {
                         <Col md={6}>
                             <div className="mb-3">
                                 <div className="d-flex align-items-center mb-1">
-                                    <FaEnvelope className="me-2 text-muted" />
                                     <strong>Email Address</strong>
                                 </div>
-                                <div className="ps-4">{contactData?.email || 'Not provided'}</div>
+                                <div className="">{contactData?.email || 'Not provided'}</div>
                             </div>
                         </Col>
                         <Col md={6}>
                             <div className="mb-3">
                                 <div className="d-flex align-items-center mb-1">
-                                    <FaPhone className="me-2 text-muted" />
                                     <strong>Mobile Number</strong>
                                 </div>
-                                <div className="ps-4">
+                                <div className="">
                                     {(contactData?.countryCode || '+91')} {contactData?.mobile || 'Not provided'}
                                 </div>
                             </div>
@@ -432,7 +502,6 @@ const BusReviewInfo = () => {
             <Card className="mb-4 shadow-sm border-0">
                 <Card.Header className="bg-light d-flex justify-content-between align-items-center">
                     <h5 className="mb-0">
-                        <FaUser className="me-2" />
                         Passenger Details ({passengerData?.length || 0})
                     </h5>
                     <FaEdit
@@ -450,7 +519,7 @@ const BusReviewInfo = () => {
                                 <Card.Body>
                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                         <div className="d-flex align-items-center">
-                                            <Badge bg={details.isLead ? "primary" : "secondary"} className="me-2">
+                                            <Badge bg={details.isLead ? "danger" : "secondary"} className="me-2">
                                                 {details.isLead ? "Lead Passenger" : `Passenger ${index + 1}`}
                                             </Badge>
                                             <span className="fw-semibold">Seat {details.seatName}</span>
@@ -531,40 +600,8 @@ const BusReviewInfo = () => {
                 </Card>
             )}
 
-            {/* Fare Summary */}
-            <Card className="mb-4 shadow-sm border-0">
-                <Card.Header className="bg-success text-white">
-                    <h5 className="mb-0">Fare Summary</h5>
-                </Card.Header>
-                <Card.Body>
-                    <Row className="align-items-center">
-                        <Col md={8}>
-                            <div>
-                                <div className="mb-2">
-                                    <strong>Base Fare:</strong> {selectedSeats?.length || 0} × Seats
-                                </div>
-                                <div className="mb-2">
-                                    <strong>Seats:</strong> {getSeatDisplayText()}
-                                </div>
-                                {gstData && showGstinForm && (
-                                    <div className="text-muted small">
-                                        * GST invoice will be generated for {gstData.companyName}
-                                    </div>
-                                )}
-                            </div>
-                        </Col>
-                        <Col md={4} className="text-end">
-                            <div className="fs-2 fw-bold text-success">
-                                ₹ {totalPrice?.toLocaleString() || '0'}
-                            </div>
-                            <div className="text-muted">Total Amount</div>
-                        </Col>
-                    </Row>
-                </Card.Body>
-            </Card>
-
             {/* Terms and Conditions */}
-            <Card className="mb-4 border-warning bg-warning bg-opacity-10">
+            <Card className="mb-4 shadow-sm border-0">
                 <Card.Body>
                     <Form.Check
                         type="checkbox"
@@ -575,11 +612,11 @@ const BusReviewInfo = () => {
                         label={
                             <>
                                 I have read and accept the{' '}
-                                <a href="/terms" target="_blank" className="text-decoration-none">
+                                <a href="/terms" target="_blank" className="text-decoration-none text-danger">
                                     Terms & Conditions
                                 </a>{' '}
                                 and{' '}
-                                <a href="/privacy" target="_blank" className="text-decoration-none">
+                                <a href="/privacy" target="_blank" className="text-decoration-none text-danger">
                                     Privacy Policy
                                 </a>
                             </>
@@ -587,62 +624,14 @@ const BusReviewInfo = () => {
                     />
 
                     <div className="mt-3 d-flex justify-content-between align-items-center">
-                        <Button variant="outline-secondary" onClick={handleEdit} className="px-4">
-                            <FaEdit className="me-2" />
-                            Edit Details
-                        </Button>
-
                         <Button
                             className="btn-red px-5 py-2"
-                            size="lg"
                             onClick={handlePayment}
                             disabled={!termsAccepted}
-                            style={{ fontSize: '1.1rem' }}
-                        >
-                            Continue to Payment →
-                        </Button>
+                        >Continue to Payment →</Button>
                     </div>
                 </Card.Body>
             </Card>
-
-            {/* Progress Indicator */}
-            <div className="mt-4">
-                <div className="d-flex justify-content-center">
-                    <div className="d-flex align-items-center text-muted small">
-                        <div className="d-flex align-items-center">
-                            <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center"
-                                style={{ width: '24px', height: '24px', fontSize: '12px' }}>
-                                ✓
-                            </div>
-                            <span className="mx-2">Seat Selection</span>
-                        </div>
-                        <div className="mx-2">→</div>
-                        <div className="d-flex align-items-center">
-                            <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center"
-                                style={{ width: '24px', height: '24px', fontSize: '12px' }}>
-                                ✓
-                            </div>
-                            <span className="mx-2">Passenger Details</span>
-                        </div>
-                        <div className="mx-2">→</div>
-                        <div className="d-flex align-items-center">
-                            <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
-                                style={{ width: '24px', height: '24px', fontSize: '12px' }}>
-                                3
-                            </div>
-                            <span className="mx-2 fw-semibold">Review Booking</span>
-                        </div>
-                        <div className="mx-2">→</div>
-                        <div className="d-flex align-items-center">
-                            <div className="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center"
-                                style={{ width: '24px', height: '24px', fontSize: '12px' }}>
-                                4
-                            </div>
-                            <span className="mx-2">Payment</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };
