@@ -1,4 +1,4 @@
-// src/components/Bus/BusPaymentInfo.js
+// src/components/Bus/BusPaymentInfo.js - COMPLETE MERGED VERSION
 
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstrap';
@@ -12,6 +12,14 @@ const BusPaymentInfo = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    // Debug mode configuration
+    const DEBUG_MODE = process.env.NODE_ENV === 'development';
+    const debugLog = (message, data = null) => {
+        if (DEBUG_MODE) {
+            console.log(message, data);
+        }
+    };
 
     useEffect(() => {
         if (!state || !state.totalPrice || !state.selectedSeats || !state.passengerData) {
@@ -41,6 +49,22 @@ const BusPaymentInfo = () => {
     const convenienceFee = 0;
     const gstAmount = totalPrice * 0.18;
     const finalAmount = (totalPrice + gstAmount + convenienceFee).toFixed(2);
+
+    // ✅ Enhanced BookingId validation function
+    const isValidBookingId = (id) => {
+        return id !== null && 
+               id !== undefined && 
+               id !== 'undefined' && 
+               id !== 'null' && 
+               String(id).trim() !== '' &&
+               !isNaN(Number(id));
+    };
+
+    // ✅ BookingId format validation
+    const validateBookingIdFormat = (bookingId) => {
+        const idString = String(bookingId);
+        return /^\d+$/.test(idString) && idString.length >= 1 && idString.length <= 20;
+    };
 
     // ✅ Load Razorpay script dynamically
     const loadRazorpayScript = () =>
@@ -151,20 +175,46 @@ const BusPaymentInfo = () => {
 
     // ✅ Debug helper function to analyze API response structure
     const debugApiResponse = (response, apiName) => {
-        console.log(`🔍 ${apiName} Response Analysis:`);
-        console.log('Type:', typeof response);
-        console.log('Keys:', response ? Object.keys(response) : 'null/undefined');
-        console.log('Full Response:', response);
+        debugLog(`🔍 ${apiName} Response Analysis:`);
+        debugLog('Type:', typeof response);
+        debugLog('Keys:', response ? Object.keys(response) : 'null/undefined');
+        debugLog('Full Response:', response);
 
         if (response?.data) {
-            console.log('Data Keys:', Object.keys(response.data));
-            console.log('Data Content:', response.data);
+            debugLog('Data Keys:', Object.keys(response.data));
+            debugLog('Data Content:', response.data);
         }
 
         if (response?.order) {
-            console.log('Order Keys:', Object.keys(response.order));
-            console.log('Order Content:', response.order);
+            debugLog('Order Keys:', Object.keys(response.order));
+            debugLog('Order Content:', response.order);
         }
+    };
+
+    // ✅ Debug booking result structure
+    const debugBookingResult = (bookingResult) => {
+        debugLog('🔍 BOOKING RESULT DEBUG:');
+        debugLog('📊 Full Result:', bookingResult);
+        debugLog('📋 Type:', typeof bookingResult);
+        debugLog('🔑 Keys:', bookingResult ? Object.keys(bookingResult) : 'null');
+        
+        if (bookingResult?.data) {
+            debugLog('📁 Data Keys:', Object.keys(bookingResult.data));
+            debugLog('📁 Data Content:', bookingResult.data);
+        }
+        
+        // Check all possible BookingId locations
+        const possibleIds = [
+            bookingResult?.data?.BookingId,
+            bookingResult?.BookingId,
+            bookingResult?.data?.booking_id,
+            bookingResult?.booking_id,
+            bookingResult?.data?.id,
+            bookingResult?.id
+        ];
+        
+        debugLog('🆔 All possible BookingId values:', possibleIds);
+        debugLog('✅ Valid BookingIds:', possibleIds.filter(id => id && id !== 'undefined' && id !== undefined));
     };
 
     // ✅ Helper function to get valid address
@@ -182,9 +232,9 @@ const BusPaymentInfo = () => {
         return `${fromCity || 'Delhi'}, India`;
     };
 
-    // ✅ FIXED: Enhanced seat name extraction function
+    // ✅ ENHANCED: Seat name extraction function with comprehensive fallback
     const extractSeatName = (seat, index) => {
-        console.log(`🪑 Raw seat data for index ${index}:`, seat);
+        debugLog(`🪑 Raw seat data for index ${index}:`, seat);
 
         // If seat is null/undefined, use fallback
         if (!seat) {
@@ -201,7 +251,7 @@ const BusPaymentInfo = () => {
                       seat.number || 
                       seat;
 
-        console.log(`🔍 Extracted seat name: "${seatName}" (type: ${typeof seatName})`);
+        debugLog(`🔍 Extracted seat name: "${seatName}" (type: ${typeof seatName})`);
 
         // If it's already a valid string format, keep it
         if (typeof seatName === 'string' && seatName.trim()) {
@@ -209,13 +259,13 @@ const BusPaymentInfo = () => {
             
             // Check if it matches common seat patterns (A1, B2, 1A, 2B, etc.)
             if (/^[A-Z]\d+$|^\d+[A-Z]$|^[A-Z]\d+[A-Z]$|^[0-9]+$/.test(trimmedSeat)) {
-                console.log(`✅ Valid seat format found: "${trimmedSeat}"`);
+                debugLog(`✅ Valid seat format found: "${trimmedSeat}"`);
                 return trimmedSeat;
             }
             
             // If it contains alphanumeric characters, keep as is
             if (/[A-Za-z0-9]/.test(trimmedSeat)) {
-                console.log(`✅ Alphanumeric seat name: "${trimmedSeat}"`);
+                debugLog(`✅ Alphanumeric seat name: "${trimmedSeat}"`);
                 return trimmedSeat;
             }
         }
@@ -223,7 +273,7 @@ const BusPaymentInfo = () => {
         // If it's a number, convert to string
         if (typeof seatName === 'number' && !isNaN(seatName)) {
             const numSeat = seatName.toString();
-            console.log(`✅ Number converted to string: "${numSeat}"`);
+            debugLog(`✅ Number converted to string: "${numSeat}"`);
             return numSeat;
         }
 
@@ -232,7 +282,7 @@ const BusPaymentInfo = () => {
             const numberMatch = seatName.match(/\d+/);
             if (numberMatch) {
                 const extractedNumber = numberMatch[0];
-                console.log(`📊 Extracted number from string: "${extractedNumber}"`);
+                debugLog(`📊 Extracted number from string: "${extractedNumber}"`);
                 return extractedNumber;
             }
         }
@@ -243,6 +293,7 @@ const BusPaymentInfo = () => {
         return fallbackSeat;
     };
 
+    // ✅ Format bus order data
     const formatBusOrderData = (bookingState, amount) => ({
         amount: parseFloat(amount),
         currency: 'INR',
@@ -267,14 +318,14 @@ const BusPaymentInfo = () => {
         }
     });
 
-    // ✅ FIXED: Format validate payment data with enhanced seat name handling
+    // ✅ ENHANCED: Format validate payment data with comprehensive validation
     const formatValidatePaymentData = (bookingState, paymentResponse, orderData) => {
         console.log('🎫 Formatting validate payment data...');
         console.log('🪑 Available seats:', bookingState.selectedSeats);
         console.log('👥 Passenger count:', bookingState.passengerData?.length);
 
         const passengers = bookingState.passengerData?.map((passenger, index) => {
-            // ✅ FIXED: Use enhanced seat name extraction
+            // ✅ Use enhanced seat name extraction
             const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
             
             console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}"`);
@@ -287,7 +338,7 @@ const BusPaymentInfo = () => {
             const phoneNumber = bookingState.contactData?.mobile || passenger.phone || '';
 
             // ✅ Debug email and phone data
-            console.log(`📧 Contact info for passenger ${index + 1}:`, {
+            debugLog(`📧 Contact info for passenger ${index + 1}:`, {
                 email: emailAddress,
                 phone: phoneNumber,
                 isLead: index === 0
@@ -341,14 +392,14 @@ const BusPaymentInfo = () => {
         return validationData;
     };
 
-    // ✅ FIXED: Format booking data with enhanced seat name handling
+    // ✅ ENHANCED: Format booking data with comprehensive validation
     const formatBookingData = (bookingState) => {
         console.log('🎫 Formatting booking data...');
         console.log('🪑 Available seats:', bookingState.selectedSeats);
         console.log('👥 Passenger count:', bookingState.passengerData?.length);
 
         const passengers = bookingState.passengerData?.map((passenger, index) => {
-            // ✅ FIXED: Use enhanced seat name extraction
+            // ✅ Use enhanced seat name extraction
             const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
             
             console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}"`);
@@ -377,7 +428,7 @@ const BusPaymentInfo = () => {
         }) || [];
 
         const bookingData = {
-            UserIp: "122.161.64.143",
+            UserIp: "223.177.107.156", // ✅ Your specified IP
             SearchTokenId: bookingState.searchTokenId || bookingState.bus?.SearchTokenId || "",
             ResultIndex: bookingState.busBookingData?.ResultIndex || bookingState.bus?.ResultIndex || "TB-1",
             BoardingPointId: bookingState.selectedBoardingPoint?.BoardingPointId || bookingState.boardingPoint?.BoardingPointId || bookingState.boardingPoint?.id || 1,
@@ -424,15 +475,74 @@ const BusPaymentInfo = () => {
         },
     });
 
-    // ✅ Enhanced payment handler with booking API integration
+    // ✅ ENHANCED: Invoice download with retry mechanism and comprehensive validation
+    const downloadInvoiceWithRetry = async (bookingId, searchTokenId, contactEmail, maxRetries = 3) => {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`📄 Invoice download attempt ${attempt}/${maxRetries}...`);
+                console.log('📋 Booking ID:', bookingId, '(type:', typeof bookingId, ')');
+                console.log('🔑 Search Token ID:', searchTokenId);
+                console.log('📧 Email:', contactEmail);
+
+                // ✅ CRITICAL: Validate BookingId before proceeding
+                if (!isValidBookingId(bookingId)) {
+                    console.error('❌ Invalid BookingId:', bookingId);
+                    throw new Error('BookingId is missing or invalid');
+                }
+
+                // ✅ Additional format validation
+                if (!validateBookingIdFormat(bookingId)) {
+                    console.error('❌ BookingId format invalid:', bookingId);
+                    throw new Error('BookingId must be a valid number');
+                }
+
+                // ✅ Ensure BookingId is a valid string representation of a number
+                const validBookingId = String(bookingId);
+
+                const invoiceData = {
+                    UserIp: "223.177.107.156",
+                    SearchTokenId: searchTokenId,
+                    BookingId: validBookingId,
+                    receiverEmail: contactEmail || "ay942115@gmail.com"
+                };
+
+                console.log('📤 Invoice payload being sent:', invoiceData);
+
+                const result = await downloadBusInvoice(invoiceData);
+                console.log('✅ Invoice download result:', result);
+
+                return {
+                    success: true,
+                    result: result,
+                    attempt: attempt
+                };
+
+            } catch (error) {
+                console.error(`❌ Invoice download attempt ${attempt} failed:`, error);
+                
+                if (attempt === maxRetries) {
+                    return {
+                        success: false,
+                        error: error,
+                        attempts: maxRetries
+                    };
+                }
+                
+                // Exponential backoff
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+        }
+    };
+
+    // ✅ ENHANCED: Payment handler with comprehensive booking flow
     const handlePayment = async () => {
         setError(null);
         setLoading(true);
 
         try {
             console.log('🚀 Starting bus payment process...');
-            console.log('🪑 Selected seats debug:', selectedSeats);
-            console.log('👥 Passenger data debug:', passengerData);
+            debugLog('🪑 Selected seats debug:', selectedSeats);
+            debugLog('👥 Passenger data debug:', passengerData);
 
             // ✅ Load Razorpay script
             const razorpayLoaded = await loadRazorpayScript();
@@ -490,7 +600,7 @@ const BusPaymentInfo = () => {
 
             console.log('✅ Payment order created:', { orderId, orderAmount });
 
-            // ✅ UPDATED: Enhanced success handler with booking API
+            // ✅ ENHANCED: Success handler with comprehensive booking flow and validation
             const handleSuccess = async (response) => {
                 try {
                     console.log('✅ Payment successful, validating...', response);
@@ -508,7 +618,7 @@ const BusPaymentInfo = () => {
                         validationResult?.success === true;
 
                     if (isValidationSuccessful) {
-                        // ✅ FIXED: Call book API after successful validation
+                        // ✅ Proceed to book bus after successful validation
                         console.log('🎫 Proceeding to book bus...');
                         const bookingData = formatBookingData(state);
 
@@ -523,34 +633,99 @@ const BusPaymentInfo = () => {
 
                         const bookingResult = await bookBus(bookingData);
                         console.log('✅ Bus booking result:', bookingResult);
+                        debugBookingResult(bookingResult);
 
-                        // ✅ NEW: Download invoice after successful booking
-                        let invoiceDownloaded = false;
-                        try {
-                            if (bookingResult?.data?.BookingId || bookingResult?.BookingId) {
-                                const bookingId = bookingResult?.data?.BookingId || bookingResult?.BookingId;
-                                console.log('📄 Downloading invoice for BookingId:', bookingId);
+                        // ✅ ENHANCED: BookingId extraction with comprehensive fallback strategies
+                        let extractedBookingId = null;
+                        
+                        console.log('🔍 Analyzing booking result structure:', {
+                            hasData: !!bookingResult?.data,
+                            dataKeys: bookingResult?.data ? Object.keys(bookingResult.data) : [],
+                            directKeys: bookingResult ? Object.keys(bookingResult) : [],
+                            fullResult: bookingResult
+                        });
 
-                                const invoiceData = {
-                                    UserIp: "122.161.64.143",
-                                    SearchTokenId: bookingData.SearchTokenId,
-                                    BookingId: bookingId,
-                                    receiverEmail: bookingData.Passenger?.[0]?.Email || contactData?.email
-                                };
+                        // Try multiple extraction methods
+                        if (bookingResult?.data?.BookingId) {
+                            extractedBookingId = bookingResult.data.BookingId;
+                            console.log('✅ Found BookingId in data.BookingId:', extractedBookingId);
+                        } else if (bookingResult?.BookingId) {
+                            extractedBookingId = bookingResult.BookingId;
+                            console.log('✅ Found BookingId in direct BookingId:', extractedBookingId);
+                        } else if (bookingResult?.data?.booking_id) {
+                            extractedBookingId = bookingResult.data.booking_id;
+                            console.log('✅ Found BookingId in data.booking_id:', extractedBookingId);
+                        } else if (bookingResult?.booking_id) {
+                            extractedBookingId = bookingResult.booking_id;
+                            console.log('✅ Found BookingId in direct booking_id:', extractedBookingId);
+                        } else if (bookingResult?.data?.id) {
+                            extractedBookingId = bookingResult.data.id;
+                            console.log('✅ Found BookingId in data.id:', extractedBookingId);
+                        } else if (bookingResult?.id) {
+                            extractedBookingId = bookingResult.id;
+                            console.log('✅ Found BookingId in direct id:', extractedBookingId);
+                        }
 
-                                await downloadBusInvoice(invoiceData);
-                                invoiceDownloaded = true;
+                        // ✅ Validate the extracted BookingId
+                        if (!isValidBookingId(extractedBookingId)) {
+                            console.error('❌ No valid BookingId found in booking result');
+                            console.error('📋 Full booking result for debugging:', JSON.stringify(bookingResult, null, 2));
+                            
+                            // Show success but warn about invoice
+                            showSuccessToast('🎉 Bus booking confirmed! (Invoice download may not be available)');
+                            
+                            // Navigate without invoice download
+                            navigate('/bus-confirm', {
+                                state: {
+                                    paymentId: response.razorpay_payment_id,
+                                    orderId: response.razorpay_order_id,
+                                    signature: response.razorpay_signature,
+                                    bookingDetails: state,
+                                    finalAmount,
+                                    orderData: orderObject,
+                                    validationResult,
+                                    bookingResult,
+                                    isValidated: true,
+                                    isBooked: true,
+                                    invoiceDownloaded: false,
+                                    invoiceDownloadResult: { success: false, error: 'BookingId not found' },
+                                    bookingType: 'bus',
+                                    invoiceData: null
+                                },
+                            });
+                            return;
+                        }
+
+                        // ✅ Invoice download with validated BookingId and retry mechanism
+                        let invoiceDownloadResult = { success: false };
+                        
+                        if (extractedBookingId && bookingData.SearchTokenId) {
+                            const contactEmail = contactData?.email || passengerData[0]?.email || "ay942115@gmail.com";
+                            
+                            console.log('📄 Attempting invoice download with validated data:');
+                            console.log('📋 BookingId:', extractedBookingId, '(type:', typeof extractedBookingId, ')');
+                            console.log('🔑 SearchTokenId:', bookingData.SearchTokenId);
+                            console.log('📧 Email:', contactEmail);
+
+                            invoiceDownloadResult = await downloadInvoiceWithRetry(
+                                extractedBookingId, 
+                                bookingData.SearchTokenId, 
+                                contactEmail
+                            );
+
+                            if (invoiceDownloadResult.success) {
                                 console.log('✅ Invoice downloaded successfully');
                                 showSuccessToast('🎉 Bus booking confirmed! Invoice downloaded successfully!');
                             } else {
-                                console.warn('⚠️ No BookingId found in booking result, skipping invoice download');
-                                showSuccessToast('🎉 Bus booking confirmed successfully!');
+                                console.warn('⚠️ Invoice download failed:', invoiceDownloadResult.error);
+                                showSuccessToast('🎉 Bus booking confirmed! (Invoice download failed - you can download it later)');
                             }
-                        } catch (invoiceError) {
-                            console.error('⚠️ Invoice download failed:', invoiceError);
-                            showSuccessToast('🎉 Bus booking confirmed! (Invoice download failed - you can download it later)');
+                        } else {
+                            console.warn('⚠️ Missing BookingId or SearchTokenId for invoice download');
+                            showSuccessToast('🎉 Bus booking confirmed!');
                         }
 
+                        // ✅ Navigate to confirmation page with validated data
                         navigate('/bus-confirm', {
                             state: {
                                 paymentId: response.razorpay_payment_id,
@@ -563,8 +738,16 @@ const BusPaymentInfo = () => {
                                 bookingResult,
                                 isValidated: true,
                                 isBooked: true,
-                                invoiceDownloaded,
-                                bookingType: 'bus'
+                                invoiceDownloaded: invoiceDownloadResult.success,
+                                invoiceDownloadResult: invoiceDownloadResult,
+                                bookingType: 'bus',
+                                // ✅ Only pass invoice data if we have a valid BookingId
+                                invoiceData: extractedBookingId ? {
+                                    UserIp: "223.177.107.156",
+                                    SearchTokenId: bookingData.SearchTokenId,
+                                    BookingId: String(extractedBookingId),
+                                    receiverEmail: contactData?.email || passengerData[0]?.email || "ay942115@gmail.com"
+                                } : null
                             },
                         });
                     } else {
