@@ -16,7 +16,7 @@ const FlightReview = () => {
     return (
         <div>
             <div>
-                <Container style={{ marginTop: '8rem' }}>
+                <Container style={{ marginTop: '10rem' }}>
                     <Row>
                         <div>
                             <BookingSteps activeIndex={3} />

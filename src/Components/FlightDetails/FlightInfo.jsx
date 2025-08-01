@@ -5,7 +5,9 @@ import '../../Style/Pagescss/FlightResultsPage.css';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import { fetchFareConfirmation } from '../APIS/FlightApi/FlightApi';
+import FlightLoader from '../FlightLoader/FlightLoader';
 
+import { toast } from 'react-toastify';
 const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
     const segments = FareData?.Segments?.[0] || [];
     const firstSegment = segments[0];
@@ -14,6 +16,7 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
     const [loading, setLoading] = useState(false);
     const [show, setShow] = useState(false);
     const [fareConfirm, setFareConfirm] = useState([]);
+    const [error, setError] = useState(null);
 
     const navigate = useNavigate();
 
@@ -36,6 +39,8 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                 state: { SelectedFare, fareConfirm: confirmedFare },
             });
         } catch (error) {
+            setError(error);
+            toast.error(error?.response?.data?.error?.ErrorMessage)
             console.error("API call failed:", error);
         } finally {
             setLoading(false);
@@ -50,8 +55,15 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
     const stops = segments.length - 1;
 
     return (
+
+         
         <div className="container">
-            <Card className="mb-3 shadow-sm">
+            {loading ? (
+                <>
+                 {loading && <p className="text-center text-primary mt-4"><FlightLoader message="Searching For Fare Confermation" /></p>}
+                        {error && <p className="text-center text-danger mt-4">Error fetching fare rules.</p>}</>
+            ):(
+                <> <Card className="mb-3 shadow-sm">
                 <Card.Body className="d-flex justify-content-between align-items-center">
                     <h5 className="mb-0 fw-bold">Review Your Flight Details</h5>
                     <Button onClick={navigateBack} variant="" size="sm">Back To Search</Button>
@@ -171,11 +183,13 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                                 const listItems = Array.from(doc.querySelectorAll('li')).map(li => li.textContent.trim());
                                 return (
                                     <div key={index} className="mb-4 p-3 border rounded bg-light">
-                                        <p><strong>✈️ Airline:</strong> {item.Airline || 'N/A'}</p>
+                                        {/* <p><strong>✈️ Airline:</strong> {item.Airline || 'N/A'}</p> */}
                                         <p><strong>🌐 Origin:</strong> {item.Origin}</p>
                                         <p><strong>📍 Destination:</strong> {item.Destination}</p>
-                                        <p><strong>🧾 Fare Basis Code:</strong> {item.FareBasisCode || 'N/A'}</p>
-                                        <p><strong>📌 Fare Restriction:</strong> {item.FareRestriction || 'N/A'}</p>
+                                        {/* <p><strong>🧾 Fare Basis Code:</strong> {item.FareBasisCode || 'N/A'}</p>
+                                        <p><strong>📌 Fare Restriction:</strong> {item.FareRestriction || 'N/A'}</p> */}
+                                      <p dangerouslySetInnerHTML={{ __html: item.FareRuleDetail || 'N/A' }} />
+
                                         <ul className="list-group list-group-flush">
                                             {listItems.map((li, i) => (
                                                 <li key={i} className="list-group-item">{li}</li>
@@ -194,7 +208,8 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                         Close
                     </Button>
                 </Modal.Footer>
-            </Modal>
+            </Modal></>
+            ) }
         </div>
     );
 };

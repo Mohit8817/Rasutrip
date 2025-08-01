@@ -20,6 +20,24 @@ const FlightCard = ({ flight }) => {
     }), [userIp, searchToken, flight.FareList[0].FareId]);
 
 
+    const containerStyle = {
+        marginTop: '5px',
+        borderTop: '2px solid #292323',
+        position: 'relative',
+        width: '125px',
+        
+    };
+
+    const beforeStyle = {
+        content: '""',
+        position: 'absolute',
+        borderStyle: 'solid',
+        borderWidth: '10px 10px 0 0',
+        borderColor: '#292323 transparent transparent transparent',
+        right: '-1.5px',
+        top: '-10px',
+        transform: 'scaleY(-1)',
+    };
 
     const fetchData = async () => {
 
@@ -50,6 +68,28 @@ const FlightCard = ({ flight }) => {
 
     const segment = flight?.Segments[0][0];
     console.log('gggg', flight)
+
+    const getStartAndEnd = (segmentsGroup) => {
+        if (!segmentsGroup?.length) return null;
+
+        // Assuming each group is an array of segments
+        return segmentsGroup.map((segments) => {
+            const first = segments[0];
+            const last = segments[segments.length - 1];
+
+            return {
+                fromCity: first.Origin.CityName,
+                fromAirport: first.Origin.AirportCode,
+                fromTime: first.Origin.DepartTime,
+                toCity: last.Destination.CityName,
+                toAirport: last.Destination.AirportCode,
+                toTime: last.Destination.ArrivalTime
+            };
+        });
+    };
+
+    const tripSummary = getStartAndEnd(flight.Segments);
+    console.log('tripSummary', tripSummary)
     const formatTime = (dateTimeStr) => {
         const options = { hour: '2-digit', minute: '2-digit' };
         return new Date(dateTimeStr).toLocaleTimeString([], options);
@@ -77,6 +117,8 @@ const FlightCard = ({ flight }) => {
 
 
 
+
+
     const formatDate = (dateTimeStr) => {
         const options = { day: 'numeric', month: 'short', year: 'numeric' };
         return new Date(dateTimeStr).toLocaleDateString(undefined, options);
@@ -99,21 +141,34 @@ const FlightCard = ({ flight }) => {
                         </Col>
 
                         <Col md={2}>
-                            <div className="text-uppercase text-muted mt-1">{segment.Origin.CityName}</div>
-                            <div className="fw-bold">{formatTime(segment.Origin.DepartTime)}</div>
-                            <div className="text-muted small">{formatDate(segment.Origin.DepartTime)}</div>
+
+                            <div className="text-uppercase text-muted mt-1">
+                                <i class="fa fa-plane-departure"></i> {tripSummary[0].fromCity}</div>
+                            <div className="fw-bold">{formatTime(tripSummary[0].fromTime)}</div>
+                            <div className="text-muted small">{formatDate(tripSummary[0].fromTime)}</div>
                         </Col>
 
                         <Col md={2}>
-                            <div className="text-muted small"> {flightStop > 1 ? flightStop - 1 + ' Stop(s)' : 'Non Stop(s)'} </div>
+                            <div className="text-muted small " > {flightStop > 1 ? flightStop - 1 + ' Stop(s)' : 'Non Stop(s)'} </div>
+                            <div style={containerStyle}>
+                                <span style={beforeStyle}></span>
+
+                            </div>
                             <div className="fw-medium">{Math.floor(segment.TotalDuration / 60)}h {segment.TotalDuration % 60}m</div>
                         </Col>
 
                         <Col md={2}>
-                            <div className="text-uppercase text-muted mt-1">{segment.Destination.CityName}</div>
-                            <div className="fw-bold">{formatTime(segment.Destination.ArrivalTime)}</div>
-                            <div className="text-muted small">{formatDate(segment.Destination.ArrivalTime)}</div>
+                            <div className="text-uppercase text-muted mt-1">
+                                <i className="fa fa-plane-arrival"></i> {tripSummary[0].toCity}
+                            </div>
+                            <div className="fw-bold">
+                                {formatTime(tripSummary[0].toTime)}
+                            </div>
+                            <div className="text-muted small">
+                                {formatDate(tripSummary[0].toTime)}
+                            </div>
                         </Col>
+
 
                         <Col md={2}>
                             <div className="fw-bold text-dark">₹ {flight.MinPublishedPrice}</div>
@@ -153,6 +208,8 @@ const FlightCard = ({ flight }) => {
                             <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
                                 <Nav variant="tabs" className="mb-3">
                                     <Nav.Item><Nav.Link eventKey="flight">Flight Details</Nav.Link></Nav.Item>
+                                    <Nav.Item><Nav.Link eventKey="fare-detail">Fare Details</Nav.Link></Nav.Item>
+
                                     <Nav.Item><Nav.Link eventKey="rules">Fare Rules</Nav.Link></Nav.Item>
                                     <Nav.Item><Nav.Link eventKey="baggage">Baggage</Nav.Link></Nav.Item>
                                 </Nav>
@@ -167,6 +224,7 @@ const FlightCard = ({ flight }) => {
                                                     <Tab.Content>
                                                         <Tab.Pane eventKey="flight">
                                                             <Card className="mt-3 p-3 shadow-sm border">
+
                                                                 <span>{segment.Origin.CityName} → {segment.Destination.CityName}</span>
                                                                 <small>{formatDate(segment.Origin.DepartTime)}</small>
                                                                 {/* Delhi → Mumbai <small>Wed, Jul 16 2025</small> */}
@@ -190,19 +248,25 @@ const FlightCard = ({ flight }) => {
                                                                             <Col md={10}>
                                                                                 <Row className="text-center gy-2">
                                                                                     <Col md={4}>
-                                                                                        <h6 className="fw-bold">{segment.Origin.CityName}, {segment.Origin.CountryName}</h6>
+                                                                                        <h6 className="fw-bold"> <i class="fa fa-plane-departure"></i> {segment.Origin.CityName} , {segment.Origin.CountryName}</h6>
                                                                                         <p className="mb-0"><small>{formatFullDateTime(segment.Origin.DepartTime)}</small></p>
                                                                                         <small>{segment.Origin.AirportName}</small><br />
                                                                                         {segment.Origin.Terminal && <small>Terminal {segment.Origin.Terminal}</small>}
                                                                                     </Col>
 
                                                                                     <Col md={4}>
+                                                                                    <div className='position-absolute text-center'>
                                                                                         <strong>{formatDuration(segment.Duration)}</strong><br />
+                                                                                        <div style={containerStyle}>
+                                                                                            <span style={beforeStyle}></span>
+
+                                                                                        </div>
                                                                                         <small className="text-muted">Duration</small>
+                                                                                        </div>
                                                                                     </Col>
 
                                                                                     <Col md={4}>
-                                                                                        <h6 className="fw-bold">{segment.Destination.CityName}, {segment.Destination.CountryName}</h6>
+                                                                                        <h6 className="fw-bold"> <i class="fa fa-plane-arrival"></i> {segment.Destination.CityName}, {segment.Destination.CountryName}</h6>
                                                                                         <p className="mb-0"><small>{formatFullDateTime(segment.Destination.ArrivalTime)}</small></p>
                                                                                         {segment.Destination.AirportName && <small>{segment.Destination.AirportName}</small>}<br />
                                                                                         {segment.Destination.Terminal && <small>Terminal {segment.Destination.Terminal}</small>}
@@ -241,6 +305,59 @@ const FlightCard = ({ flight }) => {
 
 
                                     </Tab.Pane>
+                                    <Tab.Pane eventKey="fare-detail">
+                                        <Tab.Container className="my-4">
+                                            <h5 className="fw-bold mb-3">Fare Details for ADULT</h5>
+                                            <Table bordered hover responsive>
+                                                <thead className="table-light">
+                                                    <tr>
+                                                        <th>Type</th>
+                                                        <th>Fare</th>
+                                                        <th>Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>Base Price</td>
+                                                        <td>₹ {flight.FareList[0].Fare.BaseFare} x 1</td>
+                                                        <td>₹ {flight.FareList[0].Fare.BaseFare}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Taxes and Fees</td>
+                                                        <td>₹ {flight.FareList[0].Fare.Tax} x 1</td>
+                                                        <td>₹ {flight.FareList[0].Fare.Tax}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Service and Other Charges</td>
+                                                        <td>₹ {flight.FareList[0].Fare.OtherCharges}</td>
+                                                        <td>₹ {flight.FareList[0].Fare.OtherCharges}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>GST</td>
+                                                        <td>₹ 0</td>
+                                                        <td>₹ 0</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Discount(-)</td>
+                                                        <td>₹ {flight.FareList[0].Fare.Discount}</td>
+                                                        <td>₹ {flight.FareList[0].Fare.Discount}</td>
+                                                    </tr>
+                                                    <tr className="fw-bold">
+                                                        <td colSpan={2}>Total</td>
+                                                        <td>
+                                                            ₹ {
+                                                                flight.FareList[0].Fare.BaseFare +
+                                                                flight.FareList[0].Fare.Tax +
+                                                                flight.FareList[0].Fare.OtherCharges -
+                                                                flight.FareList[0].Fare.Discount
+                                                            }
+                                                        </td>
+
+                                                    </tr>
+                                                </tbody>
+                                            </Table>
+                                        </Tab.Container>
+                                    </Tab.Pane>
 
                                     <Tab.Pane eventKey="rules">
                                         <div className="p-3">
@@ -278,8 +395,8 @@ const FlightCard = ({ flight }) => {
                                                     {flight.FareList[0].SeatBaggage[0].map((item, index) =>
                                                         <tr key={index}>
                                                             <td>{item.Sector}</td>
-                                                            <td>{item.CheckIn || 'NA'}</td>
-                                                            <td>{item.Cabin || 'NA'}</td>
+                                                            <td>{item.CheckIn || ''}</td>
+                                                            <td>{item.Cabin || ''}</td>
                                                         </tr>
                                                     )}
                                                 </tbody>

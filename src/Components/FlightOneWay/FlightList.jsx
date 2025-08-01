@@ -1,18 +1,16 @@
-import React, { useEffect, useState, useContext, useMemo} from 'react';
+import React, { useEffect, useState, useContext, useMemo } from 'react';
 import moment from 'moment';
 import FlightCard from './FlightCards';
-import { fetchFlightData } from '../APIS/FlightApi/FlightApi'
+import { fetchFlightData, getUserIP } from '../APIS/FlightApi/FlightApi'
 import { LocationContext } from '../../Components/Context/LocationContext';
 import { useSelector, useDispatch } from 'react-redux';
 import { setFlights } from "../../redux/Slices/flightSlices";
 import FlightLoader from '../FlightLoader/FlightLoader';
 
 const FlightList = ({ filters }) => {
-  console.log('filters', filters);
   const dispatch = useDispatch();
   const { locationData } = useContext(LocationContext);
   const flightsData = useSelector((state) => state?.flight?.flights || []);
-
   const {
     fromCode = 'DEL',
     toCode = 'BOM',
@@ -24,20 +22,22 @@ const FlightList = ({ filters }) => {
   const [allFlights, setAllFlights] = useState(flightsData || []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [UserIpAddress, setUserIpAddress] = useState(null);
+
 
   const filteredFlights = useMemo(() => {
     return allFlights.filter(flight => {
       const airline = flight.Segments?.[0]?.[0]?.Airline?.AirlineName;
-      
+
       // Use MinPublishedPrice for filtering (lowest price from all fare options)
       const price = flight?.MinPublishedPrice;
-      
+
       // Get departure and arrival times
       const depTime = new Date(flight.Segments?.[0]?.[0]?.Origin?.DepartTime);
       const arrTime = new Date(flight.Segments?.[0]?.[0]?.Destination?.ArrivalTime);
       const depHour = depTime.getHours();
       const arrHour = arrTime.getHours();
-      
+
       // Calculate number of stops
       const segments = flight.Segments?.[0] || [];
       const stops = segments.length - 1; // Number of stops is segments - 1
@@ -65,7 +65,7 @@ const FlightList = ({ filters }) => {
 
       // Price range filter
       if (filters?.priceRange && filters.priceRange.length === 2) {
-        passesFilter = passesFilter && 
+        passesFilter = passesFilter &&
           (price >= filters.priceRange[0] && price <= filters.priceRange[1]);
       }
 
@@ -99,8 +99,6 @@ const FlightList = ({ filters }) => {
       return passesFilter;
     });
   }, [allFlights, filters]);
-
-  console.log('filteredFlights', filteredFlights);
 
   // Restore flights from localStorage on initial mount
   useEffect(() => {
@@ -139,6 +137,12 @@ const FlightList = ({ filters }) => {
     console.warn('Invalid departure date:', departDate);
   }
 
+  const UserIp = async () => {
+    const UserIpAdd = await getUserIP()
+    return UserIpAdd
+
+  }
+
   // Fetch flights from API
   useEffect(() => {
     const cabinMap = {
@@ -147,40 +151,43 @@ const FlightList = ({ filters }) => {
       "Business": 4,
       "First": 5
     };
-
     const normalizedCabin =
       typeof cabinClass === 'number' ? cabinClass : cabinMap[cabinClass] || 1;
 
-    const requestPayload = {
-      UserIp: "122.161.64.143",
-      Adult: passengers.adults || 1,
-      Child: passengers.children || 0,
-      Infant: passengers.infants || 0,
-      DirectFlight: false,
-      JourneyType: 1,
-      PreferredCarriers: null,
-      CabinClass: normalizedCabin,
-      AirSegments: [
-        {
-          Origin: fromCode,
-          Destination: toCode,
-          PreferredTime: `${moment(
-            typeof departDate === 'object' && departDate?.PreferredTime
-              ? departDate.PreferredTime
-              : departDate
-          ).format("YYYY-MM-DD")}T00:00:00`,
-        },
-      ],
-      Sources: null,
-    };
+
 
     const getFlights = async () => {
       try {
+
+        const ip = await getUserIP();
+        const requestPayload = {
+          UserIp: ip,
+          Adult: passengers.adults || 1,
+          Child: passengers.children || 0,
+          Infant: passengers.infants || 0,
+          DirectFlight: false,
+          JourneyType: 1,
+          PreferredCarriers: null,
+          CabinClass: normalizedCabin,
+          AirSegments: [
+            {
+              Origin: fromCode,
+              Destination: toCode,
+              PreferredTime: `${moment(
+                typeof departDate === 'object' && departDate?.PreferredTime
+                  ? departDate.PreferredTime
+                  : departDate
+              ).format("YYYY-MM-DD")}T00:00:00`,
+            },
+          ],
+          Sources: null,
+        };
+        
         const response = await fetchFlightData(requestPayload);
         const result = response?.Result?.[0] || [];
-        console.log("searchToken", response?.SearchTokenId);
-        console.log("UserIp", response?.UserIp);
         localStorage.setItem("searchToken", response?.SearchTokenId);
+        localStorage.setItem("rasocommision", response?.rasutripCommissionPercentage);
+
         localStorage.setItem("UserIp", response?.UserIp);
         setAllFlights(result || []);
         dispatch(setFlights(result || []));
@@ -203,7 +210,8 @@ const FlightList = ({ filters }) => {
     }
   }, [flightsData]);
 
-  if (loading) return <div className="text-center my-4"><FlightLoader></FlightLoader></div>;
+  
+  if (loading) return <div className="text-center my-4"><FlightLoader message="Searching flights..." /></div>;
   if (error) return <div className="text-danger text-center my-4">{error}</div>;
 
   return (

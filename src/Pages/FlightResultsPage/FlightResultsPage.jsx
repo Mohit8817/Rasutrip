@@ -10,27 +10,29 @@ import RoundTripBookingBar from '../../Components/FlightRoundTrip.jsx/RoundTripB
 import { useDispatch } from 'react-redux';
 import { clearSelectedFlights } from '../../redux/Slices/SelectedFlight';
 import FlightLoader from '../../Components/FlightLoader/FlightLoader';
+import Slider from '../../Components/hero/Slider';
+import { useSelector } from 'react-redux';
 
 const FlightResultsPage = () => {
     const dispatch = useDispatch();
     const { state } = useLocation();
     const tripType = state?.tripType || 'oneway';
-    
-    useEffect(() => {
+  useEffect(() => {
         dispatch(clearSelectedFlights());
     }, [dispatch]);
-
+  const flightsData = useSelector((state) => state?.flight?.flights || []);
     const [filters, setFilters] = useState({
         airlines: [],
-        priceRange: [1000, 10000], // Updated based on API response
-        departureTime: null,
-        arrivalTime: null,
-        refundable: null,
-        stops: []
+        stops: [],
+        priceRange: [0, 100000],
+        departureTime: [0, 24],
+        arrivalTime: [0, 24],
+        refundableOnly: false,
+        refundable: ""
     });
 
     return (
-       <div className='innerpagecontainer'>
+       <div className='innerpagecontainer mt-5'>
          <div className='relative'>
             {tripType === 'oneway' && (
                 <Container className="mt-5 pt-5">

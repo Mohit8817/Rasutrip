@@ -16,7 +16,7 @@ const FlightTravellerDetails = () => {
     const { SelectedFare, fareConfirm } = location?.state || {}
     return (
         <div>
-            <Container style={{ marginTop: '8rem' }}>
+            <Container style={{ marginTop: '10rem' }}>
 
                 <Row>
                     <div>
