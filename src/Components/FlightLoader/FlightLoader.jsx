@@ -65,7 +65,7 @@ const styles = {
   `,
 };
 
-const FlightLoader = () => {
+const FlightLoader = ({message}=null,color="black") => {
   return (
     <>
       <style>{styles.keyframes}</style>
@@ -73,17 +73,21 @@ const FlightLoader = () => {
 
        
         <div style={styles.plane}>
-          <img
+          <img className='d-inline'
             src="https://zupimages.net/up/19/34/4820.gif"
             style={styles.planeImg}
             alt="plane"
           />
+         
         </div>
+         
         <div style={styles.earthWrapper}>
           <div style={styles.earth}></div>
         </div>
-      
+       
+       <span>{message}</span>
       </div>
+      
     </>
   );
 };

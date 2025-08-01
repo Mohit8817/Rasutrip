@@ -8,11 +8,12 @@ import FlightBooking from '../FlightBooking/FlightBooking';
 import TravelTabs from '../FlightBooking/TravelTabs';
 import HotelSearchForm from '../HotelSearchForm/HotelSearchForm';
 import BusBooking from '../Busbooking/BusBooking';
+import { useLocation } from 'react-router-dom';
 
 const Slider = () => {
   const [index, setIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('flight'); // Add activeTab state
-
+const location = useLocation();
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
   };
@@ -37,14 +38,16 @@ const Slider = () => {
       {/* White box for your components */}
       {/* Three tabs */}
       <div className="overlay-box">
+        {location.pathname === '/' && (
         <div className="travel-tabs">
           <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} className="" />
         </div>
-
+        )}
         {/* Conditionally show active component */}
         {renderActiveTabContent()}
       </div>
 
+           {location.pathname === '/' && (
       <Carousel activeIndex={index} onSelect={handleSelect} className="slider">
         {[slidimg1, slidimg2, slidimg3].map((img, idx) => (
           <Carousel.Item key={idx}>
@@ -55,6 +58,7 @@ const Slider = () => {
           </Carousel.Item>
         ))}
       </Carousel>
+           )}
     </div>
   );
 };

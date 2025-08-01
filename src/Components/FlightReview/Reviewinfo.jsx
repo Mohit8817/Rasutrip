@@ -9,11 +9,29 @@ const ReviewInfo = () => {
   const location = useLocation();
   const [acceptedTerms, setAcceptedTerms] = useState(true);
 
-  const { passengerSelections = [], SSR, SelectedFare } = location.state || {};
+  const { passengerSelections = [], SSR, SelectedFare ,passengersData } = location.state || {};
 
   const data = localStorage.getItem('selectedFlight')
   const segments = JSON.parse(data);
    console.log('segments',segments)
+
+   const mergedPassengersData = passengersData.map((passenger, index) => {
+  const selected = passengerSelections[index] || {};
+
+  return {
+    ...passenger,
+    Meal: selected.meal ? [selected.meal] : [],
+    Seat: selected.seat ? [selected.seat] : [],
+    Baggage: selected.baggage ? [selected.baggage] : [],
+  };
+});
+
+   localStorage.removeItem('passengersData');
+
+    console.log('paresdata final',passengersData)
+  // Then set new data
+  localStorage.setItem('passengersData', JSON.stringify(mergedPassengersData));
+   
   const segment = segments?.Segments?.[0]?.[0] || {};
   const airline = segment.Airline || {};
   const origin = segment.Origin || {};
@@ -83,7 +101,7 @@ const ReviewInfo = () => {
 
             <Col md="auto" className="text-center">
               <div className="small text-muted">{durationText}</div>
-              <div className="small text-muted">0 Stops</div>
+              {/* <div className="small text-muted">0 Stops</div> */}
             </Col>
           </Row>
 
@@ -130,7 +148,7 @@ const ReviewInfo = () => {
 
       {/* Pax Info */}
       <Card className="container mt-2">
-        <div className="d-flex align-items-center mb-3">
+        <div className="d-flex align-items-center mb-3 mt-4">
           <h5 className="mb-0">Passenger Add-on Details</h5>
           <FaPen className="ms-2 text-primary" />
         </div>
@@ -139,6 +157,10 @@ const ReviewInfo = () => {
           <Card key={i} className="mb-3 bg-light border">
             <Card.Body>
               <p className="fw-bold mb-2">Passenger {i + 1}</p>
+               <p className="m-0"><strong> Name :</strong> {passengersData[i].Title}&nbsp;{passengersData[i].FirstName} {passengersData[i].LastName}</p>
+               <p className="m-0"><strong>Gender :</strong>{passengersData[i].Gender==1?'Male':passengersData[i].Gender==2?'Female':'other'}</p>
+               <p className="m-0"><strong>Type :</strong> {passengersData[i].type}</p>
+
               {selection.meal && (
                 <div className="text-muted small">
                   🍱 <strong>Meal:</strong> {selection.meal.AirlineDescription || "N/A"} | ₹{selection.meal.Price}
