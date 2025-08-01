@@ -41,13 +41,8 @@ import InvoiceTemplate from './Components/FlightBookingSuccess/Invoice';
 
 import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
 
-import HotelConfirmation from './Components/Hotel/BookingSummaryPage/HotelConfirmation/HotelConfirmation';
-import Bookingconfirm from './Components/Bus/Bookingconfirm/Bookingconfirm';
-
-
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
 
 function App() {
   return (
@@ -82,7 +77,6 @@ function App() {
           <Route path="/bus-traveller-details" element={<BusTravellerDetails />} />
           <Route path="/bus-review" element={<BusReview />} />
           <Route path="/bus-payment" element={<BusPayment />} />
-          <Route path="/bus-confirm" element={<Bookingconfirm />} />
 
           {/* Login */}
           <Route path="/login/customer" element={<CustomerLogin />} />
