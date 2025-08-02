@@ -1,4 +1,4 @@
-// src/components/Bus/BusPaymentInfo.js - COMPLETE MERGED VERSION
+// src/components/Bus/BusPaymentInfo.js - FIXED VERSION with Enhanced BookingId Extraction
 
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstrap';
@@ -52,18 +52,115 @@ const BusPaymentInfo = () => {
 
     // ✅ Enhanced BookingId validation function
     const isValidBookingId = (id) => {
-        return id !== null &&
-            id !== undefined &&
-            id !== 'undefined' &&
-            id !== 'null' &&
-            String(id).trim() !== '' &&
-            !isNaN(Number(id));
+        if (id === null || id === undefined || id === 'undefined' || id === 'null') {
+            return false;
+        }
+        
+        const idString = String(id).trim();
+        if (idString === '' || idString === 'undefined' || idString === 'null') {
+            return false;
+        }
+        
+        // Check if it's a valid number (can be string or number)
+        const numericValue = Number(idString);
+        return !isNaN(numericValue) && numericValue > 0 && idString.length >= 1 && idString.length <= 20;
     };
 
-    // ✅ BookingId format validation
-    const validateBookingIdFormat = (bookingId) => {
-        const idString = String(bookingId);
-        return /^\d+$/.test(idString) && idString.length >= 1 && idString.length <= 20;
+    // ✅ ENHANCED: BookingId extraction with comprehensive search
+    const extractBookingIdFromResponse = (response) => {
+        console.log('🔍 EXTRACTING BOOKING ID FROM RESPONSE:');
+        console.log('📊 Full Response:', JSON.stringify(response, null, 2));
+        
+        // Define all possible locations where BookingId might be found
+        const possiblePaths = [
+            // Direct paths
+            response?.BookingId,
+            response?.bookingId,
+            response?.booking_id,
+            response?.id,
+            
+            // Data nested paths
+            response?.data?.BookingId,
+            response?.data?.bookingId,
+            response?.data?.booking_id,
+            response?.data?.id,
+            
+            // Response nested paths
+            response?.response?.BookingId,
+            response?.response?.bookingId,
+            response?.response?.booking_id,
+            response?.response?.id,
+            
+            // Result nested paths
+            response?.result?.BookingId,
+            response?.result?.bookingId,
+            response?.result?.booking_id,
+            response?.result?.id,
+            
+            // Bus specific paths (based on your API structure)
+            response?.Bus?.BookingId,
+            response?.bus?.BookingId,
+            response?.booking?.BookingId,
+            response?.booking?.id,
+            
+            // Deep nested paths
+            response?.data?.response?.BookingId,
+            response?.data?.result?.BookingId,
+            response?.response?.data?.BookingId,
+            
+            // Array first element (if response is an array)
+            Array.isArray(response) ? response[0]?.BookingId : null,
+            Array.isArray(response?.data) ? response.data[0]?.BookingId : null,
+        ];
+
+        console.log('🎯 Checking possible BookingId locations:', possiblePaths);
+
+        // Find the first valid BookingId
+        for (let i = 0; i < possiblePaths.length; i++) {
+            const candidateId = possiblePaths[i];
+            console.log(`🔎 Checking path ${i}: ${candidateId} (type: ${typeof candidateId})`);
+            
+            if (isValidBookingId(candidateId)) {
+                console.log(`✅ FOUND VALID BOOKING ID: ${candidateId}`);
+                return String(candidateId); // Always return as string
+            }
+        }
+
+        // If no direct BookingId found, try to find any numeric value that could be an ID
+        console.log('⚠️ No direct BookingId found, searching for numeric values...');
+        
+        const searchForNumericIds = (obj, path = '') => {
+            if (!obj || typeof obj !== 'object') return null;
+            
+            for (const [key, value] of Object.entries(obj)) {
+                const currentPath = path ? `${path}.${key}` : key;
+                
+                // Check if this could be an ID field
+                if (typeof value === 'number' && value > 0 && value < 999999) {
+                    console.log(`🔢 Found numeric value at ${currentPath}: ${value}`);
+                    if (key.toLowerCase().includes('id') || key.toLowerCase().includes('booking')) {
+                        console.log(`✅ POTENTIAL BOOKING ID FOUND: ${value} at ${currentPath}`);
+                        return String(value);
+                    }
+                }
+                
+                // Recursively search nested objects
+                if (typeof value === 'object' && value !== null) {
+                    const nestedResult = searchForNumericIds(value, currentPath);
+                    if (nestedResult) return nestedResult;
+                }
+            }
+            return null;
+        };
+
+        const numericId = searchForNumericIds(response);
+        if (numericId) {
+            console.log(`✅ FOUND NUMERIC ID: ${numericId}`);
+            return numericId;
+        }
+
+        console.error('❌ NO VALID BOOKING ID FOUND IN RESPONSE');
+        return null;
     };
 
     // ✅ Load Razorpay script dynamically
@@ -171,50 +268,6 @@ const BusPaymentInfo = () => {
             pauseOnHover: true,
             draggable: true,
         });
-    };
-
-    // ✅ Debug helper function to analyze API response structure
-    const debugApiResponse = (response, apiName) => {
-        debugLog(`🔍 ${apiName} Response Analysis:`);
-        debugLog('Type:', typeof response);
-        debugLog('Keys:', response ? Object.keys(response) : 'null/undefined');
-        debugLog('Full Response:', response);
-
-        if (response?.data) {
-            debugLog('Data Keys:', Object.keys(response.data));
-            debugLog('Data Content:', response.data);
-        }
-
-        if (response?.order) {
-            debugLog('Order Keys:', Object.keys(response.order));
-            debugLog('Order Content:', response.order);
-        }
-    };
-
-    // ✅ Debug booking result structure
-    const debugBookingResult = (bookingResult) => {
-        debugLog('🔍 BOOKING RESULT DEBUG:');
-        debugLog('📊 Full Result:', bookingResult);
-        debugLog('📋 Type:', typeof bookingResult);
-        debugLog('🔑 Keys:', bookingResult ? Object.keys(bookingResult) : 'null');
-
-        if (bookingResult?.data) {
-            debugLog('📁 Data Keys:', Object.keys(bookingResult.data));
-            debugLog('📁 Data Content:', bookingResult.data);
-        }
-
-        // Check all possible BookingId locations
-        const possibleIds = [
-            bookingResult?.data?.BookingId,
-            bookingResult?.BookingId,
-            bookingResult?.data?.booking_id,
-            bookingResult?.booking_id,
-            bookingResult?.data?.id,
-            bookingResult?.id
-        ];
-
-        debugLog('🆔 All possible BookingId values:', possibleIds);
-        debugLog('✅ Valid BookingIds:', possibleIds.filter(id => id && id !== 'undefined' && id !== undefined));
     };
 
     // ✅ Helper function to get valid address
@@ -428,7 +481,7 @@ const BusPaymentInfo = () => {
         }) || [];
 
         const bookingData = {
-            UserIp: "223.177.107.156", // ✅ Your specified IP
+            UserIp: "122.161.64.143", // ✅ Use your actual IP from the payload
             SearchTokenId: bookingState.searchTokenId || bookingState.bus?.SearchTokenId || "",
             ResultIndex: bookingState.busBookingData?.ResultIndex || bookingState.bus?.ResultIndex || "TB-1",
             BoardingPointId: bookingState.selectedBoardingPoint?.BoardingPointId || bookingState.boardingPoint?.BoardingPointId || bookingState.boardingPoint?.id || 1,
@@ -490,17 +543,11 @@ const BusPaymentInfo = () => {
                     throw new Error('BookingId is missing or invalid');
                 }
 
-                // ✅ Additional format validation
-                if (!validateBookingIdFormat(bookingId)) {
-                    console.error('❌ BookingId format invalid:', bookingId);
-                    throw new Error('BookingId must be a valid number');
-                }
-
                 // ✅ Ensure BookingId is a valid string representation of a number
                 const validBookingId = String(bookingId);
 
                 const invoiceData = {
-                    UserIp: "223.177.107.156",
+                    UserIp: "122.161.64.143", // ✅ Use your actual IP
                     SearchTokenId: searchTokenId,
                     BookingId: validBookingId,
                     receiverEmail: contactEmail || "ay942115@gmail.com"
@@ -559,7 +606,7 @@ const BusPaymentInfo = () => {
             console.log('📦 Creating payment order with data:', orderData);
 
             const orderResponse = await createBusPaymentOrder(orderData);
-            debugApiResponse(orderResponse, 'createBusPaymentOrder');
+            console.log('📦 Order response received:', orderResponse);
 
             // ✅ Enhanced order ID extraction
             let orderId, orderAmount, orderObject;
@@ -633,41 +680,11 @@ const BusPaymentInfo = () => {
 
                         const bookingResult = await bookBus(bookingData);
                         console.log('✅ Bus booking result:', bookingResult);
-                        debugBookingResult(bookingResult);
 
                         // ✅ ENHANCED: BookingId extraction with comprehensive fallback strategies
-                        let extractedBookingId = null;
+                        const extractedBookingId = extractBookingIdFromResponse(bookingResult);
 
-                        console.log('🔍 Analyzing booking result structure:', {
-                            hasData: !!bookingResult?.data,
-                            dataKeys: bookingResult?.data ? Object.keys(bookingResult.data) : [],
-                            directKeys: bookingResult ? Object.keys(bookingResult) : [],
-                            fullResult: bookingResult
-                        });
-
-                        // Try multiple extraction methods
-                        if (bookingResult?.data?.BookingId) {
-                            extractedBookingId = bookingResult.data.BookingId;
-                            console.log('✅ Found BookingId in data.BookingId:', extractedBookingId);
-                        } else if (bookingResult?.BookingId) {
-                            extractedBookingId = bookingResult.BookingId;
-                            console.log('✅ Found BookingId in direct BookingId:', extractedBookingId);
-                        } else if (bookingResult?.data?.booking_id) {
-                            extractedBookingId = bookingResult.data.booking_id;
-                            console.log('✅ Found BookingId in data.booking_id:', extractedBookingId);
-                        } else if (bookingResult?.booking_id) {
-                            extractedBookingId = bookingResult.booking_id;
-                            console.log('✅ Found BookingId in direct booking_id:', extractedBookingId);
-                        } else if (bookingResult?.data?.id) {
-                            extractedBookingId = bookingResult.data.id;
-                            console.log('✅ Found BookingId in data.id:', extractedBookingId);
-                        } else if (bookingResult?.id) {
-                            extractedBookingId = bookingResult.id;
-                            console.log('✅ Found BookingId in direct id:', extractedBookingId);
-                        }
-
-                        // ✅ Validate the extracted BookingId
-                        if (!isValidBookingId(extractedBookingId)) {
+                        if (!extractedBookingId) {
                             console.error('❌ No valid BookingId found in booking result');
                             console.error('📋 Full booking result for debugging:', JSON.stringify(bookingResult, null, 2));
 
@@ -695,6 +712,8 @@ const BusPaymentInfo = () => {
                             });
                             return;
                         }
+
+                        console.log('🎯 EXTRACTED BOOKING ID:', extractedBookingId);
 
                         // ✅ Invoice download with validated BookingId and retry mechanism
                         let invoiceDownloadResult = { success: false };
@@ -743,7 +762,7 @@ const BusPaymentInfo = () => {
                                 bookingType: 'bus',
                                 // ✅ Only pass invoice data if we have a valid BookingId
                                 invoiceData: extractedBookingId ? {
-                                    UserIp: "223.177.107.156",
+                                    UserIp: "122.161.64.143", // ✅ Use your actual IP
                                     SearchTokenId: bookingData.SearchTokenId,
                                     BookingId: String(extractedBookingId),
                                     receiverEmail: contactData?.email || passengerData[0]?.email || "ay942115@gmail.com"
@@ -941,7 +960,7 @@ const BusPaymentInfo = () => {
                         <Col xs={8}>Total Amount</Col>
                         <Col xs={4} className="text-end text-danger">₹{finalAmount}</Col>
                     </Row>
-                </Card.Body>              
+                </Card.Body>
             </Card>
 
             {/* ✅ Enhanced Payment Button Section */}
@@ -950,11 +969,11 @@ const BusPaymentInfo = () => {
                     <div className=" mb-3">
                         <p className="text-muted small mb-0">
                             <strong>Please note:</strong> By placing this order, you agree to our{' '}
-                            <a href="#"  className='text-danger' onClick={(e) => e.preventDefault()}>Terms Of Use</a> and{' '}
-                            <a href="#"  className='text-danger' onClick={(e) => e.preventDefault()}>Privacy Policy</a>
+                            <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Terms Of Use</a> and{' '}
+                            <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Privacy Policy</a>
                         </p>
                     </div>
-                    <div className="d-flex gap-3 justify-content-between align-items-center">                     
+                    <div className="d-flex gap-3 justify-content-between align-items-center">
 
                         <Button
                             variant="danger"
@@ -971,7 +990,7 @@ const BusPaymentInfo = () => {
                                 `Pay Now ₹${finalAmount}`
                             )}
                         </Button>
-                    </div>                    
+                    </div>
                 </Card.Body>
             </Card>
         </Container>

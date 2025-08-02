@@ -775,7 +775,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                 className="w-100 py-2 btn-red"
                 onClick={handleContinue}
                 disabled={!boarding || !dropping || selectedSeats.length === 0}
-              >               
+              >
                 Continue
               </Button>
 

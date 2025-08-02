@@ -588,12 +588,7 @@ const BusReviewInfo = () => {
                                 <div className="mb-2">
                                     <strong>Address:</strong> {gstData.address || 'Not provided'}
                                 </div>
-                                <div className="mb-2">
-                                    <strong>City, State:</strong> {gstData.city || 'N/A'}, {gstData.state || 'N/A'}
-                                </div>
-                                <div className="mb-2">
-                                    <strong>Pincode:</strong> {gstData.pincode || 'Not provided'}
-                                </div>
+                               
                             </Col>
                         </Row>
                     </Card.Body>

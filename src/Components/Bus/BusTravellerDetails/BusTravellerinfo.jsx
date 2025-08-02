@@ -39,10 +39,7 @@ const BusTravellerinfo = () => {
         companyName: '',
         contactNo: '',
         email: '',
-        address: '',
-        city: '',
-        state: '',
-        pincode: ''
+        address: ''
     });
 
     const [errors, setErrors] = useState({
@@ -157,6 +154,7 @@ const BusTravellerinfo = () => {
         return errors;
     };
 
+    // Updated GST validation - only for required fields
     const validateGst = () => {
         const errors = {};
         const touched = touchedFields.gst;
@@ -170,9 +168,6 @@ const BusTravellerinfo = () => {
             }
             if (touched.contactNo && gstData.contactNo && !isMobileValid(gstData.contactNo)) {
                 errors.contactNo = "Enter valid contact number";
-            }
-            if (touched.pincode && gstData.pincode && !isPincodeValid(gstData.pincode)) {
-                errors.pincode = "Enter valid pincode";
             }
         }
 
@@ -755,8 +750,7 @@ const BusTravellerinfo = () => {
                                             <option value="PAN Card">PAN Card</option>
                                             <option value="Voter ID Card">Voter ID Card</option>
                                             <option value="Driving Licence">Driving Licence</option>
-                                            <option value="Passport">Passport</option>
-                                            <option value="College ID">College ID</option>
+                                        
                                         </Form.Select>
                                         <Form.Control.Feedback type="invalid">
                                             {errors.passenger?.[index]?.idType}
@@ -863,10 +857,10 @@ const BusTravellerinfo = () => {
                 {showGstinForm && (
                     <Card.Body>
                         <Row className="g-3">
-                            <Col md={6}>
+                            <Col md={4}>
                                 <Form.Control
                                     type="text"
-                                    placeholder="Enter 15-digit GST number"
+                                    placeholder="GST Number"
                                     value={gstData.gstNumber}
                                     onChange={(e) => handleGstChange('gstNumber', e.target.value.toUpperCase())}
                                     onBlur={() => handleFieldBlur('gst', 'gstNumber')}
@@ -878,10 +872,10 @@ const BusTravellerinfo = () => {
                                 </Form.Control.Feedback>
                             </Col>
 
-                            <Col md={6}>
+                            <Col md={4}>
                                 <Form.Control
                                     type="text"
-                                    placeholder="Enter registered company name"
+                                    placeholder="Registered Company Name"
                                     value={gstData.companyName}
                                     onChange={(e) => handleGstChange('companyName', e.target.value)}
                                     onBlur={() => handleFieldBlur('gst', 'companyName')}
@@ -891,7 +885,7 @@ const BusTravellerinfo = () => {
                             <Col md={4}>
                                 <Form.Control
                                     type="tel"
-                                    placeholder="Company contact number"
+                                    placeholder="Registered Contact No"
                                     value={gstData.contactNo}
                                     onChange={(e) => handleGstChange('contactNo', e.target.value)}
                                     onBlur={() => handleFieldBlur('gst', 'contactNo')}
@@ -902,10 +896,10 @@ const BusTravellerinfo = () => {
                                 </Form.Control.Feedback>
                             </Col>
 
-                            <Col md={4}>
+                            <Col md={6}>
                                 <Form.Control
                                     type="email"
-                                    placeholder="Company email address"
+                                    placeholder="Registered Email"
                                     value={gstData.email}
                                     onChange={(e) => handleGstChange('email', e.target.value)}
                                     onBlur={() => handleFieldBlur('gst', 'email')}
@@ -916,80 +910,15 @@ const BusTravellerinfo = () => {
                                 </Form.Control.Feedback>
                             </Col>
 
-                            <Col md={4}>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="Area pincode"
-                                    value={gstData.pincode}
-                                    onChange={(e) => handleGstChange('pincode', e.target.value)}
-                                    onBlur={() => handleFieldBlur('gst', 'pincode')}
-                                    isInvalid={!!errors.gst?.pincode}
-                                    maxLength={6}
-                                />
-                                <Form.Control.Feedback type="invalid">
-                                    {errors.gst?.pincode}
-                                </Form.Control.Feedback>
-                            </Col>
-
-                            <Col md={8}>
+                            <Col md={6}>
                                 <Form.Control
                                     as="textarea"
-                                    rows={2}
-                                    placeholder="Enter complete registered address"
+                                    rows={1}
+                                    placeholder="Registered Address"
                                     value={gstData.address}
                                     onChange={(e) => handleGstChange('address', e.target.value)}
                                     onBlur={() => handleFieldBlur('gst', 'address')}
                                 />
-                            </Col>
-
-                            <Col md={4}>
-                                <Row>
-                                    <Col md={12} className="mb-2">
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="City"
-                                            value={gstData.city}
-                                            onChange={(e) => handleGstChange('city', e.target.value)}
-                                        />
-                                    </Col>
-                                    <Col md={12}>
-                                        <Form.Select
-                                            value={gstData.state}
-                                            onChange={(e) => handleGstChange('state', e.target.value)}
-                                        >
-                                            <option value="">Select State</option>
-                                            <option value="Andhra Pradesh">Andhra Pradesh</option>
-                                            <option value="Arunachal Pradesh">Arunachal Pradesh</option>
-                                            <option value="Assam">Assam</option>
-                                            <option value="Bihar">Bihar</option>
-                                            <option value="Chhattisgarh">Chhattisgarh</option>
-                                            <option value="Goa">Goa</option>
-                                            <option value="Gujarat">Gujarat</option>
-                                            <option value="Haryana">Haryana</option>
-                                            <option value="Himachal Pradesh">Himachal Pradesh</option>
-                                            <option value="Jharkhand">Jharkhand</option>
-                                            <option value="Karnataka">Karnataka</option>
-                                            <option value="Kerala">Kerala</option>
-                                            <option value="Madhya Pradesh">Madhya Pradesh</option>
-                                            <option value="Maharashtra">Maharashtra</option>
-                                            <option value="Manipur">Manipur</option>
-                                            <option value="Meghalaya">Meghalaya</option>
-                                            <option value="Mizoram">Mizoram</option>
-                                            <option value="Nagaland">Nagaland</option>
-                                            <option value="Odisha">Odisha</option>
-                                            <option value="Punjab">Punjab</option>
-                                            <option value="Rajasthan">Rajasthan</option>
-                                            <option value="Sikkim">Sikkim</option>
-                                            <option value="Tamil Nadu">Tamil Nadu</option>
-                                            <option value="Telangana">Telangana</option>
-                                            <option value="Tripura">Tripura</option>
-                                            <option value="Uttar Pradesh">Uttar Pradesh</option>
-                                            <option value="Uttarakhand">Uttarakhand</option>
-                                            <option value="West Bengal">West Bengal</option>
-                                            <option value="Delhi">Delhi</option>
-                                        </Form.Select>
-                                    </Col>
-                                </Row>
                             </Col>
                         </Row>
                     </Card.Body>
