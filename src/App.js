@@ -141,7 +141,7 @@ import BusDetail from './Components/Bus/BusDetail/BusDetail';
 import BusTravellerDetails from './Components/Bus/BusTravellerDetails/BusTravellerDetails';
 import BusReview from './Components/Bus/BusReview/BusReview';
 import BusPayment from './Components/Bus/BusPayment/BusPayment';
-
+import Bookingconfirm from './Components/Bus/Bookingconfirm/Bookingconfirm';
 import AgentLogin from './Components/Login/AgentLogin';
 import CustomerLogin from './Components/Login/CustomerLogin';
 import SetResetMPIN from './Components/Login/SetResetMPIN';
@@ -161,9 +161,7 @@ import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
 import Bookingconfirm from './Components/Bus/Bookingconfirm/Bookingconfirm';
-
 function App() {
   return (
     <>
