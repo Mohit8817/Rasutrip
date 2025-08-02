@@ -1,11 +1,11 @@
-// src/components/Bus/BusPaymentInfo.js - FIXED VERSION with Enhanced BookingId Extraction
+// src/components/Bus/BusPaymentInfo.js - UPDATED VERSION without email invoice sending
 
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { createBusPaymentOrder, validateBusPayment, bookBus, downloadBusInvoice } from '../../APIS/BusApi/BusApis';
+import { createBusPaymentOrder, validateBusPayment, bookBus } from '../../APIS/BusApi/BusApis';
 
 const BusPaymentInfo = () => {
     const { state } = useLocation();
@@ -528,60 +528,7 @@ const BusPaymentInfo = () => {
         },
     });
 
-    // ✅ ENHANCED: Invoice download with retry mechanism and comprehensive validation
-    const downloadInvoiceWithRetry = async (bookingId, searchTokenId, contactEmail, maxRetries = 3) => {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                console.log(`📄 Invoice download attempt ${attempt}/${maxRetries}...`);
-                console.log('📋 Booking ID:', bookingId, '(type:', typeof bookingId, ')');
-                console.log('🔑 Search Token ID:', searchTokenId);
-                console.log('📧 Email:', contactEmail);
-
-                // ✅ CRITICAL: Validate BookingId before proceeding
-                if (!isValidBookingId(bookingId)) {
-                    console.error('❌ Invalid BookingId:', bookingId);
-                    throw new Error('BookingId is missing or invalid');
-                }
-
-                // ✅ Ensure BookingId is a valid string representation of a number
-                const validBookingId = String(bookingId);
-
-                const invoiceData = {
-                    UserIp: "122.161.64.143", // ✅ Use your actual IP
-                    SearchTokenId: searchTokenId,
-                    BookingId: validBookingId,
-                    receiverEmail: contactEmail || "ay942115@gmail.com"
-                };
-
-                console.log('📤 Invoice payload being sent:', invoiceData);
-
-                const result = await downloadBusInvoice(invoiceData);
-                console.log('✅ Invoice download result:', result);
-
-                return {
-                    success: true,
-                    result: result,
-                    attempt: attempt
-                };
-
-            } catch (error) {
-                console.error(`❌ Invoice download attempt ${attempt} failed:`, error);
-
-                if (attempt === maxRetries) {
-                    return {
-                        success: false,
-                        error: error,
-                        attempts: maxRetries
-                    };
-                }
-
-                // Exponential backoff
-                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-            }
-        }
-    };
-
-    // ✅ ENHANCED: Payment handler with comprehensive booking flow
+    // ✅ ENHANCED: Payment handler with comprehensive booking flow (WITHOUT EMAIL INVOICE)
     const handlePayment = async () => {
         setError(null);
         setLoading(true);
@@ -647,7 +594,7 @@ const BusPaymentInfo = () => {
 
             console.log('✅ Payment order created:', { orderId, orderAmount });
 
-            // ✅ ENHANCED: Success handler with comprehensive booking flow and validation
+            // ✅ ENHANCED: Success handler with comprehensive booking flow (WITHOUT EMAIL INVOICE)
             const handleSuccess = async (response) => {
                 try {
                     console.log('✅ Payment successful, validating...', response);
@@ -684,67 +631,12 @@ const BusPaymentInfo = () => {
                         // ✅ ENHANCED: BookingId extraction with comprehensive fallback strategies
                         const extractedBookingId = extractBookingIdFromResponse(bookingResult);
 
-                        if (!extractedBookingId) {
-                            console.error('❌ No valid BookingId found in booking result');
-                            console.error('📋 Full booking result for debugging:', JSON.stringify(bookingResult, null, 2));
-
-                            // Show success but warn about invoice
-                            showSuccessToast('🎉 Bus booking confirmed! (Invoice download may not be available)');
-
-                            // Navigate without invoice download
-                            navigate('/bus-confirm', {
-                                state: {
-                                    paymentId: response.razorpay_payment_id,
-                                    orderId: response.razorpay_order_id,
-                                    signature: response.razorpay_signature,
-                                    bookingDetails: state,
-                                    finalAmount,
-                                    orderData: orderObject,
-                                    validationResult,
-                                    bookingResult,
-                                    isValidated: true,
-                                    isBooked: true,
-                                    invoiceDownloaded: false,
-                                    invoiceDownloadResult: { success: false, error: 'BookingId not found' },
-                                    bookingType: 'bus',
-                                    invoiceData: null
-                                },
-                            });
-                            return;
-                        }
-
                         console.log('🎯 EXTRACTED BOOKING ID:', extractedBookingId);
 
-                        // ✅ Invoice download with validated BookingId and retry mechanism
-                        let invoiceDownloadResult = { success: false };
+                        // ✅ Show success message (no mention of invoice since it will be handled on confirmation page)
+                        showSuccessToast('🎉 Bus booking confirmed successfully!');
 
-                        if (extractedBookingId && bookingData.SearchTokenId) {
-                            const contactEmail = contactData?.email || passengerData[0]?.email || "ay942115@gmail.com";
-
-                            console.log('📄 Attempting invoice download with validated data:');
-                            console.log('📋 BookingId:', extractedBookingId, '(type:', typeof extractedBookingId, ')');
-                            console.log('🔑 SearchTokenId:', bookingData.SearchTokenId);
-                            console.log('📧 Email:', contactEmail);
-
-                            invoiceDownloadResult = await downloadInvoiceWithRetry(
-                                extractedBookingId,
-                                bookingData.SearchTokenId,
-                                contactEmail
-                            );
-
-                            if (invoiceDownloadResult.success) {
-                                console.log('✅ Invoice downloaded successfully');
-                                showSuccessToast('🎉 Bus booking confirmed! Invoice downloaded successfully!');
-                            } else {
-                                console.warn('⚠️ Invoice download failed:', invoiceDownloadResult.error);
-                                showSuccessToast('🎉 Bus booking confirmed! (Invoice download failed - you can download it later)');
-                            }
-                        } else {
-                            console.warn('⚠️ Missing BookingId or SearchTokenId for invoice download');
-                            showSuccessToast('🎉 Bus booking confirmed!');
-                        }
-
-                        // ✅ Navigate to confirmation page with validated data
+                        // ✅ Navigate to confirmation page with all necessary data (WITHOUT invoice download attempt)
                         navigate('/bus-confirm', {
                             state: {
                                 paymentId: response.razorpay_payment_id,
@@ -757,18 +649,18 @@ const BusPaymentInfo = () => {
                                 bookingResult,
                                 isValidated: true,
                                 isBooked: true,
-                                invoiceDownloaded: invoiceDownloadResult.success,
-                                invoiceDownloadResult: invoiceDownloadResult,
                                 bookingType: 'bus',
-                                // ✅ Only pass invoice data if we have a valid BookingId
+                                // ✅ Pass necessary data for invoice generation on confirmation page
                                 invoiceData: extractedBookingId ? {
-                                    UserIp: "122.161.64.143", // ✅ Use your actual IP
+                                    UserIp: "122.161.64.143",
                                     SearchTokenId: bookingData.SearchTokenId,
                                     BookingId: String(extractedBookingId),
                                     receiverEmail: contactData?.email || passengerData[0]?.email || "ay942115@gmail.com"
-                                } : null
+                                } : null,
+                                extractedBookingId: extractedBookingId // Pass the booking ID separately for easy access
                             },
                         });
+
                     } else {
                         const validationError = validationResult?.message ||
                             validationResult?.error?.message ||

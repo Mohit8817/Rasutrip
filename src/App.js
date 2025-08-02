@@ -135,7 +135,6 @@ import GuestDetails from './Components/Hotel/BookingSummaryPage/GuestDetails/Gue
 import HotelReview from './Components/Hotel/BookingSummaryPage/HotelReview/HotelReview';
 import HotelPayment from './Components/Hotel/BookingSummaryPage/HotelPayment/HotelPayment';
 import HotelConfirmation from './Components/Hotel/BookingSummaryPage/HotelConfirmation/HotelConfirmation';
-
 import BusResultPage from './Pages/BusResultsPage/BusResultPage';
 import BusDetail from './Components/Bus/BusDetail/BusDetail';
 import BusTravellerDetails from './Components/Bus/BusTravellerDetails/BusTravellerDetails';
@@ -161,7 +160,6 @@ import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Bookingconfirm from './Components/Bus/Bookingconfirm/Bookingconfirm';
 function App() {
   return (
     <>

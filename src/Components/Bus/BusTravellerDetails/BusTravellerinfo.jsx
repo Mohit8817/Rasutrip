@@ -42,18 +42,8 @@ const BusTravellerinfo = () => {
         address: ''
     });
 
-    const [errors, setErrors] = useState({
-        passenger: [],
-        contact: {},
-        gst: {},
-        api: null
-    });
-
-    const [touchedFields, setTouchedFields] = useState({
-        passenger: [],
-        contact: {},
-        gst: {}
-    });
+    // Only API errors now - removed custom validation errors
+    const [apiError, setApiError] = useState(null);
 
     // Debug function to analyze seat data
     const debugSeatData = () => {
@@ -74,120 +64,6 @@ const BusTravellerinfo = () => {
         });
     };
 
-    // Seat Debug Component
-    const SeatDebugComponent = () => {
-        const seatAnalysis = selectedSeats.map((seat, index) => {
-            const allKeys = Object.keys(seat || {});
-            const possibleSeatNames = allKeys.filter(key =>
-                key.toLowerCase().includes('seat') ||
-                key.toLowerCase().includes('name') ||
-                key.toLowerCase().includes('no') ||
-                key.toLowerCase().includes('number')
-            );
-
-            return {
-                index,
-                seat,
-                allKeys,
-                possibleSeatNames,
-                values: possibleSeatNames.reduce((acc, key) => {
-                    acc[key] = seat[key];
-                    return acc;
-                }, {})
-            };
-        });
-
-        return null; // This component is just for debugging, doesn't render anything
-    };
-
-    // Validation Functions
-    const isEmailValid = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const isMobileValid = (number) => /^[6-9]\d{9}$/.test(number);
-    const isNameValid = (name) => /^[a-zA-Z\s]{2,30}$/.test(name);
-    const isGstValid = (gst) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/.test(gst);
-    const isPincodeValid = (pincode) => /^[1-9][0-9]{5}$/.test(pincode);
-
-    // Handle field blur for validation
-    const handleFieldBlur = (section, field, index = null) => {
-        setTouchedFields(prev => {
-            if (section === 'passenger' && index !== null) {
-                const newTouched = [...prev.passenger];
-                if (!newTouched[index]) newTouched[index] = {};
-                newTouched[index][field] = true;
-                return { ...prev, passenger: newTouched };
-            } else {
-                return {
-                    ...prev,
-                    [section]: { ...prev[section], [field]: true }
-                };
-            }
-        });
-    };
-
-    // Real-time validation
-    const validatePassenger = (passenger, index) => {
-        const errors = {};
-        const touched = touchedFields.passenger[index] || {};
-
-        if (touched.title && !passenger.title) errors.title = "Title is required";
-        if (touched.firstName && !isNameValid(passenger.firstName)) errors.firstName = "Enter valid first name (2-30 characters)";
-        if (touched.lastName && !isNameValid(passenger.lastName)) errors.lastName = "Enter valid last name (2-30 characters)";
-        if (touched.age && (!passenger.age || passenger.age < 1 || passenger.age > 120)) errors.age = "Enter valid age (1-120)";
-        if (touched.gender && !passenger.gender) errors.gender = "Gender is required";
-        if (touched.idType && !passenger.idType) errors.idType = "ID type is required";
-        if (touched.idNumber && !passenger.idNumber) errors.idNumber = "ID number is required";
-
-        return errors;
-    };
-
-    const validateContact = () => {
-        const errors = {};
-        const touched = touchedFields.contact;
-
-        if (touched.mobile && !isMobileValid(contactData.mobile)) {
-            errors.mobile = "Enter valid 10-digit mobile number";
-        }
-        if (touched.email && !isEmailValid(contactData.email)) {
-            errors.email = "Enter valid email address";
-        }
-
-        return errors;
-    };
-
-    // Updated GST validation - only for required fields
-    const validateGst = () => {
-        const errors = {};
-        const touched = touchedFields.gst;
-
-        if (showGstinForm) {
-            if (touched.gstNumber && gstData.gstNumber && !isGstValid(gstData.gstNumber)) {
-                errors.gstNumber = "Enter valid GST number (15 digits)";
-            }
-            if (touched.email && gstData.email && !isEmailValid(gstData.email)) {
-                errors.email = "Enter valid email address";
-            }
-            if (touched.contactNo && gstData.contactNo && !isMobileValid(gstData.contactNo)) {
-                errors.contactNo = "Enter valid contact number";
-            }
-        }
-
-        return errors;
-    };
-
-    // Update errors in real-time
-    useEffect(() => {
-        const newPassengerErrors = passengerData.map((passenger, index) => validatePassenger(passenger, index));
-        const newContactErrors = validateContact();
-        const newGstErrors = validateGst();
-
-        setErrors(prev => ({
-            ...prev,
-            passenger: newPassengerErrors,
-            contact: newContactErrors,
-            gst: newGstErrors
-        }));
-    }, [passengerData, contactData, gstData, touchedFields, showGstinForm]);
-
     // Handle passenger data change
     const handlePassengerChange = (index, field, value) => {
         const updated = [...passengerData];
@@ -203,33 +79,6 @@ const BusTravellerinfo = () => {
     // Handle GST data change
     const handleGstChange = (field, value) => {
         setGstData(prev => ({ ...prev, [field]: value }));
-    };
-
-    // Function to validate seat names before API call
-    const validateSeatNames = () => {
-        console.log("🔍 Validating seat names before API call...");
-
-        const errors = [];
-
-        selectedSeats.forEach((seat, index) => {
-            const seatIdentifiers = [
-                seat?.SeatName, seat?.SeatNo, seat?.seatName, seat?.seatNo,
-                seat?.Name, seat?.name
-            ].filter(id => id && String(id).trim() !== '');
-
-            if (seatIdentifiers.length === 0) {
-                errors.push(`Seat ${index + 1}: No valid seat identifier found`);
-            } else {
-                console.log(`✅ Seat ${index + 1} has identifiers:`, seatIdentifiers);
-            }
-        });
-
-        if (errors.length > 0) {
-            console.error("❌ Seat validation errors:", errors);
-            return { valid: false, errors };
-        }
-
-        return { valid: true, errors: [] };
     };
 
     // Enhanced function to prepare passenger data for block seats API
@@ -287,12 +136,6 @@ const BusTravellerinfo = () => {
                 throw new Error(`Invalid SeatName for passenger ${index + 1}. Seat identifier not found.`);
             }
 
-            // Validate seat name format (basic validation)
-            if (typeof seatName !== 'string' || seatName.length === 0) {
-                console.error(`❌ Invalid seat name format: "${seatName}" (type: ${typeof seatName})`);
-                throw new Error(`Invalid SeatName format for passenger ${index + 1}.`);
-            }
-
             const passengerPayload = {
                 LeadPassenger: passenger.isLeadPassenger || (index === 0),
                 Title: passenger.title || "Mr",
@@ -306,7 +149,7 @@ const BusTravellerinfo = () => {
                 IdNumber: passenger.idNumber || null,
                 Address: gstData.address?.trim() || "406, 4th Floor, Suncity Trade Tower, Sector 21 Gurgaon",
                 Age: passenger.age ? String(passenger.age) : "25",
-                SeatName: seatName // This should now be a proper string
+                SeatName: seatName
             };
 
             console.log(`✅ Prepared Passenger ${index + 1}:`, {
@@ -319,64 +162,10 @@ const BusTravellerinfo = () => {
         });
     };
 
-    // Enhanced validation function to check seat data integrity
-    const validateBlockSeatData = () => {
-        const errors = [];
-
-        // Check passenger data
-        passengerData.forEach((passenger, index) => {
-            if (!passenger.firstName?.trim()) {
-                errors.push(`Passenger ${index + 1}: First name is required`);
-            }
-            if (!passenger.lastName?.trim()) {
-                errors.push(`Passenger ${index + 1}: Last name is required`);
-            }
-            if (!passenger.age || passenger.age < 1) {
-                errors.push(`Passenger ${index + 1}: Valid age is required`);
-            }
-            if (!passenger.gender) {
-                errors.push(`Passenger ${index + 1}: Gender is required`);
-            }
-        });
-
-        // Check contact data
-        if (!contactData.mobile?.trim()) {
-            errors.push("Contact mobile number is required");
-        }
-        if (!contactData.email?.trim()) {
-            errors.push("Contact email is required");
-        }
-
-        // Check selected seats and their names
-        if (!selectedSeats || selectedSeats.length === 0) {
-            errors.push("No seats selected");
-        } else {
-            selectedSeats.forEach((seat, index) => {
-                const seatName = seat.SeatName || seat.SeatNo || seat.seatName || seat.seatNo || seat.Name || seat.name;
-                if (!seatName) {
-                    errors.push(`Invalid seat name for seat ${index + 1}`);
-                }
-            });
-        }
-
-        // Validate passenger count matches seat count
-        if (passengerData.length !== selectedSeats.length) {
-            errors.push(`Passenger count (${passengerData.length}) doesn't match selected seats (${selectedSeats.length})`);
-        }
-
-        return errors;
-    };
-
     // Enhanced function to call block seats API with better error handling
     const callBlockSeatsAPI = async () => {
         try {
             console.log("🚀 Starting Block Seats API call...");
-
-            // First validate seat names
-            const seatValidation = validateSeatNames();
-            if (!seatValidation.valid) {
-                throw new Error(`Seat validation failed: ${seatValidation.errors.join(', ')}`);
-            }
 
             // Debug the raw selectedSeats
             console.log("🐛 Raw selectedSeats from state:", selectedSeats);
@@ -398,15 +187,6 @@ const BusTravellerinfo = () => {
             requiredFields.DroppingPointId = requiredFields.DroppingPointId || 1;
             requiredFields.OriginId = requiredFields.OriginId || "8463";
             requiredFields.DestinationId = requiredFields.DestinationId || "9573";
-
-            const missingFields = Object.entries(requiredFields)
-                .filter(([, value]) => value === undefined || value === null ||
-                    (typeof value === 'string' && value.trim() === ''))
-                .map(([key]) => key);
-
-            if (missingFields.length > 0) {
-                throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
-            }
 
             // Prepare passenger data with enhanced seat name handling
             const passengers = preparePassengerDataForAPI();
@@ -436,16 +216,6 @@ const BusTravellerinfo = () => {
             console.log("🔒 FINAL Block Seat Payload:");
             console.log(JSON.stringify(blockSeatPayload, null, 2));
 
-            // Final validation of seat names in payload
-            const invalidSeats = blockSeatPayload.Passenger.filter(p =>
-                !p.SeatName || String(p.SeatName).trim() === ''
-            );
-
-            if (invalidSeats.length > 0) {
-                console.error("❌ Invalid seat names in final payload:", invalidSeats);
-                throw new Error("One or more passengers have invalid seat names");
-            }
-
             // Log seat names being sent
             console.log("🎫 Seat names being sent to API:",
                 blockSeatPayload.Passenger.map(p => p.SeatName)
@@ -460,116 +230,59 @@ const BusTravellerinfo = () => {
                 setSeatsBlocked(true);
                 return blockResponse;
             } else {
+                // Extract the exact error message from API response
                 const errorMessage = blockResponse?.Error?.ErrorMessage ||
+                    blockResponse?.Error?.Message ||
                     blockResponse?.message ||
-                    "Unknown API error";
+                    blockResponse?.error ||
+                    "API call failed - no specific error message returned";
+                
                 console.error("❌ API returned error:", blockResponse);
-                throw new Error(`API Error: ${errorMessage}`);
+                throw new Error(errorMessage);
             }
 
         } catch (error) {
             console.error("❌ Block Seats API Call Failed:", error);
 
-            let userFriendlyError = "Failed to block seats. Please try again.";
-
-            if (error.message.includes("Invalid SeatName") ||
-                error.message.includes("seat name")) {
-                userFriendlyError = "There's an issue with the seat selection. Please go back and re-select your seats.";
-            } else if (error.message.includes("Missing required fields")) {
-                userFriendlyError = "Some booking information is missing. Please try restarting your booking.";
-            } else if (error.message.startsWith("API Error:")) {
-                userFriendlyError = error.message;
+            // Show the exact error message from API or network error
+            let apiErrorMessage = error.message;
+            if (error.response?.data?.Error?.ErrorMessage) {
+                apiErrorMessage = error.response.data.Error.ErrorMessage;
+            } else if (error.response?.data?.message) {
+                apiErrorMessage = error.response.data.message;
             }
 
-            setErrors(prev => ({ ...prev, api: userFriendlyError }));
+            setApiError(apiErrorMessage);
             throw error;
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // Validate all fields before submission
-    const validateAll = () => {
-        let hasError = false;
-        const newPassengerErrors = [];
-        const newContactErrors = {};
-        const newGstErrors = {};
+    // Basic validation - only check if fields have values, no format validation
+    const hasRequiredData = () => {
+        // Check if all passengers have basic required fields
+        const passengersValid = passengerData.every(passenger =>
+            passenger.firstName?.trim() && 
+            passenger.lastName?.trim() && 
+            passenger.age && 
+            passenger.gender
+        );
 
-        // Validate all passengers
-        passengerData.forEach((passenger, index) => {
-            const errors = {};
-            if (!passenger.title) errors.title = "Title is required";
-            if (!isNameValid(passenger.firstName)) errors.firstName = "Enter valid first name";
-            if (!isNameValid(passenger.lastName)) errors.lastName = "Enter valid last name";
-            if (!passenger.age || passenger.age < 1 || passenger.age > 120) errors.age = "Enter valid age";
-            if (!passenger.gender) errors.gender = "Gender is required";
-            if (!passenger.idType) errors.idType = "ID type is required";
-            if (!passenger.idNumber) errors.idNumber = "ID number is required";
+        // Check if contact info is provided
+        const contactValid = contactData.mobile?.trim() && contactData.email?.trim();
 
-            if (Object.keys(errors).length) hasError = true;
-            newPassengerErrors.push(errors);
-        });
-
-        // Validate contact
-        if (!isMobileValid(contactData.mobile)) {
-            newContactErrors.mobile = "Enter valid 10-digit mobile number";
-            hasError = true;
-        }
-        if (!isEmailValid(contactData.email)) {
-            newContactErrors.email = "Enter valid email address";
-            hasError = true;
-        }
-
-        // Validate GST if form is shown
-        if (showGstinForm) {
-            if (gstData.gstNumber && !isGstValid(gstData.gstNumber)) {
-                newGstErrors.gstNumber = "Enter valid GST number";
-                hasError = true;
-            }
-            if (gstData.email && !isEmailValid(gstData.email)) {
-                newGstErrors.email = "Enter valid email address";
-                hasError = true;
-            }
-            if (gstData.contactNo && !isMobileValid(gstData.contactNo)) {
-                newGstErrors.contactNo = "Enter valid contact number";
-                hasError = true;
-            }
-            if (gstData.pincode && !isPincodeValid(gstData.pincode)) {
-                newGstErrors.pincode = "Enter valid pincode";
-                hasError = true;
-            }
-        }
-
-        return { hasError, newPassengerErrors, newContactErrors, newGstErrors };
+        return passengersValid && contactValid;
     };
 
-    // Modified handleContinue function - Navigate immediately after validation
+    // Modified handleContinue function - Navigate immediately after basic validation
     const handleContinue = async () => {
-        // First validate form data
-        const validation = validateAll();
+        // Clear any previous API errors
+        setApiError(null);
 
-        if (validation.hasError) {
-            setErrors({
-                passenger: validation.newPassengerErrors,
-                contact: validation.newContactErrors,
-                gst: validation.newGstErrors,
-                api: null
-            });
-
-            const firstErrorElement = document.querySelector('.is-invalid');
-            if (firstErrorElement) {
-                firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            return;
-        }
-
-        // Additional validation for block seat data
-        const blockSeatErrors = validateBlockSeatData();
-        if (blockSeatErrors.length > 0) {
-            setErrors(prev => ({
-                ...prev,
-                api: `Data validation failed: ${blockSeatErrors.join(', ')}`
-            }));
+        // Only basic validation - check if required fields have values
+        if (!hasRequiredData()) {
+            setApiError("Please fill in all required fields before continuing.");
             return;
         }
 
@@ -589,22 +302,19 @@ const BusTravellerinfo = () => {
 
         console.log("🚀 Passing data to review component:", dataToPass);
 
-        // Navigate to review page immediately after validation passes
+        // Navigate to review page immediately after basic validation passes
         navigate("/bus-review", {
             state: dataToPass
         });
 
-        // Call block seats API in background (optional - for actual seat blocking)
+        // Call block seats API in background
         try {
             const blockResponse = await callBlockSeatsAPI();
             console.log("✅ Seats blocked successfully in background:", blockResponse);
 
-            // You can optionally update the state in the new page or store in context/redux
-            // For now, the navigation has already happened
-
         } catch (error) {
             console.error("❌ Error blocking seats in background:", error);
-            // Handle error if needed - could show notification in the review page
+            // Error is already set in callBlockSeatsAPI function
         } finally {
             setIsSubmitting(false);
         }
@@ -628,10 +338,10 @@ const BusTravellerinfo = () => {
 
     return (
         <div className="container my-4">
-            {/* API Error Display */}
-            {errors.api && (
-                <Alert variant="danger" className="mb-4" dismissible onClose={() => setErrors(prev => ({ ...prev, api: null }))}>
-                    <strong>Error:</strong> {errors.api}
+            {/* API Error Display - Only shows API response errors */}
+            {apiError && (
+                <Alert variant="danger" className="mb-4" dismissible onClose={() => setApiError(null)}>
+                    <strong>Error:</strong> {apiError}
                 </Alert>
             )}
 
@@ -654,17 +364,12 @@ const BusTravellerinfo = () => {
                                         <Form.Select
                                             value={passengerData[index]?.title || ''}
                                             onChange={(e) => handlePassengerChange(index, 'title', e.target.value)}
-                                            onBlur={() => handleFieldBlur('passenger', 'title', index)}
-                                            isInvalid={!!errors.passenger?.[index]?.title}
                                         >
                                             <option value="">Title</option>
                                             <option value="Mr">Mr</option>
                                             <option value="Ms">Ms</option>
                                             <option value="Mrs">Mrs</option>
                                         </Form.Select>
-                                        <Form.Control.Feedback type="invalid">
-                                            {errors.passenger?.[index]?.title}
-                                        </Form.Control.Feedback>
                                     </Form.Group>
                                 </Col>
 
@@ -672,15 +377,10 @@ const BusTravellerinfo = () => {
                                     <Form.Group>
                                         <Form.Control
                                             type="text"
-                                            placeholder="First Name"
+                                            placeholder="First Name *"
                                             value={passengerData[index]?.firstName || ''}
                                             onChange={(e) => handlePassengerChange(index, 'firstName', e.target.value)}
-                                            onBlur={() => handleFieldBlur('passenger', 'firstName', index)}
-                                            isInvalid={!!errors.passenger?.[index]?.firstName}
                                         />
-                                        <Form.Control.Feedback type="invalid">
-                                            {errors.passenger?.[index]?.firstName}
-                                        </Form.Control.Feedback>
                                     </Form.Group>
                                 </Col>
 
@@ -688,15 +388,10 @@ const BusTravellerinfo = () => {
                                     <Form.Group>
                                         <Form.Control
                                             type="text"
-                                            placeholder="Last Name"
+                                            placeholder="Last Name *"
                                             value={passengerData[index]?.lastName || ''}
                                             onChange={(e) => handlePassengerChange(index, 'lastName', e.target.value)}
-                                            onBlur={() => handleFieldBlur('passenger', 'lastName', index)}
-                                            isInvalid={!!errors.passenger?.[index]?.lastName}
                                         />
-                                        <Form.Control.Feedback type="invalid">
-                                            {errors.passenger?.[index]?.lastName}
-                                        </Form.Control.Feedback>
                                     </Form.Group>
                                 </Col>
                             </Row>
@@ -706,17 +401,12 @@ const BusTravellerinfo = () => {
                                     <Form.Group>
                                         <Form.Control
                                             type="number"
-                                            placeholder="Age"
+                                            placeholder="Age *"
                                             min="1"
                                             max="120"
                                             value={passengerData[index]?.age || ''}
                                             onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
-                                            onBlur={() => handleFieldBlur('passenger', 'age', index)}
-                                            isInvalid={!!errors.passenger?.[index]?.age}
                                         />
-                                        <Form.Control.Feedback type="invalid">
-                                            {errors.passenger?.[index]?.age}
-                                        </Form.Control.Feedback>
                                     </Form.Group>
                                 </Col>
 
@@ -724,17 +414,12 @@ const BusTravellerinfo = () => {
                                     <Form.Select
                                         value={passengerData[index].gender}
                                         onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
-                                        onBlur={() => handleFieldBlur('passenger', 'gender', index)}
-                                        isInvalid={!!errors.passenger?.[index]?.gender}
                                     >
-                                        <option value="">Gender</option>
+                                        <option value="">Gender *</option>
                                         <option value="Male">Male</option>
                                         <option value="Female">Female</option>
                                         <option value="Other">Other</option>
                                     </Form.Select>
-                                    <Form.Control.Feedback type="invalid">
-                                        {errors.passenger?.[index]?.gender}
-                                    </Form.Control.Feedback>
                                 </Col>
 
                                 <Col md={4}>
@@ -742,19 +427,13 @@ const BusTravellerinfo = () => {
                                         <Form.Select
                                             value={passengerData[index]?.idType || ''}
                                             onChange={(e) => handlePassengerChange(index, 'idType', e.target.value)}
-                                            onBlur={() => handleFieldBlur('passenger', 'idType', index)}
-                                            isInvalid={!!errors.passenger?.[index]?.idType}
                                         >
                                             <option value="">ID Type</option>
                                             <option value="Aadhaar Card">Aadhaar Card</option>
                                             <option value="PAN Card">PAN Card</option>
                                             <option value="Voter ID Card">Voter ID Card</option>
                                             <option value="Driving Licence">Driving Licence</option>
-                                        
                                         </Form.Select>
-                                        <Form.Control.Feedback type="invalid">
-                                            {errors.passenger?.[index]?.idType}
-                                        </Form.Control.Feedback>
                                     </Form.Group>
                                 </Col>
 
@@ -765,12 +444,7 @@ const BusTravellerinfo = () => {
                                             placeholder="ID Number"
                                             value={passengerData[index]?.idNumber || ''}
                                             onChange={(e) => handlePassengerChange(index, 'idNumber', e.target.value)}
-                                            onBlur={() => handleFieldBlur('passenger', 'idNumber', index)}
-                                            isInvalid={!!errors.passenger?.[index]?.idNumber}
                                         />
-                                        <Form.Control.Feedback type="invalid">
-                                            {errors.passenger?.[index]?.idNumber}
-                                        </Form.Control.Feedback>
                                     </Form.Group>
                                 </Col>
                             </Row>
@@ -803,29 +477,19 @@ const BusTravellerinfo = () => {
                         <Col md={4}>
                             <Form.Control
                                 type="tel"
-                                placeholder="Enter 10-digit mobile number"
+                                placeholder="Enter mobile number *"
                                 value={contactData.mobile}
                                 onChange={(e) => handleContactChange('mobile', e.target.value)}
-                                onBlur={() => handleFieldBlur('contact', 'mobile')}
-                                isInvalid={!!errors.contact?.mobile}
                             />
-                            <Form.Control.Feedback type="invalid">
-                                {errors.contact?.mobile}
-                            </Form.Control.Feedback>
                         </Col>
 
                         <Col md={5}>
                             <Form.Control
                                 type="email"
-                                placeholder="Enter email address"
+                                placeholder="Enter email address *"
                                 value={contactData.email}
                                 onChange={(e) => handleContactChange('email', e.target.value)}
-                                onBlur={() => handleFieldBlur('contact', 'email')}
-                                isInvalid={!!errors.contact?.email}
                             />
-                            <Form.Control.Feedback type="invalid">
-                                {errors.contact?.email}
-                            </Form.Control.Feedback>
                             <Form.Text className="text-muted">
                                 Booking confirmation will be sent to this email
                             </Form.Text>
@@ -863,13 +527,8 @@ const BusTravellerinfo = () => {
                                     placeholder="GST Number"
                                     value={gstData.gstNumber}
                                     onChange={(e) => handleGstChange('gstNumber', e.target.value.toUpperCase())}
-                                    onBlur={() => handleFieldBlur('gst', 'gstNumber')}
-                                    isInvalid={!!errors.gst?.gstNumber}
                                     maxLength={15}
                                 />
-                                <Form.Control.Feedback type="invalid">
-                                    {errors.gst?.gstNumber}
-                                </Form.Control.Feedback>
                             </Col>
 
                             <Col md={4}>
@@ -878,7 +537,6 @@ const BusTravellerinfo = () => {
                                     placeholder="Registered Company Name"
                                     value={gstData.companyName}
                                     onChange={(e) => handleGstChange('companyName', e.target.value)}
-                                    onBlur={() => handleFieldBlur('gst', 'companyName')}
                                 />
                             </Col>
 
@@ -888,12 +546,7 @@ const BusTravellerinfo = () => {
                                     placeholder="Registered Contact No"
                                     value={gstData.contactNo}
                                     onChange={(e) => handleGstChange('contactNo', e.target.value)}
-                                    onBlur={() => handleFieldBlur('gst', 'contactNo')}
-                                    isInvalid={!!errors.gst?.contactNo}
                                 />
-                                <Form.Control.Feedback type="invalid">
-                                    {errors.gst?.contactNo}
-                                </Form.Control.Feedback>
                             </Col>
 
                             <Col md={6}>
@@ -902,12 +555,7 @@ const BusTravellerinfo = () => {
                                     placeholder="Registered Email"
                                     value={gstData.email}
                                     onChange={(e) => handleGstChange('email', e.target.value)}
-                                    onBlur={() => handleFieldBlur('gst', 'email')}
-                                    isInvalid={!!errors.gst?.email}
                                 />
-                                <Form.Control.Feedback type="invalid">
-                                    {errors.gst?.email}
-                                </Form.Control.Feedback>
                             </Col>
 
                             <Col md={6}>
@@ -917,7 +565,6 @@ const BusTravellerinfo = () => {
                                     placeholder="Registered Address"
                                     value={gstData.address}
                                     onChange={(e) => handleGstChange('address', e.target.value)}
-                                    onBlur={() => handleFieldBlur('gst', 'address')}
                                 />
                             </Col>
                         </Row>

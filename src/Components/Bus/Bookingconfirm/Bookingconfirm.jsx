@@ -1,4 +1,4 @@
-// src/components/Bus/BusConfirmation.js - SIMPLIFIED VERSION
+// src/components/Bus/BusConfirmation.js - FIXED VERSION
 
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Button, Spinner } from 'react-bootstrap';
@@ -76,9 +76,7 @@ const Bookingconfirm = () => {
         }
     }, [isBooked, bookingResult]);
 
-    // Handle invoice download
-    // Updated handleDownloadInvoice function in your React component
-
+    // Enhanced invoice download handler with better error handling
     const handleDownloadInvoice = async () => {
         const payload = getInvoicePayload();
 
@@ -87,42 +85,94 @@ const Bookingconfirm = () => {
             return;
         }
 
+        console.log('📤 Sending invoice request with payload:', payload);
         setLoading(true);
 
         try {
             const result = await downloadBusInvoice(payload);
 
-            console.log('📄 Download result:', result);
+            console.log('📄 Raw API response:', result);
+            console.log('📄 Response type:', typeof result);
 
-            if (result.success) {
-                if (result.alreadyExists) {
-                    // 409 case - invoice already exists
-                    toast.success('✅ Invoice already generated and sent to your email!', {
+            // Check if the result is a Blob (PDF file)
+            if (result instanceof Blob) {
+                // Handle PDF blob response
+                const url = window.URL.createObjectURL(result);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `bus-invoice-${bookingId}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                toast.success('✅ Invoice downloaded successfully!', {
+                    position: "top-right",
+                    autoClose: 5000
+                });
+                return;
+            }
+
+            // Handle JSON response
+            if (result && typeof result === 'object') {
+                console.log('📄 JSON response received:', result);
+
+                // Check for success in various response formats
+                if (result.success === true || result.status === 'success') {
+                    if (result.alreadyExists) {
+                        toast.success('✅ Invoice already generated and sent to your email!', {
+                            position: "top-right",
+                            autoClose: 6000
+                        });
+                    } else if (result.downloaded) {
+                        toast.success(`✅ Invoice downloaded successfully! (${result.filename})`, {
+                            position: "top-right",
+                            autoClose: 5000
+                        });
+                    } else {
+                        toast.success(result.message || '✅ Invoice processed successfully!', {
+                            position: "top-right",
+                            autoClose: 5000
+                        });
+                    }
+                } else {
+                    // Handle API error responses
+                    const errorMessage = result.message || 
+                                       result.error || 
+                                       result.errorMessage || 
+                                       'Unknown error occurred';
+                    
+                    console.error('❌ API Error Response:', result);
+                    toast.error(`❌ ${errorMessage}`, {
                         position: "top-right",
                         autoClose: 6000
                     });
-                } else if (result.downloaded) {
-                    // PDF successfully downloaded
-                    toast.success(`✅ Invoice downloaded successfully! (${result.filename})`, {
-                        position: "top-right",
-                        autoClose: 5000
-                    });
-                } else {
-                    // Other success case (maybe sent to email)
-                    toast.success(result.message || '✅ Invoice processed successfully!', {
-                        position: "top-right",
-                        autoClose: 5000
-                    });
                 }
             } else {
-                toast.error('❌ Failed to process invoice request');
+                // Handle unexpected response format
+                console.error('❌ Unexpected response format:', result);
+                toast.error('❌ Unexpected response format from server', {
+                    position: "top-right",
+                    autoClose: 6000
+                });
             }
 
         } catch (error) {
-            console.error('Invoice download error:', error);
+            console.error('❌ Invoice download error:', error);
+            
+            // Handle different types of errors
+            let errorMessage = 'Failed to download invoice. Please try again.';
+            
+            if (error.response) {
+                // HTTP error response
+                console.error('❌ HTTP Error Response:', error.response);
+                errorMessage = error.response.data?.message || 
+                              error.response.data?.error || 
+                              `HTTP ${error.response.status}: ${error.response.statusText}`;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
 
-            // This should now only catch real errors, not 409
-            const errorMessage = error.message || 'Failed to download invoice. Please try again.';
             toast.error(`❌ ${errorMessage}`, {
                 position: "top-right",
                 autoClose: 6000
@@ -131,6 +181,7 @@ const Bookingconfirm = () => {
             setLoading(false);
         }
     };
+
     // Redirect if no booking data
     if (!state || !isBooked || !bookingResult) {
         navigate('/');
@@ -155,7 +206,7 @@ const Bookingconfirm = () => {
                 </Card.Body>
             </Card>
 
-
+          
 
             {/* Invoice Download Section */}
             <Card className="shadow-sm">
@@ -178,10 +229,19 @@ const Bookingconfirm = () => {
                                 </>
                             ) : (
                                 <>
+                                    <FaDownload className="me-2" />
                                     Download Invoice
                                 </>
                             )}
                         </Button>
+
+                        {!invoicePayload && (
+                            <div className="mt-3">
+                                <small className="text-danger">
+                                    ⚠️ Invoice download unavailable - missing booking information
+                                </small>
+                            </div>
+                        )}
 
                         <div className="mt-3">
                             <small className="text-muted">
