@@ -95,7 +95,7 @@ const FlightBooking = () => {
                             </Col>
 
                             <Col xs={12} sm={12} md={12} lg={1}>
-                                <SearchButton />
+                                <SearchButton type="flight" />
                             </Col>
                         </Row>
 

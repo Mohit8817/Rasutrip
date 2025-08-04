@@ -10,13 +10,43 @@ import { LocationContext } from '../Context/LocationContext';
 import { fetchSSR } from '../APIS/FlightApi/FlightApi';
 import moment from 'moment';
 
-const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
+const TravellerInfo = ({ fareConfirmData, SelectedFare ,Faresummary }) => {
+    const journeyType = localStorage.getItem('tripType')
+    let fareConfirm =fareConfirmData
+    if(journeyType=='oneway'){
+        fareConfirm=fareConfirm
+    }
+    else if(journeyType=='roundtrip'){
+        fareConfirm=fareConfirm.onward
+    }else{
+        
+    }
+    console.log('fareConferam',fareConfirm)
     const { locationData } = useContext(LocationContext);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const res = localStorage.getItem('SearchedFlights')
-    const SearchData = JSON.parse(res)
-    const PassagerOrigin = SearchData[0].Segments[0]?.[0].Origin
+   let PassagerOrigin = null;
+   let  SearchData = null;
+const tripType = localStorage.getItem('tripType');
+
+if (tripType === 'oneway') {
+  const res = localStorage.getItem('selectedFlight');
+   SearchData = JSON.parse(res);
+  PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
+} 
+else if (tripType === 'roundtrip') {
+  const res = localStorage.getItem('selectedOnwardFlight');
+   SearchData = JSON.parse(res);
+  PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
+} 
+else if (tripType === 'multicity') {
+  const res = localStorage.getItem('selectedMulticityFlight');
+   SearchData = JSON.parse(res);
+  PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
+}
+    
+    console.log('PassagerOrigin',PassagerOrigin)
+
     const [loading, setLoading] = useState(false);
     const passengersData = useSelector((state) => state.passengersData || []);
     const [contactDetails, setContactDetails] = useState({
@@ -97,18 +127,48 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
         }));
     };
 
+    const data = localStorage.getItem('fareSummery')
+
+    const summaryData= JSON.parse(data)
+    let SSRreturnPayload =null
+    let ReturnRes=null
+    console.log('summaryData',summaryData)
+    console.log('krishnaTrip',tripType)
+
     const SSRPayload = useMemo(() => ({
         UserIp: localStorage.getItem("UserIp") || "",
-        ResultIndex: SelectedFare?.FareId || "",
-        PublishedPrice: SelectedFare?.PublishedPrice,
+        ResultIndex:  tripType== 'roundtrip'? summaryData.onward.FareId: SearchData?.FareList[0].FareId || "",
+        PublishedPrice: tripType== 'roundtrip'? summaryData.onward.PublishedPrice :SelectedFare?.PublishedPrice,
         SearchTokenId: localStorage.getItem("searchToken") || ""
     }), [SelectedFare]);
+
+   
+     SSRreturnPayload = useMemo(() => {
+    if (tripType === 'roundtrip') {
+        return {
+            UserIp: localStorage.getItem("UserIp") || "",
+            ResultIndex: summaryData.return.FareId,
+            PublishedPrice: summaryData.return.PublishedPrice,
+            SearchTokenId: localStorage.getItem("searchToken") || ""
+        };
+    }
+    return null; // always return something (even null) to avoid conditional hook call
+}, [SelectedFare, summaryData, tripType]);
+   
+   
+
+    
+
     const handleContinue = async () => {
         setLoading(true);
         try {
             const res = await fetchSSR(SSRPayload);
+            if(tripType=='roundtrip'){
+             ReturnRes = await fetchSSR(SSRreturnPayload);
+            }
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
-            navigate('/addons', { state: { SSR: res?.Result || [], SelectedFare, passengersData } });
+            navigate('/addons', { state: { SSR: res?.Result || [], SSrReturnRes:ReturnRes?.Result || [] , SelectedFare, passengersData,Faresummary } });
+        
         } catch (error) {
             console.error("API call failed:", error);
             const errMsg =
@@ -509,7 +569,7 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
                     <Row className="g-3">
                         <Col md={3}>
                             <Form.Select
-                                value={contactDetails.countryCode}
+                                value={contactDetails?.countryCode}
                                 onChange={(e) => handleContactChange('countryCode', e.target.value)}
                             >
                                 <option value="91">India (+91)</option>

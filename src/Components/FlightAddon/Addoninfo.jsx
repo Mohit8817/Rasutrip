@@ -20,7 +20,7 @@ const Addoninfo = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [passengersData, setPassengersData] = useState([]);
-  const { SelectedFare, SSR } = location?.state || {};
+  const { SelectedFare, SSR ,Faresummary } = location?.state || {};
   // const passengersData = useSelector((state) => state.passengersData || []);
   //  const passengersData = JSON.parse(localStorage.getItem('passengersData'));
   // const mealOptions = SSR?.Meal?.[0] || [];
@@ -287,7 +287,7 @@ const Addoninfo = () => {
           </Col>
           <Col lg={3}>
             <div>
-              <FareSummary SelectedFare={SelectedFare} passengerSelections={passengerSelections} />
+              <FareSummary  Faresummary={Faresummary} passengerSelections={passengerSelections} />
               <PromoCodeBox />
 
             </div>

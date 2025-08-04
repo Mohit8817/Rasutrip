@@ -33,6 +33,8 @@ const SearchButton = ({ type }) => {
       totalPrice,
     } = locationData;
 
+    console.log('locationData',locationData)
+
     switch (type) {
       case 'flight':
         navigate('/flight-results', {

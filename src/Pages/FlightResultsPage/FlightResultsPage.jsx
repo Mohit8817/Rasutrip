@@ -13,13 +13,18 @@ import FlightLoader from '../../Components/FlightLoader/FlightLoader';
 import Slider from '../../Components/hero/Slider';
 import { useSelector } from 'react-redux';
 
+
 const FlightResultsPage = () => {
     const dispatch = useDispatch();
     const { state } = useLocation();
     const tripType = state?.tripType || 'oneway';
+
+   
+
   useEffect(() => {
         dispatch(clearSelectedFlights());
     }, [dispatch]);
+
   const flightsData = useSelector((state) => state?.flight?.flights || []);
     const [filters, setFilters] = useState({
         airlines: [],
@@ -35,6 +40,23 @@ const FlightResultsPage = () => {
        <div className='innerpagecontainer mt-5'>
          <div className='relative'>
             {tripType === 'oneway' && (
+                <Container className="mt-5 pt-5">
+                    <Row>
+                        <Col>
+                            <FlightSearchBar />
+                        </Col>
+                    </Row>
+                    <Row className="mt-4">
+                        <Col lg={3}>
+                            <FlightSidebar filters={filters} setFilters={setFilters} />
+                        </Col>
+                        <Col lg={9}>
+                            <FlightList filters={filters} />
+                        </Col>
+                    </Row>
+                </Container>
+            )}
+              {tripType === 'multicity' && (
                 <Container className="mt-5 pt-5">
                     <Row>
                         <Col>

@@ -1,96 +1,115 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Row, Col } from 'react-bootstrap';
-import '../../Style/Pagescss/FlightResultsPage.css';// Update path as per your structure
+import '../../Style/Pagescss/FlightResultsPage.css';
 
-const FareSummary = ({ passengerSelections = [], SelectedFare = {} }) => {
+const FareSummary = ({ passengerSelections = [], SelectedFare1 = {} }) => {
 
-    const [fare, setFare] = useState(SelectedFare);
-    console.log('SelectedFare', fare)
-    // const [fare, setFare] = useState(SelectedFare);
-    const selectedFlight = localStorage.getItem('selectedFlight')
-    const rasocommision = localStorage.getItem('rasocommision')
-
-    const data = JSON.parse(selectedFlight);
-    console.log('data', data)
-    console.log('passengerSelections', passengerSelections)
-    const baseFare = fare?.PublishedPrice || 0;
-    const tax = baseFare * 0.18;
-    const servicrCharge = baseFare * rasocommision / 100
-
-    const totalMeal = passengerSelections.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0);
-    const totalBaggage = passengerSelections.reduce((acc, p) => acc + (p?.baggage?.Price || 0), 0);
-    const totalSeat = passengerSelections.reduce((acc, p) => acc + (p?.seat?.Price || 0), 0);
+ let SelectedFare=null
+   
+     
 
 
-    const totalPay = (baseFare + tax + totalMeal + totalBaggage + totalSeat).toFixed(2);
+  const [fareOnward, setFareOnward] = useState(null);
+  const [fareReturn, setFareReturn] = useState(null);
+  const journeyType = localStorage.getItem('tripType');
+  const rasocommision = parseFloat(localStorage.getItem('rasocommision')) || 0;
 
+  useEffect(() => {
+     let res= localStorage.getItem('fareSummery')
+              SelectedFare = JSON.parse(res)
+    if (journeyType === 'roundtrip') {
+      setFareOnward(SelectedFare?.onward);
+      setFareReturn(SelectedFare?.return);
+    } else {
+      setFareOnward(SelectedFare);
+    }
+  }, [SelectedFare, journeyType]);
 
+  const getServiceCharge = (price) => (price * rasocommision) / 100;
+
+  const baseFare =
+    (fareOnward?.PublishedPrice || 0) + (fareReturn?.PublishedPrice || 0);
+  const serviceCharge =
+    getServiceCharge(fareOnward?.PublishedPrice || 0) +
+    getServiceCharge(fareReturn?.PublishedPrice || 0);
+
+  const totalMeal = passengerSelections.reduce(
+    (acc, p) => acc + (p?.meal?.Price || 0),
+    0
+  );
+  const totalBaggage = passengerSelections.reduce(
+    (acc, p) => acc + (p?.baggage?.Price || 0),
+    0
+  );
+  const totalSeat = passengerSelections.reduce(
+    (acc, p) => acc + (p?.seat?.Price || 0),
+    0
+  );
+
+  const totalPay = (
+    baseFare + serviceCharge + totalMeal + totalBaggage + totalSeat
+  ).toFixed(2);
+
+  const renderFareSection = (fareData, label) => {
+    if (!fareData) return null;
     return (
-        <Card className="fare-summary-card mb-3">
-            <Card.Header className="bg-light fw-bold">Fare Summary</Card.Header>
-            <Card.Body className="px-3 py-2">
-                <Row className="fare-row py-1">
-                    <Col>Base Fare</Col>
-                    <Col className="text-end">₹ {fare?.Fare?.BaseFare}</Col>
-                </Row>
-
-                <Row className="fare-row py-1">
-                    <Col>Taxes</Col>
-                    <Col className="text-end">
-                        ₹ {(fare?.Fare.Tax || "0.00")}
-                    </Col>
-                </Row>
-                <Row className="fare-row py-1">
-                    <Col>Other Charges </Col>
-                    <Col className="text-end">₹ {(fare?.Fare?.OtherCharges ?? 0.00).toFixed(2)}</Col>
-                </Row>
-
-                <Row className="fare-row py-1">
-                    <Col>Convenience Fee</Col>
-                    <Col className="text-end">₹ {(servicrCharge ?? 0.00).toFixed(2)}</Col>
-                </Row>
-
-                <Row className="fare-row py-1">
-                    <Col>GST (+)</Col>
-                    <Col className="text-end">₹ 0</Col>
-                </Row>
-
-                <Row className="fare-row py-1">
-                    <Col>Meal (+)</Col>
-                    <Col className="text-end">
-                        ₹ {passengerSelections?.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0).toFixed(2)}
-                    </Col>
-                </Row>
-
-                <Row className="fare-row py-1">
-                    <Col>Baggage (+)</Col>
-                    <Col className="text-end">
-                        ₹ {passengerSelections?.reduce((acc, p) => acc + (p?.baggage?.Price || 0), 0).toFixed(2)}
-                    </Col>
-                </Row>
-
-                <Row className="fare-row py-1">
-                    <Col>Seat (+)</Col>
-                    <Col className="text-end">
-                        ₹ {passengerSelections?.reduce((acc, p) => acc + (p?.seat?.Price || 0), 0).toFixed(2)}
-                    </Col>
-                </Row>
-            </Card.Body>
-
-            <Card.Footer className="bg-light fw-bold d-flex justify-content-between">
-                <span>Pay Amount</span>
-                <span>
-                    ₹ {(
-                        (fare?.PublishedPrice || 0) +servicrCharge+
-                        passengerSelections?.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0) +
-                        passengerSelections?.reduce((acc, p) => acc + (p?.baggage?.Price || 0), 0) +
-                        passengerSelections?.reduce((acc, p) => acc + (p?.seat?.Price || 0), 0)
-                    ).toFixed(2)}
-                </span>
-            </Card.Footer>
-        </Card>
-
+      <>
+        <h6 className="text-primary fw-bold mt-3 mb-1">{label} Fare</h6>
+        <Row className="fare-row py-1">
+          <Col>Base Fare</Col>
+          <Col className="text-end">₹ {fareData?.Fare?.BaseFare}</Col>
+        </Row>
+        <Row className="fare-row py-1">
+          <Col>Taxes</Col>
+          <Col className="text-end">₹ {fareData?.Fare?.Tax || 0}</Col>
+        </Row>
+        <Row className="fare-row py-1">
+          <Col>Other Charges</Col>
+          <Col className="text-end">
+            ₹ {(fareData?.Fare?.OtherCharges ?? 0).toFixed(2)}
+          </Col>
+        </Row>
+        <Row className="fare-row py-1">
+          <Col>Convenience Fee</Col>
+          <Col className="text-end">
+            ₹ {getServiceCharge(fareData?.PublishedPrice || 0).toFixed(2)}
+          </Col>
+        </Row>
+      </>
     );
+  };
+
+  return (
+    <Card className="fare-summary-card mb-3">
+      <Card.Header className="bg-light fw-bold">Fare Summary</Card.Header>
+      <Card.Body className="px-3 py-2">
+        {renderFareSection(fareOnward, 'Onward')}
+        {fareReturn && renderFareSection(fareReturn, 'Return')}
+
+        <Row className="fare-row py-1">
+          <Col>GST (+)</Col>
+          <Col className="text-end">₹ 0</Col>
+        </Row>
+        <Row className="fare-row py-1">
+          <Col>Meal (+)</Col>
+          <Col className="text-end">₹ {totalMeal.toFixed(2)}</Col>
+        </Row>
+        <Row className="fare-row py-1">
+          <Col>Baggage (+)</Col>
+          <Col className="text-end">₹ {totalBaggage.toFixed(2)}</Col>
+        </Row>
+        <Row className="fare-row py-1">
+          <Col>Seat (+)</Col>
+          <Col className="text-end">₹ {totalSeat.toFixed(2)}</Col>
+        </Row>
+      </Card.Body>
+
+      <Card.Footer className="bg-light fw-bold d-flex justify-content-between">
+        <span>Total Payable</span>
+        <span>₹ {totalPay}</span>
+      </Card.Footer>
+    </Card>
+  );
 };
 
 export default FareSummary;

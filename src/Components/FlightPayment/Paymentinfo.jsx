@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { post } from '../APIS/FlightApi/FlightApi';
 import { Card, Button, Row, Col, Badge, Spinner } from "react-bootstrap";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 
@@ -17,12 +17,46 @@ const RazorpayPayment = () => {
   const rasocommision = localStorage.getItem('rasocommision')
   const location = useLocation();
   const { passengerSelections = [], SSR, SelectedFare } = location.state || {};
+  console.log('SelectedFare',SelectedFare)
   const [loading, setLoading] = useState(false);
   const [fare, setfare] = useState(SelectedFare);
+  const [journeyType, setjourneyType] = useState(null);
+
   const [modalShow, setModalShow] = useState(false);
+  
+
+
+   useEffect(() => {
+     const journeyType = localStorage.getItem('tripType');
+     console.log('journeyType',journeyType)
+     setjourneyType(journeyType)
+
+    if (journeyType == 'roundtrip') {
+      const resD = localStorage.getItem('fareSummery');
+      if (resD) {
+        try {
+          const fareSummery = JSON.parse(resD);
+          setfare(fareSummery);
+        } catch (error) {
+          console.error("❌ Error parsing fareSummery from localStorage:", error);
+        }
+      }
+    }
+  }, []); // run only once on mount
+
+  console.log('faredata:', fare?.onward);
+  
+  
+  
+
+
+
   // const [passengerData, setpassengerData] = useState(false);
 
-  const baseFare = fare?.PublishedPrice || 0;
+  console.log('faredata',fare.onward)
+  console.log('journeyType',journeyType)
+
+  const baseFare = journeyType=='roundtrip'? fare?.onward.Fare.PublishedPrice+fare?.return.Fare.PublishedPrice : fare?.PublishedPrice || 0;
   const tax = baseFare * 0.18;
   const serviceCharge = baseFare * rasocommision / 100;
   const totalMeal = passengerSelections.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0);
@@ -35,15 +69,19 @@ const RazorpayPayment = () => {
   const BookingConfermation = async () => {
     try {
       const storedPassengers = localStorage.getItem('passengersData');
+      const resData = localStorage.getItem('selectedFlight');
+
+      let selectedFlight = JSON.parse(resData);  // ✅ Use let
+
       let passengersData = storedPassengers ? JSON.parse(storedPassengers) : [];  // ✅ Use let
       const SearchTokenId = localStorage.getItem('searchToken');
       const mergedPassengers = passengersData.map((passenger, index) => {
         const selection = passengerSelections[index] || {};
         return {
           ...passenger,
-          Baggage: selection.baggage ? [selection.baggage] : [],
-          Meal: selection.meal ? [selection.meal] : [],
-          Seat: selection.seat ? [selection.seat] : [],
+          Baggage: journeyType=='roundtrip'?[]: selection.baggage ? [selection.baggage] : [],
+          Meal: journeyType=='roundtrip'?[]: selection.meal ? [selection.meal] : [],
+          Seat: journeyType=='roundtrip'?[]: selection.seat ? [selection.seat] : [],
         };
       });
       const IP = localStorage.getItem('UserIp');
@@ -61,12 +99,24 @@ const RazorpayPayment = () => {
 
       const payload = {
         UserIp: IP,
-        ResultIndex: SelectedFare?.FareId || '',
+        ResultIndex: journeyType=='roundtrip'? fare.onward.FareId: selectedFlight?.FareList[0].FareId || '',
         SearchTokenId: SearchTokenId || '',
         CouponDiscount: SelectedFare?.CouponDiscount || 0,
         Passengers: passengersData
       };
       const response = await post(payload, '/airservice/book');
+
+      if(journeyType=='roundtrip'){
+        const payload = {
+          UserIp: IP,
+          ResultIndex: journeyType=='roundtrip'? fare.return.FareId: selectedFlight?.FareList[0].FareId || '',
+          SearchTokenId: SearchTokenId || '',
+          CouponDiscount: SelectedFare?.CouponDiscount || 0,
+          Passengers: passengersData
+        };
+        const response = await post(payload, '/airservice/book');
+      }
+     
 
       if (response?.Error?.ErrorCode === 0) {
         setModalShow(false);
