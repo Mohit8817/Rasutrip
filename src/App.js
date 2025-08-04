@@ -37,6 +37,7 @@ import FAQ from './Pages/LegalPages/FAQ';
 import AboutUs from './Pages/LegalPages/Aboutus';
 
 import BookingSuccess from './Components/FlightBookingSuccess/BookingSuccess';
+import InvoiceTemplate from './Components/FlightBookingSuccess/Invoice';
 
 import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
 
@@ -46,9 +47,9 @@ import 'react-toastify/dist/ReactToastify.css';
 function App() {
   return (
     <>
-      <Router>
+      {/* <Router> */}
         <Header />
-        <ScrollToTop />
+        <ScrollToTop className="mb-4" />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/flight-results" element={<FlightResultsPage />} />
@@ -58,6 +59,8 @@ function App() {
           <Route path="/review" element={<FlightReview />} />
           <Route path="/payment" element={<FlightPayment />} />
           <Route path="/booking/success" element={<BookingSuccess />} />
+          <Route path="/booking/invoice" element={<InvoiceTemplate />} />
+
 
           {/* Hotel */}
           <Route path="/hotel-results" element={<HotelResultsPage />} />
@@ -93,7 +96,7 @@ function App() {
           <Route path="/faq" element={<FAQ />} />
         </Routes>
         <Footer />
-      </Router>
+      {/* </Router> */}
       <ToastContainer position="top-right" autoClose={3000} />
     </>
   );

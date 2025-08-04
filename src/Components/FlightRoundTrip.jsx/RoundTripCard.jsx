@@ -16,6 +16,16 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
   } = segment || {};
   const fareList = flight?.FareList || [];
 
+  // Fare selection handler - यहाँ था problem
+  const handleFareSelect = (selectedFareItem) => {
+    console.log("💳 Fare selected in RoundTripCard:", selectedFareItem);
+    console.log("🛫 Flight data:", flight);
+    console.log("📋 Type:", type);
+    
+    // Parent function को call करें
+    onSelect(flight, selectedFareItem);
+  };
+
   return (
     <Container className="mb-4">
       <Row>
@@ -23,7 +33,6 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
           <Card
             role="button"
             tabIndex={0}
-            // onClick={() => onSelect(flight, selectedFare)}
             className={`shadow-sm p-3 round-trip-card ${selectedFare?.FareID ? 'border-primary border-2' : ''}`}
           >
             <Row className="align-items-center">
@@ -64,17 +73,20 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
             </small>
 
             <div className="fare-options mt-2">
-              {fareList?.map((fare) => (
+              {fareList?.map((fare, index) => (
                 <div
-                  key={fare?.FareID || Math.random()}
-                  onClick={onSelect(flight,fare)}
+                  key={fare?.FareID || `fare-${index}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleFareSelect(fare);
+                  }}
                   className="d-flex align-items-center justify-content-between py-2 border-bottom"
                 >
                   <Form.Check
                     type="radio"
                     name={`${type}-flight-${flight?.ResultIndex}`}
                     className="me-2"
-                    onChange={() => onSelect(flight, fare)}
+                    onChange={() => handleFareSelect(fare)} // ✅ यह भी सही है
                     checked={selectedFare?.FareID === fare?.FareID}
                   />
                   <div className="me-auto">

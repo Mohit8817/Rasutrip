@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { post } from '../APIS/FlightApi/FlightApi';
 import { Card, Button, Row, Col, Badge, Spinner } from "react-bootstrap";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 
@@ -12,39 +12,76 @@ import MyVerticallyCenteredModal from './paymentLoader';
 
 
 const RazorpayPayment = () => {
-    const navigate = useNavigate();
-  
+  const navigate = useNavigate();
+
+  const rasocommision = localStorage.getItem('rasocommision')
   const location = useLocation();
   const { passengerSelections = [], SSR, SelectedFare } = location.state || {};
+  console.log('SelectedFare',SelectedFare)
   const [loading, setLoading] = useState(false);
   const [fare, setfare] = useState(SelectedFare);
+  const [journeyType, setjourneyType] = useState(null);
+
   const [modalShow, setModalShow] = useState(false);
+  
+
+
+   useEffect(() => {
+     const journeyType = localStorage.getItem('tripType');
+     console.log('journeyType',journeyType)
+     setjourneyType(journeyType)
+
+    if (journeyType == 'roundtrip') {
+      const resD = localStorage.getItem('fareSummery');
+      if (resD) {
+        try {
+          const fareSummery = JSON.parse(resD);
+          setfare(fareSummery);
+        } catch (error) {
+          console.error("❌ Error parsing fareSummery from localStorage:", error);
+        }
+      }
+    }
+  }, []); // run only once on mount
+
+  console.log('faredata:', fare?.onward);
+  
+  
+  
+
+
+
   // const [passengerData, setpassengerData] = useState(false);
 
+  console.log('faredata',fare.onward)
+  console.log('journeyType',journeyType)
 
-  console.log('indexresult', SelectedFare)
-  const baseFare = fare?.PublishedPrice || 0;
+  const baseFare = journeyType=='roundtrip'? fare?.onward.Fare.PublishedPrice+fare?.return.Fare.PublishedPrice : fare?.PublishedPrice || 0;
   const tax = baseFare * 0.18;
-  const serviceCharge = baseFare * 0.12;
+  const serviceCharge = baseFare * rasocommision / 100;
   const totalMeal = passengerSelections.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0);
   const totalBaggage = passengerSelections.reduce((acc, p) => acc + (p?.baggage?.Price || 0), 0);
   const totalSeat = passengerSelections.reduce((acc, p) => acc + (p?.seat?.Price || 0), 0);
-  const finalAmount = (baseFare + tax + totalMeal + totalBaggage + totalSeat + serviceCharge).toFixed(2);
+  const finalAmount = (baseFare + totalMeal + totalBaggage + totalSeat + serviceCharge).toFixed(2);
   const storedPassengers = localStorage.getItem('passengersData');
   let passengersData = storedPassengers ? JSON.parse(storedPassengers) : []
 
   const BookingConfermation = async () => {
     try {
       const storedPassengers = localStorage.getItem('passengersData');
+      const resData = localStorage.getItem('selectedFlight');
+
+      let selectedFlight = JSON.parse(resData);  // ✅ Use let
+
       let passengersData = storedPassengers ? JSON.parse(storedPassengers) : [];  // ✅ Use let
       const SearchTokenId = localStorage.getItem('searchToken');
       const mergedPassengers = passengersData.map((passenger, index) => {
         const selection = passengerSelections[index] || {};
         return {
           ...passenger,
-          Baggage: selection.baggage ? [selection.baggage] : [],
-          Meal: selection.meal ? [selection.meal] : [],
-          Seat: selection.seat ? [selection.seat] : [],
+          Baggage: journeyType=='roundtrip'?[]: selection.baggage ? [selection.baggage] : [],
+          Meal: journeyType=='roundtrip'?[]: selection.meal ? [selection.meal] : [],
+          Seat: journeyType=='roundtrip'?[]: selection.seat ? [selection.seat] : [],
         };
       });
       const IP = localStorage.getItem('UserIp');
@@ -62,12 +99,24 @@ const RazorpayPayment = () => {
 
       const payload = {
         UserIp: IP,
-        ResultIndex: SelectedFare?.FareId || '',
+        ResultIndex: journeyType=='roundtrip'? fare.onward.FareId: selectedFlight?.FareList[0].FareId || '',
         SearchTokenId: SearchTokenId || '',
         CouponDiscount: SelectedFare?.CouponDiscount || 0,
         Passengers: passengersData
       };
       const response = await post(payload, '/airservice/book');
+
+      if(journeyType=='roundtrip'){
+        const payload = {
+          UserIp: IP,
+          ResultIndex: journeyType=='roundtrip'? fare.return.FareId: selectedFlight?.FareList[0].FareId || '',
+          SearchTokenId: SearchTokenId || '',
+          CouponDiscount: SelectedFare?.CouponDiscount || 0,
+          Passengers: passengersData
+        };
+        const response = await post(payload, '/airservice/book');
+      }
+     
 
       if (response?.Error?.ErrorCode === 0) {
         setModalShow(false);
@@ -77,7 +126,6 @@ const RazorpayPayment = () => {
         console.error("❌ Booking Failed:", response?.Error?.ErrorMessage || "Unknown error");
         toast.error(response?.Error?.ErrorMessage || "Booking failed");
       }
-      console.log('airserviceResponse', response);
       setModalShow(false)
     } catch (error) {
       setModalShow(false)
@@ -109,7 +157,6 @@ const RazorpayPayment = () => {
       };
       const response = await post(payload, '/airservice/validate');
       await BookingConfermation()
-      console.log('dataResponse', response)
     } catch (error) {
       setModalShow(false)
       console.error("Booking Validation Failed:", error.response?.data || error.message);
@@ -119,7 +166,6 @@ const RazorpayPayment = () => {
 
 
   const handlePayment = async () => {
-    console.log('passenger data', passengersData)
     setLoading(true);
     const data = {
       amount: finalAmount,
@@ -127,7 +173,6 @@ const RazorpayPayment = () => {
 
     try {
       const response = await post(data, "/airservice/create-order");
-      console.log('responseapi', response)
       const order = response.order;
       const options = {
         key: "rzp_test_glwdvx2PlFDStN",
@@ -147,7 +192,6 @@ const RazorpayPayment = () => {
           }
           setModalShow(true)
           getBookingConfermation({ paymentData, SSR, SelectedFare, passengerSelections, order })
-          console.log('response', paymentData);
         },
         prefill: {
           name: passengersData.FirstName + ' ' + passengersData.LastName,
@@ -179,10 +223,7 @@ const RazorpayPayment = () => {
 
       <MyVerticallyCenteredModal
         show={modalShow}
-
-        onHide={() => setModalShow(false)}
       />
-
       <Card className="shadow-sm border-0">
         <Card.Header className="bg-white">
           <h5 className="fw-bold mb-0">Confirm Payment</h5>

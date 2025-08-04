@@ -23,6 +23,7 @@ const AddMorecity = ({ onToCityChange }) => {
     const toRef = useRef(null);
 
     const handleCitySelect = (cityObj, type) => {
+        console.log('cityObj',cityObj)
         if (type === 'from') {
             setFromCity(cityObj.city);
             setShowFromDropdown(false);

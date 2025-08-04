@@ -9,6 +9,8 @@ import FlightLoader from '../FlightLoader/FlightLoader';
 
 import { toast } from 'react-toastify';
 const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
+
+    console.log('FareData',FareData,'SelectedFare',SelectedFare)
     const segments = FareData?.Segments?.[0] || [];
     const firstSegment = segments[0];
     const lastSegment = segments[segments.length - 1];
@@ -36,7 +38,7 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
             const confirmedFare = res?.Result || [];
             setFareConfirm(confirmedFare);
             navigate('/traveller-details', {
-                state: { SelectedFare, fareConfirm: confirmedFare },
+                state: { SelectedFare, fareConfirmData: confirmedFare ,Faresummary:SelectedFare},
             });
         } catch (error) {
             setError(error);
@@ -74,9 +76,9 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                 <Card.Body>
                     <div>
                         <span className="text-success fw-semibold">Depart </span>
-                        <span className="fw-bold">{firstSegment.Origin.CityName}</span> → <span className="fw-bold">{lastSegment.Destination.CityName}</span>
+                        <span className="fw-bold">{firstSegment?.Origin?.CityName}</span> → <span className="fw-bold">{lastSegment?.Destination?.CityName}</span>
                         <div className="text-muted small">
-                            {firstSegment.Origin.CityName} | {stops === 0 ? 'Non Stop' : `${stops} Stop(s)`} | {Math.floor(totalDuration / 60)}h {totalDuration % 60}m
+                            {firstSegment?.Origin?.CityName} | {stops === 0 ? 'Non Stop' : `${stops} Stop(s)`} | {Math.floor(totalDuration / 60)}h {totalDuration % 60}m
                         </div>
                     </div>
                     <Button variant="outline-danger" size="sm" onClick={() => setShow(true)} className="position-absolute top-50 end-0 translate-middle-y me-3">Fare Rules</Button>
@@ -84,11 +86,11 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
             </Card>
 
             {segments.map((segment, index) => {
-                const departTime = formatTime(segment.Origin.DepartTime);
-                const departDate = formatDate(segment.Origin.DepartTime);
-                const arrivalTime = formatTime(segment.Destination.ArrivalTime);
-                const arrivalDate = formatDate(segment.Destination.ArrivalTime);
-                const durationMin = segment.Duration;
+                const departTime = formatTime(segment?.Origin?.DepartTime);
+                const departDate = formatDate(segment?.Origin?.DepartTime);
+                const arrivalTime = formatTime(segment?.Destination?.ArrivalTime);
+                const arrivalDate = formatDate(segment?.Destination?.ArrivalTime);
+                const durationMin = segment?.Duration;
                 const durationHr = Math.floor(durationMin / 60);
                 const durationLeft = durationMin % 60;
                 const durationText = `${durationHr} h ${durationLeft} m`;
@@ -98,11 +100,11 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                         <Card.Body>
                             <Row className="align-items-center mb-3 justify-content-between">
                                 <Col md="auto">
-                                    <img src={segment.Airline.airlineLogo || "/default-airline.png"} alt={segment.Airline.AirlineName} width={40} />
+                                    <img src={segment?.Airline?.airlineLogo || "/default-airline.png"} alt={segment?.Airline?.AirlineName} width={40} />
                                 </Col>
                                 <Col md={4}>
                                     <div>
-                                        <strong>{segment.Origin.CityName}</strong> → <strong>{segment.Destination.CityName}</strong> {segment.Airline.AirlineName} {segment.Airline.AirlineCode} - {segment.Airline.FlightNumber} | Economy
+                                        <strong>{segment?.Origin?.CityName}</strong> → <strong>{segment?.Destination?.CityName}</strong> {segment?.Airline?.AirlineName} {segment?.Airline?.AirlineCode} - {segment?.Airline?.FlightNumber} | Economy
                                     </div>
                                 </Col>
                                 <Col md="auto" className="text-center">
@@ -118,7 +120,7 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                                 </Col>
                                 <Col md="auto" className="text-center">
                                     <div className="small text-muted">{durationText}</div>
-                                    <div className="small text-muted">{segment.SegmentIndicator === 1 ? "0 Stops" : `${segment.SegmentIndicator - 1} Stop(s)`}</div>
+                                    <div className="small text-muted">{segment?.SegmentIndicator === 1 ? "0 Stops" : `${segment?.SegmentIndicator - 1} Stop(s)`}</div>
                                 </Col>
                             </Row>
 
@@ -131,8 +133,8 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                                             <div><strong>{departTime}</strong></div>
                                         </Col>
                                         <Col xs={10}>
-                                            <div className="text-muted small">{segment.Origin.AirportName}</div>
-                                            <div className="text-muted small">Terminal {segment.Origin.Terminal || 'N/A'}</div>
+                                            <div className="text-muted small">{segment?.Origin?.AirportName}</div>
+                                            <div className="text-muted small">Terminal {segment?.Origin?.Terminal || 'N/A'}</div>
                                         </Col>
 
                                         <Col xs={2} className="d-flex justify-content-center">
@@ -146,9 +148,9 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
                                             <div><strong>{arrivalTime}</strong></div>
                                         </Col>
                                         <Col xs={10} className="mt-2">
-                                            <div><strong>{segment.Destination.CityName}</strong></div>
-                                            <div className="text-muted small">{segment.Destination.AirportName}</div>
-                                            <div className="text-muted small">Terminal {segment.Destination.Terminal || 'N/A'}</div>
+                                            <div><strong>{segment?.Destination?.CityName}</strong></div>
+                                            <div className="text-muted small">{segment?.Destination?.AirportName}</div>
+                                            <div className="text-muted small">Terminal {segment?.Destination?.Terminal || 'N/A'}</div>
                                         </Col>
                                     </Row>
                                 </Col>

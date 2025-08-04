@@ -10,6 +10,7 @@ import FlightLoader from '../FlightLoader/FlightLoader';
 const FlightList = ({ filters }) => {
   const dispatch = useDispatch();
   const { locationData } = useContext(LocationContext);
+  console.log('locationDatakk',locationData)
   const flightsData = useSelector((state) => state?.flight?.flights || []);
   const {
     fromCode = 'DEL',
@@ -102,6 +103,7 @@ const FlightList = ({ filters }) => {
 
   // Restore flights from localStorage on initial mount
   useEffect(() => {
+   
     const savedFlights = localStorage.getItem('SearchedFlights');
     if (savedFlights && flightsData.length === 0) {
       const parsedFlights = JSON.parse(savedFlights);
@@ -138,6 +140,7 @@ const FlightList = ({ filters }) => {
   }
 
   const UserIp = async () => {
+    alert('dddd')
     const UserIpAdd = await getUserIP()
     return UserIpAdd
 
@@ -178,7 +181,7 @@ const FlightList = ({ filters }) => {
                   ? departDate.PreferredTime
                   : departDate
               ).format("YYYY-MM-DD")}T00:00:00`,
-            },
+            }
           ],
           Sources: null,
         };
@@ -210,6 +213,7 @@ const FlightList = ({ filters }) => {
     }
   }, [flightsData]);
 
+  
   if (loading) return <div className="text-center my-4"><FlightLoader message="Searching flights..." /></div>;
   if (error) return <div className="text-danger text-center my-4">{error}</div>;
 

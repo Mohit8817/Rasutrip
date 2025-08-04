@@ -1,13 +1,16 @@
 'use client'
 import React, { useState, useEffect } from "react";
 import { useLocation } from 'react-router-dom';
-import { 
-  Container, 
-  Row, 
-  Col, 
-  Card, 
-  Button, 
-  Badge, 
+import { post } from "../APIS/FlightApi/FlightApi";
+import { useNavigate } from "react-router-dom";
+
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Button,
+  Badge,
   Alert,
   Table,
   ListGroup,
@@ -16,14 +19,17 @@ import {
 
 const BookingSuccess = () => {
 
-    const location = useLocation();
+  const location = useLocation();
+    const navigate = useNavigate();
   const { bookingId, result } = location.state || {};
   const [showAlert, setShowAlert] = useState(true);
+  const [invoice, setInvoice] = useState(null);
+
   const [progress, setProgress] = useState(0);
 
   // Sample data from the provided JSON
   const bookingData = result
-  
+
 
   useEffect(() => {
     // Animate progress bar
@@ -40,7 +46,62 @@ const BookingSuccess = () => {
     return () => clearInterval(timer);
   }, []);
 
-  if (result.lenght <0) {
+
+  const sendInvoiceRequest = async () => {
+    console.log('result', result)
+    try {
+
+
+      const data = {
+        UserIp: result.UserIp,
+        SearchTokenId: result.SearchTokenId,
+        BookingId: result.bookingId,
+        receiverEmail: result?.result?.Passenger[0]?.Email,
+      }
+      console.log('data', data)
+      const response = await post(data, "/airservice/invoice");
+      setInvoice(response)
+    } catch (error) {
+      console.error("Invoice API error:", error);
+    }
+  };
+
+
+
+ const sendInvoice = async () => {
+  try {
+    const data = {
+      UserIp: result.UserIp,
+      SearchTokenId: result.SearchTokenId,
+      BookingId: result.bookingId,
+      receiverEmail: result?.result?.Passenger[0]?.Email,
+    };
+
+    let finalInvoice = invoice;
+
+    if (!invoice) {
+      const response = await post(data, "/airservice/invoice");
+      setInvoice(response);
+      finalInvoice = response;
+      console.log("Invoice API response:", response.data);
+    }
+
+    navigate("/booking/invoice", { state: { invoice: finalInvoice } });
+  } catch (error) {
+    console.error("Invoice API error:", error);
+  }
+};
+
+
+
+  // Call invoice API on load
+  useEffect(() => {
+    if (result && !invoice) {
+      sendInvoiceRequest();
+    }
+  }, [result,invoice]);
+
+  if (result.lenght < 0) {
     return <div className="text-center text-red-500 mt-10">Invalid booking data</div>;
   }
   const handleDownload = (type) => {
@@ -50,25 +111,26 @@ const BookingSuccess = () => {
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-IN', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', { 
+    return date.toLocaleDateString('en-IN', {
       weekday: 'long',
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
   const segment = bookingData.result?.Segments[0][0];
   const passenger = bookingData.result?.Passenger[0];
+  console.log('bookingData.result?.Passenger', bookingData.result?.Passenger)
 
   return (
     <div style={{
@@ -76,16 +138,16 @@ const BookingSuccess = () => {
       minHeight: '100vh',
       paddingTop: '2rem',
       paddingBottom: '2rem',
-      marginTop:'100px'
+      marginTop: '100px'
     }}>
       <Container>
         {/* Success Header */}
         <Row className="justify-content-center mt-10 mb-4">
           <Col md={8} className="text-center">
             {showAlert && (
-              <Alert 
-                variant="success" 
-                dismissible 
+              <Alert
+                variant="success"
+                dismissible
                 onClose={() => setShowAlert(false)}
                 className="shadow-lg border-0"
               >
@@ -98,18 +160,18 @@ const BookingSuccess = () => {
                 </Badge>
               </Alert>
             )}
-            
+
             <Card className="border-0 shadow-lg bg-white">
               <Card.Body className="p-4">
                 <h2 className="text-success mb-3">
                   <i className="fas fa-check-circle me-2"></i>
                   Payment Successful
                 </h2>
-                <ProgressBar 
-                  now={progress} 
-                  variant="success" 
-                  striped 
-                  animated 
+                <ProgressBar
+                  now={progress}
+                  variant="success"
+                  striped
+                  animated
                   className="mb-3"
                 />
                 <p className="text-muted">Processing complete</p>
@@ -134,7 +196,7 @@ const BookingSuccess = () => {
                     <div className="border-end">
                       <h3 className="text-primary">{segment?.Origin?.CityName}</h3>
                       <p className="mb-1 fw-bold">{formatTime(segment?.Origin?.DepartTime)}</p>
-                      <small className="text-muted">{segment?.Origin?.AirportName}</small><br/>
+                      <small className="text-muted">{segment?.Origin?.AirportName}</small><br />
                       <Badge bg="info">Terminal {segment?.Origin?.Terminal}</Badge>
                     </div>
                   </Col>
@@ -150,13 +212,13 @@ const BookingSuccess = () => {
                   <Col md={4}>
                     <h3 className="text-primary">{segment?.Destination?.CityName}</h3>
                     <p className="mb-1 fw-bold">{formatTime(segment?.Destination?.ArrivalTime)}</p>
-                    <small className="text-muted">{segment?.Destination?.AirportName}</small><br/>
+                    <small className="text-muted">{segment?.Destination?.AirportName}</small><br />
                     <Badge bg="info">Terminal {segment?.Destination?.Terminal}</Badge>
                   </Col>
                 </Row>
 
                 <Row>
-                  <Col md={3}>
+                  <Col md={4}>
                     <Card className="bg-light border-0 h-100">
                       <Card.Body className="text-center">
                         <h6 className="text-muted">Airline</h6>
@@ -165,7 +227,7 @@ const BookingSuccess = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-                  <Col md={3}>
+                  <Col md={4}>
                     <Card className="bg-light border-0 h-100">
                       <Card.Body className="text-center">
                         <h6 className="text-muted">Date</h6>
@@ -173,7 +235,7 @@ const BookingSuccess = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-                  <Col md={3}>
+                  <Col md={4}>
                     <Card className="bg-light border-0 h-100">
                       <Card.Body className="text-center">
                         <h6 className="text-muted">PNR</h6>
@@ -181,15 +243,7 @@ const BookingSuccess = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-                  <Col md={3}>
-                    <Card className="bg-light border-0 h-100">
-                      <Card.Body className="text-center">
-                        <h6 className="text-muted">Seat</h6>
-                        <p className="fw-bold">{passenger?.Seat[0]?.SeatNo}</p>
-                        <small className="text-success">₹{passenger?.Seat[0]?.Price}</small>
-                      </Card.Body>
-                    </Card>
-                  </Col>
+                  
                 </Row>
               </Card.Body>
             </Card>
@@ -198,7 +252,7 @@ const BookingSuccess = () => {
 
         {/* Passenger and Price Details */}
         <Row className="mb-4">
-          <Col md={6}>
+          <Col md={12}>
             <Card className="border-0 shadow-lg h-100">
               <Card.Header className="bg-info text-white">
                 <h5 className="mb-0">
@@ -207,29 +261,43 @@ const BookingSuccess = () => {
                 </h5>
               </Card.Header>
               <Card.Body>
-                <ListGroup variant="flush">
-                  <ListGroup.Item className="d-flex justify-content-between">
-                    <strong>Name:</strong>
-                    <span>{passenger?.Title} {passenger?.FirstName} {passenger?.LastName}</span>
-                  </ListGroup.Item>
-                  <ListGroup.Item className="d-flex justify-content-between">
-                    <strong>Email:</strong>
-                    <span className="text-break">{passenger?.Email}</span>
-                  </ListGroup.Item>
-                  <ListGroup.Item className="d-flex justify-content-between">
-                    <strong>Phone:</strong>
-                    <span>{passenger?.ContactNo}</span>
-                  </ListGroup.Item>
-                  <ListGroup.Item className="d-flex justify-content-between">
-                    <strong>Ticket No:</strong>
-                    <Badge bg="secondary">{passenger?.TicketNumber}</Badge>
-                  </ListGroup.Item>
-                </ListGroup>
+                <Table striped bordered hover responsive>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>PNR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookingData.result?.Passenger?.map((passenger1, index) => (
+                      <tr key={index}>
+                        <td>{index + 1}</td>
+                        <td>{passenger1?.Title} {passenger1?.FirstName} {passenger1?.LastName}</td>
+                        <td className="text-break">{passenger1?.Email}</td>
+                        <td>{passenger1?.ContactNo}</td>
+                        {index == 0 ? (
+                          <>
+                            <td> {bookingData.result?.PNR}</td>
+                          </>
+                        ) : (
+                          <>
+                            <td>--</td>
+                          </>
+                        )}
+
+
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
               </Card.Body>
             </Card>
           </Col>
-          
-          <Col md={6}>
+
+          {/* <Col md={6}>
             <Card className="border-0 shadow-lg h-100">
               <Card.Header className="bg-success text-white">
                 <h5 className="mb-0">
@@ -264,7 +332,7 @@ const BookingSuccess = () => {
                 </Table>
               </Card.Body>
             </Card>
-          </Col>
+          </Col> */}
         </Row>
 
         {/* Important Information */}
@@ -306,29 +374,29 @@ const BookingSuccess = () => {
               <Card.Body className="text-center p-4">
                 <h4 className="mb-4">Download Your Documents</h4>
                 <div className="d-grid gap-2 d-md-flex justify-content-md-center">
-                  <Button 
-                    variant="primary" 
-                    size="lg" 
-                    onClick={() => handleDownload("invoice")}
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={() => sendInvoice()}
                     className="me-md-2 mb-2 mb-md-0"
                   >
                     <i className="fas fa-download me-2"></i>
                     Download Invoice
                   </Button>
-                  <Button 
-                    variant="success" 
-                    size="lg" 
+                  {/* <Button
+                    variant="success"
+                    size="lg"
                     onClick={() => handleDownload("ticket")}
                   >
                     <i className="fas fa-download me-2"></i>
                     Download E-Ticket
-                  </Button>
+                  </Button> */}
                 </div>
-                <p className="text-muted mt-3 mb-0">
+                {/* <p className="text-muted mt-3 mb-0">
                   <small>
                     Invoice No: <strong>{bookingData?.result?.InvoiceNo}</strong> • Keep these documents for your records
                   </small>
-                </p>
+                </p> */}
               </Card.Body>
             </Card>
           </Col>
@@ -341,7 +409,7 @@ const BookingSuccess = () => {
               <Card.Body>
                 <h5>Have a wonderful journey! ✈️</h5>
                 <p className="mb-0">
-                  For any queries, please contact customer support with your PNR: 
+                  For any queries, please contact customer support with your PNR:
                   <Badge bg="light" text="dark" className="ms-2">{bookingData?.result?.PNR}</Badge>
                 </p>
               </Card.Body>

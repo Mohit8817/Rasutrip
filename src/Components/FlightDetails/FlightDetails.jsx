@@ -8,11 +8,11 @@ import FareSummary from './FareSummary';
 import PromoCodeBox from './PromoCodeBox';
 import { fetchFareRules } from '../APIS/FlightApi/FlightApi';
 import FlightLoader from '../FlightLoader/FlightLoader';
-
+import RoundFlightInfo from './RoundFlightInfo';
 
 const useFareRules = (fareId) => {
     const [fareRules, setFareRules] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const userIp = localStorage.getItem("UserIp") || "";
     const searchToken = localStorage.getItem("searchToken") || "";
@@ -55,14 +55,45 @@ const useFareRules = (fareId) => {
 
 const FlightDetails = () => {
     const location = useLocation();
+  let {
+    SelectedFare,
+    FareData = {},
+    state,
+    journeyType="oneway",
+    selectedFlights = {}
+  } = location?.state || {};
 
-    const { SelectedFare, FareData } = location?.state || {};
-    console.log("FareData details ", FareData, "SelectedFare", SelectedFare)
-    const { fareRules, loading, error } = useFareRules(SelectedFare?.FareId);
+  let finalFareId = null;
+  let finalFareData = null;
+
+  console.log('sedddkddk',SelectedFare)
+  
+
+  if (journeyType === 'roundtrip') {
+    finalFareData = selectedFlights;
+    finalFareId = SelectedFare?.FareId;
+    console.log('Journey Type: Roundtrip');
+  } else if (journeyType == 'oneway') {
+    finalFareData = SelectedFare;
+    finalFareId = FareData?.FareId;
+    console.log('Journey Type: Oneway');
+  } else if (journeyType === 'multitrip') {
+    finalFareData = selectedFlights;
+    finalFareId = selectedFlights?.FareId;
+    console.log('Journey Type: Multitrip');
+  } else {
+    console.warn('Unknown journey type:', journeyType);
+  }
+
+  const { fareRules, loading, error } = useFareRules(finalFareId);
+
+  console.log('FareData:', finalFareData);
+  console.log('Fare ID:', finalFareId);
+  console.log('Fare Rules:', fareRules);
     console.log("fareRules in details", fareRules);
     return (
         <div>
-            <Container style={{ marginTop: '8rem' }}>
+            <Container style={{ marginTop: '10rem' }}>
                 {loading ? (
                     <>
                         {loading && <p className="text-center text-primary mt-4"><FlightLoader message="Searching Fare Rules" /></p>}
@@ -76,9 +107,22 @@ const FlightDetails = () => {
                             </div>
                         </Row>
                         <Row>
-                            <Col lg={9}>
-                                <FlightInfo FareData={FareData} SelectedFare={SelectedFare} fareRules={fareRules} />
-                            </Col>
+                            {journeyType == 'roundtrip' ? (
+                                <Col lg={9}>
+                                    <RoundFlightInfo Faresummary={SelectedFare} FareData={FareData} SelectedFare={finalFareData} fareRules={fareRules} />
+
+                                </Col>
+                            ) : (
+                                <>
+                                <Col lg={9}>
+                                    <FlightInfo FareData={FareData} SelectedFare={SelectedFare} fareRules={fareRules} />
+
+                                </Col>
+                                </>
+                            )}
+
+
+
                             <Col lg={3}>
                                 <FareSummary SelectedFare={SelectedFare} />
                                 <PromoCodeBox />

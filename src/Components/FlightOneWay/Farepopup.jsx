@@ -11,6 +11,8 @@ const FarePopup = ({ show, onClose, fares = [], searchToken }) => {
     console.log('mainlogo',SelectedFare)
     console.log('mainlogo',FareData)
     const selectedData= localStorage.setItem('selectedFlight',JSON.stringify(FareData))
+    const fareSummery= localStorage.setItem('fareSummery',JSON.stringify(SelectedFare))
+
 
     onClose(); // Close the modal
     navigate('/flight-details', {

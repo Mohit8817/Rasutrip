@@ -27,6 +27,7 @@ const MultiCityForm = ({ fromCityProp }) => {
     const toRef = useRef(null);
 
     const handleCitySelect = (cityObj, type) => {
+        console.log('cityObj',cityObj)
         if (type === 'from') {
             setFromCity(cityObj.city);
             setFromAirport(cityObj.airport);
@@ -37,6 +38,8 @@ const MultiCityForm = ({ fromCityProp }) => {
             setShowToDropdown(false);
 
         }
+
+        console.log('fromCity',fromCity)
     };
 
     const handleFromInputClick = () => {
@@ -91,7 +94,7 @@ const MultiCityForm = ({ fromCityProp }) => {
                 <Row className="g-0 align-items-center">
                     {/* FROM */}
                     <Col xs={6} className="location-box position-relative" ref={fromRef}>
-                        <span className="location-label">From Airportz</span>
+                        <span className="location-label">From Airport</span>
                         <input
                             type="text"
                             className="location-city form-control border-0 p-0"
