@@ -181,16 +181,7 @@ const FlightList = ({ filters }) => {
                   ? departDate.PreferredTime
                   : departDate
               ).format("YYYY-MM-DD")}T00:00:00`,
-            },
-            {
-              Origin: fromCode,
-              Destination: toCode,
-              PreferredTime: `${moment(
-                typeof departDate === 'object' && departDate?.PreferredTime
-                  ? departDate.PreferredTime
-                  : departDate
-              ).format("YYYY-MM-DD")}T00:00:00`,
-            },
+            }
           ],
           Sources: null,
         };
