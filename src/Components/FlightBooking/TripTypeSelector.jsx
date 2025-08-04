@@ -5,7 +5,16 @@ import '../../Style/FlightBooking.css';
 const TripTypeSelector = ({ tripType, setTripType }) => {
     const { setLocationData } = useContext(LocationContext); // ⬅️ Access context
 
-    const handleTripTypeChange = (type) => {
+   
+
+    const handleTripTypeChange = (type) => { 
+
+        localStorage.removeItem('fareSummery');
+        localStorage.removeItem('searchToken');
+        localStorage.removeItem('passengersData');
+        localStorage.removeItem('SearchedFlights');
+        localStorage.removeItem('SearchedFlights');
+        localStorage.setItem('tripType',type)
         setTripType(type);
         setLocationData(prev => ({ ...prev, tripType: type }));
     };

@@ -11,6 +11,7 @@ const DatePicker = ({ tripType, setTripType }) => {
     const [activeCalendar, setActiveCalendar] = useState(null);
     const { setLocationData } = useContext(LocationContext);
 
+    console.log('triptype',tripType)
     const departRef = useRef(null);
     const returnRef = useRef(null);
 

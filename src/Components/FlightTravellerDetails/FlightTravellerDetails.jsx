@@ -13,7 +13,10 @@ import { LocationContext } from '../Context/LocationContext';
 const FlightTravellerDetails = () => {
     const location = useLocation();
     const { locationData, setLocationData } = useContext(LocationContext);
-    const { SelectedFare, fareConfirm } = location?.state || {}
+    const { SelectedFare, fareConfirmData ,Faresummary } = location?.state || {}
+    console.log('fareConfirmData',fareConfirmData)
+    console.log('fareConfirmData',fareConfirmData)
+
     return (
         <div>
             <Container style={{ marginTop: '10rem' }}>
@@ -26,13 +29,13 @@ const FlightTravellerDetails = () => {
                 <Row>
                     <Col lg={9}>
                         <div >
-                            <TravellerInfo SelectedFare={SelectedFare} fareConfirm={fareConfirm} />
+                            <TravellerInfo Faresummary={Faresummary} SelectedFare={SelectedFare} fareConfirmData={fareConfirmData} />
                         </div>
 
                     </Col>
                     <Col lg={3}>
                         <div>
-                            <FareSummary SelectedFare={SelectedFare} />
+                            <FareSummary  SelectedFare={Faresummary} />
                             <PromoCodeBox />
 
                         </div>

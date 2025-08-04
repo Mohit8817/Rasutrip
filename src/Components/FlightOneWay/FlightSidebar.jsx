@@ -5,17 +5,25 @@ import '../../Style/Pagescss/FlightResultsPage.css';
 import { parse } from 'postcss';
 
 const getSidebarFilters = (allFlights) => {
+    console.log('allFlightsfilter',allFlights)
     const prices = [];
     const airlineSet = new Set();
     let maxStops = 0;
+    console.log('krishna',allFlights?.length)
+    if(allFlights){
+         allFlights=allFlights?.length >2 ?allFlights:allFlights[0]
+    }
+    
+    console.log('allFlightsfilter',allFlights)
+   
 
     allFlights?.forEach((flight) => {
         // Price
         prices.push(flight.MinPublishedPrice);
 
         // Airlines
-        flight.Segments.forEach((segmentGroup) => {
-            segmentGroup.forEach((segment) => {
+        flight?.Segments?.forEach((segmentGroup) => {
+            segmentGroup?.forEach((segment) => {
                 airlineSet.add(segment.Airline.AirlineName);
             });
 
