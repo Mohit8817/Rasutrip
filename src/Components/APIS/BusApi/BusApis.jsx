@@ -284,15 +284,9 @@ export const bookBus = async (bookingData) => {
 
 
 
-
-
-
-
 // ================================================
-// 🚌 ENHANCED BUS INVOICE DOWNLOAD API
+// 🚌 ENHANCED BUS INVOICE DOWNLOAD API - IMPROVED 409 HANDLING
 // ================================================
-
-// Replace your existing downloadBusInvoice function with this enhanced version:
 
 export const downloadBusInvoice = async (invoiceData) => {
   try {
@@ -314,7 +308,7 @@ export const downloadBusInvoice = async (invoiceData) => {
     const payload = {
       UserIp: invoiceData.UserIp || "122.161.64.143",
       SearchTokenId: invoiceData.SearchTokenId,
-      BookingId: String(invoiceData.BookingId), // Ensure it's a string
+      BookingId: String(invoiceData.BookingId).trim(), // Ensure it's a clean string
       receiverEmail: invoiceData.receiverEmail || ""
     };
 
@@ -329,18 +323,44 @@ export const downloadBusInvoice = async (invoiceData) => {
       headers: {
         ...headers,
         'Accept': 'application/pdf, application/json',
+        'Content-Type': 'application/json',
       },
       responseType: 'blob', // Critical for file downloads
       timeout: 30000, // 30 second timeout
       validateStatus: function (status) {
-        return status >= 200 && status < 300; // Only accept 2xx status codes
+        // Accept both success and 409 conflict status
+        return (status >= 200 && status < 300) || status === 409;
       }
     });
 
     console.log('✅ API Response Status:', response.status);
     console.log('📄 Response Headers:', response.headers);
 
-    // Check content type
+    // Handle 409 Conflict - Invoice already generated
+    if (response.status === 409) {
+      console.log('⚠️ Invoice already exists (409)');
+      
+      // Try to parse the response to get more info
+      try {
+        const text = await response.data.text();
+        const jsonResponse = JSON.parse(text);
+        
+        return { 
+          success: true, 
+          alreadyExists: true,
+          message: jsonResponse.message || 'Invoice already generated and sent to email',
+          data: jsonResponse
+        };
+      } catch (parseError) {
+        return { 
+          success: true, 
+          alreadyExists: true,
+          message: 'Invoice already generated and sent to email'
+        };
+      }
+    }
+
+    // Check content type for successful responses
     const contentType = response.headers['content-type'] || response.headers['Content-Type'];
     console.log('📋 Content Type:', contentType);
 
@@ -380,10 +400,10 @@ export const downloadBusInvoice = async (invoiceData) => {
       }, 100);
 
       console.log('✅ Invoice downloaded successfully:', filename);
-      return { success: true, filename, fileSize };
+      return { success: true, filename, fileSize, downloaded: true };
 
     } else {
-      // Handle non-PDF response (might be JSON error)
+      // Handle non-PDF response (might be JSON success message)
       try {
         const text = await response.data.text();
         console.log('📄 Non-PDF Response:', text);
@@ -393,6 +413,15 @@ export const downloadBusInvoice = async (invoiceData) => {
           jsonResponse = JSON.parse(text);
         } catch (parseError) {
           throw new Error(`Expected PDF but received: ${contentType}`);
+        }
+
+        // Check if it's a success message without PDF
+        if (jsonResponse.success || jsonResponse.Success) {
+          return {
+            success: true,
+            message: jsonResponse.message || 'Invoice processed successfully',
+            data: jsonResponse
+          };
         }
 
         if (jsonResponse.error || jsonResponse.Error) {
@@ -412,6 +441,15 @@ export const downloadBusInvoice = async (invoiceData) => {
     if (error.response) {
       console.error('❌ Error Status:', error.response.status);
       console.error('❌ Error Data:', error.response.data);
+
+      // Special handling for 409 (should not reach here due to validateStatus)
+      if (error.response.status === 409) {
+        return { 
+          success: true, 
+          alreadyExists: true,
+          message: 'Invoice already generated and sent to email'
+        };
+      }
 
       let errorMessage = `Server error (${error.response.status})`;
 

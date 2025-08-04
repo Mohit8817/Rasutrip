@@ -54,11 +54,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
   const [boarding, setBoarding] = useState(null);
   const [dropping, setDropping] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [pointsLoading, setPointsLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const [retryCount, setRetryCount] = useState(0);
-  const [isRetrying, setIsRetrying] = useState(false);
 
   const isValidToken = useCallback((token) => {
     return token && typeof token === 'string' && token.length > 10;
@@ -74,75 +70,11 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
       setBoarding(null);
       setDropping(null);
       setLoading(false);
-      setPointsLoading(false);
       setError(null);
-      setRetryCount(0);
-      setIsRetrying(false);
     }
   }, [show]);
 
-  const fetchPointsWithRetry = useCallback(async (pointsPayload, maxRetries = 3) => {
-    let lastError = null;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`🔄 Fetching boarding/dropping points - Attempt ${attempt}/${maxRetries}`);
-
-        if (attempt > 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        }
-
-        const pointsData = await fetchBoardingDroppingPoints(pointsPayload);
-
-        let boardingList = [];
-        let droppingList = [];
-
-        if (pointsData?.Result) {
-          boardingList = pointsData.Result.BoardingPointsDetails || pointsData.Result.BoardingPoints || [];
-          droppingList = pointsData.Result.DroppingPointsDetails || pointsData.Result.DroppingPoints || [];
-        } else if (pointsData) {
-          boardingList = pointsData.BoardingPointsDetails || pointsData.BoardingPoints || [];
-          droppingList = pointsData.DroppingPointsDetails || pointsData.DroppingPoints || [];
-        }
-
-        setBoardingPoints(boardingList);
-        setDroppingPoints(droppingList);
-
-        if (boardingList.length > 0) {
-          setBoarding(boardingList[0]);
-          console.log("📍 Auto-selected boarding point:", boardingList[0].CityPointName);
-        }
-        if (droppingList.length > 0) {
-          setDropping(droppingList[0]);
-          console.log("📍 Auto-selected dropping point:", droppingList[0].CityPointName);
-        }
-
-        console.log(`✅ Points loaded successfully on attempt ${attempt}: ${boardingList.length} boarding, ${droppingList.length} dropping`);
-
-        return {
-          success: true,
-          boardingPoints: boardingList,
-          droppingPoints: droppingList
-        };
-
-      } catch (error) {
-        console.error(`❌ Points fetch attempt ${attempt} failed:`, error);
-        lastError = error;
-
-        if (attempt < maxRetries) {
-          console.log(`⏳ Retrying in ${attempt} second(s)...`);
-          continue;
-        }
-      }
-    }
-
-    console.error(`❌ All ${maxRetries} attempts failed. Last error:`, lastError);
-    return {
-      success: false,
-      error: lastError
-    };
-  }, []);
-
+  // Simplified load data function
   const loadAllData = useCallback(async () => {
     if (!show || !bus) return;
 
@@ -162,9 +94,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
     }
 
     setLoading(true);
-    setPointsLoading(true);
     setError(null);
-    setIsRetrying(false);
 
     try {
       console.log("🚀 Loading all data...");
@@ -183,43 +113,50 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
         ResultIndex: bus.ResultIndex,
       };
 
-      const seatPromise = fetchSeatLayout(seatPayload);
-      const pointsPromise = fetchPointsWithRetry(pointsPayload, 3);
+      // Load seat layout
+      console.log("🎫 Fetching seat layout...");
+      const seatData = await fetchSeatLayout(seatPayload);
+      const seats = seatData?.Result?.SeatLayout?.SeatDetails?.flat() ?? [];
+      setSeatLayout(seats);
+      console.log(`✅ Loaded ${seats.length} seats`);
 
-      try {
-        const seatData = await seatPromise;
-        const seats = seatData?.Result?.SeatLayout?.SeatDetails?.flat() ?? [];
-        setSeatLayout(seats);
-        console.log(`✅ Loaded ${seats.length} seats`);
-
-        if (seats.length === 0) {
-          setError("No seats available for this bus.");
-        }
-      } catch (seatError) {
-        console.error("❌ Seat layout failed:", seatError);
-        setError("Failed to load seat layout");
+      if (seats.length === 0) {
+        setError("No seats available for this bus.");
         return;
       }
 
-      try {
-        setIsRetrying(true);
-        const pointsResult = await pointsPromise;
+      // Load boarding/dropping points
+      console.log("📍 Fetching boarding/dropping points...");
+      const pointsData = await fetchBoardingDroppingPoints(pointsPayload);
 
-        if (pointsResult.success) {
-          if (pointsResult.boardingPoints.length === 0 && pointsResult.droppingPoints.length === 0) {
-            setError("No boarding or dropping points available for this bus.");
-          }
-        } else {
-          console.error("❌ All boarding/dropping points attempts failed");
-          setBoardingPoints([]);
-          setDroppingPoints([]);
+      let boardingList = [];
+      let droppingList = [];
 
-          setError("Unable to load boarding/dropping points. You can still select seats, but please contact support for assistance.");
-        }
-      } catch (pointsError) {
-        console.error("❌ Unexpected error in points loading:", pointsError);
-        setBoardingPoints([]);
-        setDroppingPoints([]);
+      if (pointsData?.Result) {
+        boardingList = pointsData.Result.BoardingPointsDetails || pointsData.Result.BoardingPoints || [];
+        droppingList = pointsData.Result.DroppingPointsDetails || pointsData.Result.DroppingPoints || [];
+      } else if (pointsData) {
+        boardingList = pointsData.BoardingPointsDetails || pointsData.BoardingPoints || [];
+        droppingList = pointsData.DroppingPointsDetails || pointsData.DroppingPoints || [];
+      }
+
+      console.log(`✅ Points loaded: ${boardingList.length} boarding, ${droppingList.length} dropping`);
+
+      setBoardingPoints(boardingList);
+      setDroppingPoints(droppingList);
+
+      // Auto-select first boarding and dropping points if available
+      if (boardingList.length > 0) {
+        setBoarding(boardingList[0]);
+        console.log("📍 Auto-selected boarding point:", boardingList[0].CityPointName);
+      }
+      if (droppingList.length > 0) {
+        setDropping(droppingList[0]);
+        console.log("📍 Auto-selected dropping point:", droppingList[0].CityPointName);
+      }
+
+      if (boardingList.length === 0 && droppingList.length === 0) {
+        setError("No boarding or dropping points available for this bus.");
       }
 
     } catch (error) {
@@ -235,54 +172,16 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
       }
     } finally {
       setLoading(false);
-      setPointsLoading(false);
-      setIsRetrying(false);
     }
-  }, [show, bus, isValidToken, fetchPointsWithRetry]);
+  }, [show, bus, isValidToken]);
 
+  // Load data when modal opens
   useEffect(() => {
     if (show && bus?.SearchTokenId) {
       const timer = setTimeout(loadAllData, 100);
       return () => clearTimeout(timer);
     }
   }, [show, bus?.SearchTokenId, loadAllData]);
-
-  const handleRetry = () => {
-    setError(null);
-    setRetryCount(prev => prev + 1);
-    loadAllData();
-  };
-
-  useEffect(() => {
-    if (seatLayout.length > 0 &&
-      boardingPoints.length === 0 &&
-      droppingPoints.length === 0 &&
-      !pointsLoading &&
-      !isRetrying &&
-      retryCount < 2) {
-
-      console.log("🔄 Auto-retrying boarding/dropping points...");
-      setRetryCount(prev => prev + 1);
-
-      setTimeout(() => {
-        if (show && bus?.SearchTokenId) {
-          setPointsLoading(true);
-          setIsRetrying(true);
-
-          const pointsPayload = {
-            UserIp: bus.UserIp,
-            SearchTokenId: bus.SearchTokenId,
-            ResultIndex: bus.ResultIndex,
-          };
-
-          fetchPointsWithRetry(pointsPayload, 2).finally(() => {
-            setPointsLoading(false);
-            setIsRetrying(false);
-          });
-        }
-      }, 2000);
-    }
-  }, [seatLayout.length, boardingPoints.length, droppingPoints.length, pointsLoading, isRetrying, retryCount, show, bus, fetchPointsWithRetry]);
 
   const toggleSeat = (seat) => {
     if (!seat.SeatStatus) return;
@@ -311,8 +210,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
       return timeString;
     }
   };
-
-  // Enhanced seat rendering with realistic bus layout
+  // Enhanced seat rendering with horizontal bus layout
   const renderBusLayout = (isUpper = false) => {
     const seats = seatLayout.filter(s => s.IsUpper === isUpper);
 
@@ -351,20 +249,82 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
         padding: '20px',
         border: '3px solid #dee2e6',
         position: 'relative',
-        minHeight: '200px'
+        minHeight: '200px',
+        overflowX: 'auto', // Allow horizontal scrolling if needed
+        overflowY: 'hidden'
       }}>
-        {/* Bus frame styling */}
-        <div>
+        {/* Bus frame styling with horizontal orientation */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row', // Changed from column to row
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
+          width: 'max-content', // Allow container to expand horizontally
+          minWidth: '100%'
+        }}>
 
-          {/* Seat rows */}
-          <div className="seat-rows-container px-3">
+          {/* Driver section indicator (at the left for horizontal layout) */}
+          <div style={{
+            width: '60px',
+            height: '120px',
+            backgroundColor: '#e9ecef',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: '20px',
+            flexShrink: 0
+          }}>
+            <div style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: '#6c757d',
+              textAlign: 'center',
+              lineHeight: '1.2'
+            }}>
+              <div>🚗</div>
+              <div>DRIVER</div>
+            </div>
+          </div>
+
+          {/* Seat columns container - horizontal arrangement */}
+          <div className="seat-columns-container" style={{
+            display: 'flex',
+            flexDirection: 'row', // Horizontal arrangement
+            gap: '15px',
+            alignItems: 'flex-start',
+            flexWrap: 'nowrap' // Prevent wrapping to maintain horizontal layout
+          }}>
             {seatRows.map((row, rowIndex) => (
-              <div key={rowIndex} className="seat-row mb-3 d-flex justify-content-center align-items-center">
+              <div key={rowIndex} className="seat-column" style={{
+                display: 'flex',
+                flexDirection: 'column', // Each column displays seats vertically
+                alignItems: 'center',
+                gap: '8px',
+                minWidth: '120px', // Ensure minimum width for each column
+                flexShrink: 0
+              }}>
 
-                {/* Left side seats (2 seats) */}
-                <div className="left-seats d-flex gap-2">
+                {/* Column number indicator */}
+                <div className="column-number mb-2" style={{
+                  width: '100%',
+                  height: '25px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#e9ecef',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: '#6c757d'
+                }}>
+                  Row {rowIndex + 1}
+                </div>
+
+                {/* Top seats (Window side) */}
+                <div className="top-seats d-flex gap-2 justify-content-center">
                   {row.slice(0, 2).map((seat, seatIndex) => {
-                    if (!seat) return <div key={seatIndex} style={{ width: '45px' }}></div>;
+                    if (!seat) return <div key={seatIndex} style={{ width: '50px' }}></div>;
 
                     const isBooked = seat.SeatStatus === false;
                     const isSelected = selectedSeats.some((s) => s.SeatName === seat.SeatName);
@@ -386,7 +346,10 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                         style={{
                           cursor: isBooked ? "not-allowed" : "pointer",
                           transition: 'transform 0.2s ease',
-                          transform: isSelected ? 'scale(1.05)' : 'scale(1)'
+                          transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center'
                         }}
                         title={`Seat ${seat.SeatName} - ₹${seat?.Price?.PublishedPrice || seat?.PublishedPrice || 450} - ${isBooked ? 'Booked' : isSelected ? 'Selected' : 'Available'}`}
                       >
@@ -398,15 +361,14 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                           isLadies={isLadies}
                         />
                         <div className="seat-number text-center mt-1" style={{
-                          fontSize: '11px',
+                          fontSize: '10px',
                           fontWeight: '600',
                           color: isBooked ? '#6c757d' : '#000'
                         }}>
                           {seat.SeatName}
                         </div>
-                        {/* Price tag */}
                         <div className="seat-price text-center" style={{
-                          fontSize: '9px',
+                          fontSize: '8px',
                           color: '#6c757d'
                         }}>
                           ₹{seat?.Price?.PublishedPrice || seat?.PublishedPrice || 450}
@@ -416,30 +378,31 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                   })}
                 </div>
 
-                {/* Aisle space */}
-                <div className="aisle mx-4" style={{
-                  width: '40px',
-                  height: '60px',
-                  borderLeft: '2px dashed #dee2e6',
-                  borderRight: '2px dashed #dee2e6',
+                {/* Aisle space - horizontal version */}
+                <div className="aisle my-2" style={{
+                  width: '100%',
+                  height: '20px',
+                  borderTop: '2px dashed #dee2e6',
+                  borderBottom: '2px dashed #dee2e6',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  backgroundColor: '#f8f9fa'
                 }}>
                   <div style={{
-                    fontSize: '10px',
+                    fontSize: '8px',
                     color: '#6c757d',
-                    transform: 'rotate(90deg)',
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    letterSpacing: '1px'
                   }}>
                     AISLE
                   </div>
                 </div>
 
-                {/* Right side seats (2 seats) */}
-                <div className="right-seats d-flex gap-2">
+                {/* Bottom seats (Aisle side) */}
+                <div className="bottom-seats d-flex gap-2 justify-content-center">
                   {row.slice(2, 4).map((seat, seatIndex) => {
-                    if (!seat) return <div key={seatIndex + 2} style={{ width: '45px' }}></div>;
+                    if (!seat) return <div key={seatIndex + 2} style={{ width: '50px' }}></div>;
 
                     const isBooked = seat.SeatStatus === false;
                     const isSelected = selectedSeats.some((s) => s.SeatName === seat.SeatName);
@@ -461,7 +424,10 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                         style={{
                           cursor: isBooked ? "not-allowed" : "pointer",
                           transition: 'transform 0.2s ease',
-                          transform: isSelected ? 'scale(1.05)' : 'scale(1)'
+                          transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center'
                         }}
                         title={`Seat ${seat.SeatName} - ₹${seat?.Price?.PublishedPrice || seat?.PublishedPrice || 450} - ${isBooked ? 'Booked' : isSelected ? 'Selected' : 'Available'}`}
                       >
@@ -473,15 +439,14 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                           isLadies={isLadies}
                         />
                         <div className="seat-number text-center mt-1" style={{
-                          fontSize: '11px',
+                          fontSize: '10px',
                           fontWeight: '600',
                           color: isBooked ? '#6c757d' : '#000'
                         }}>
                           {seat.SeatName}
                         </div>
-                        {/* Price tag */}
                         <div className="seat-price text-center" style={{
-                          fontSize: '9px',
+                          fontSize: '8px',
                           color: '#6c757d'
                         }}>
                           ₹{seat?.Price?.PublishedPrice || seat?.PublishedPrice || 450}
@@ -490,33 +455,37 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                     );
                   })}
                 </div>
-
-                {/* Row number indicator */}
-                <div className="row-number ms-3" style={{
-                  width: '30px',
-                  height: '60px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: '#e9ecef',
-                  borderRadius: '15px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  color: '#6c757d'
-                }}>
-                  {rowIndex + 1}
-                </div>
               </div>
             ))}
           </div>
 
+          {/* End of bus indicator (at the right for horizontal layout) */}
+          <div style={{
+            width: '40px',
+            height: '120px',
+            backgroundColor: '#e9ecef',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginLeft: '20px',
+            flexShrink: 0
+          }}>
+            <div style={{
+              fontSize: '10px',
+              fontWeight: '500',
+              color: '#6c757d',
+              textAlign: 'center',
+              transform: 'rotate(90deg)',
+              whiteSpace: 'nowrap'
+            }}>
+              EXIT
+            </div>
+          </div>
         </div>
       </div>
     );
   };
-
-  // In your BusSeatSelect component, update the handleContinue function:
-
   const handleContinue = () => {
     if (selectedSeats.length === 0) {
       alert("Please select at least one seat.");
@@ -635,32 +604,20 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
         <Modal.Title>Select Seats - {bus?.operator || 'Bus'}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {/* Error Alert */}
+        {/* Error Alert - Simplified without retry button */}
         {error && (
-          <Alert variant="danger" className="mb-3 d-flex justify-content-between align-items-center">
-            <span>{error}</span>
-            <Button variant="outline-danger" size="sm" onClick={handleRetry}>
-              Retry
-            </Button>
-          </Alert>
-        )}
-
-        {/* Auto-Retry Progress Alert */}
-        {isRetrying && (
-          <Alert variant="info" className="mb-3 d-flex align-items-center">
-            <Spinner animation="border" size="sm" className="me-2" />
-            <span>Auto-retrying to load boarding/dropping points... (Attempt {retryCount + 1})</span>
+          <Alert variant="danger" className="mb-3">
+            {error}
           </Alert>
         )}
 
         <Row>
           <Col md={6}>
             <h5 className="mb-4 fw-bold">Select Seats</h5>
-
             {loading ? (
               <div className="text-center py-5">
                 <Spinner animation="border" size="sm" />
-                <div className="mt-2">Loading seat layout...</div>
+                <div className="mt-2">Loading seat layout and boarding points...</div>
               </div>
             ) : seatLayout.length ? (
               <>
@@ -689,10 +646,6 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
             ) : (
               <div className="text-center text-muted py-4">
                 No seat layout available.
-                <br />
-                <Button variant="link" onClick={handleRetry}>
-                  Try loading again
-                </Button>
               </div>
             )}
 
@@ -730,17 +683,15 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
           {/* Booking Info */}
           <Col md={4}>
             <Card className="p-3 mb-3 shadow-sm">
-              <h6 className="text-primary">{bus?.operator}</h6>
+              <h5 className="text-danger fw-bold">{bus?.operator}</h5>
               <div className="text-muted small mb-3">
                 {bus?.departDate} | {bus?.departTime} - {bus?.arriveTime} | {bus?.busType}
               </div>
 
-              {pointsLoading ? (
+              {loading ? (
                 <div className="text-center py-3">
                   <Spinner animation="border" size="sm" />
-                  <div className="mt-2">
-                    {isRetrying ? `Loading boarding/dropping points... (Attempt ${retryCount + 1})` : 'Loading boarding/dropping points...'}
-                  </div>
+                  <div className="mt-2">Loading boarding/dropping points...</div>
                 </div>
               ) : (
                 <>
@@ -812,29 +763,20 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
               </div>
 
               {/* Price Breakdown */}
-              <div className="price-breakdown p-3 mb-3" style={{ backgroundColor: '#e8f5e8', borderRadius: '8px', border: '1px solid #28a745' }}>
+              <div className="price-breakdown p-3 mb-3">
                 <div className="d-flex justify-content-between align-items-center">
-                  <strong className="text-success">Total Amount:</strong>
+                  <strong className="text-dark">Total Amount:</strong>
                   <strong className="text-success fs-5">₹ {totalPrice.toFixed(2)}</strong>
                 </div>
-                {selectedSeats.length > 0 && (
-                  <div className="mt-2">
-                    <small className="text-muted">
-                      {selectedSeats.length} seat{selectedSeats.length !== 1 ? 's' : ''} × ₹{selectedSeats.length > 0 ? Math.round(totalPrice / selectedSeats.length) : 0}
-                    </small>
-                  </div>
-                )}
               </div>
 
               {/* Continue Button */}
               <Button
                 className="w-100 py-2 btn-red"
-                variant=""
                 onClick={handleContinue}
                 disabled={!boarding || !dropping || selectedSeats.length === 0}
               >
-                <i className="bi bi-arrow-right-circle me-2 btn-red"></i>
-                Continue ({selectedSeats.length} seat{selectedSeats.length !== 1 ? 's' : ''})
+                Continue
               </Button>
 
               {/* Quick Info */}

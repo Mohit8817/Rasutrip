@@ -18,16 +18,15 @@ const BusDetailinfo = () => {
         fromCity,
         toCity,
         departDate,
+        arriveDate,
         boardingTime,
         droppingTime,
         blockResponse,
         passengerData,
-        // Existing payload parameters
         blockSeatPayload,
         searchPayload,
         seatLayoutPayload,
         boardingPointPayload,
-        // Additional required parameters for block seat API
         userIp,
         searchTokenId,
         resultIndex,
@@ -52,22 +51,21 @@ const BusDetailinfo = () => {
     // Prepare the complete block seat payload structure
     const prepareBlockSeatPayload = () => {
         return {
-            UserIp: userIp || "122.161.64.143", // Use actual IP or fallback
-            SearchTokenId: searchTokenId || "e703c52750f2a93d7bb5cc838f7074e225d63112", // From search results
-            ResultIndex: resultIndex || "TB-1", // From bus selection
+            UserIp: userIp || "122.161.64.143",
+            SearchTokenId: searchTokenId || "e703c52750f2a93d7bb5cc838f7074e225d63112",
+            ResultIndex: resultIndex || "TB-1",
             BoardingPointId: boarding?.CityPointId || boarding?.Id || 1,
             DroppingPointId: dropping?.CityPointId || dropping?.Id || 1,
-            OriginId: originId || "8463", // From search parameters
-            DestinationId: destinationId || "9573", // From search parameters
-            // Passenger array will be populated in traveller component with actual passenger details
-            Passenger: [] // This will be filled with actual passenger data in next component
+            OriginId: originId || "8463",
+            DestinationId: destinationId || "9573",
+            Passenger: []
         };
     };
 
     const handleContinue = () => {
-        // Prepare complete block seat payload structure
         const completeBlockSeatPayload = prepareBlockSeatPayload();
 
+        // Enhanced data passing with proper boarding/dropping times
         navigate("/bus-traveller-details", {
             state: {
                 // Original state
@@ -76,23 +74,49 @@ const BusDetailinfo = () => {
                 totalPrice,
                 departTime,
                 arriveTime,
-                boarding,
-                dropping,
+                boarding: {
+                    ...boarding,
+                    // Ensure boarding time is properly set
+                    time: boardingTime || boarding?.DepTime || boarding?.time || departTime,
+                    CityPointName: boarding?.CityPointName || boarding?.name || "Boarding Point",
+                    CityPointAddress: boarding?.CityPointAddress || boarding?.address || "",
+                    CityPointLandmark: boarding?.CityPointLandmark || boarding?.landmark || ""
+                },
+                dropping: {
+                    ...dropping,
+                    // Ensure dropping time is properly set
+                    time: droppingTime || dropping?.ArrTime || dropping?.time || arriveTime,
+                    CityPointName: dropping?.CityPointName || dropping?.name || "Dropping Point",
+                    CityPointAddress: dropping?.CityPointAddress || dropping?.address || "",
+                    CityPointLandmark: dropping?.CityPointLandmark || dropping?.landmark || ""
+                },
                 fromCity,
                 toCity,
                 departDate,
-                boardingTime,
-                droppingTime,
+                arriveDate: arriveDate || getArrivalDate(), // Ensure arrival date is calculated
+                boardingTime: boardingTime || boarding?.DepTime || boarding?.time || departTime,
+                droppingTime: droppingTime || dropping?.ArrTime || dropping?.time || arriveTime,
                 blockResponse,
                 passengerData,
+
+                // Enhanced journey details for review page
+                journeyDetails: {
+                    operator: bus?.operator || bus?.TravelName || bus?.name || "N/A",
+                    busType: bus?.busType || bus?.BusType || "AC Seater",
+                    duration: calculateDuration(departTime, arriveTime),
+                    fromCity: fromCity || "N/A",
+                    toCity: toCity || "N/A",
+                    departDate: departDate,
+                    arriveDate: arriveDate || getArrivalDate(),
+                    departTime: departTime || "N/A",
+                    arriveTime: arriveTime || "N/A"
+                },
 
                 // All existing payload parameters
                 blockSeatPayload,
                 searchPayload,
                 seatLayoutPayload,
                 boardingPointPayload,
-
-                // Complete block seat payload with correct structure
                 completeBlockSeatPayload,
 
                 // Individual API parameters for easy access
@@ -110,10 +134,6 @@ const BusDetailinfo = () => {
                 seatPrices: selectedSeats?.map(seat => seat?.Price?.PublishedPrice || seat?.PublishedPrice || 450) || []
             },
         });
-    };
-
-    const handleGoBack = () => {
-        navigate(-1); // Go back to previous page
     };
 
     // Format date helper
@@ -153,18 +173,44 @@ const BusDetailinfo = () => {
         }
     };
 
+    // Function to determine if arrival is next day
+    const getArrivalDate = () => {
+        // If arriveDate is passed from previous component, use it
+        if (arriveDate) {
+            return arriveDate;
+        }
+        
+        // Otherwise, calculate based on times
+        if (!departTime || !arriveTime || !departDate) {
+            return departDate || "-";
+        }
+
+        try {
+            const dept = new Date(`1970-01-01 ${departTime}`);
+            const arr = new Date(`1970-01-01 ${arriveTime}`);
+            
+            // If arrival time is less than departure time, it's next day
+            if (arr < dept) {
+                const departDateObj = new Date(departDate);
+                const arrivalDateObj = new Date(departDateObj);
+                arrivalDateObj.setDate(arrivalDateObj.getDate() + 1);
+                return arrivalDateObj.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+            }
+            
+            return departDate;
+        } catch (e) {
+            return departDate || "-";
+        }
+    };
+
     return (
         <div className="bus-review-wrapper container py-4">
             {/* Header */}
             <div className="bg-light text-dark px-4 py-3 mb-4 fw-semibold border rounded shadow-sm">
                 <div className="d-flex justify-content-between align-items-center">
                     <h5 className="mb-0">
-                        <FaClock className="me-2 text-primary" />
                         Review Your Bus Details
                     </h5>
-                    <Button variant="outline-secondary" size="sm" onClick={handleGoBack}>
-                        ← Back
-                    </Button>
                 </div>
             </div>
 
@@ -177,7 +223,7 @@ const BusDetailinfo = () => {
                             <div className="fw-semibold mb-2 text-muted">
                                 <FaCity className="me-2" /> Departure
                             </div>
-                            <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.8rem' }}>
+                            <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.5rem' }}>
                                 {departTime || "-"}
                             </div>
                             <div className="fw-semibold text-dark mb-1">
@@ -190,7 +236,7 @@ const BusDetailinfo = () => {
 
                         <Col md={4} className="text-center">
                             <div className="text-muted small mb-2">Journey Duration</div>
-                            <div className="fw-bold text-primary mb-2" style={{ fontSize: '1.2rem' }}>
+                            <div className="fw-bold text-danger mb-2" style={{ fontSize: '1.2rem' }}>
                                 {calculateDuration(departTime, arriveTime)}
                             </div>
                             <div className="text-center">
@@ -226,14 +272,14 @@ const BusDetailinfo = () => {
                             <div className="fw-semibold mb-2 text-muted">
                                 <FaCity className="me-2" /> Arrival
                             </div>
-                            <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.8rem' }}>
+                            <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.5rem' }}>
                                 {arriveTime || "-"}
                             </div>
                             <div className="fw-semibold text-dark mb-1">
                                 {toCity || "-"}
                             </div>
                             <div className="text-muted small">
-                                {formatDate(departDate)} {/* Assuming same day for now, could be next day */}
+                                {formatDate(getArrivalDate())}
                             </div>
                         </Col>
                     </Row>
@@ -284,10 +330,10 @@ const BusDetailinfo = () => {
                             <div className="border rounded p-3 bg-light">
                                 <div className="text-muted small mb-1">Boarding Point</div>
                                 <div className="fw-bold text-dark mb-1">
-                                    {boarding?.CityPointName || "-"}
+                                    {boarding?.CityPointName || boarding?.name || "-"}
                                 </div>
                                 <div className="text-primary fw-semibold mb-1">
-                                    Time: {boardingTime || "-"}
+                                    Time: {boardingTime || boarding?.DepTime || boarding?.time || "-"}
                                 </div>
                                 {boarding?.CityPointAddress && (
                                     <div className="text-muted small">
@@ -299,7 +345,6 @@ const BusDetailinfo = () => {
                                         Landmark: {boarding.CityPointLandmark}
                                     </div>
                                 )}
-
                             </div>
                         </Col>
 
@@ -307,10 +352,10 @@ const BusDetailinfo = () => {
                             <div className="border rounded p-3 bg-light">
                                 <div className="text-muted small mb-1">Dropping Point</div>
                                 <div className="fw-bold text-dark mb-1">
-                                    {dropping?.CityPointName || "-"}
+                                    {dropping?.CityPointName || dropping?.name || "-"}
                                 </div>
                                 <div className="text-success fw-semibold mb-1">
-                                    Time: {droppingTime || "-"}
+                                    Time: {droppingTime || dropping?.ArrTime || dropping?.time || "-"}
                                 </div>
                                 {dropping?.CityPointAddress && (
                                     <div className="text-muted small">
@@ -322,41 +367,14 @@ const BusDetailinfo = () => {
                                         Landmark: {dropping.CityPointLandmark}
                                     </div>
                                 )}
-
                             </div>
                         </Col>
                     </Row>
-
-                    {/* Booking Summary Card */}
-                    <div className="border rounded p-3 bg-primary bg-opacity-10">
-                        <Row className="align-items-center">
-                            <Col md={8}>
-                                <h6 className="mb-1 text-dark">Booking Summary</h6>
-                                <div className="text-muted small">
-                                    {selectedSeats?.length || 0} passenger{selectedSeats?.length !== 1 ? 's' : ''} •
-                                    {fromCity} to {toCity} •
-                                    {formatDate(departDate)}
-                                </div>
-                            </Col>
-                            <Col md={4} className="text-md-end">
-                                <div className="fw-bold text-dark" style={{ fontSize: '1.3rem' }}>
-                                    Total: ₹ {totalPrice?.toLocaleString() || "-"}
-                                </div>
-                            </Col>
-                        </Row>
-                    </div>
                 </Card.Body>
             </Card>
 
             {/* Action Buttons */}
             <div className="d-flex justify-content-between align-items-center mt-4">
-                <Button
-                    variant="outline-secondary"
-                    onClick={handleGoBack}
-                    className="px-4"
-                > ← Modify Selection
-                </Button>
-
                 <Button
                     variant="primary"
                     className="btn-red px-5 py-2"
@@ -384,8 +402,6 @@ const BusDetailinfo = () => {
                     </Card.Body>
                 </Card>
             </div>
-
-
         </div>
     );
 };
