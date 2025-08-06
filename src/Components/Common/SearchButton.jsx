@@ -65,49 +65,49 @@ const SearchButton = ({ type }) => {
         });
         break;
 
-      case 'hotel': {
-        const {
-          city,
-          checkIn,
-          checkOut,
-          guests,
-          rooms,
-          nights,
-        } = hotelSearchData || {};
+        case 'hotel': {
+          const {
+            city,
+            checkIn,
+            checkOut,
+            guests,
+            rooms,
+            nights,
+          } = hotelSearchData || {};
 
-        if (city && checkIn && checkOut) {
-          const roomDetails = Array.from({ length: Number(rooms) }, () => ({
-            Adult: 1,
-            Child: 0,
-            ChildAge: []
-          }));
+          if (city && checkIn && checkOut) {
+            const roomDetails = Array.from({ length: Number(rooms) }, () => ({
+              Adult: 1,
+              Child: 0,
+              ChildAge: []
+            }));
 
-          navigate('/hotel-results', {
-            state: {
-              city: city.trim(),
-              checkIn,
-              checkOut,
-              guests: Number(guests),
-              rooms: Number(rooms),
-              nights: Number(nights),
-              roomDetails,
-              minRating: 4,
-              maxRating: 5,
-              resultCount: null
-            }
-          });
-        } else {
-          console.warn('❌ Missing hotel search parameters:', hotelSearchData);
-          alert("Please fill in city, check-in, and check-out dates for hotel search.");
+            navigate('/hotel-results', {
+              state: {
+                city: city.trim(),
+                checkIn,
+                checkOut,
+                guests: Number(guests),
+                rooms: Number(rooms),
+                nights: Number(nights),
+                roomDetails,
+                minRating: 4,
+                maxRating: 5,
+                resultCount: null
+              }
+            });
+          } else {
+            console.warn('❌ Missing hotel search parameters:', hotelSearchData);
+            alert("Please fill in city, check-in, and check-out dates for hotel search.");
+          }
+          break;
         }
-        break;
+
+
+        default:
+          console.warn('Unknown search type:', type);
       }
-
-
-      default:
-        console.warn('Unknown search type:', type);
-    }
-  };
+    };
 
   return (
     <div>

@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
-import { FaEnvelope } from 'react-icons/fa';
+import { FaEnvelope, FaShieldAlt } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const GuestDetailsInfo = () => {
@@ -72,32 +73,47 @@ const GuestDetailsInfo = () => {
   const isValidPAN = pan => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan?.trim());
   const isValidGST = gst => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gst?.trim());
 
-  // ✅ FIXED: Enhanced PAN input handler
+  // ✅ ENHANCED: Improved PAN input handler with real-time validation
   const handleInputChange = (roomIndex, type, personIndex, field, value) => {
     const updatedInputs = [...guestInputs];
-    
-    // ✅ Special handling for PAN field
+
+    // ✅ Special handling for PAN field with enhanced cleaning
     if (field === 'panNumber') {
-      // Remove spaces and convert to uppercase
-      const cleanValue = value.replace(/\s/g, '').toUpperCase();
+      // Remove spaces, special characters, convert to uppercase
+      let cleanValue = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+
+      // Limit to 10 characters
+      if (cleanValue.length > 10) {
+        cleanValue = cleanValue.substring(0, 10);
+      }
+
       updatedInputs[roomIndex][type][personIndex][field] = cleanValue;
-      
+
       // Real-time PAN validation feedback
       const errorKey = `${type === 'adults' ? 'adult' : 'child'}-${roomIndex}-${personIndex}-pan`;
-      if (cleanValue && cleanValue.length === 10 && isValidPAN(cleanValue)) {
-        // Valid PAN - clear any existing error
-        if (errors[errorKey]) {
-          setErrors(prev => {
-            const newErrors = { ...prev };
-            delete newErrors[errorKey];
-            return newErrors;
-          });
+
+      if (cleanValue) {
+        if (cleanValue.length === 10 && isValidPAN(cleanValue)) {
+          // Valid PAN - clear any existing error
+          if (errors[errorKey]) {
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors[errorKey];
+              return newErrors;
+            });
+          }
+        } else if (cleanValue.length === 10) {
+          // Invalid format
+          setErrors(prev => ({
+            ...prev,
+            [errorKey]: 'Invalid PAN format (ABCDE1234F)'
+          }));
         }
       }
     } else {
       updatedInputs[roomIndex][type][personIndex][field] = value;
     }
-    
+
     setGuestInputs(updatedInputs);
 
     // ✅ Clear specific field error when user starts typing
@@ -111,7 +127,7 @@ const GuestDetailsInfo = () => {
     }
   };
 
-  // ✅ CRITICAL FIX: Enhanced PAN validation in Guest Details form
+  // ✅ CRITICAL FIX: Enhanced PAN validation for Guest Details Form
   const validateFields = () => {
     const newErrors = {};
 
@@ -130,22 +146,27 @@ const GuestDetailsInfo = () => {
           if (!guest.firstName?.trim() || !isAlpha(guest.firstName)) {
             newErrors[`adult-${roomIdx}-${i}-first`] = 'Only letters allowed';
           }
-          
+
           // Last Name validation
           if (!guest.lastName?.trim() || !isAlpha(guest.lastName)) {
             newErrors[`adult-${roomIdx}-${i}-last`] = 'Only letters allowed';
           }
-          
-          // ✅ ENHANCED PAN validation - specifically handles empty spaces
+
+          // ✅ ENHANCED PAN validation - specifically handles empty spaces and edge cases
           const panValue = guest.panNumber?.trim() || '';
-          
-          // Check if PAN is empty or contains only spaces
-          if (!panValue || panValue.replace(/\s/g, '') === '') {
-            newErrors[`adult-${roomIdx}-${i}-pan`] = 'PAN number is required for all adults';
-          } else if (!isValidPAN(panValue)) {
-            newErrors[`adult-${roomIdx}-${i}-pan`] = 'Enter valid PAN (e.g. ABCDE1234F)';
+
+          // Check if PAN is empty, contains only spaces, or has placeholder values
+          const invalidPANValues = ['', 'NULL', 'UNDEFINED', 'N/A', 'NA', 'NONE', 'NOT PROVIDED'];
+          const cleanPAN = panValue.replace(/\s/g, '').toUpperCase();
+
+          if (!panValue || invalidPANValues.includes(cleanPAN) || cleanPAN === '') {
+            newErrors[`adult-${roomIdx}-${i}-pan`] = `PAN number is mandatory for Adult ${i + 1}`;
+          } else if (cleanPAN.length !== 10) {
+            newErrors[`adult-${roomIdx}-${i}-pan`] = 'PAN must be exactly 10 characters';
+          } else if (!isValidPAN(cleanPAN)) {
+            newErrors[`adult-${roomIdx}-${i}-pan`] = 'Enter valid PAN format (ABCDE1234F)';
           }
-          
+
           // Age validation
           if (!guest.age || isNaN(guest.age) || parseInt(guest.age) < 18) {
             newErrors[`adult-${roomIdx}-${i}-age`] = 'Enter valid age (18+)';
@@ -164,6 +185,25 @@ const GuestDetailsInfo = () => {
           }
           if (!guest.age || isNaN(guest.age) || parseInt(guest.age) >= 18 || parseInt(guest.age) < 1) {
             newErrors[`child-${roomIdx}-${i}-age`] = 'Enter valid child age (1-17)';
+          }
+        });
+      }
+    });
+
+    // ✅ Check for duplicate PANs across all adults
+    const panMap = new Map();
+    guestInputs.forEach((room, roomIdx) => {
+      if (room.adults) {
+        room.adults.forEach((guest, i) => {
+          const cleanPAN = guest.panNumber?.trim().toUpperCase();
+          if (cleanPAN && isValidPAN(cleanPAN)) {
+            if (panMap.has(cleanPAN)) {
+              const existingLocation = panMap.get(cleanPAN);
+              newErrors[`adult-${roomIdx}-${i}-pan`] = `PAN already used by ${existingLocation}`;
+              newErrors[`adult-${existingLocation.roomIdx}-${existingLocation.guestIdx}-pan`] = 'Duplicate PAN number';
+            } else {
+              panMap.set(cleanPAN, `Adult ${i + 1} in Room ${roomIdx + 1}`);
+            }
           }
         });
       }
@@ -197,12 +237,56 @@ const GuestDetailsInfo = () => {
     }
 
     setErrors(newErrors);
+
+    // ✅ Enhanced error reporting
+    if (Object.keys(newErrors).length > 0) {
+      console.error('❌ Validation failed with errors:', newErrors);
+
+      // Count PAN errors specifically
+      const panErrors = Object.keys(newErrors).filter(key => key.includes('-pan')).length;
+      if (panErrors > 0) {
+        console.error(`🚨 PAN VALIDATION CRITICAL: ${panErrors} PAN errors found!`);
+      }
+    }
+
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✅ FIXED: Function to create booking payload with proper PAN for all adults
+  // ✅ CRITICAL FIX: Enhanced createBookingPayload with rigorous PAN validation
   const createBookingPayload = (updatedGuestInputs, emailValue, mobileValue, gstInfo) => {
-    console.log('🏗️ Creating booking payload with proper PAN handling...');
+    console.log('🏗️ Creating booking payload with enhanced PAN validation...');
+
+    // ✅ PRE-VALIDATION: Check all adults have PAN before creating payload
+    const panValidationErrors = [];
+    let totalAdults = 0;
+    let adultsWithValidPAN = 0;
+
+    updatedGuestInputs.forEach((room, roomIndex) => {
+      room.adults.forEach((adult, adultIndex) => {
+        totalAdults++;
+
+        const cleanPAN = adult.panNumber?.trim().toUpperCase();
+        const passengerName = `${adult.firstName} ${adult.lastName}`;
+
+        if (!cleanPAN || cleanPAN === '' || cleanPAN === 'NULL') {
+          panValidationErrors.push(`❌ ${passengerName} (Room ${roomIndex + 1}, Adult ${adultIndex + 1}): PAN is missing`);
+        } else if (!isValidPAN(cleanPAN)) {
+          panValidationErrors.push(`❌ ${passengerName} (Room ${roomIndex + 1}, Adult ${adultIndex + 1}): Invalid PAN format "${cleanPAN}"`);
+        } else {
+          adultsWithValidPAN++;
+          console.log(`✅ ${passengerName}: Valid PAN ${cleanPAN}`);
+        }
+      });
+    });
+
+    // ✅ CRITICAL: Stop if any PAN issues found
+    if (panValidationErrors.length > 0) {
+      const errorMessage = `🚨 CRITICAL PAN VALIDATION FAILED:\n\n${panValidationErrors.join('\n')}\n\nStats:\n• Total Adults: ${totalAdults}\n• Adults with Valid PAN: ${adultsWithValidPAN}\n• Missing/Invalid PANs: ${panValidationErrors.length}\n\nAll adult passengers must have valid PAN numbers before booking.`;
+      console.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    console.log(`📊 PAN Pre-validation Success: ${adultsWithValidPAN}/${totalAdults} adults have valid PANs`);
 
     // Create HotelRoomsDetails structure
     const HotelRoomsDetails = updatedGuestInputs.map((room, roomIndex) => {
@@ -211,9 +295,15 @@ const GuestDetailsInfo = () => {
         HotelPassenger: []
       };
 
-      // Process adults
+      // Process adults with STRICT PAN validation
       room.adults.forEach((adult, adultIndex) => {
         const isLeadPassenger = roomIndex === 0 && adultIndex === 0;
+        const cleanPAN = adult.panNumber?.trim().toUpperCase();
+
+        // ✅ FINAL PAN CHECK before adding to payload
+        if (!cleanPAN || !isValidPAN(cleanPAN)) {
+          throw new Error(`CRITICAL ERROR: Adult ${adult.firstName} ${adult.lastName} has invalid PAN: "${cleanPAN || 'MISSING'}"`);
+        }
 
         const passengerData = {
           Title: adult.title,
@@ -228,8 +318,8 @@ const GuestDetailsInfo = () => {
           PassportNo: null,
           PassportIssueDate: null,
           PassportExpDate: null,
-          // ✅ CRITICAL FIX: PAN is required for ALL adults, not just lead passenger
-          PAN: adult.panNumber?.trim().toUpperCase(),
+          // ✅ CRITICAL: Ensure PAN is properly formatted and not null
+          PAN: cleanPAN,
 
           // ✅ GST fields - ONLY for lead passenger
           GSTCompanyAddress: (isLeadPassenger && gstInfo?.gstNumber) ? gstInfo.address.trim() : null,
@@ -239,19 +329,12 @@ const GuestDetailsInfo = () => {
           GSTNumber: (isLeadPassenger && gstInfo?.gstNumber) ? gstInfo.gstNumber.trim().toUpperCase() : null
         };
 
-        console.log(`${isLeadPassenger ? '👑' : '👤'} ${isLeadPassenger ? 'Lead ' : ''}Adult: ${passengerData.FirstName} ${passengerData.LastName}`);
-        console.log(`   PAN: ${passengerData.PAN || 'MISSING!'}`);
-        console.log(`   GST Number: ${passengerData.GSTNumber || 'null'}`);
-
-        // ✅ VALIDATION: Ensure PAN exists for adults
-        if (!passengerData.PAN) {
-          console.error(`❌ CRITICAL: Missing PAN for adult: ${passengerData.FirstName} ${passengerData.LastName}`);
-        }
+        console.log(`${isLeadPassenger ? '👑' : '👤'} ${passengerData.FirstName} ${passengerData.LastName} - PAN: ${passengerData.PAN}`);
 
         roomData.HotelPassenger.push(passengerData);
       });
 
-      // Process children
+      // Process children (no PAN required)
       room.children.forEach((child) => {
         const childData = {
           Title: child.title,
@@ -277,7 +360,7 @@ const GuestDetailsInfo = () => {
           GSTNumber: null
         };
 
-        console.log(`👶 Child: ${childData.FirstName} ${childData.LastName} (Age: ${childData.Age})`);
+        console.log(`👶 ${childData.FirstName} ${childData.LastName} (Age: ${childData.Age})`);
         roomData.HotelPassenger.push(childData);
       });
 
@@ -296,46 +379,111 @@ const GuestDetailsInfo = () => {
       IsVoucherBooking: "true",
       vendorCommission: priceDetails?.vendorCommission || 0,
       CouponDiscount: 0,
-      UserIp: "0.0.0.0",
+      UserIp: "49.36.217.215",
       HotelRoomsDetails
     };
 
-    // ✅ Verify PAN assignment for all adults
-    console.log('\n=== PAN Assignment Verification ===');
-    let adultsWithPAN = 0;
-    let adultsWithoutPAN = 0;
-    let leadWithGST = 0;
+    // ✅ FINAL VERIFICATION: Ensure all adults have PAN in final payload
+    console.log('\n=== FINAL PAN VERIFICATION ===');
+    let finalAdultsWithPAN = 0;
+    let finalAdultsWithoutPAN = 0;
 
     HotelRoomsDetails.forEach((room, roomIndex) => {
-      room.HotelPassenger.forEach((passenger, passengerIndex) => {
+      room.HotelPassenger.forEach((passenger) => {
         if (passenger.PaxType === 1) { // Adult
-          if (passenger.PAN) {
-            adultsWithPAN++;
-            console.log(`✅ Adult with PAN: ${passenger.FirstName} ${passenger.LastName} - ${passenger.PAN}`);
+          if (passenger.PAN && isValidPAN(passenger.PAN)) {
+            finalAdultsWithPAN++;
+            console.log(`✅ Final payload adult with PAN: ${passenger.FirstName} ${passenger.LastName} - ${passenger.PAN}`);
           } else {
-            adultsWithoutPAN++;
-            console.error(`❌ Adult WITHOUT PAN: ${passenger.FirstName} ${passenger.LastName}`);
-          }
-
-          if (passenger.LeadPassenger === "true" && passenger.GSTNumber) {
-            leadWithGST++;
-            console.log(`✅ Lead passenger has GST: ${passenger.FirstName} ${passenger.LastName}`);
+            finalAdultsWithoutPAN++;
+            console.error(`❌ Final payload adult WITHOUT valid PAN: ${passenger.FirstName} ${passenger.LastName} - PAN: ${passenger.PAN || 'NULL'}`);
           }
         }
       });
     });
 
-    console.log(`\n📊 PAN Summary: ${adultsWithPAN} adults with PAN, ${adultsWithoutPAN} adults without PAN`);
-    console.log(`📊 GST Summary: ${leadWithGST} lead with GST`);
+    console.log(`📊 Final PAN verification: ${finalAdultsWithPAN} adults with PAN, ${finalAdultsWithoutPAN} adults without PAN`);
 
-    if (adultsWithoutPAN > 0) {
-      console.error('🚨 CRITICAL ERROR: Some adults are missing PAN numbers!');
-      throw new Error(`${adultsWithoutPAN} adult(s) are missing PAN numbers. All adults must have PAN numbers.`);
-    } else {
-      console.log('✅ PAN validation successful - all adults have PAN numbers');
+    if (finalAdultsWithoutPAN > 0) {
+      throw new Error(`🚨 CRITICAL ERROR: ${finalAdultsWithoutPAN} adult(s) in final payload are missing valid PAN numbers!`);
     }
 
+    console.log('✅ All PAN validations passed - payload ready for API');
     return bookingPayload;
+  };
+
+  // ✅ ENHANCED: Add PAN status display in the UI
+  const renderPANStatus = () => {
+    const panStats = { totalAdults: 0, validPANs: 0, invalidPANs: 0, duplicates: 0 };
+    const panMap = new Map();
+    const issues = [];
+
+    guestInputs.forEach((room, roomIdx) => {
+      if (room.adults) {
+        room.adults.forEach((guest, i) => {
+          panStats.totalAdults++;
+          const cleanPAN = guest.panNumber?.trim().toUpperCase();
+          const guestName = `${guest.firstName} ${guest.lastName}`.trim();
+
+          if (!cleanPAN || !isValidPAN(cleanPAN)) {
+            panStats.invalidPANs++;
+            issues.push(`${guestName} (Room ${roomIdx + 1}): ${!cleanPAN ? 'Missing PAN' : 'Invalid PAN format'}`);
+          } else {
+            if (panMap.has(cleanPAN)) {
+              panStats.duplicates++;
+              issues.push(`${guestName} (Room ${roomIdx + 1}): Duplicate PAN`);
+            } else {
+              panStats.validPANs++;
+              panMap.set(cleanPAN, guestName);
+            }
+          }
+        });
+      }
+    });
+
+    const isAllValid = panStats.totalAdults > 0 && panStats.validPANs === panStats.totalAdults && panStats.duplicates === 0;
+
+    return (
+      <div className={`alert ${isAllValid ? 'alert-success' : 'alert-warning'} mb-4`}>
+        <h6 className="fw-bold mb-2">
+          <FaShieldAlt className="me-2" />
+          PAN Validation Status
+        </h6>
+        <div className="row">
+          <div className="col-md-6">
+            <div>Total Adults: <strong>{panStats.totalAdults}</strong></div>
+            <div className="text-success">Valid PANs: <strong>{panStats.validPANs}</strong></div>
+          </div>
+          <div className="col-md-6">
+            {panStats.invalidPANs > 0 && (
+              <div className="text-danger">Invalid/Missing PANs: <strong>{panStats.invalidPANs}</strong></div>
+            )}
+            {panStats.duplicates > 0 && (
+              <div className="text-danger">Duplicate PANs: <strong>{panStats.duplicates}</strong></div>
+            )}
+          </div>
+        </div>
+
+        {!isAllValid && issues.length > 0 && (
+          <div className="mt-2">
+            <small><strong>Issues to resolve:</strong></small>
+            <ul className="mb-0 mt-1">
+              {issues.slice(0, 5).map((issue, idx) => (
+                <li key={idx}><small>{issue}</small></li>
+              ))}
+              {issues.length > 5 && <li><small>... and {issues.length - 5} more</small></li>}
+            </ul>
+          </div>
+        )}
+
+        <div className={`mt-2 alert ${isAllValid ? 'alert-success' : 'alert-warning'} mb-0`}>
+          {isAllValid ?
+            '✅ All PAN requirements satisfied. Ready to proceed!' :
+            '⚠️ Please resolve PAN issues before continuing to payment.'
+          }
+        </div>
+      </div>
+    );
   };
 
   const handleContinue = () => {
@@ -377,31 +525,36 @@ const GuestDetailsInfo = () => {
       address: gstData.address.trim()
     } : null;
 
-    // ✅ Create booking payload with GST filtering
-    const hotelBookingDetails = createBookingPayload(
-      updatedGuestInputs,
-      email.trim(),
-      mobile.trim(),
-      gstInfo
-    );
+    try {
+      // ✅ Create booking payload with GST filtering
+      const hotelBookingDetails = createBookingPayload(
+        updatedGuestInputs,
+        email.trim(),
+        mobile.trim(),
+        gstInfo
+      );
 
-    const bookingState = {
-      hotel,
-      room,
-      roomDetails,
-      priceDetails,
-      guestInputs: updatedGuestInputs,
-      email: email.trim(),
-      mobile: mobile.trim(),
-      payload,
-      hotelBookingDetails, // ✅ This now has GST only for lead passenger
-      ...(gstInfo ? { gstData: gstInfo } : {})
-    };
+      const bookingState = {
+        hotel,
+        room,
+        roomDetails,
+        priceDetails,
+        guestInputs: updatedGuestInputs,
+        email: email.trim(),
+        mobile: mobile.trim(),
+        payload,
+        hotelBookingDetails, // ✅ This now has GST only for lead passenger
+        ...(gstInfo ? { gstData: gstInfo } : {})
+      };
 
-    console.log('🚀 Navigating to review with state:', bookingState);
-    console.log('📦 Hotel Booking Details (with GST filtering):', hotelBookingDetails);
+      console.log('🚀 Navigating to review with state:', bookingState);
+      console.log('📦 Hotel Booking Details (with GST filtering):', hotelBookingDetails);
 
-    navigate('/Hotelreview', { state: bookingState });
+      navigate('/Hotelreview', { state: bookingState });
+    } catch (error) {
+      console.error('❌ Error creating booking payload:', error);
+      alert(`Booking Error: ${error.message}`);
+    }
   };
 
   // ✅ Handle email/mobile change with error clearing

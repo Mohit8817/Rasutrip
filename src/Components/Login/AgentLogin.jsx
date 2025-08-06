@@ -22,17 +22,27 @@ const AgentLogin = () => {
   const [showResetForm, setShowResetForm] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
 
-  const navigate = useNavigate(); // ← INIT HOOK
-  const { setUser, setUserType } = useContext(AuthContext); // Add setUserType
+  const navigate = useNavigate();
+  // Fixed: Use proper context methods
+  const { setUser: setContextUser, setUserType } = useContext(AuthContext);
+
   const handleLogin = async () => {
     setError('');
     setSuccess('');
     try {
       const { data } = await agentLogin({ mobile, password });
       setSuccess('Login successful!');
-      setUser(data.agent || { mobile });
+      
+      // Set user data in context
+      const agentData = data.agent || { mobile };
+      setContextUser(agentData);
       setUserType('agent');
-      navigate('/'); // ← REDIRECT TO HOME
+      
+      // Navigate to home page
+      setTimeout(() => {
+        navigate('/');
+      }, 1000);
+      
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     }
@@ -45,7 +55,7 @@ const AgentLogin = () => {
     const cleanMobile = mobile.replace(/\D/g, '');
 
     try {
-      const { data } = await sendForgotPasswordOtp({ mobile: cleanMobile }); // ← wrap in object
+      const { data } = await sendForgotPasswordOtp({ mobile: cleanMobile });
       setSuccess(data.message);
       setOtpSent(true);
     } catch (err) {
@@ -53,7 +63,6 @@ const AgentLogin = () => {
       setError(err.response?.data?.message || 'Failed to send OTP');
     }
   };
-
 
   const handleResetPassword = async () => {
     setError('');
