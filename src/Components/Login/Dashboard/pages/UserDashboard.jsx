@@ -46,7 +46,7 @@ const UserDashboard = () => {
             case 'bookings':
                 return (
                     <div>
-                        <BookingTabs 
+                        <BookingTabs
                             activeBookingTab={activeBookingTab}
                             setActiveBookingTab={setActiveBookingTab}
                         />
@@ -61,7 +61,7 @@ const UserDashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 mt-5 pt-5 innerpagecontainer">
+        <div className="min-h-screen bg-gray-100 mt-3">
             <Container>
                 <Row>
                     {/* Sidebar */}
