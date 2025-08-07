@@ -161,6 +161,9 @@ import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import UserDashboard from './Components/Login/Dashboard/pages/UserDashboard';
+import Blogpage from './Pages/Blog/BlogListPage';
+import BlogListPage from './Pages/Blog/BlogListPage';
+import BlogDetail from './Pages/Blog/BlogDetail';
 function App() {
   return (
     <>
@@ -216,7 +219,14 @@ function App() {
         <Route path="/disclaimer" element={<Declaration />} />
         <Route path="/UserAgreement" element={<UserAgreement />} />
         <Route path="/CancellationRefundpolicy" element={<CancellationRefundpolicy />} />
+
         <Route path="/faq" element={<FAQ />} />
+
+        <Route path="/Blogs" element={<BlogListPage />} />
+
+        {/* Blog Detail Page */}
+        <Route path="/blog/:id" element={<BlogDetail />} />
+
       </Routes>
       <Footer />
       {/* </Router> */}

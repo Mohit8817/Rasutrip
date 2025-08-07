@@ -103,7 +103,7 @@ const Header = () => {
                                     </Dropdown.Menu>
                                 </Dropdown>
 
-                                <Nav.Link href="/blog" className="nav-item-link">
+                                <Nav.Link href="/Blogs" className="nav-item-link">
                                     <i className="fas fa-blog"></i> Travel Blog
                                 </Nav.Link>
                             </Nav>
