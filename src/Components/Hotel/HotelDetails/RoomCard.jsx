@@ -43,10 +43,18 @@ const RoomCard = ({
       return;
     }
 
+    // ✅ ENHANCED: Better PAN mandatory warning
     if (isPANMandatory(room)) {
-      alert(
-        "⚠️ This room requires PAN numbers for all adult guests.\n\nPlease ensure all adult passengers have valid PAN numbers before proceeding to payment.\n\nPAN format: ABCDE1234F (5 letters + 4 digits + 1 letter)"
-      );
+      const totalAdults = hotel?.adult || 1;
+      const warningMessage = `⚠️ PAN MANDATORY ROOM SELECTED\n\n` +
+        `This room requires UNIQUE PAN numbers for ALL ${totalAdults} adult guest(s).\n\n` +
+        `Important Requirements:\n` +
+        `• Each adult must have a DIFFERENT PAN number\n` +
+        `• PAN format: ABCDE1234F (5 letters + 4 digits + 1 letter)\n` +
+        `• Duplicate PAN numbers will cause booking failure\n\n` +
+        `Please ensure all passengers have valid, unique PAN cards before proceeding.`;
+
+      alert(warningMessage);
     }
 
     setLoadingRoomId(room.RoomId);
@@ -106,7 +114,7 @@ const RoomCard = ({
             },
             payload,
             blockedRoomData: blockRes?.Result,
-            isPANMandatory: isPANMandatory(room),
+            isPANMandatory: isPANMandatory(room), // ✅ Pass this flag
           },
         });
       } else if (blockRes?.Error?.ErrorCode === 5) {
@@ -155,9 +163,12 @@ const RoomCard = ({
                   ₹{offeredPrice.toLocaleString()}
                 </div>
 
+                {/* ✅ ENHANCED: Better PAN mandatory warning */}
                 {panMandatory && (
-                  <div className="text-danger small">
-                    ⚠️ PAN card is mandatory for booking this room.
+                  <div className="alert alert-warning p-2 mb-2 small">
+                    <strong>⚠️ PAN MANDATORY ROOM</strong><br />
+                    All {hotel?.adult || 1} adult guest(s) need UNIQUE PAN numbers.<br />
+                    <small className="text-muted">Duplicate PAN will cause booking failure.</small>
                   </div>
                 )}
               </div>
@@ -169,6 +180,7 @@ const RoomCard = ({
                     {room.Inclusion?.[0] || room.RatePlanName || "ROOM ONLY"}
                   </span>
                 </div>
+
 
                 <button
                   className="btn btn-danger btn-sm px-4"
@@ -194,4 +206,3 @@ const RoomCard = ({
 };
 
 export default RoomCard;
-  

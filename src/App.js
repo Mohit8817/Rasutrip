@@ -159,6 +159,7 @@ import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import UserDashboard from './Components/Login/Dashboard/pages/UserDashboard';
 function App() {
   return (
     <>
@@ -199,7 +200,12 @@ function App() {
         <Route path="/login/agent" element={<AgentLogin />} />
         <Route path="/set-mpin" element={<SetResetMPIN />} />
 
+        {/* user and agent dashboard */}
+        <Route path="/dashboard" element={<UserDashboard />} />
+
+
         {/* Dashboard */}
+
         <Route path="/dashboard" element={<h1>Welcome to Dashboard</h1>} />
 
         {/* Footer Pages */}
