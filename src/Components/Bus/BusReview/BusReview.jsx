@@ -11,7 +11,7 @@ const BusReview = () => {
 
     return (
         <div>
-            <Container className='mt-5 pt-3'>
+            <Container className='mt-5'>
                 <Row>
                     <Col>
                         <BusStep activeIndex={2} />

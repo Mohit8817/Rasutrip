@@ -252,10 +252,8 @@
 .booking-steps-container {
   display: flex;
   justify-content: space-between;
-  align-items: center;
- 
+  align-items: center; 
   position: relative;
-  margin: 20px 0;
 }
 
 .step-item {
