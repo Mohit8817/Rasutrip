@@ -50,7 +50,7 @@ const Home = () => {
 
             {/* <Header /> */}
             <Slider />
-            <DealsSection />
+            {/* <DealsSection /> */}
             <TravelBenefits />
             <FlightRoutes />
             <section>
