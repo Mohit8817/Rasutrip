@@ -16,7 +16,7 @@ const BusBookingHistory = () => {
         // Check multiple possible token storage keys
         const tokenKeys = [
             'authToken',
-            'token', 
+            'token',
             'accessToken',
             'jwt',
             'userToken',
@@ -96,7 +96,7 @@ const BusBookingHistory = () => {
 
         } catch (error) {
             console.error('❌ API Request failed:', error);
-            
+
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
                 throw new Error('Network error. Please check your internet connection.');
             } else {
@@ -351,7 +351,7 @@ const BusBookingHistory = () => {
 
         // Check authentication
         const tokenKeys = ['authToken', 'token', 'accessToken', 'jwt', 'userToken'];
-        const hasToken = tokenKeys.some(key => 
+        const hasToken = tokenKeys.some(key =>
             window.localStorage?.getItem(key) || window.sessionStorage?.getItem(key)
         );
 
@@ -631,12 +631,11 @@ const BusBookingHistory = () => {
                                                 {booking.pnr || 'N/A'}
                                             </td>
                                             <td className="px-4 py-3 text-sm">
-                                                <span className={`font-medium ${
-                                                    booking.bookingStatus?.toLowerCase() === 'confirmed' ? 'text-green-600' :
-                                                    booking.bookingStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
-                                                    booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'text-red-600' :
-                                                    'text-blue-600'
-                                                }`}>
+                                                <span className={`font-medium ${booking.bookingStatus?.toLowerCase() === 'confirmed' ? 'text-green-600' :
+                                                        booking.bookingStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
+                                                            booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'text-red-600' :
+                                                                'text-blue-600'
+                                                    }`}>
                                                     {booking.bookingStatus}
                                                 </span>
                                             </td>
@@ -644,12 +643,11 @@ const BusBookingHistory = () => {
                                                 {formatAmount(booking.totalAmount)}
                                             </td>
                                             <td className="px-4 py-3 text-sm">
-                                                <span className={`font-medium ${
-                                                    booking.paymentStatus?.toLowerCase() === 'completed' ? 'text-green-600' :
-                                                    booking.paymentStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
-                                                    booking.paymentStatus?.toLowerCase() === 'failed' ? 'text-red-600' :
-                                                    'text-blue-600'
-                                                }`}>
+                                                <span className={`font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' ? 'text-green-600' :
+                                                        booking.paymentStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
+                                                            booking.paymentStatus?.toLowerCase() === 'failed' ? 'text-red-600' :
+                                                                'text-blue-600'
+                                                    }`}>
                                                     {booking.paymentStatus}
                                                 </span>
                                             </td>
@@ -657,7 +655,7 @@ const BusBookingHistory = () => {
                                                 {booking.createdAt}
                                             </td>
                                             <td className="px-4 py-3 text-sm">
-                                                <button 
+                                                <button
                                                     onClick={() => {
                                                         console.log('View booking details:', booking);
                                                     }}

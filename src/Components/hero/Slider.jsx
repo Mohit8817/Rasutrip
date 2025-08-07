@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import Carousel from 'react-bootstrap/Carousel';
-import slidimg1 from '../../assest/1 (1).jpg';
-import slidimg2 from '../../assest/1 (2).jpg';
-import slidimg3 from '../../assest/1 (1).jpg';
+import slidimg1 from '../../assest/img (1).png';
+import slidimg2 from '../../assest/img (2).png';
+import slidimg3 from '../../assest/img (1).png';
 import '../../Style/Slider.css'; // Make sure path is correct
 import FlightBooking from '../FlightBooking/FlightBooking';
 import TravelTabs from '../FlightBooking/TravelTabs';
@@ -13,7 +13,7 @@ import { useLocation } from 'react-router-dom';
 const Slider = () => {
   const [index, setIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('flight'); // Add activeTab state
-const location = useLocation();
+  const location = useLocation();
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
   };
@@ -39,26 +39,26 @@ const location = useLocation();
       {/* Three tabs */}
       <div className="overlay-box">
         {location.pathname === '/' && (
-        <div className="travel-tabs">
-          <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} className="" />
-        </div>
+          <div className="travel-tabs">
+            <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} className="" />
+          </div>
         )}
         {/* Conditionally show active component */}
         {renderActiveTabContent()}
       </div>
 
-           {location.pathname === '/' && (
-      <Carousel activeIndex={index} onSelect={handleSelect} className="slider">
-        {[slidimg1, slidimg2, slidimg3].map((img, idx) => (
-          <Carousel.Item key={idx}>
-            <div className="slider-image-wrapper">
-              <img className="d-block w-100" src={img} alt={`Slide ${idx + 1}`} />
-              <div className="top-overlay"></div>
-            </div>
-          </Carousel.Item>
-        ))}
-      </Carousel>
-           )}
+      {location.pathname === '/' && (
+        <Carousel activeIndex={index} onSelect={handleSelect} className="slider">
+          {[slidimg1, slidimg2, slidimg3].map((img, idx) => (
+            <Carousel.Item key={idx}>
+              <div className="slider-image-wrapper">
+                <img className="d-block w-100" src={img} alt={`Slide ${idx + 1}`} />
+                <div className="top-overlay"></div>
+              </div>
+            </Carousel.Item>
+          ))}
+        </Carousel>
+      )}
     </div>
   );
 };
