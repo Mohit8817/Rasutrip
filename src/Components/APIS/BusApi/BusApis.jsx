@@ -339,21 +339,21 @@ export const downloadBusInvoice = async (invoiceData) => {
     // Handle 409 Conflict - Invoice already generated
     if (response.status === 409) {
       console.log('⚠️ Invoice already exists (409)');
-      
+
       // Try to parse the response to get more info
       try {
         const text = await response.data.text();
         const jsonResponse = JSON.parse(text);
-        
-        return { 
-          success: true, 
+
+        return {
+          success: true,
           alreadyExists: true,
           message: jsonResponse.message || 'Invoice already generated and sent to email',
           data: jsonResponse
         };
       } catch (parseError) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           alreadyExists: true,
           message: 'Invoice already generated and sent to email'
         };
@@ -444,8 +444,8 @@ export const downloadBusInvoice = async (invoiceData) => {
 
       // Special handling for 409 (should not reach here due to validateStatus)
       if (error.response.status === 409) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           alreadyExists: true,
           message: 'Invoice already generated and sent to email'
         };

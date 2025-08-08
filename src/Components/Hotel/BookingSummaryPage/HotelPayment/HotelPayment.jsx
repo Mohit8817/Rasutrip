@@ -13,7 +13,7 @@ const HotelPayment = () => {
 
     return (
         <div>
-            <Container className="mt-5 pt-3">
+            <Container className="">
                 <Row>
                     <Col>
                         <HotelStep activeIndex={3} />

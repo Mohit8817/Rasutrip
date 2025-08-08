@@ -18,12 +18,12 @@ const HotelDetail = () => {
     const { priceDetails } = location.state || {};
 
     return (
-        <Container className='mt-5 pt-5'>
+        <Container className=''>
             <Row>
                 <HotelStep activeIndex={0} />
             </Row>
 
-            <Row>
+            <Row className='mt-3'>
                 <Col lg={9}>
                     <HotelDetailInfo onRoomSelect={handleRoomSelect} />
                 </Col>

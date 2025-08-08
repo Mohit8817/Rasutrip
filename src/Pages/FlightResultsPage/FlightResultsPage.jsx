@@ -37,7 +37,7 @@ const FlightResultsPage = () => {
     });
 
     return (
-       <div className='innerpagecontainer mt-5'>
+       <div className=''>
          <div className='relative'>
             {tripType === 'oneway' && (
                 <Container className="mt-5 pt-5">

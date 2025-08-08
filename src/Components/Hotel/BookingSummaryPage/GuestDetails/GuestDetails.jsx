@@ -13,7 +13,7 @@ const GuestDetails = () => {
     return (
         <div>
 
-            <Container className='mt-5 pt-5'>
+            <Container className=''>
                 <Row>
                     <HotelStep activeIndex={1} />
                 </Row>

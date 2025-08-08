@@ -14,7 +14,7 @@ const HotelStep = () => {
     const location = useLocation();
 
     return (
-        <Container className="booking-steps-container container d-flex justify-content-between mt-5 pt-5">
+        <Container className="booking-steps-container container d-flex justify-content-between mt-5">
             {steps.map((step, index) => {
                 const isActive = location.pathname.includes(step.path);
                 return (

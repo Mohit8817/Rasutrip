@@ -179,7 +179,7 @@ const BusDetailinfo = () => {
         if (arriveDate) {
             return arriveDate;
         }
-        
+
         // Otherwise, calculate based on times
         if (!departTime || !arriveTime || !departDate) {
             return departDate || "-";
@@ -188,7 +188,7 @@ const BusDetailinfo = () => {
         try {
             const dept = new Date(`1970-01-01 ${departTime}`);
             const arr = new Date(`1970-01-01 ${arriveTime}`);
-            
+
             // If arrival time is less than departure time, it's next day
             if (arr < dept) {
                 const departDateObj = new Date(departDate);
@@ -196,7 +196,7 @@ const BusDetailinfo = () => {
                 arrivalDateObj.setDate(arrivalDateObj.getDate() + 1);
                 return arrivalDateObj.toLocaleDateString('en-CA'); // YYYY-MM-DD format
             }
-            
+
             return departDate;
         } catch (e) {
             return departDate || "-";
@@ -204,7 +204,7 @@ const BusDetailinfo = () => {
     };
 
     return (
-        <div className="bus-review-wrapper container py-4">
+        <div className=" container mt-3">
             {/* Header */}
             <div className="bg-light text-dark px-4 py-3 mb-4 fw-semibold border rounded shadow-sm">
                 <div className="d-flex justify-content-between align-items-center">
