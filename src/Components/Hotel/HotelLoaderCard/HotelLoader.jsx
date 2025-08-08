@@ -8,15 +8,15 @@ const HotelLoader = ({ city, checkIn, checkOut, guests, rooms }) => {
             <div className="bg-white p-5 rounded-4 shadow text-center" style={{ width: '100%', maxWidth: '450px' }}>
                 {/* Centered GIF with better styling */}
                 <div className="d-flex justify-content-center align-items-center mb-4">
-                    <img 
-                        src={houseIcon} 
-                        alt="Hotel Icon" 
-                        className="loader-icon" 
-                        style={{ 
-                            width: '80px', 
+                    <img
+                        src={houseIcon}
+                        alt="Hotel Icon"
+                        className="loader-icon"
+                        style={{
+                            width: '80px',
                             height: 'auto',
                             display: 'block'
-                        }} 
+                        }}
                     />
                 </div>
 
