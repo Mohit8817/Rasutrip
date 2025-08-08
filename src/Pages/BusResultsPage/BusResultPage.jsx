@@ -135,13 +135,29 @@ const BusResultPage = () => {
         getBusData();
     }, [DateOfJourney, DestinationId, OriginId, from, to]);
 
+    // Format date for display
+    const formatDateForDisplay = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
     // Show loader while data is loading
     if (isLoading) {
         return (
             <Container fluid className="mt-5 min-vh-100">
                 <Row>
                     <Col className="text-center">
-                        <Busloader />
+                        <Busloader
+                            from={from}
+                            to={to}
+                            departDate={formatDateForDisplay(DateOfJourney)}
+                        />
                     </Col>
                 </Row>
             </Container>
@@ -164,7 +180,7 @@ const BusResultPage = () => {
                                 From: <strong>{from}</strong> → To: <strong>{to}</strong>
                             </p>
                             <p className="text-secondary">
-                                Date: <strong>{DateOfJourney}</strong>
+                                Date: <strong>{formatDateForDisplay(DateOfJourney)}</strong>
                             </p>
                             <small className="text-muted mt-2">
                                 Please try searching for a different date or route.
