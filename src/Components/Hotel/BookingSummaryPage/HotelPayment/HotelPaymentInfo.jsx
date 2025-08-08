@@ -16,7 +16,7 @@ const HotelPaymentInfo = () => {
     hotelBookingDetails = {},
     priceDetails = {},
     reviewData = {},
-    isPANMandatory = false,
+    isPANMandatory = false, 
   } = location.state || {};
 
   const {
