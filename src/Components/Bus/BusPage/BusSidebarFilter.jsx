@@ -13,9 +13,26 @@ const BusSidebarFilter = ({
   selectedBusTypes,
   setSelectedBusTypes,
 }) => {
+  // Handle single range change (only controls minimum price for now)
   const handlePriceChange = (e) => {
     const newMin = parseFloat(e.target.value);
+    // Keep max price as actualPriceRange[1] or allow user to set it
     onPriceChange([newMin, actualPriceRange[1]]);
+  };
+
+  // Alternative: Handle range with input fields for precise control
+  const handleMinInputChange = (e) => {
+    const newMin = parseFloat(e.target.value) || actualPriceRange[0];
+    if (newMin <= priceRange[1]) {
+      onPriceChange([newMin, priceRange[1]]);
+    }
+  };
+
+  const handleMaxInputChange = (e) => {
+    const newMax = parseFloat(e.target.value) || actualPriceRange[1];
+    if (newMax >= priceRange[0]) {
+      onPriceChange([priceRange[0], newMax]);
+    }
   };
 
   const handleOperatorChange = (op) => {
@@ -49,46 +66,68 @@ const BusSidebarFilter = ({
 
       {/* Price Filter */}
       <div className="mb-4">
-        <div className="filter-label mb-1">Min Price (INR)</div>
-        <Form.Range
-          min={actualPriceRange[0]}
-          max={actualPriceRange[1]}
-          step="1"
-          value={priceRange[0]}
-          onChange={handlePriceChange}
-        />
-        <div className="d-flex justify-content-between">
-          <span>From ₹{priceRange[0]}</span>
-          <span>To ₹{actualPriceRange[1]}</span>
+        <div className="filter-label mb-2">Price Range (INR)</div>
+        
+ 
+
+        {/* Single Range Slider for Min Price */}
+        <div className="mb-2">
+          <label className="form-label small">Minimum Price: ₹{Math.round(priceRange[0])}</label>
+          <Form.Range
+            min={actualPriceRange[0]}
+            max={priceRange[1]} // Max can't exceed current max selection
+            step="10"
+            value={priceRange[0]}
+            onChange={handlePriceChange}
+          />
+        </div>
+
+        <div className="d-flex justify-content-between small text-muted">
+          <span>₹{Math.round(actualPriceRange[0])}</span>
+          <span>₹{Math.round(actualPriceRange[1])}</span>
         </div>
       </div>
 
       {/* Travel Operators */}
       <div className="mb-4">
-        <div className="filter-label mb-1">Travel Operators</div>
-        {availableOperators.map((op, index) => (
-          <Form.Check
-            key={index}
-            type="checkbox"
-            label={op}
-            checked={selectedOperators.includes(op)}
-            onChange={() => handleOperatorChange(op)}
-          />
-        ))}
+        <div className="filter-label mb-2">Travel Operators</div>
+        {availableOperators.length > 0 ? (
+          <div>
+            {availableOperators.map((op, index) => (
+              <Form.Check
+                key={index}
+                type="checkbox"
+                label={op}
+                checked={selectedOperators.includes(op)}
+                onChange={() => handleOperatorChange(op)}
+                className="mb-1"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-muted small">No operators available</div>
+        )}
       </div>
 
       {/* Bus Types */}
       <div className="mb-4">
-        <div className="filter-label mb-1">Bus Types</div>
-        {availableBusTypes.map((type, idx) => (
-          <Form.Check
-            key={idx}
-            type="checkbox"
-            label={type}
-            checked={selectedBusTypes.includes(type)}
-            onChange={() => handleBusTypeChange(type)}
-          />
-        ))}
+        <div className="filter-label mb-2">Bus Types</div>
+        {availableBusTypes.length > 0 ? (
+          <div>
+            {availableBusTypes.map((type, idx) => (
+              <Form.Check
+                key={idx}
+                type="checkbox"
+                label={type}
+                checked={selectedBusTypes.includes(type)}
+                onChange={() => handleBusTypeChange(type)}
+                className="mb-1"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-muted small">No bus types available</div>
+        )}
       </div>
     </Card>
   );

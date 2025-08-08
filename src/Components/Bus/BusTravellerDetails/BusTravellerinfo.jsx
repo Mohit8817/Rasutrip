@@ -490,9 +490,7 @@ const BusTravellerinfo = () => {
                                 value={contactData.email}
                                 onChange={(e) => handleContactChange('email', e.target.value)}
                             />
-                            <Form.Text className="text-muted">
-                                Booking confirmation will be sent to this email
-                            </Form.Text>
+                           
                         </Col>
                     </Row>
                 </Card.Body>
