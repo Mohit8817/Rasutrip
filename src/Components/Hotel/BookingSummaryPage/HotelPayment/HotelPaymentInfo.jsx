@@ -3,7 +3,7 @@ import { Card, Button, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { createHotelOrder, validateHotelPayment, bookHotel } from '../../../APIS/HotelApi/HotelAPi';
+import { createHotelOrder, validateHotelPayment, bookHotel, downloadHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
 
 const HotelPaymentInfo = () => {
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ const HotelPaymentInfo = () => {
     hotelBookingDetails = {},
     priceDetails = {},
     reviewData = {},
-    isPANMandatory = false,
+    isPANMandatory = false, 
   } = location.state || {};
 
   const {
@@ -39,6 +39,42 @@ const HotelPaymentInfo = () => {
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
+
+  // ✅ NEW: Async invoice email sender (non-blocking)
+  const sendInvoiceEmailAsync = async (invoiceData) => {
+    try {
+      console.log('📧 Attempting to auto-send invoice email...');
+      
+      // Use the hotel invoice API to send email
+      const result = await downloadHotelInvoice({
+        ...invoiceData,
+        emailOnly: true // Custom flag to indicate email-only mode
+      });
+      
+      if (result.success || result.message) {
+        console.log('✅ Invoice email sent automatically');
+        return result;
+      }
+      
+      throw new Error('Email sending failed');
+      
+    } catch (error) {
+      console.error('❌ Auto-email failed:', error.message);
+      throw error;
+    }
+  };
+
+  // ✅ NEW: Utility functions for invoice data
+  const getLeadPassenger = (formattedBookingData) => {
+    return formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.find(p => p.LeadPassenger === "true") ||
+           formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0] ||
+           {};
+  };
+
+  const getLeadPassengerEmail = (formattedBookingData) => {
+    const leadPassenger = getLeadPassenger(formattedBookingData);
+    return leadPassenger?.Email || "mohitverma8817@gmail.com";
+  };
 
   // GST Filtering: only lead passenger keeps GST fields, others are nulled
   const filterGSTForLeadPassengerOnly = (bookingData) => {
@@ -451,6 +487,136 @@ Please go back and ensure all adults have unique, valid PAN numbers.`;
     });
   };
 
+  // ✅ UPDATED: Payment success handler with invoice integration
+  const handlePaymentSuccess = async (response, formattedBookingData, validation) => {
+    try {
+      const bookingResponse = await bookHotel(formattedBookingData);
+
+      // Check for PAN mandatory errors first
+      if (
+        bookingResponse?.error?.ErrorCode === 1163 ||
+        bookingResponse?.Error?.ErrorCode === 1163 ||
+        (bookingResponse?.error?.ErrorMessage?.toLowerCase().includes('mandatory pan'))
+      ) {
+        const panValidation = validateAllPANs(formattedBookingData);
+        const panErrorMsg = `❌ HOTEL API ERROR: PAN MANDATORY
+        
+Error Code: 1163
+Message: ${bookingResponse?.error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage || 'Mandatory PAN info unavailable.'}
+
+This usually occurs due to:
+• Duplicate PAN numbers
+• Invalid PAN format
+• Missing PAN data for adults
+
+PAN Status: ${panValidation.stats.adultsWithPAN}/${panValidation.stats.totalAdults} adults have valid PANs
+
+Please contact support with this information.`;
+
+        setError(panErrorMsg);
+        showErrorToast('❌ Hotel API PAN Error', panErrorMsg);
+        setLoading(false);
+        return;
+      }
+
+      // Your existing booking success validation logic...
+      const isBookingSuccessful =
+        (bookingResponse?.message && /successfully|confirmed|processed/i.test(bookingResponse.message)) ||
+        bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
+        bookingResponse?.Status?.toLowerCase() === 'success' ||
+        bookingResponse?.success === true;
+
+      const hasRequiredBookingData =
+        bookingResponse?.userId &&
+        bookingResponse?.SearchTokenId &&
+        bookingResponse?.UserIp;
+
+      if (isBookingSuccessful && hasRequiredBookingData) {
+        showSuccessToast('🎉 Hotel booking confirmed successfully!');
+
+        // ✅ ENHANCED: Prepare invoice data for the confirmation page
+        const invoiceData = {
+          UserIp: bookingResponse.UserIp || "122.161.64.143",
+          SearchTokenId: bookingResponse.SearchTokenId,
+          BookingId: String(bookingResponse.BookingID || bookingResponse.userId), // Your API returns BookingID
+          receiverEmail: getLeadPassengerEmail(formattedBookingData)
+        };
+
+        // ✅ ENHANCED: Navigate with comprehensive data for invoice functionality
+        navigate('/hotel/confirmation', {
+          state: {
+            // Your existing data structure
+            booking: bookingResponse,
+            amount: roundedTotal,
+            reviewData,
+            hotelDetails: {
+              name: formattedBookingData?.HotelName,
+              code: formattedBookingData?.HotelCode,
+            },
+            paymentDetails: {
+              orderId: response.razorpay_order_id,
+              paymentId: response.razorpay_payment_id,
+            },
+            confirmationDetails: {
+              userId: bookingResponse.userId,
+              searchTokenId: bookingResponse.SearchTokenId,
+              bookingId: bookingResponse.BookingID,
+              userIp: bookingResponse.UserIp,
+              message: bookingResponse.message,
+              bookingTime: new Date().toISOString(),
+            },
+
+            // ✅ NEW: Additional data for invoice system
+            invoiceData: invoiceData,
+            isBooked: true,
+            bookingDetails: {
+              contactData: getLeadPassenger(formattedBookingData),
+              searchTokenId: bookingResponse.SearchTokenId,
+            },
+            bookingResult: bookingResponse
+          },
+        });
+
+        // ✅ OPTIONAL: Auto-send invoice email (non-blocking)
+        try {
+          await sendInvoiceEmailAsync(invoiceData);
+          console.log('✅ Invoice automatically sent to email');
+        } catch (emailError) {
+          console.log('⚠️ Auto-email invoice failed (non-critical):', emailError.message);
+          // Don't show error to user as this is automatic
+        }
+
+      } else {
+        let errMsg = 'Booking failed. Please contact support with your payment details.';
+        if (bookingResponse?.Error?.ErrorMessage) errMsg = bookingResponse.Error.ErrorMessage;
+        else if (bookingResponse?.error?.message) errMsg = bookingResponse.error.message;
+        else if (bookingResponse?.message && !/successfully/i.test(bookingResponse.message))
+          errMsg = `Booking Issue: ${bookingResponse.message}`;
+        else if (!hasRequiredBookingData)
+          errMsg = 'Booking response missing required confirmation data. Please contact support.';
+        else if (!isBookingSuccessful) errMsg = 'Booking status could not be confirmed. Please contact support.';
+
+        setError(`Booking Failed: ${errMsg}`);
+        showErrorToast('❌ Booking Failed', errMsg);
+        console.error('Booking failure details:', {
+          isBookingSuccessful,
+          hasRequiredBookingData,
+          responseMessage: bookingResponse?.message,
+          fullResponse: bookingResponse,
+        });
+      }
+    } catch (bookingError) {
+      const { message: errMsg, isPANError } = handleApiError(bookingError, 'Hotel Booking');
+      if (isPANError) {
+        setError(errMsg);
+        showErrorToast('❌ PAN Mandatory Error', errMsg);
+      } else {
+        setError(`Booking Error: ${errMsg}`);
+        showErrorToast('❌ Booking API Error', errMsg);
+      }
+    }
+  };
+
   // Payment handler
   const handlePayment = async () => {
     setLoading(true);
@@ -511,99 +677,8 @@ Please go back and ensure all adults have unique, valid PAN numbers.`;
             const validation = await validateHotelPayment(validatePayload);
 
             if (validation?.message === 'Payment verified successfully' && validation?.payment?.status === 'success') {
-              try {
-                const bookingResponse = await bookHotel(formattedBookingData);
-
-                if (
-                  bookingResponse?.error?.ErrorCode === 1163 ||
-                  bookingResponse?.Error?.ErrorCode === 1163 ||
-                  (bookingResponse?.error?.ErrorMessage?.toLowerCase().includes('mandatory pan'))
-                ) {
-                  const panErrorMsg = `❌ HOTEL API ERROR: PAN MANDATORY
-                  
-Error Code: 1163
-Message: ${bookingResponse?.error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage || 'Mandatory PAN info unavailable.'}
-
-This usually occurs due to:
-• Duplicate PAN numbers
-• Invalid PAN format
-• Missing PAN data for adults
-
-PAN Status: ${panValidation.stats.adultsWithPAN}/${panValidation.stats.totalAdults} adults have valid PANs
-
-Please contact support with this information.`;
-
-                  setError(panErrorMsg);
-                  showErrorToast('❌ Hotel API PAN Error', panErrorMsg);
-                  setLoading(false);
-                  return;
-                }
-
-                const isBookingSuccessful =
-                  (bookingResponse?.message && /successfully|confirmed|processed/i.test(bookingResponse.message)) ||
-                  bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
-                  bookingResponse?.Status?.toLowerCase() === 'success' ||
-                  bookingResponse?.success === true;
-
-                const hasRequiredBookingData =
-                  bookingResponse?.userId &&
-                  bookingResponse?.SearchTokenId &&
-                  bookingResponse?.UserIp;
-
-                if (isBookingSuccessful && hasRequiredBookingData) {
-                  showSuccessToast('🎉 Hotel booking confirmed successfully!');
-                  navigate('/hotel/confirmation', {
-                    state: {
-                      booking: bookingResponse,
-                      amount: roundedTotal,
-                      reviewData,
-                      hotelDetails: {
-                        name: formattedBookingData?.HotelName,
-                        code: formattedBookingData?.HotelCode,
-                      },
-                      paymentDetails: {
-                        orderId: response.razorpay_order_id,
-                        paymentId: response.razorpay_payment_id,
-                      },
-                      confirmationDetails: {
-                        userId: bookingResponse.userId,
-                        searchTokenId: bookingResponse.SearchTokenId,
-                        bookingId: bookingResponse.BookingID,
-                        userIp: bookingResponse.UserIp,
-                        message: bookingResponse.message,
-                        bookingTime: new Date().toISOString(),
-                      },
-                    },
-                  });
-                } else {
-                  let errMsg = 'Booking failed. Please contact support with your payment details.';
-                  if (bookingResponse?.Error?.ErrorMessage) errMsg = bookingResponse.Error.ErrorMessage;
-                  else if (bookingResponse?.error?.message) errMsg = bookingResponse.error.message;
-                  else if (bookingResponse?.message && !/successfully/i.test(bookingResponse.message))
-                    errMsg = `Booking Issue: ${bookingResponse.message}`;
-                  else if (!hasRequiredBookingData)
-                    errMsg = 'Booking response missing required confirmation data. Please contact support.';
-                  else if (!isBookingSuccessful) errMsg = 'Booking status could not be confirmed. Please contact support.';
-
-                  setError(`Booking Failed: ${errMsg}`);
-                  showErrorToast('❌ Booking Failed', errMsg);
-                  console.error('Booking failure details:', {
-                    isBookingSuccessful,
-                    hasRequiredBookingData,
-                    responseMessage: bookingResponse?.message,
-                    fullResponse: bookingResponse,
-                  });
-                }
-              } catch (bookingError) {
-                const { message: errMsg, isPANError } = handleApiError(bookingError, 'Hotel Booking');
-                if (isPANError) {
-                  setError(errMsg);
-                  showErrorToast('❌ PAN Mandatory Error', errMsg);
-                } else {
-                  setError(`Booking Error: ${errMsg}`);
-                  showErrorToast('❌ Booking API Error', errMsg);
-                }
-              }
+              // ✅ UPDATED: Use the new handlePaymentSuccess function with invoice integration
+              await handlePaymentSuccess(response, formattedBookingData, validation);
             } else {
               const validationError = validation?.message || 'Payment validation failed.';
               setError(validationError);
@@ -874,7 +949,8 @@ Please contact support with this information.`;
                 </div>
                 <small>
                   Your payment is secured by Razorpay with 256-bit SSL encryption.<br />
-                  We accept all major credit cards, debit cards, UPI, and net banking.
+                  We accept all major credit cards, debit cards, UPI, and net banking.<br />
+                  📧 <strong>Invoice will be automatically sent to your email after booking confirmation.</strong>
                 </small>
               </div>
 
@@ -967,7 +1043,8 @@ Please contact support with this information.`;
               </div>
               <div className="text-center mt-3">
                 <small className="text-muted">
-                  By clicking "Pay", you agree to our terms and conditions
+                  By clicking "Pay", you agree to our terms and conditions<br />
+                  📧 Invoice will be automatically sent to lead passenger's email
                 </small>
                 {(hasDuplicates || validPANCount !== adultPassengers.length) && (
                   <div className="mt-2">

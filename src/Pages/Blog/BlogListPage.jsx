@@ -14,18 +14,18 @@ const BlogListPage = () => {
     try {
       setLoading(true);
       const response = await fetch(`${BASE_URL}/user/blog`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Handle your specific API response structure
       const blogs = data.blogs || [];
       setBlogPosts(Array.isArray(blogs) ? blogs : []);
       setError(null);
-      
+
       console.log('Blogs fetched:', blogs.length);
     } catch (err) {
       setError(`Failed to fetch blogs: ${err.message}`);
@@ -47,10 +47,10 @@ const BlogListPage = () => {
   // Format date
   const formatDate = (dateString) => {
     try {
-      return new Date(dateString).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       });
     } catch {
       return 'Date not available';
@@ -70,10 +70,10 @@ const BlogListPage = () => {
   // Get excerpt from content (strip HTML tags)
   const getExcerpt = (htmlContent, maxLength = 150) => {
     if (!htmlContent) return 'No excerpt available';
-    
+
     // Strip HTML tags
     const textContent = htmlContent.replace(/<[^>]*>/g, '');
-    return textContent.length > maxLength 
+    return textContent.length > maxLength
       ? textContent.substring(0, maxLength) + '...'
       : textContent;
   };
@@ -103,7 +103,7 @@ const BlogListPage = () => {
             <div className="bg-red-50 border border-red-200 rounded-lg p-8 max-w-2xl mx-auto">
               <h2 className="text-2xl font-bold text-red-800 mb-4">Error Loading Blogs</h2>
               <p className="text-red-600 mb-6">{error}</p>
-              <button 
+              <button
                 onClick={fetchBlogs}
                 className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-colors"
               >
@@ -125,7 +125,7 @@ const BlogListPage = () => {
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 max-w-2xl mx-auto">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">No Blogs Found</h2>
               <p className="text-gray-600 mb-6">There are no blog posts available at the moment.</p>
-              <button 
+              <button
                 onClick={fetchBlogs}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
               >
@@ -142,7 +142,8 @@ const BlogListPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-16">
+
+        {/* <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-gray-900 mb-4">
             Our Blog
           </h1>
@@ -152,7 +153,7 @@ const BlogListPage = () => {
           <p className="text-sm text-gray-500 mt-2">
             Found {blogPosts.length} blog{blogPosts.length !== 1 ? 's' : ''}
           </p>
-        </div>
+        </div> */}
 
         {/* Blog Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -181,11 +182,10 @@ const BlogListPage = () => {
                 )}
                 {post.status && (
                   <div className="absolute top-4 right-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      post.status === 'published' 
-                        ? 'bg-green-100 text-green-800' 
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${post.status === 'published'
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-yellow-100 text-yellow-800'
-                    }`}>
+                      }`}>
                       {post.status}
                     </span>
                   </div>
@@ -270,7 +270,7 @@ const BlogListPage = () => {
 
         {/* Load More Button */}
         <div className="text-center mt-12">
-          <button 
+          <button
             onClick={fetchBlogs}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
           >
