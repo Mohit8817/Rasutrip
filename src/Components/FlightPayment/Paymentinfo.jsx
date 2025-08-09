@@ -54,9 +54,17 @@ const RazorpayPayment = () => {
   // const [passengerData, setpassengerData] = useState(false);
 
   console.log('faredata',fare.onward)
+  console.log('faredatak',fare)
+
   console.log('journeyType',journeyType)
 
-  const baseFare = journeyType=='roundtrip'? fare?.onward.Fare.PublishedPrice+fare?.return.Fare.PublishedPrice : fare?.PublishedPrice || 0;
+  // const baseFare = journeyType=='roundtrip'? fare?.onward.Fare.PublishedPrice+fare?.return.Fare.PublishedPrice : fare?.PublishedPrice || 0;
+  const baseFare = journeyType === 'roundtrip'
+  ? (fare?.onward?.Fare?.PublishedPrice && fare?.return?.Fare?.PublishedPrice
+      ? fare.onward.Fare.PublishedPrice + fare.return.Fare.PublishedPrice
+      : fare?.PublishedPrice || 0)
+  : fare?.PublishedPrice || 0;
+
   const tax = baseFare * 0.18;
   const serviceCharge = baseFare * rasocommision / 100;
   const totalMeal = passengerSelections.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0);
@@ -99,23 +107,44 @@ const RazorpayPayment = () => {
 
       const payload = {
         UserIp: IP,
-        ResultIndex: journeyType=='roundtrip'? fare.onward.FareId: selectedFlight?.FareList[0].FareId || '',
+        ResultIndex: journeyType === 'roundtrip'
+  ? (fare?.onward?.FareId || selectedFlight?.FareList[0]?.FareId || '')
+  : (selectedFlight?.FareList[0]?.FareId || ''),
+
+        // ResultIndex: journeyType=='roundtrip'? fare.onward.FareId: selectedFlight?.FareList[0].FareId || '',
         SearchTokenId: SearchTokenId || '',
         CouponDiscount: SelectedFare?.CouponDiscount || 0,
         Passengers: passengersData
       };
       const response = await post(payload, '/airservice/book');
 
-      if(journeyType=='roundtrip'){
-        const payload = {
-          UserIp: IP,
-          ResultIndex: journeyType=='roundtrip'? fare.return.FareId: selectedFlight?.FareList[0].FareId || '',
-          SearchTokenId: SearchTokenId || '',
-          CouponDiscount: SelectedFare?.CouponDiscount || 0,
-          Passengers: passengersData
-        };
-        const response = await post(payload, '/airservice/book');
-      }
+      if (
+  journeyType === 'roundtrip' &&
+  fare?.onward?.FareId &&
+  fare?.return?.FareId
+) {
+  const payload = {
+    UserIp: IP,
+    ResultIndex: fare.return.FareId || selectedFlight?.FareList?.[0]?.FareId || '',
+    SearchTokenId: SearchTokenId || '',
+    CouponDiscount: SelectedFare?.CouponDiscount || 0,
+    Passengers: passengersData
+  };
+
+  const response = await post(payload, '/airservice/book');
+}
+
+
+      // if(journeyType=='roundtrip'){
+      //   const payload = {
+      //     UserIp: IP,
+      //     ResultIndex: journeyType=='roundtrip'? fare.return.FareId: selectedFlight?.FareList[0].FareId || '',
+      //     SearchTokenId: SearchTokenId || '',
+      //     CouponDiscount: SelectedFare?.CouponDiscount || 0,
+      //     Passengers: passengersData
+      //   };
+      //   const response = await post(payload, '/airservice/book');
+      // }
      
 
       if (response?.Error?.ErrorCode === 0) {

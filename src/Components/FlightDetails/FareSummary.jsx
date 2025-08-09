@@ -2,33 +2,40 @@ import React, { useState, useEffect } from 'react';
 import { Card, Row, Col } from 'react-bootstrap';
 import '../../Style/Pagescss/FlightResultsPage.css';
 
-const FareSummary = ({ passengerSelections = [], SelectedFare1 = {} }) => {
-
- let SelectedFare=null
-   
-     
-
-
+const FareSummary = ({ passengerSelections = [] }) => {
   const [fareOnward, setFareOnward] = useState(null);
   const [fareReturn, setFareReturn] = useState(null);
+
   const journeyType = localStorage.getItem('tripType');
   const rasocommision = parseFloat(localStorage.getItem('rasocommision')) || 0;
 
   useEffect(() => {
-     let res= localStorage.getItem('fareSummery')
-              SelectedFare = JSON.parse(res)
-    if (journeyType === 'roundtrip') {
-      setFareOnward(SelectedFare?.onward);
-      setFareReturn(SelectedFare?.return);
-    } else {
-      setFareOnward(SelectedFare);
-    }
-  }, [SelectedFare, journeyType]);
+  const res = localStorage.getItem('fareSummery');
+  const parsedFare = res ? JSON.parse(res) : null;
+
+  if (!parsedFare) return;
+
+  if (Array.isArray(parsedFare)) {
+    // Format 1: Array
+    setFareOnward(parsedFare[0] || null);
+    setFareReturn(parsedFare[1] || null);
+  } else if (parsedFare?.onward || parsedFare?.return) {
+    // Format 2: Object with onward and return
+    setFareOnward(parsedFare?.onward || null);
+    setFareReturn(parsedFare?.return || null);
+  } else {
+    // Fallback: treat as single object (one-way)
+    setFareOnward(parsedFare);
+    setFareReturn(null);
+  }
+}, [journeyType]);
+
 
   const getServiceCharge = (price) => (price * rasocommision) / 100;
 
   const baseFare =
     (fareOnward?.PublishedPrice || 0) + (fareReturn?.PublishedPrice || 0);
+
   const serviceCharge =
     getServiceCharge(fareOnward?.PublishedPrice || 0) +
     getServiceCharge(fareReturn?.PublishedPrice || 0);

@@ -13,11 +13,15 @@ import moment from 'moment';
 const TravellerInfo = ({ fareConfirmData, SelectedFare ,Faresummary }) => {
     const journeyType = localStorage.getItem('tripType')
     let fareConfirm =fareConfirmData
+    console.log('checking',fareConfirm.length)
     if(journeyType=='oneway'){
         fareConfirm=fareConfirm
     }
     else if(journeyType=='roundtrip'){
-        fareConfirm=fareConfirm.onward
+       
+        fareConfirm=fareConfirm.onward??fareConfirm
+       
+        
     }else{
         
     }
@@ -35,9 +39,17 @@ if (tripType === 'oneway') {
   PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
 } 
 else if (tripType === 'roundtrip') {
+    console.log('fareConfirm.length',fareConfirm.length)
+    if(fareConfirm.length>1){
   const res = localStorage.getItem('selectedOnwardFlight');
    SearchData = JSON.parse(res);
   PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
+    }else{
+         const res = localStorage.getItem('selectedFlight');
+   SearchData = JSON.parse(res);
+  PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
+        
+    }
 } 
 else if (tripType === 'multicity') {
   const res = localStorage.getItem('selectedMulticityFlight');
@@ -119,6 +131,32 @@ else if (tripType === 'multicity') {
         dispatch(updatePassenger({ type, index: passengerIndex, field, value }));
     };
 
+    const normalizeFareSummary = (summaryData) => {
+  let onwardFare = null;
+  let returnFare = null;
+
+  if (!summaryData) return { onwardFare, returnFare };
+
+  if (Array.isArray(summaryData)) {
+    // Format 2: Array
+    onwardFare = summaryData[0] || null;
+    returnFare = summaryData[1] || null;
+  } else if (summaryData?.onward || summaryData?.return) {
+    // Format 3: Object with onward & return
+    onwardFare = summaryData.onward || null;
+    returnFare = summaryData.return || null;
+  } else {
+    // Format 1: flat object (assume one-way or both in one object)
+    onwardFare = summaryData;
+
+    if (summaryData?.SeatBaggage?.length > 1) {
+      returnFare = { ...summaryData }; // reuse same object for both
+    }
+  }
+
+  return { onwardFare, returnFare };
+};
+
 
     const handleContactChange = (field, value) => {
         setContactDetails(prev => ({
@@ -127,33 +165,34 @@ else if (tripType === 'multicity') {
         }));
     };
 
-    const data = localStorage.getItem('fareSummery')
+  const rawData = localStorage.getItem("fareSummery");
+const summaryData = rawData ? JSON.parse(rawData) : null;
+const { onwardFare, returnFare } = normalizeFareSummary(summaryData);
 
-    const summaryData= JSON.parse(data)
-    let SSRreturnPayload =null
+    
     let ReturnRes=null
     console.log('summaryData',summaryData)
     console.log('krishnaTrip',tripType)
 
     const SSRPayload = useMemo(() => ({
-        UserIp: localStorage.getItem("UserIp") || "",
-        ResultIndex:  tripType== 'roundtrip'? summaryData.onward.FareId: SearchData?.FareList[0].FareId || "",
-        PublishedPrice: tripType== 'roundtrip'? summaryData.onward.PublishedPrice :SelectedFare?.PublishedPrice,
-        SearchTokenId: localStorage.getItem("searchToken") || ""
-    }), [SelectedFare]);
+  UserIp: localStorage.getItem("UserIp") || "",
+  ResultIndex: onwardFare?.FareId || "",
+  PublishedPrice: onwardFare?.PublishedPrice || "",
+  SearchTokenId: localStorage.getItem("searchToken") || ""
+}), [onwardFare]);
 
-   
-     SSRreturnPayload = useMemo(() => {
-    if (tripType === 'roundtrip') {
-        return {
-            UserIp: localStorage.getItem("UserIp") || "",
-            ResultIndex: summaryData.return.FareId,
-            PublishedPrice: summaryData.return.PublishedPrice,
-            SearchTokenId: localStorage.getItem("searchToken") || ""
-        };
-    }
-    return null; // always return something (even null) to avoid conditional hook call
-}, [SelectedFare, summaryData, tripType]);
+const SSRreturnPayload = useMemo(() => {
+  if (tripType === 'roundtrip' && returnFare) {
+    return {
+      UserIp: localStorage.getItem("UserIp") || "",
+      ResultIndex: returnFare.FareId,
+      PublishedPrice: returnFare.PublishedPrice,
+      SearchTokenId: localStorage.getItem("searchToken") || ""
+    };
+  }
+  return null;
+}, [returnFare, tripType]);
+
    
    
 
@@ -162,10 +201,12 @@ else if (tripType === 'multicity') {
     const handleContinue = async () => {
         setLoading(true);
         try {
-            const res = await fetchSSR(SSRPayload);
-            if(tripType=='roundtrip'){
-             ReturnRes = await fetchSSR(SSRreturnPayload);
-            }
+             const res = await fetchSSR(SSRPayload);
+    let ReturnRes = null;
+
+    if (tripType === 'roundtrip' && SSRreturnPayload) {
+      ReturnRes = await fetchSSR(SSRreturnPayload);
+    }
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
             navigate('/addons', { state: { SSR: res?.Result || [], SSrReturnRes:ReturnRes?.Result || [] , SelectedFare, passengersData,Faresummary } });
         
@@ -241,6 +282,7 @@ else if (tripType === 'multicity') {
         const isAdult = type === 'ADT';
         const isChild = type === 'CHD';
         const isInfant = type === 'INF';
+console.log('passenger',passenger)
 
         // Determine required fields based on fareConfirm
         const requireDOB = (isAdult && (fareConfirm?.IsADTDOBRequired || fareConfirm?.IsAdultDOBMandatory)) ||
@@ -374,6 +416,17 @@ else if (tripType === 'multicity') {
                                     />
                                 </Form.Group>
                             </Col>
+                             <Col md={3}>
+                                <Form.Group>
+                                    <Form.Label><RequiredLabel>Passport Issue</RequiredLabel></Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        value={passenger.PassportIssue || ''}
+                                        onChange={(e) => handlePassengerChange(type, index, 'PassportIssue', e.target.value)}
+                                        required
+                                    />
+                                </Form.Group>
+                            </Col>
                             <Col md={3}>
                                 <Form.Group>
                                     <Form.Label><RequiredLabel>Passport Expiry</RequiredLabel></Form.Label>
@@ -385,6 +438,7 @@ else if (tripType === 'multicity') {
                                     />
                                 </Form.Group>
                             </Col>
+                           
                             <Col md={3}>
                                 <Form.Group>
                                     <Form.Label><RequiredLabel>Nationality</RequiredLabel></Form.Label>

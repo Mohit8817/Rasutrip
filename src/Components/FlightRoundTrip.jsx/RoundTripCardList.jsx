@@ -154,7 +154,7 @@ const handleReturnSelect = (flight, fare) => {
   console.log('flights[1]', flights[1])
 
   return (
-    <div className="px-4 pb-32">
+    <div className="">
       {flights?.length > 1 ? (
         <Row>
           {/* Onward Flights */}

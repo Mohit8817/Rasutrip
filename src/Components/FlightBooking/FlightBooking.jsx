@@ -30,6 +30,7 @@ const FlightBooking = () => {
             const newCity = { id: Date.now() };
             setCityComponents([...cityComponents, newCity]);
         }
+        console.log('cityComponents',cityComponents)
     };
 
     const handleRemoveCity = (id) => {
@@ -127,7 +128,7 @@ const FlightBooking = () => {
                                 </Col>
 
                                 <Col xs={12} sm={6} md={4} lg={3} className="mb-2">
-                                    <AddMorecitydatapick />
+                                    <SecondDateSelecter />
                                 </Col>
 
                                 <Col xs={6} sm={6} md={2} lg={1} className="mb-2">
