@@ -65,7 +65,9 @@ export const getUserIP = async () => {
   try {
     const response = await fetch('https://api.ipify.org?format=json');
     const data = await response.json();
-    return data.ip; // This will be something like "122.161.64.143"
+    return '27.60.0.238'
+    // return data.ip;
+    //  // This will be something like "122.161.64.143"
   } catch (error) {
     console.error('Failed to get IP:', error);
     return '';

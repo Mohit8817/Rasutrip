@@ -9,6 +9,7 @@ const SecondDateSelecter = () => {
     const [travelDate, setTravelDate] = useState(null); // Initially no date selected
     const [showCalendar, setShowCalendar] = useState(false);
 
+    console.log('travelDate',travelDate)
     const calendarRef = useRef(null); // Ref for the calendar wrapper
 
     const formatDate = (date) =>
@@ -46,7 +47,7 @@ const SecondDateSelecter = () => {
                 <div
                     className="sec-multi-city-date-button "
                     onClick={() => setShowCalendar((prev) => !prev)}>
-                    <span className="Date_label d-block">TRAVEL DATE</span>
+                    <span className="Date_label d-block">TRAVEL DATE 1</span>
                     <span
                         className={`date d-block fs-5 fw-bold ${!travelDate ? "text-muted" : ""
                             }`}>
