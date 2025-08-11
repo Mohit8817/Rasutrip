@@ -4,7 +4,7 @@ import { Button } from 'react-bootstrap';
 import { AuthContext } from '../../../Context/AuthContext';
 
 const Profile = () => {
-    const { user, userType, logout } = useContext(AuthContext);
+    const { user, userType } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const getUserInitials = () => {
@@ -28,11 +28,6 @@ const Profile = () => {
         return mobile;
     };
 
-    const handleLogout = () => {
-        logout();
-        navigate('/'); // Redirect to home page after logout
-    };
-
     // If no user is logged in, show login prompt
     if (!user) {
         return (
@@ -51,15 +46,8 @@ const Profile = () => {
 
     return (
         <div className="bg-white rounded-lg shadow p-6">
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="mb-4">
                 <h2 className="text-2xl font-bold text-gray-800 mb-0">Profile Information</h2>
-                <Button
-                    variant="outline-danger"
-                    onClick={handleLogout}
-                    size="sm"
-                >
-                    Logout
-                </Button>
             </div>
 
             <div className="text-center mb-8">
