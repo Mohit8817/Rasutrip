@@ -11,6 +11,7 @@ import {
   resetAgentPassword,
 } from './services/authService';
 import { AuthContext } from '../Context/AuthContext';
+import { saveToken } from './utils/tokenUtils';
 
 const AgentLogin = () => {
   const [mobile, setMobile] = useState('');
@@ -23,27 +24,48 @@ const AgentLogin = () => {
   const [otpSent, setOtpSent] = useState(false);
 
   const navigate = useNavigate();
-  // Fixed: Use proper context methods
-  const { setUser: setContextUser, setUserType } = useContext(AuthContext);
+  const { agentLogin: contextAgentLogin } = useContext(AuthContext);
 
   const handleLogin = async () => {
     setError('');
     setSuccess('');
+    
+    if (!mobile || !password) {
+      return setError('Please enter both mobile and password');
+    }
+    
     try {
       const { data } = await agentLogin({ mobile, password });
-      setSuccess('Login successful!');
       
-      // Set user data in context
-      const agentData = data.agent || { mobile };
-      setContextUser(agentData);
-      setUserType('agent');
-      
-      // Navigate to home page
-      setTimeout(() => {
-        navigate('/');
-      }, 1000);
-      
+      // Save token using tokenUtils
+      const agentToken = data?.token;
+      if (agentToken) {
+        const agentData = data.agent || data.user || { mobile };
+        const tokenSaved = saveToken(agentToken, 'agent', agentData);
+        
+        if (tokenSaved) {
+          console.log('✅ Agent token saved successfully');
+          
+          // Set user data in context - token is already saved
+          contextAgentLogin(agentData);
+
+          setSuccess('Login successful!');
+          
+          // Navigate to home page
+          setTimeout(() => {
+            navigate('/');
+          }, 1000);
+        } else {
+          console.warn('⚠️ Agent token saving failed');
+          setError('Failed to save session. Please try again.');
+        }
+      } else {
+        console.warn('⚠️ No token received from agent login');
+        setError('No authentication token received. Please try again.');
+      }
+
     } catch (err) {
+      console.error('❌ Agent Login Error:', err);
       setError(err.response?.data?.message || 'Login failed');
     }
   };
@@ -52,11 +74,15 @@ const AgentLogin = () => {
     setError('');
     setSuccess('');
 
+    if (!mobile) {
+      return setError('Please enter mobile number');
+    }
+
     const cleanMobile = mobile.replace(/\D/g, '');
 
     try {
       const { data } = await sendForgotPasswordOtp({ mobile: cleanMobile });
-      setSuccess(data.message);
+      setSuccess(data.message || 'OTP sent successfully');
       setOtpSent(true);
     } catch (err) {
       console.error('OTP Send Error:', err.response?.data || err.message);
@@ -67,14 +93,48 @@ const AgentLogin = () => {
   const handleResetPassword = async () => {
     setError('');
     setSuccess('');
+    
+    if (!resetOtp || !newPassword) {
+      return setError('Please enter both OTP and new password');
+    }
+    
     try {
-      const { data } = await resetAgentPassword({ otp: resetOtp, newPassword, mobile });
+      const { data } = await resetAgentPassword({ 
+        otp: resetOtp, 
+        newPassword, 
+        mobile: mobile.replace(/\D/g, '') 
+      });
+      
       setSuccess(data.message || 'Password reset successful!');
+
+      // Save token if received after reset
+      const resetToken = data?.token;
+      if (resetToken) {
+        const agentData = data.agent || data.user || { mobile };
+        const tokenSaved = saveToken(resetToken, 'agent', agentData);
+        
+        if (tokenSaved) {
+          console.log('✅ Reset token saved successfully');
+          
+          // Auto login after successful reset
+          contextAgentLogin(agentData);
+          
+          setTimeout(() => {
+            navigate('/');
+          }, 2000);
+        } else {
+          setError('Password reset successful but failed to auto-login. Please login manually.');
+        }
+      }
+
+      // Reset form
       setShowResetForm(false);
       setResetOtp('');
       setNewPassword('');
       setOtpSent(false);
+      
     } catch (err) {
+      console.error('❌ Password Reset Error:', err);
       setError(err.response?.data?.message || 'Reset failed');
     }
   };
@@ -181,6 +241,8 @@ const AgentLogin = () => {
                       setOtpSent(false);
                       setResetOtp('');
                       setNewPassword('');
+                      setError('');
+                      setSuccess('');
                     }}
                   >
                     Back to Login
