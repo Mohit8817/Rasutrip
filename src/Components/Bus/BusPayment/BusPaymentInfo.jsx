@@ -55,12 +55,12 @@ const BusPaymentInfo = () => {
         if (id === null || id === undefined || id === 'undefined' || id === 'null') {
             return false;
         }
-        
+
         const idString = String(id).trim();
         if (idString === '' || idString === 'undefined' || idString === 'null') {
             return false;
         }
-        
+
         // Check if it's a valid number (can be string or number)
         const numericValue = Number(idString);
         return !isNaN(numericValue) && numericValue > 0 && idString.length >= 1 && idString.length <= 20;
@@ -70,7 +70,7 @@ const BusPaymentInfo = () => {
     const extractBookingIdFromResponse = (response) => {
         console.log('🔍 EXTRACTING BOOKING ID FROM RESPONSE:');
         console.log('📊 Full Response:', JSON.stringify(response, null, 2));
-        
+
         // Define all possible locations where BookingId might be found
         const possiblePaths = [
             // Direct paths
@@ -78,36 +78,36 @@ const BusPaymentInfo = () => {
             response?.bookingId,
             response?.booking_id,
             response?.id,
-            
+
             // Data nested paths
             response?.data?.BookingId,
             response?.data?.bookingId,
             response?.data?.booking_id,
             response?.data?.id,
-            
+
             // Response nested paths
             response?.response?.BookingId,
             response?.response?.bookingId,
             response?.response?.booking_id,
             response?.response?.id,
-            
+
             // Result nested paths
             response?.result?.BookingId,
             response?.result?.bookingId,
             response?.result?.booking_id,
             response?.result?.id,
-            
+
             // Bus specific paths (based on your API structure)
             response?.Bus?.BookingId,
             response?.bus?.BookingId,
             response?.booking?.BookingId,
             response?.booking?.id,
-            
+
             // Deep nested paths
             response?.data?.response?.BookingId,
             response?.data?.result?.BookingId,
             response?.response?.data?.BookingId,
-            
+
             // Array first element (if response is an array)
             Array.isArray(response) ? response[0]?.BookingId : null,
             Array.isArray(response?.data) ? response.data[0]?.BookingId : null,
@@ -119,7 +119,7 @@ const BusPaymentInfo = () => {
         for (let i = 0; i < possiblePaths.length; i++) {
             const candidateId = possiblePaths[i];
             console.log(`🔎 Checking path ${i}: ${candidateId} (type: ${typeof candidateId})`);
-            
+
             if (isValidBookingId(candidateId)) {
                 console.log(`✅ FOUND VALID BOOKING ID: ${candidateId}`);
                 return String(candidateId); // Always return as string
@@ -128,13 +128,13 @@ const BusPaymentInfo = () => {
 
         // If no direct BookingId found, try to find any numeric value that could be an ID
         console.log('⚠️ No direct BookingId found, searching for numeric values...');
-        
+
         const searchForNumericIds = (obj, path = '') => {
             if (!obj || typeof obj !== 'object') return null;
-            
+
             for (const [key, value] of Object.entries(obj)) {
                 const currentPath = path ? `${path}.${key}` : key;
-                
+
                 // Check if this could be an ID field
                 if (typeof value === 'number' && value > 0 && value < 999999) {
                     console.log(`🔢 Found numeric value at ${currentPath}: ${value}`);
@@ -143,7 +143,7 @@ const BusPaymentInfo = () => {
                         return String(value);
                     }
                 }
-                
+
                 // Recursively search nested objects
                 if (typeof value === 'object' && value !== null) {
                     const nestedResult = searchForNumericIds(value, currentPath);
@@ -733,16 +733,7 @@ const BusPaymentInfo = () => {
 
     return (
         <Container className="py-4">
-            {/* ✅ Enhanced Error Alert */}
-            {error && (
-                <Alert variant="danger" className="mb-4" dismissible onClose={() => setError(null)}>
-                    <FaExclamationTriangle className="me-2" />
-                    <strong>Error:</strong>
-                    <div style={{ whiteSpace: 'pre-line', marginTop: '8px' }}>
-                        {error}
-                    </div>
-                </Alert>
-            )}
+
 
             {/* ✅ Enhanced Travel Summary */}
             <Card className="mb-4 shadow-sm">
@@ -855,6 +846,8 @@ const BusPaymentInfo = () => {
                 </Card.Body>
             </Card>
 
+
+
             {/* ✅ Enhanced Payment Button Section */}
             <Card className="shadow-sm">
                 <Card.Body>
@@ -885,6 +878,21 @@ const BusPaymentInfo = () => {
                     </div>
                 </Card.Body>
             </Card>
+
+
+
+            {/* ✅ Enhanced Error Alert */}
+
+            {error && (
+                <Alert variant="danger" className="mb-4 mt-3" dismissible onClose={() => setError(null)}>
+                    <FaExclamationTriangle className="me-2" />
+
+                    <span style={{ whiteSpace: 'pre-line', marginTop: '8px' }}>
+                        <strong>Error: </strong>
+                        {error}
+                    </span>
+                </Alert>
+            )}
         </Container>
     );
 };

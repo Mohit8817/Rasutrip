@@ -13,6 +13,9 @@ const RoomCard = ({
   const navigate = useNavigate();
   const [loadingRoomId, setLoadingRoomId] = useState(null);
 
+  console.log("🛏️ RoomCard - Hotel Data:", hotel);
+  console.log("🛏️ RoomCard - Room Data:", roomData);
+
   const isPANMandatory = (room) => {
     return (
       room?.IsPANMandatory === true ||
@@ -43,9 +46,18 @@ const RoomCard = ({
       return;
     }
 
-    // ✅ ENHANCED: Better PAN mandatory warning
+    // ✅ Calculate total adults properly
+    let totalAdults = hotel?.adult || 1;
+    
+    // Try to get from roomDetails if available
+    if (hotel?.searchDetails?.roomDetails && Array.isArray(hotel.searchDetails.roomDetails)) {
+      totalAdults = hotel.searchDetails.roomDetails.reduce((sum, r) => sum + (r.Adult || r.adults || 0), 0);
+    }
+
+    console.log("👥 Total Adults for PAN check:", totalAdults);
+
+    // Enhanced PAN mandatory warning
     if (isPANMandatory(room)) {
-      const totalAdults = hotel?.adult || 1;
       const warningMessage = `⚠️ PAN MANDATORY ROOM SELECTED\n\n` +
         `This room requires UNIQUE PAN numbers for ALL ${totalAdults} adult guest(s).\n\n` +
         `Important Requirements:\n` +
@@ -59,13 +71,14 @@ const RoomCard = ({
 
     setLoadingRoomId(room.RoomId);
 
+    // ✅ Enhanced block payload with better error handling
     const blockPayload = {
-      UserIp: payload.UserIp,
+      UserIp: payload.UserIp || "49.36.217.215",
       HotelCode: payload.HotelCode,
       ResultIndex: payload.ResultIndex,
       SearchTokenId: payload.SearchTokenId,
       HotelName: hotel?.HotelName,
-      NoOfRooms: 1,
+      NoOfRooms: hotel?.rooms || 1,
       HotelRoomsDetails: [
         {
           RoomIndex: room.RoomIndex || 1,
@@ -73,8 +86,12 @@ const RoomCard = ({
       ],
     };
 
+    console.log("📤 Block Room Payload:", blockPayload);
+
     try {
       const blockRes = await blockRoom(blockPayload);
+      
+      console.log("📥 Block Room Response:", blockRes);
 
       if (blockRes?.Error?.ErrorCode === 0) {
         const baseFare = Number(room?.Price?.OfferedPrice || 0);
@@ -92,9 +109,13 @@ const RoomCard = ({
 
         onBlockStatusChange?.("success");
 
+        // ✅ Enhanced navigation with complete data
         navigate("/HotelDetail", {
           state: {
-            hotel,
+            hotel: {
+              ...hotel,
+              totalAdults, // ✅ Pass calculated total adults
+            },
             room,
             priceDetails: {
               baseFare,
@@ -102,19 +123,30 @@ const RoomCard = ({
               serviceCharges: 0,
               gst: 0,
             },
-            totalGuests: hotel?.guests ?? 0,
+            totalGuests: hotel?.guests || (hotel?.adult || 0) + (hotel?.child || 0),
             guestDetails: {
-              adult: hotel?.adult,
-              child: hotel?.child,
-              rooms: hotel?.rooms,
-              nights: hotel?.nights,
-              city: hotel?.city,
-              checkInDate: hotel?.checkInDate,
-              checkOutDate: hotel?.checkOutDate,
+              adult: totalAdults,
+              child: hotel?.child || 0,
+              rooms: hotel?.rooms || 1,
+              nights: hotel?.nights || 1,
+              city: hotel?.city || '',
+              checkInDate: hotel?.checkInDate || '',
+              checkOutDate: hotel?.checkOutDate || '',
+              roomDetails: hotel?.searchDetails?.roomDetails || [],
             },
-            payload,
+            searchDetails: hotel?.searchDetails || {
+              adult: totalAdults,
+              child: hotel?.child || 0,
+              rooms: hotel?.rooms || 1,
+              nights: hotel?.nights || 1,
+              guests: hotel?.guests || totalAdults,
+              city: hotel?.city || '',
+              checkIn: hotel?.checkInDate || '',
+              checkOut: hotel?.checkOutDate || '',
+            },
+            payload: blockPayload,
             blockedRoomData: blockRes?.Result,
-            isPANMandatory: isPANMandatory(room), // ✅ Pass this flag
+            isPANMandatory: isPANMandatory(room),
           },
         });
       } else if (blockRes?.Error?.ErrorCode === 5) {
@@ -122,10 +154,10 @@ const RoomCard = ({
         alert("⚠️ Room no longer available. Please select another.");
       } else {
         onBlockStatusChange?.("error");
-        alert("❌ Failed to block room: " + blockRes?.Error?.ErrorMessage);
+        alert("❌ Failed to block room: " + (blockRes?.Error?.ErrorMessage || "Unknown error"));
       }
     } catch (err) {
-      console.error("❌ BlockRoom error", err);
+      console.error("❌ BlockRoom error:", err);
       onBlockStatusChange?.("error");
       alert("❌ Something went wrong while blocking the room.");
     } finally {
@@ -137,9 +169,26 @@ const RoomCard = ({
     (room) => room.AvailabilityType === "Confirm"
   );
 
+  // ✅ Get display values for UI
+  const displayGuests = hotel?.guests || (hotel?.adult || 1) + (hotel?.child || 0);
+  const displayAdults = hotel?.adult || 1;
+  const displayChildren = hotel?.child || 0;
+  const displayRooms = hotel?.rooms || 1;
+  const displayNights = hotel?.nights || 1;
+
   return (
     <div>
-      <h5 className="fw-bold mb-3">Rooms</h5>
+      <h5 className="fw-bold mb-3">
+        Rooms ({availableRooms.length} available)
+      </h5>
+
+      {/* ✅ Debug info (remove in production) */}
+      <div className="mb-3 p-2 bg-light rounded small">
+        <strong>Debug Info:</strong><br />
+        Total Guests: {displayGuests} ({displayAdults} Adults, {displayChildren} Children)<br />
+        Rooms: {displayRooms} | Nights: {displayNights}<br />
+        Dates: {hotel?.checkInDate} → {hotel?.checkOutDate}
+      </div>
 
       {availableRooms.length > 0 ? (
         availableRooms.map((room, idx) => {
@@ -154,21 +203,28 @@ const RoomCard = ({
               <div>
                 <div className="fw-bold">{room.RoomTypeName || "Room"}</div>
                 <div className="small text-muted mb-1">
-                  {hotel.checkInDate} → {hotel.checkOutDate} • {hotel.nights} Night
+                  {hotel.checkInDate} → {hotel.checkOutDate} • {displayNights} Night{displayNights > 1 ? 's' : ''}
                 </div>
                 <div className="small text-muted mb-2">
-                  {hotel.guests} Guest • {hotel.rooms} Room
+                  {displayGuests} Guest{displayGuests > 1 ? 's' : ''} ({displayAdults} Adult{displayAdults > 1 ? 's' : ''}, {displayChildren} Child{displayChildren !== 1 ? 'ren' : ''}) • {displayRooms} Room{displayRooms > 1 ? 's' : ''}
                 </div>
                 <div className="fw-bold text-dark mb-2">
                   ₹{offeredPrice.toLocaleString()}
                 </div>
 
-                {/* ✅ ENHANCED: Better PAN mandatory warning */}
+                {/* Enhanced PAN mandatory warning */}
                 {panMandatory && (
                   <div className="alert alert-warning p-2 mb-2 small">
                     <strong>⚠️ PAN MANDATORY ROOM</strong><br />
-                    All {hotel?.adult || 1} adult guest(s) need UNIQUE PAN numbers.<br />
+                    All {displayAdults} adult guest{displayAdults > 1 ? 's' : ''} need UNIQUE PAN numbers.<br />
                     <small className="text-muted">Duplicate PAN will cause booking failure.</small>
+                  </div>
+                )}
+
+                {/* ✅ Show room amenities if available */}
+                {room.RoomAmenities && room.RoomAmenities.length > 0 && (
+                  <div className="small text-muted">
+                    <strong>Amenities:</strong> {room.RoomAmenities.map(a => a.Name).join(', ')}
                   </div>
                 )}
               </div>
@@ -181,6 +237,12 @@ const RoomCard = ({
                   </span>
                 </div>
 
+                {/* ✅ Show cancellation policy if available */}
+                {room.CancellationPolicy && (
+                  <div className="small text-muted mb-2">
+                    {room.CancellationPolicy}
+                  </div>
+                )}
 
                 <button
                   className="btn btn-danger btn-sm px-4"
@@ -192,14 +254,20 @@ const RoomCard = ({
                       : "Book this room"
                   }
                 >
-                  {loadingRoomId === room.RoomId ? "Blocking..." : "Book"}
+                  {loadingRoomId === room.RoomId ? "Blocking..." : "Book Now"}
                 </button>
               </div>
             </div>
           );
         })
       ) : (
-        <p className="text-muted">No confirm-available rooms</p>
+        <div className="text-center py-4">
+          <div className="text-muted">
+            <i className="fas fa-bed fa-2x mb-2"></i>
+            <h6>No Available Rooms</h6>
+            <p>Sorry, no confirmed rooms are available for the selected dates.</p>
+          </div>
+        </div>
       )}
     </div>
   );

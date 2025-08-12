@@ -51,12 +51,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   }
 
   const menuItems = [
-    { id: 'profile', label: 'Profile', icon: '👤' },
-    { id: 'bookings', label: 'Booking', icon: '📋' },
+    { id: 'profile', label: 'Profile',},
+    { id: 'bookings', label: 'Booking',  },
     // Add more menu items based on user type
     ...(userType === 'agent' ? [
-      { id: 'agents', label: 'Agent Dashboard', icon: '👔' },
-      { id: 'reports', label: 'Reports', icon: '📊' }
+      { id: 'agents', label: 'Agent Dashboard',  },
+      { id: 'reports', label: 'Reports', }
     ] : []),
   ];
 
@@ -80,13 +80,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           {getUserDisplayName()}
         </h3>
         
-        {/* Show first name for personalized greeting */}
-        <p className="text-sm text-gray-600 mb-2">
-          Welcome back, {getUserFirstName()}! 👋
-        </p>
+      
         
         <div className="flex items-center justify-center text-sm text-gray-500 mb-2">
-          <span className="mr-1">{userType === 'agent' ? '👔' : '👤'}</span>
+          <span className="mr-1">{userType === 'agent' ? ' ' : ' '}</span>
           <span className="uppercase tracking-wide">{userType || 'Customer'} Profile</span>
         </div>
 
@@ -99,33 +96,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           <div className="text-xs text-gray-400 mt-1 truncate">
             {user.email}
           </div>
-        )}
+        )}     
 
-        {/* Enhanced Status Badge with User Info */}
-        <div className="mt-3">
-          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-            userType === 'agent' 
-              ? 'bg-blue-100 text-blue-800' 
-              : 'bg-green-100 text-green-800'
-          }`}>
-            Active {userType === 'agent' ? 'Agent' : 'Customer'}
-          </span>
-        </div>
-
-        {/* Profile Completion Indicator */}
-        {user && (
-          <div className="mt-2">
-            <div className="text-xs text-gray-500">
-              Profile: {user?.email && user?.name ? '100%' : '75%'} complete
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
-              <div 
-                className="bg-green-500 h-1 rounded-full transition-all duration-300" 
-                style={{ width: user?.email && user?.name ? '100%' : '75%' }}
-              ></div>
-            </div>
-          </div>
-        )}
+      
       </div>
 
       {/* Navigation Menu */}
@@ -153,7 +126,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           onClick={handleLogout}
           className="w-full flex items-center px-4 py-3 text-left rounded-lg text-red-600 hover:bg-red-50 transition-all duration-200 mt-6 border-t pt-4 hover:transform hover:scale-102"
         >
-          <span className="mr-3 text-lg">🚪</span>
+          <span className="mr-3 text-lg"></span>
           <span className="font-medium">Logout</span>
         </button>
       </nav>
@@ -181,19 +154,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           </p>
         )}
         
-        {/* Quick Stats */}
-        <div className="mt-3 pt-2 border-t border-gray-100">
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="text-center">
-              <div className="font-semibold text-blue-600">0</div>
-              <div className="text-gray-500">Bookings</div>
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-green-600">₹0</div>
-              <div className="text-gray-500">Spent</div>
-            </div>
-          </div>
-        </div>
+      
       </div>
     </div>
   );

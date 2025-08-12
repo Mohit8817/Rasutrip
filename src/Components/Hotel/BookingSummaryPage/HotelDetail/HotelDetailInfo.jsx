@@ -65,7 +65,7 @@ const handleContinue = () => {
             <Col xs="auto">
               <div className="text-warning fs-5">
                 {"⭐".repeat(hotel.rating || 3)}
-              </div>
+              </div>  
             </Col>
           </Row>
 

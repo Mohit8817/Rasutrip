@@ -508,13 +508,7 @@ const BusBookingHistory = () => {
                     <h2 className="text-2xl font-bold text-gray-800">My Bus Bookings</h2>
                   
                 </div>
-                <button
-                    onClick={loadBookings}
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {loading ? 'Refreshing...' : 'Refresh'}
-                </button>
+               
             </div>
 
             {/* Error Display */}

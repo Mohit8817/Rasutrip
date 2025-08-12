@@ -9,12 +9,13 @@ export const HotelSearchProvider = ({ children }) => {
     checkIn: '',
     checkOut: '',
     nights: 1,
-    guests: 1,
+    guests: 2, // ✅ Default 2 guests to match GuestRoomSelector
     rooms: 1,
-    adultsCount: 1,
+    adultsCount: 2, // ✅ Default 2 adults to match GuestRoomSelector
     childrenCount: 0,
+    country: 'India', // ✅ Add default country
     roomDetails: [
-      { adults: 1, children: 0 } // Default single room setup
+      { adults: 2, children: 0 } // ✅ Default to match GuestRoomSelector
     ]
   });
 
