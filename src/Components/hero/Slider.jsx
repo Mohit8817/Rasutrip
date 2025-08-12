@@ -5,7 +5,7 @@ import slidimg2 from '../../assest/img (2).png';
 import slidimg3 from '../../assest/img (1).png';
 import '../../Style/Slider.css'; // Make sure path is correct
 import FlightBooking from '../FlightBooking/FlightBooking';
-import TravelTabs from '../FlightBooking/TravelTabs';
+import TravelTabs from './TravelTabs';
 import HotelSearchForm from '../HotelSearchForm/HotelSearchForm';
 import BusBooking from '../Busbooking/BusBooking';
 import { useLocation } from 'react-router-dom';
