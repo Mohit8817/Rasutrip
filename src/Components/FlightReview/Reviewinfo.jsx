@@ -54,9 +54,9 @@ const ReviewInfo = () => {
     return {
       ...passenger,
       // Onward flight selections
-      OnwardMeal: onwardSelection.meal ? [onwardSelection.meal] : [],
-      OnwardSeat: onwardSelection.seat ? [onwardSelection.seat] : [],
-      OnwardBaggage: onwardSelection.baggage ? [onwardSelection.baggage] : [],
+      // OnwardMeal: onwardSelection.meal ? [onwardSelection.meal] : [],
+      // OnwardSeat: onwardSelection.seat ? [onwardSelection.seat] : [],
+      // OnwardBaggage: onwardSelection.baggage ? [onwardSelection.baggage] : [],
       
       // Return flight selections (if round-trip)
       ...(isRoundTrip && {

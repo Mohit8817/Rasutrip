@@ -11,7 +11,7 @@ const getSidebarFilters = (allFlights) => {
     let maxStops = 0;
     console.log('krishna',allFlights?.length)
     if(allFlights){
-         allFlights=allFlights?.length >2 ?allFlights:allFlights[0]
+         allFlights=allFlights?.length >1 ?allFlights:allFlights[0]
     }
     
     console.log('allFlightsfilter',allFlights)
@@ -45,7 +45,7 @@ const getSidebarFilters = (allFlights) => {
 
 
 
-const FlightSidebar = ({ filters, setFilters }) => {
+const FlightSidebar = ({ filters=[], setFilters=[]}) => {
 
     const res = localStorage.getItem('SearchedFlights')
     const allFlight = JSON.parse(res)
@@ -136,7 +136,7 @@ const FlightSidebar = ({ filters, setFilters }) => {
         <Card className="p-3 filter-sidebar" style={{
             "position": "sticky",
             "top": "104px",
-            "overflow-y": "hidden"
+            // "overflow-y": "hidden"
         }}>
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <div className="fw-bold"><i className="bi bi-funnel-fill me-2" /> Filter Results</div>
