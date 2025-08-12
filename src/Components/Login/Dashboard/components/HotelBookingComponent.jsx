@@ -697,12 +697,11 @@ const HotelBookingHistory = () => {
                                                 {booking.confirmationNo}
                                             </td>
                                             <td className="px-4 py-3 text-sm">
-                                                <span className={`font-medium ${
-                                                    booking.bookingStatus?.toLowerCase() === 'confirmed' ? 'text-green-600' :
-                                                    booking.bookingStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
-                                                    booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'text-red-600' :
-                                                    'text-blue-600'
-                                                }`}>
+                                                <span className={`font-medium ${booking.bookingStatus?.toLowerCase() === 'confirmed' ? 'text-green-600' :
+                                                        booking.bookingStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
+                                                            booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'text-red-600' :
+                                                                'text-blue-600'
+                                                    }`}>
                                                     {booking.bookingStatus}
                                                 </span>
                                             </td>
@@ -710,12 +709,11 @@ const HotelBookingHistory = () => {
                                                 {formatAmount(booking.totalAmount)}
                                             </td>
                                             <td className="px-4 py-3 text-sm">
-                                                <span className={`font-medium ${
-                                                    booking.paymentStatus?.toLowerCase() === 'completed' ? 'text-green-600' :
-                                                    booking.paymentStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
-                                                    booking.paymentStatus?.toLowerCase() === 'failed' ? 'text-red-600' :
-                                                    'text-blue-600'
-                                                }`}>
+                                                <span className={`font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' ? 'text-green-600' :
+                                                        booking.paymentStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
+                                                            booking.paymentStatus?.toLowerCase() === 'failed' ? 'text-red-600' :
+                                                                'text-blue-600'
+                                                    }`}>
                                                     {booking.paymentStatus}
                                                 </span>
                                             </td>
@@ -742,87 +740,13 @@ const HotelBookingHistory = () => {
                 </div>
             </div>
 
-            {/* Pagination info */}
-            {currentBookings.length > 0 && (
-                <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
-                    <span>
-                        Page 1 of 1, total {currentBookings.length} record{currentBookings.length !== 1 ? 's' : ''} found
-                    </span>
-                    {currentBookings.length > 0 && (
-                        <div className="flex items-center space-x-2">
-                            <span className="bg-gray-700 text-white px-2 py-1 rounded text-xs">1</span>
-                        </div>
-                    )}
-                </div>
-            )}
 
-            {/* Summary Cards */}
-            {(upcomingBookings.length > 0 || allBookings.length > 0) && (
-                <div className="mt-6 grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">{upcomingBookings.length}</div>
-                        <div className="text-sm text-blue-800">Upcoming Stays</div>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">{allBookings.length}</div>
-                        <div className="text-sm text-green-800">Total Hotel Bookings</div>
-                    </div>
-                </div>
-            )}
 
-            {/* Guest Information Display - Show for first booking if available */}
-            {currentBookings.length > 0 && currentBookings[0].leadGuestName !== 'N/A' && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Latest Booking Guest Info</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                            <span className="font-medium text-gray-600">Guest Name:</span>
-                            <div className="text-gray-900">{currentBookings[0].leadGuestName}</div>
-                        </div>
-                        <div>
-                            <span className="font-medium text-gray-600">Contact:</span>
-                            <div className="text-gray-900">{currentBookings[0].contactNumber}</div>
-                        </div>
-                        <div>
-                            <span className="font-medium text-gray-600">Email:</span>
-                            <div className="text-gray-900">{currentBookings[0].email}</div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
-            {/* Hotel Booking Statistics */}
-            {currentBookings.length > 0 && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Booking Statistics</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-600">
-                                {currentBookings.reduce((total, booking) => total + parseInt(booking.numberOfRooms || 1), 0)}
-                            </div>
-                            <div className="text-gray-600">Total Rooms</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-green-600">
-                                {currentBookings.reduce((total, booking) => total + (booking.nights || 1), 0)}
-                            </div>
-                            <div className="text-gray-600">Total Nights</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-purple-600">
-                                {currentBookings.filter(booking => booking.bookingStatus?.toLowerCase() === 'confirmed').length}
-                            </div>
-                            <div className="text-gray-600">Confirmed</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-orange-600">
-                                ₹{currentBookings.reduce((total, booking) => total + parseInt(booking.totalAmount || 0), 0)}
-                            </div>
-                            <div className="text-gray-600">Total Value</div>
-                        </div>
-                    </div>
-                </div>
-            )}
+
+
+
+
         </div>
     );
 };
