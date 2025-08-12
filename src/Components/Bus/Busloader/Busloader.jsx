@@ -2,7 +2,7 @@ import React from 'react';
 
 const Busloader = ({ from, to, departDate }) => {
     return (
-        <div className="d-flex justify-content-center align-items-center " style={{ minHeight: '60vh' }}>
+        <div className="d-flex justify-content-center align-items-center mt-0 pt-0">
             <div className="text-center bg-white p-4 shadow rounded-4">
                 {/* Bus Animation */}
                 <div className="loader-wrapper mb-4">
@@ -31,13 +31,28 @@ const Busloader = ({ from, to, departDate }) => {
                     <span className="dot dot3"></span>
                 </div>
 
-                {/* Route & Date Info */}
-                <div className="fw-bold mb-1">
-                    {from} <span className="text-muted">→</span> <strong>{to}</strong>
-                </div>
-                <div className="text-muted">
-                    <span className="fw-bold">Departure:</span> {departDate}
-                </div>
+                {/* Route & Date Info - Only show if data is available */}
+                {from && to && (
+                    <div className="fw-bold mb-1">
+                        <span className="text-primary">{from}</span> 
+                        <span className="text-muted mx-2">→</span> 
+                        <span className="text-success">{to}</span>
+                    </div>
+                )}
+                
+                {departDate && (
+                    <div className="text-muted">
+                        <span className="fw-bold">Departure:</span> 
+                        <span className="text-dark ms-1">{departDate}</span>
+                    </div>
+                )}
+                
+                {/* Show fallback message if no route info */}
+                {(!from || !to) && (
+                    <div className="text-muted">
+                        Searching for buses...
+                    </div>
+                )}
             </div>
         </div>
     );

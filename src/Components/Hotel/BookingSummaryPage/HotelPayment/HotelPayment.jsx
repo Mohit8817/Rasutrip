@@ -13,7 +13,7 @@ const HotelPayment = () => {
 
     return (
         <div>
-            <Container className="mt-5 pt-3">
+            <Container className="">
                 <Row>
                     <Col>
                         <HotelStep activeIndex={3} />
@@ -26,8 +26,10 @@ const HotelPayment = () => {
 
                     </Col>
                     <Col lg={3}>
-                        <FareSummaryCard priceDetails={priceDetails} />
+                      <div className='mt-4'>
+                          <FareSummaryCard priceDetails={priceDetails} />
                         <HotelPromoCodeCard />
+                      </div>
                     </Col>
                 </Row>
             </Container>

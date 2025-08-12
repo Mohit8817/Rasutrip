@@ -18,21 +18,38 @@ const TravelDate = () => {
         setTravelDate(date);
 
         if (!isValid) {
+            // Fix: Store date in local timezone format instead of ISO string
+            const localDateString = formatDateForStorage(date);
             setLocationData((prev) => ({
                 ...prev,
-                departDate: date.toISOString(),
+                departDate: localDateString,
             }));
         }
     }, [locationData?.departDate, setLocationData]);
 
+    // Helper function to format date for storage (avoids timezone issues)
+    const formatDateForStorage = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}T00:00:00.000Z`; // Keep time as midnight UTC
+    };
+
     const handleDateSelect = (date) => {
         if (!date || isNaN(date)) return;
+        
         setTravelDate(date);
         setShowCalendar(false);
+        
+        // Fix: Store date in correct format to avoid timezone issues
+        const localDateString = formatDateForStorage(date);
         setLocationData((prev) => ({
             ...prev,
-            departDate: date.toISOString(),
+            departDate: localDateString,
         }));
+
+        console.log("Selected date:", date.toDateString()); // Debug log
+        console.log("Stored as:", localDateString); // Debug log
     };
 
     const formatDate = (date) =>
@@ -51,7 +68,12 @@ const TravelDate = () => {
 
             {showCalendar && (
                 <div className="calendar-popup position-absolute bg-white mt-2 shadow rounded">
-                    <DayPicker mode="single" selected={travelDate} onSelect={handleDateSelect} />
+                    <DayPicker 
+                        mode="single" 
+                        selected={travelDate} 
+                        onSelect={handleDateSelect}
+                        disabled={(date) => date < new Date()} // Disable past dates
+                    />
                 </div>
             )}
         </div>

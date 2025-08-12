@@ -1,11 +1,6 @@
 
 
 
-.innerpagecontainer{
-    margin-top: 7rem !important;
-}
-
-
 
 /* bus side bar  */
 
@@ -23,6 +18,7 @@
   background-color: #f0f4fa;
   padding: 1rem;
 }
+
 
 .sort-header {
   background-color: #e0e0e0;

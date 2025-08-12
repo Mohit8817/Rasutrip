@@ -48,7 +48,7 @@ const handleContinue = () => {
 
   return (
     <div>
-      <div className="bg-light shadow-sm p-2 rounded fw-bold mb-3">
+      <div className="bg-light shadow-sm p-2 rounded fw-bold mb-3 ">
         Review Your Hotel Details
       </div>
 

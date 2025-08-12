@@ -33,6 +33,7 @@ const HotelDetailsPage = () => {
       }
 
       const payload = {
+        ...hotel,
         UserIp: "49.36.217.215",
         ResultIndex: hotel.ResultIndex,
         HotelCode: hotel.HotelCode,
@@ -65,7 +66,7 @@ const HotelDetailsPage = () => {
   }
 
   return (
-    <Container className="mt-5 pt-5 innerpagecontainer">
+    <Container className="">
       <Row>
         <Col>
           <Heading
