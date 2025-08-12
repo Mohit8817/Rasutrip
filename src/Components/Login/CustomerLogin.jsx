@@ -439,7 +439,7 @@ const CustomerLogin = () => {
             const userName = userData.firstName || userData.name || 'User';
             const greeting = existingProfile ? 'Welcome back' : 'Welcome';
             setMessage(`${greeting}, ${userName}! Login successful!`);
-            setTimeout(() => navigate('/dashboard'), 1500);
+            setTimeout(() => navigate('/'), 1500);
           } else {
             console.warn('⚠️ Token saving failed');
             setError('Failed to save session. Please try again.');
