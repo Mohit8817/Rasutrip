@@ -1,43 +1,30 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from 'react-bootstrap';
+import { Button, Alert } from 'react-bootstrap';
 import { AuthContext } from '../../../Context/AuthContext';
 
 const Profile = () => {
-    const { user, userType } = useContext(AuthContext);
+    const {
+        user,
+        getUserFullName,
+        getUserInitials,
+        getUserMobile
+    } = useContext(AuthContext);
+
     const navigate = useNavigate();
 
-    const getUserInitials = () => {
-        if (user?.name) {
-            return user.name.split(' ').map(n => n[0]).join('').toUpperCase();
-        } else if (user?.mobile) {
-            // Get last 2 digits from mobile number
-            const cleanMobile = user.mobile.replace(/\D/g, '');
-            return cleanMobile.slice(-2);
-        }
-        return 'U';
-    };
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
 
-    const formatMobile = (mobile) => {
-        if (!mobile) return '';
-        // Remove country code and format
-        const cleaned = mobile.replace(/^\+?91/, '').replace(/\D/g, '');
-        if (cleaned.length >= 10) {
-            return `+91 ${cleaned.slice(-10, -5)} ${cleaned.slice(-5)}`;
-        }
-        return mobile;
-    };
-
-    // If no user is logged in, show login prompt
     if (!user) {
         return (
             <div className="bg-white rounded-lg shadow p-6 text-center">
+                <div className="w-20 h-20 mx-auto rounded-full bg-gray-300 flex items-center justify-center text-gray-500 text-2xl font-bold mb-4">
+                    ?
+                </div>
                 <h2 className="text-2xl font-bold mb-4 text-gray-800">Please Login</h2>
                 <p className="text-gray-600 mb-4">You need to login to view your profile.</p>
-                <Button
-                    variant="primary"
-                    onClick={() => navigate('/')}
-                >
+                <Button variant="primary" onClick={() => navigate('/')}>
                     Go to Login
                 </Button>
             </div>
@@ -45,124 +32,82 @@ const Profile = () => {
     }
 
     return (
-        <div className="bg-white rounded-lg shadow p-6">
-            <div className="mb-4">
-                <h2 className="text-2xl font-bold text-gray-800 mb-0">Profile Information</h2>
+        <div className="bg-white rounded-lg shadow-sm border">
+            {/* Success/Error Messages */}
+            {message && <Alert variant="success" className="m-4 mb-0">{message}</Alert>}
+            {error && <Alert variant="danger" className="m-4 mb-0">{error}</Alert>}
+
+            {/* Header */}
+            <div className="p-4 border-bottom">
+                <h2 className="text-2xl font-bold text-gray-800 mb-0">
+                    My Profile
+                </h2>
             </div>
 
-            <div className="text-center mb-8">
-                <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-content-center text-white text-3xl font-bold mb-4"
-                    style={{
-                        width: '96px',
-                        height: '96px',
-                        background: userType === 'agent'
-                            ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                            : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
-                    }}>
-                    {getUserInitials()}
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-1">
-                    {user?.name || formatMobile(user?.mobile) || 'User'}
-                </h3>
-                <span className={`badge ${userType === 'agent' ? 'bg-primary' : 'bg-success'} text-uppercase`}>
-                    {userType || 'Customer'}
-                </span>
-            </div>
-
-            <div className="row">
-                <div className="col-md-6">
-                    <div className="mb-4">
-                        <div>
-                            <label className="form-label text-muted small">Account Type</label>
-                            <div className="d-flex align-items-center p-3 bg-light rounded">
-                                <span className={`me-2 ${userType === 'agent' ? 'text-primary' : 'text-success'}`}>
-                                    {userType === 'agent' ? '👔' : '👤'}
-                                </span>
-                                <span className="text-capitalize fw-medium">{userType || 'Customer'}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="form-label text-muted small">Mobile Number</label>
-                        <div className="d-flex align-items-center p-3 bg-light rounded">
-                            <span className="text-muted me-2">📱</span>
-                            <span>{formatMobile(user?.mobile)}</span>
-                        </div>
-                    </div>
-
-                    {user?.email && (
-                        <div className="mb-4">
-                            <label className="form-label text-muted small">Email</label>
-                            <div className="d-flex align-items-center p-3 bg-light rounded">
-                                <span className="text-muted me-2">✉️</span>
-                                <span>{user.email}</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className="col-md-6">
-                    {user?.name && (
-                        <div className="mb-4">
-                            <label className="form-label text-muted small">Full Name</label>
-                            <div className="p-3 bg-light rounded">
-                                <span>{user.name}</span>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="mb-4">
-                        <label className="form-label text-muted small">Registration Date</label>
-                        <div className="p-3 bg-light rounded">
-                            <span>
-                                {user?.createdAt
-                                    ? new Date(user.createdAt).toLocaleDateString('en-IN', {
-                                        day: '2-digit',
-                                        month: 'short',
-                                        year: 'numeric'
-                                    })
-                                    : 'N/A'
-                                }
-                            </span>
-                        </div>
-                    </div>
-
-                    {user?.agentId && (
-                        <div className="mb-4">
-                            <label className="form-label text-muted small">Agent ID</label>
-                            <div className="p-3 bg-light rounded">
-                                <span className="font-monospace">{user.agentId}</span>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="mb-4">
-                        <label className="form-label text-muted small">Login Status</label>
-                        <div className="p-3 bg-light rounded">
-                            <span className="badge bg-success">Active</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Additional Actions */}
-            <div className="mt-4 pt-4 border-top">
-                <div className="d-flex gap-2 justify-content-center">
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => navigate('/dashboard')}
+            <div className="p-4">
+                {/* Profile Header */}
+                <div className="text-center mb-4">
+                    <div
+                        className="mx-auto rounded-circle d-flex align-items-center justify-content-center text-white text-3xl font-bold mb-3 shadow-lg"
+                        style={{
+                            width: '80px',
+                            height: '80px',
+                            fontSize: '1.8rem',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                        }}
                     >
-                        Go to Dashboard
-                    </Button>
-                    <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        onClick={() => navigate('/')}
-                    >
-                        Home
-                    </Button>
+                        {getUserInitials()}
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">
+                        {getUserFullName()}
+                    </h3>
+                </div>
+
+                {/* Profile Information */}
+                <div className="row justify-content-center">
+                    <div className="col-lg-6">
+                        <div className="row g-3">
+                            <div className="col-12">
+                                <label className="form-label text-muted small fw-bold">Full Name</label>
+                                <div className="p-3 bg-light rounded border">
+                                    <div className="d-flex align-items-center">
+                                        <span className="text-primary me-2">👤</span>
+                                        <span className="fw-medium">{getUserFullName()}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="col-12">
+                                <label className="form-label text-muted small fw-bold">Mobile Number</label>
+                                <div className="p-3 bg-light rounded border">
+                                    <div className="d-flex align-items-center">
+                                        <span className="text-success me-2">📱</span>
+                                        <span>{getUserMobile()}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="col-12">
+                                <label className="form-label text-muted small fw-bold">Last Login</label>
+                                <div className="p-3 bg-light rounded border">
+                                    <div className="d-flex align-items-center">
+                                        <span className="text-secondary me-2">⏰</span>
+                                        <span>
+                                            {user?.lastLoginTime ?
+                                                new Date(user.lastLoginTime).toLocaleString('en-IN', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                }) :
+                                                'Just now'
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -506,20 +506,7 @@ const BusBookingHistory = () => {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800">My Bus Bookings</h2>
-                    <div className="flex items-center mt-1">
-                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            userType === 'agent' 
-                                ? 'bg-purple-100 text-purple-800' 
-                                : 'bg-blue-100 text-blue-800'
-                        }`}>
-                            {getUserTypeDisplay()} Dashboard
-                        </span>
-                        {user && (
-                            <span className="ml-2 text-sm text-gray-600">
-                                Welcome, {user.name || user.mobile || 'User'}
-                            </span>
-                        )}
-                    </div>
+                  
                 </div>
                 <button
                     onClick={loadBookings}
@@ -721,57 +708,8 @@ const BusBookingHistory = () => {
                 </div>
             </div>
 
-            {/* Summary Cards */}
-            {(upcomingBookings.length > 0 || allBookings.length > 0) && (
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-2xl font-bold text-blue-600">{upcomingBookings.length}</div>
-                                <div className="text-sm text-blue-800">Upcoming Trips</div>
-                            </div>
-                            <div className="text-blue-400 text-2xl">🚌</div>
-                        </div>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-2xl font-bold text-green-600">{allBookings.length}</div>
-                                <div className="text-sm text-green-800">Total Bookings</div>
-                            </div>
-                            <div className="text-green-400 text-2xl">📊</div>
-                        </div>
-                    </div>
-                    <div className={`p-4 rounded-lg ${userType === 'agent' ? 'bg-purple-50' : 'bg-indigo-50'}`}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className={`text-2xl font-bold ${userType === 'agent' ? 'text-purple-600' : 'text-indigo-600'}`}>
-                                    {getUserTypeDisplay()}
-                                </div>
-                                <div className={`text-sm ${userType === 'agent' ? 'text-purple-800' : 'text-indigo-800'}`}>
-                                    Account Type
-                                </div>
-                            </div>
-                            <div className={`text-2xl ${userType === 'agent' ? 'text-purple-400' : 'text-indigo-400'}`}>
-                                {userType === 'agent' ? '🏢' : '👤'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Pagination info */}
-            {currentBookings.length > 0 && (
-                <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
-                    <span>
-                        Showing {currentBookings.length} {getUserTypeDisplay().toLowerCase()} booking{currentBookings.length !== 1 ? 's' : ''}
-                        {bookingType === 'upcoming' ? ' - upcoming trips' : ' - all bookings'}
-                    </span>
-                    <div className="flex items-center space-x-2">
-                        <span className="bg-gray-700 text-white px-2 py-1 rounded text-xs">Page 1 of 1</span>
-                    </div>
-                </div>
-            )}
+          
+          
 
             {/* Footer with user context info */}
             <div className="mt-6 pt-4 border-t border-gray-200">
