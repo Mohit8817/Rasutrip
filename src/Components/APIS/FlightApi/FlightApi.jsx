@@ -46,15 +46,31 @@ export const fetchSSR = async (payload) => {
   return response.data
 }
 
+
 export const post = async (data, url, customHeaders = {}) => {
   try {
     // const token = localStorage.getItem("token");
     const headers = {
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
       ...customHeaders, // allow additional headers
     };
-    const response = await axios.post(baseURL + url, data, { headers });
-    return response.data;
+
+    const response = await fetch(baseURL + url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(data)
+    });
+
+    // Check if the response is successful
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Parse and return the response data
+    const responseData = await response.json();
+    return responseData;
+    
   } catch (error) {
     console.error('POST request failed:', error);
     throw error;

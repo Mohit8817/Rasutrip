@@ -5,59 +5,59 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPassengers, updatePassenger } from '../../redux/Slices/PassengersSlice';
 import { toast } from 'react-toastify';
-
+import countries from './countries.json';
 import { LocationContext } from '../Context/LocationContext';
 import { fetchSSR } from '../APIS/FlightApi/FlightApi';
 import moment from 'moment';
 
-const TravellerInfo = ({ fareConfirmData, SelectedFare ,Faresummary }) => {
+const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary }) => {
     const journeyType = localStorage.getItem('tripType')
-    let fareConfirm =fareConfirmData
-    console.log('checking',fareConfirm.length)
-    if(journeyType=='oneway'){
-        fareConfirm=fareConfirm
+    let fareConfirm = fareConfirmData
+    console.log('checking', fareConfirm.length)
+    if (journeyType == 'oneway') {
+        fareConfirm = fareConfirm
     }
-    else if(journeyType=='roundtrip'){
-       
-        fareConfirm=fareConfirm.onward??fareConfirm
-       
-        
-    }else{
-        
+    else if (journeyType == 'roundtrip') {
+
+        fareConfirm = fareConfirm.onward ?? fareConfirm
+
+
+    } else {
+
     }
-    console.log('fareConferam',fareConfirm)
+    console.log('fareConferam', fareConfirm)
     const { locationData } = useContext(LocationContext);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-   let PassagerOrigin = null;
-   let  SearchData = null;
-const tripType = localStorage.getItem('tripType');
+    let PassagerOrigin = null;
+    let SearchData = null;
+    const tripType = localStorage.getItem('tripType');
 
-if (tripType === 'oneway') {
-  const res = localStorage.getItem('selectedFlight');
-   SearchData = JSON.parse(res);
-  PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
-} 
-else if (tripType === 'roundtrip') {
-    console.log('fareConfirm.length',fareConfirm.length)
-    if(fareConfirm.length>1){
-  const res = localStorage.getItem('selectedOnwardFlight');
-   SearchData = JSON.parse(res);
-  PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
-    }else{
-         const res = localStorage.getItem('selectedFlight');
-   SearchData = JSON.parse(res);
-  PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
-        
+    if (tripType === 'oneway') {
+        const res = localStorage.getItem('selectedFlight');
+        SearchData = JSON.parse(res);
+        PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
     }
-} 
-else if (tripType === 'multicity') {
-  const res = localStorage.getItem('selectedMulticityFlight');
-   SearchData = JSON.parse(res);
-  PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
-}
-    
-    console.log('PassagerOrigin',PassagerOrigin)
+    else if (tripType === 'roundtrip') {
+        console.log('fareConfirm.length', fareConfirm.length)
+        if (fareConfirm.length > 1) {
+            const res = localStorage.getItem('selectedOnwardFlight');
+            SearchData = JSON.parse(res);
+            PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
+        } else {
+            const res = localStorage.getItem('selectedFlight');
+            SearchData = JSON.parse(res);
+            PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
+
+        }
+    }
+    else if (tripType === 'multicity') {
+        const res = localStorage.getItem('selectedMulticityFlight');
+        SearchData = JSON.parse(res);
+        PassagerOrigin = SearchData?.Segments?.[0]?.[0]?.Origin;
+    }
+
+    console.log('PassagerOrigin', PassagerOrigin)
 
     const [loading, setLoading] = useState(false);
     const passengersData = useSelector((state) => state.passengersData || []);
@@ -132,30 +132,30 @@ else if (tripType === 'multicity') {
     };
 
     const normalizeFareSummary = (summaryData) => {
-  let onwardFare = null;
-  let returnFare = null;
+        let onwardFare = null;
+        let returnFare = null;
 
-  if (!summaryData) return { onwardFare, returnFare };
+        if (!summaryData) return { onwardFare, returnFare };
 
-  if (Array.isArray(summaryData)) {
-    // Format 2: Array
-    onwardFare = summaryData[0] || null;
-    returnFare = summaryData[1] || null;
-  } else if (summaryData?.onward || summaryData?.return) {
-    // Format 3: Object with onward & return
-    onwardFare = summaryData.onward || null;
-    returnFare = summaryData.return || null;
-  } else {
-    // Format 1: flat object (assume one-way or both in one object)
-    onwardFare = summaryData;
+        if (Array.isArray(summaryData)) {
+            // Format 2: Array
+            onwardFare = summaryData[0] || null;
+            returnFare = summaryData[1] || null;
+        } else if (summaryData?.onward || summaryData?.return) {
+            // Format 3: Object with onward & return
+            onwardFare = summaryData.onward || null;
+            returnFare = summaryData.return || null;
+        } else {
+            // Format 1: flat object (assume one-way or both in one object)
+            onwardFare = summaryData;
 
-    if (summaryData?.SeatBaggage?.length > 1) {
-      returnFare = { ...summaryData }; // reuse same object for both
-    }
-  }
+            if (summaryData?.SeatBaggage?.length > 1) {
+                returnFare = { ...summaryData }; // reuse same object for both
+            }
+        }
 
-  return { onwardFare, returnFare };
-};
+        return { onwardFare, returnFare };
+    };
 
 
     const handleContactChange = (field, value) => {
@@ -165,51 +165,51 @@ else if (tripType === 'multicity') {
         }));
     };
 
-  const rawData = localStorage.getItem("fareSummery");
-const summaryData = rawData ? JSON.parse(rawData) : null;
-const { onwardFare, returnFare } = normalizeFareSummary(summaryData);
+    const rawData = localStorage.getItem("fareSummery");
+    const summaryData = rawData ? JSON.parse(rawData) : null;
+    const { onwardFare, returnFare } = normalizeFareSummary(summaryData);
 
-    
-    let ReturnRes=null
-    console.log('summaryData',summaryData)
-    console.log('krishnaTrip',tripType)
+
+    let ReturnRes = null
+    console.log('summaryData', summaryData)
+    console.log('krishnaTrip', tripType)
 
     const SSRPayload = useMemo(() => ({
-  UserIp: localStorage.getItem("UserIp") || "",
-  ResultIndex: onwardFare?.FareId || "",
-  PublishedPrice: onwardFare?.PublishedPrice || "",
-  SearchTokenId: localStorage.getItem("searchToken") || ""
-}), [onwardFare]);
+        UserIp: localStorage.getItem("UserIp") || "",
+        ResultIndex: onwardFare?.FareId || "",
+        PublishedPrice: onwardFare?.PublishedPrice || "",
+        SearchTokenId: localStorage.getItem("searchToken") || ""
+    }), [onwardFare]);
 
-const SSRreturnPayload = useMemo(() => {
-  if (tripType === 'roundtrip' && returnFare) {
-    return {
-      UserIp: localStorage.getItem("UserIp") || "",
-      ResultIndex: returnFare.FareId,
-      PublishedPrice: returnFare.PublishedPrice,
-      SearchTokenId: localStorage.getItem("searchToken") || ""
-    };
-  }
-  return null;
-}, [returnFare, tripType]);
+    const SSRreturnPayload = useMemo(() => {
+        if (tripType === 'roundtrip' && returnFare) {
+            return {
+                UserIp: localStorage.getItem("UserIp") || "",
+                ResultIndex: returnFare.FareId,
+                PublishedPrice: returnFare.PublishedPrice,
+                SearchTokenId: localStorage.getItem("searchToken") || ""
+            };
+        }
+        return null;
+    }, [returnFare, tripType]);
 
-   
-   
 
-    
+
+
+
 
     const handleContinue = async () => {
         setLoading(true);
         try {
-             const res = await fetchSSR(SSRPayload);
-    let ReturnRes = null;
+            const res = await fetchSSR(SSRPayload);
+            let ReturnRes = null;
 
-    if (tripType === 'roundtrip' && SSRreturnPayload) {
-      ReturnRes = await fetchSSR(SSRreturnPayload);
-    }
+            if (tripType === 'roundtrip' && SSRreturnPayload) {
+                ReturnRes = await fetchSSR(SSRreturnPayload);
+            }
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
-            navigate('/addons', { state: { SSR: res?.Result || [], SSrReturnRes:ReturnRes?.Result || [] , SelectedFare, passengersData,Faresummary } });
-        
+            navigate('/addons', { state: { SSR: res?.Result || [], SSrReturnRes: ReturnRes?.Result || [], SelectedFare, passengersData, Faresummary } });
+
         } catch (error) {
             console.error("API call failed:", error);
             const errMsg =
@@ -282,7 +282,7 @@ const SSRreturnPayload = useMemo(() => {
         const isAdult = type === 'ADT';
         const isChild = type === 'CHD';
         const isInfant = type === 'INF';
-console.log('passenger',passenger)
+        console.log('passenger', passenger)
 
         // Determine required fields based on fareConfirm
         const requireDOB = (isAdult && (fareConfirm?.IsADTDOBRequired || fareConfirm?.IsAdultDOBMandatory)) ||
@@ -416,7 +416,7 @@ console.log('passenger',passenger)
                                     />
                                 </Form.Group>
                             </Col>
-                             <Col md={3}>
+                            <Col md={3}>
                                 <Form.Group>
                                     <Form.Label><RequiredLabel>Passport Issue</RequiredLabel></Form.Label>
                                     <Form.Control
@@ -438,15 +438,22 @@ console.log('passenger',passenger)
                                     />
                                 </Form.Group>
                             </Col>
-                           
+
                             <Col md={3}>
                                 <Form.Group>
                                     <Form.Label><RequiredLabel>Nationality</RequiredLabel></Form.Label>
-                                    <Form.Control
+                                    <Form.Select
                                         value={passenger.Nationality || ''}
                                         onChange={(e) => handlePassengerChange(type, index, 'Nationality', e.target.value)}
                                         required
-                                    />
+                                    >
+                                        <option value="">Select Nationality</option>
+                                        {countries.map((country) => (
+                                            <option key={country.CountryCode} value={country.CountryCode}>
+                                                {country.CountryName}
+                                            </option>
+                                        ))}
+                                    </Form.Select>
                                 </Form.Group>
                             </Col>
                         </>
@@ -531,7 +538,9 @@ console.log('passenger',passenger)
                         <>
                             <Col md={3}>
                                 <Form.Group>
-                                    <Form.Label> <RequiredLabel>GST Number</RequiredLabel> </Form.Label>
+                                    <Form.Label>
+                                        {requireGST ? <RequiredLabel>GST Number</RequiredLabel> : 'GST Number'}
+                                    </Form.Label>
                                     <Form.Control
                                         value={passenger.GSTNumber || ''}
                                         onChange={(e) => handlePassengerChange(type, index, 'GSTNumber', e.target.value)}
@@ -539,9 +548,12 @@ console.log('passenger',passenger)
                                     />
                                 </Form.Group>
                             </Col>
+
                             <Col md={3}>
                                 <Form.Group>
-                                    <Form.Label><RequiredLabel>Company Name</RequiredLabel></Form.Label>
+                                    <Form.Label>
+                                        {requireGST ? <RequiredLabel>Company Name</RequiredLabel> : 'Company Name'}
+                                    </Form.Label>
                                     <Form.Control
                                         value={passenger.GSTCompanyName || ''}
                                         onChange={(e) => handlePassengerChange(type, index, 'GSTCompanyName', e.target.value)}
@@ -549,9 +561,12 @@ console.log('passenger',passenger)
                                     />
                                 </Form.Group>
                             </Col>
+
                             <Col md={6}>
                                 <Form.Group>
-                                    <Form.Label><RequiredLabel>GST Company Email</RequiredLabel></Form.Label>
+                                    <Form.Label>
+                                        {requireGST ? <RequiredLabel>GST Company Email</RequiredLabel> : 'GST Company Email'}
+                                    </Form.Label>
                                     <Form.Control
                                         value={passenger.GSTCompanyEmail || ''}
                                         onChange={(e) => handlePassengerChange(type, index, 'GSTCompanyEmail', e.target.value)}
@@ -559,9 +574,12 @@ console.log('passenger',passenger)
                                     />
                                 </Form.Group>
                             </Col>
+
                             <Col md={6}>
                                 <Form.Group>
-                                    <Form.Label><RequiredLabel>Company Address</RequiredLabel></Form.Label>
+                                    <Form.Label>
+                                        {requireGST ? <RequiredLabel>Company Address</RequiredLabel> : 'Company Address'}
+                                    </Form.Label>
                                     <Form.Control
                                         value={passenger.GSTCompanyAddress || ''}
                                         onChange={(e) => handlePassengerChange(type, index, 'GSTCompanyAddress', e.target.value)}
@@ -569,9 +587,12 @@ console.log('passenger',passenger)
                                     />
                                 </Form.Group>
                             </Col>
+
                             <Col md={3}>
                                 <Form.Group>
-                                    <Form.Label> <RequiredLabel>Company Contact</RequiredLabel> </Form.Label>
+                                    <Form.Label>
+                                        {requireGST ? <RequiredLabel>Company Contact</RequiredLabel> : 'Company Contact'}
+                                    </Form.Label>
                                     <Form.Control
                                         value={passenger.GSTCompanyContactNumber || ''}
                                         onChange={(e) => handlePassengerChange(type, index, 'GSTCompanyContactNumber', e.target.value)}
@@ -579,10 +600,9 @@ console.log('passenger',passenger)
                                     />
                                 </Form.Group>
                             </Col>
-
                         </>
-                    )
-                    }
+                    )}
+
                 </Row>
             </div>
         );
