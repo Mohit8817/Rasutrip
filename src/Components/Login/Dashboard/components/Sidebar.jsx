@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../Context/AuthContext';
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
-  const { 
-    user, 
-    userType, 
+  const {
+    user,
+    userType,
     logout,
     getUserDisplayName,
     getUserFirstName,
@@ -51,42 +51,35 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   }
 
   const menuItems = [
-    { id: 'profile', label: 'Profile', icon: '👤' },
-    { id: 'bookings', label: 'Booking', icon: '📋' },
-    // Add more menu items based on user type
-    ...(userType === 'agent' ? [
-      { id: 'agents', label: 'Agent Dashboard', icon: '👔' },
-      { id: 'reports', label: 'Reports', icon: '📊' }
-    ] : []),
+    { id: 'profile', label: 'Profile', },
+    { id: 'bookings', label: 'Booking', },
+
   ];
 
   return (
     <div className="bg-white rounded-lg shadow p-6 sticky top-8">
       {/* User Profile Section */}
       <div className="text-center mb-8">
-        <div 
+        <div
           className="profile-avatar w-20 h-20 mx-auto rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg"
           style={{
-            background: userType === 'agent' 
-              ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+            background: userType === 'agent'
+              ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
               : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
           }}
         >
           {getUserInitials()}
         </div>
-        
+
         {/* Enhanced Name Display */}
         <h3 className="text-xl font-semibold text-gray-800 mb-1">
           {getUserDisplayName()}
         </h3>
-        
-        {/* Show first name for personalized greeting */}
-        <p className="text-sm text-gray-600 mb-2">
-          Welcome back, {getUserFirstName()}! 👋
-        </p>
-        
+
+
+
         <div className="flex items-center justify-center text-sm text-gray-500 mb-2">
-          <span className="mr-1">{userType === 'agent' ? '👔' : '👤'}</span>
+          <span className="mr-1">{userType === 'agent' ? ' ' : ' '}</span>
           <span className="uppercase tracking-wide">{userType || 'Customer'} Profile</span>
         </div>
 
@@ -94,38 +87,14 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         <div className="text-xs text-gray-400">
           {formatMobile(user?.mobile)}
         </div>
-        
+
         {user?.email && (
           <div className="text-xs text-gray-400 mt-1 truncate">
             {user.email}
           </div>
         )}
 
-        {/* Enhanced Status Badge with User Info */}
-        <div className="mt-3">
-          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-            userType === 'agent' 
-              ? 'bg-blue-100 text-blue-800' 
-              : 'bg-green-100 text-green-800'
-          }`}>
-            Active {userType === 'agent' ? 'Agent' : 'Customer'}
-          </span>
-        </div>
 
-        {/* Profile Completion Indicator */}
-        {user && (
-          <div className="mt-2">
-            <div className="text-xs text-gray-500">
-              Profile: {user?.email && user?.name ? '100%' : '75%'} complete
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
-              <div 
-                className="bg-green-500 h-1 rounded-full transition-all duration-300" 
-                style={{ width: user?.email && user?.name ? '100%' : '75%' }}
-              ></div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Navigation Menu */}
@@ -134,11 +103,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 ${
-              activeTab === item.id
+            className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 ${activeTab === item.id
                 ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-500 transform scale-105'
                 : 'text-gray-700 hover:bg-gray-50 hover:text-blue-500 hover:transform hover:scale-102'
-            }`}
+              }`}
           >
             <span className="mr-3 text-lg">{item.icon}</span>
             <span className="font-medium">{item.label}</span>
@@ -153,7 +121,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           onClick={handleLogout}
           className="w-full flex items-center px-4 py-3 text-left rounded-lg text-red-600 hover:bg-red-50 transition-all duration-200 mt-6 border-t pt-4 hover:transform hover:scale-102"
         >
-          <span className="mr-3 text-lg">🚪</span>
+          <span className="mr-3 text-lg"></span>
           <span className="font-medium">Logout</span>
         </button>
       </nav>
@@ -161,11 +129,11 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       {/* Enhanced Footer Info */}
       <div className="mt-6 pt-4 border-t text-center">
         <p className="text-xs text-gray-400">
-          Active since: {user?.lastLoginTime ? 
+          Active since: {user?.lastLoginTime ?
             new Date(user.lastLoginTime).toLocaleDateString('en-IN', {
               day: '2-digit',
               month: 'short'
-            }) : 
+            }) :
             new Date().toLocaleDateString('en-IN', {
               day: '2-digit',
               month: 'short'
@@ -180,20 +148,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             })}
           </p>
         )}
-        
-        {/* Quick Stats */}
-        <div className="mt-3 pt-2 border-t border-gray-100">
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="text-center">
-              <div className="font-semibold text-blue-600">0</div>
-              <div className="text-gray-500">Bookings</div>
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-green-600">₹0</div>
-              <div className="text-gray-500">Spent</div>
-            </div>
-          </div>
-        </div>
+
+
       </div>
     </div>
   );

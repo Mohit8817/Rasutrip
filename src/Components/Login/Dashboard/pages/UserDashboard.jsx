@@ -62,7 +62,7 @@ const UserDashboard = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 mt-3">
-            <Container>
+            <Container fluid>
                 <Row>
                     {/* Sidebar */}
                     <Col md={4} lg={3} className="mb-4">

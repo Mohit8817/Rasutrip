@@ -23,30 +23,64 @@
 .slider-container {
   position: relative;
 }
-
+/* 
 .travel-tabs {
   position: relative;
-  bottom: 2rem;
-  width: 100%;
+  bottom: 2.5rem;
+  width: 70%;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 5;
-  left: 0;
+  left: 12rem;
+} */
+
+.travel-tabs {
+  position: relative;
+  bottom: 2.5rem;
+  width: 70%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  left: 12rem;
 }
 
-@media (min-width: 768px) {
+/* Tablets */
+@media (max-width: 1024px) {
   .travel-tabs {
-    justify-content: flex-start;
-    left: 7rem;
-    width: 70%;
+    width: 80%;
+    left: 6rem;
+    bottom: 2rem;
+  }
+}
+
+/* Mobile Landscape */
+@media (max-width: 768px) {
+  .travel-tabs {
+    width: 90%;
+    left: 2rem;
+    bottom: 1.5rem;
+  }
+}
+
+/* Mobile Portrait */
+@media (max-width: 480px) {
+  .travel-tabs {
+    width: 100%;
+    left: 0;
+    bottom: 1rem;
+    flex-wrap: wrap; /* Allow tabs to wrap */
+    padding: 0 10px;
   }
 }
 
 
+
+
 .overlay-box {
   position: absolute;
-  top: 30%;
+  top: 22%;
   left: 50%;
   transform: translateX(-50%);
   background-color: white;

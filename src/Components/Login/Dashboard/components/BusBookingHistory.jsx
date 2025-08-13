@@ -18,25 +18,25 @@ const BusBookingHistory = () => {
     const detectUserType = () => {
         console.log('🔍 Detecting user type...');
         console.log('👤 User from context:', user);
-        
+
         // Method 1: Check localStorage for userType
         const storedUserType = localStorage.getItem('userType') || localStorage.getItem('user_type');
         console.log('💾 Stored user type:', storedUserType);
-        
+
         // Method 2: Check token key patterns (from your login components)
         let detectedType = null;
-        
+
         // Check for customer token patterns
         const customerTokenKeys = ['token', 'authToken', 'customer_token', 'customerToken'];
         const hasCustomerToken = customerTokenKeys.some(key => localStorage.getItem(key));
-        
+
         // Check for agent token patterns
         const agentTokenKeys = ['agent_token', 'agentToken', 'agent_auth_token'];
         const hasAgentToken = agentTokenKeys.some(key => localStorage.getItem(key));
-        
+
         console.log('🏪 Customer token found:', hasCustomerToken);
         console.log('🏢 Agent token found:', hasAgentToken);
-        
+
         // Method 3: Check user context properties
         if (user) {
             // Check if user has agent-specific properties
@@ -46,7 +46,7 @@ const BusBookingHistory = () => {
                 detectedType = 'customer';
             }
         }
-        
+
         // Priority logic for user type detection
         if (storedUserType) {
             detectedType = storedUserType.toLowerCase();
@@ -61,7 +61,7 @@ const BusBookingHistory = () => {
             const hasAnyToken = localStorage.getItem('token') || localStorage.getItem('authToken');
             detectedType = hasAnyToken ? 'customer' : null;
         }
-        
+
         console.log('✅ Final detected user type:', detectedType);
         return detectedType;
     };
@@ -70,15 +70,15 @@ const BusBookingHistory = () => {
     const getAuthHeaders = () => {
         const currentUserType = userType || detectUserType();
         console.log('🔐 Getting auth headers for user type:', currentUserType);
-        
+
         // Try different token keys based on user type
         let token = null;
         let tokenKey = null;
-        
-        const tokenKeys = currentUserType === 'agent' 
+
+        const tokenKeys = currentUserType === 'agent'
             ? ['agent_token', 'agentToken', 'agent_auth_token', 'token', 'authToken'] // Agent token priority
             : ['token', 'authToken', 'customer_token', 'customerToken', 'accessToken']; // Customer token priority
-        
+
         for (const key of tokenKeys) {
             const value = localStorage.getItem(key) || sessionStorage.getItem(key);
             if (value) {
@@ -151,7 +151,7 @@ const BusBookingHistory = () => {
     // User type specific API endpoints
     const getBookingEndpoints = (currentUserType) => {
         console.log('🎯 Getting endpoints for user type:', currentUserType);
-        
+
         if (currentUserType === 'agent') {
             return {
                 upcoming: `${API_BASE_URL}/agent/bus-bookings/upcoming`, // Agent-specific endpoint
@@ -171,9 +171,9 @@ const BusBookingHistory = () => {
     const fetchUpcomingBookings = async () => {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType);
-        
+
         console.log('🚀 Fetching upcoming bookings for:', currentUserType);
-        
+
         try {
             return await makeAuthenticatedRequest(endpoints.upcoming);
         } catch (error) {
@@ -190,9 +190,9 @@ const BusBookingHistory = () => {
     const fetchAllBookings = async () => {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType);
-        
+
         console.log('🚀 Fetching all bookings for:', currentUserType);
-        
+
         try {
             return await makeAuthenticatedRequest(endpoints.all);
         } catch (error) {
@@ -241,7 +241,7 @@ const BusBookingHistory = () => {
         const formattedBookings = bookingsArray.map((bookingWrapper, index) => {
             // Extract booking data (might be nested in "Result" field)
             const booking = bookingWrapper.Result || bookingWrapper;
-            
+
             // Enhanced booking ID extraction with user type prefix
             const rawBookingId = bookingWrapper.bookingId ||
                 bookingWrapper.BookingId ||
@@ -257,18 +257,18 @@ const BusBookingHistory = () => {
             const bookingId = String(rawBookingId);
 
             // Extract route information
-            const fromCity = booking.Origin || booking.FromCity || booking.fromCity || 
-                           booking.from || booking.origin || booking.source || 'N/A';
-            const toCity = booking.Destination || booking.ToCity || booking.toCity || 
-                         booking.to || booking.destination || 'N/A';
+            const fromCity = booking.Origin || booking.FromCity || booking.fromCity ||
+                booking.from || booking.origin || booking.source || 'N/A';
+            const toCity = booking.Destination || booking.ToCity || booking.toCity ||
+                booking.to || booking.destination || 'N/A';
 
             // Extract travel date
             const travelDate = booking.DateOfJourney || booking.TravelDate || booking.travelDate ||
-                             booking.departureDate || booking.journeyDate || booking.date || 'N/A';
+                booking.departureDate || booking.journeyDate || booking.date || 'N/A';
 
             // Extract bus information
             const busType = booking.BusType || booking.busType || booking.TravelName ||
-                          booking.operator || booking.busName || booking.serviceName || 'N/A';
+                booking.operator || booking.busName || booking.serviceName || 'N/A';
 
             // Extract seat information from Passenger array
             let seatNumber = 'N/A';
@@ -277,21 +277,21 @@ const BusBookingHistory = () => {
                 seatNumber = seats.join(', ') || 'N/A';
             } else {
                 seatNumber = booking.SeatNumbers || booking.seatNumbers || booking.seats ||
-                           booking.seatNumber || booking.SeatName || 'N/A';
+                    booking.seatNumber || booking.SeatName || 'N/A';
             }
 
             // Extract other booking details
             const ticketNo = booking.TicketNo || booking.ticketNo || booking.ticketNumber ||
-                           booking.ticket || 'N/A';
+                booking.ticket || 'N/A';
             const pnr = booking.TravelOperatorPNR || booking.PNR || booking.pnr ||
-                      booking.referenceNumber || booking.confirmationNumber || 'N/A';
+                booking.referenceNumber || booking.confirmationNumber || 'N/A';
             const bookingStatus = booking.Status || booking.status || booking.bookingStatus || 'Confirmed';
 
             // Extract amount information
             const totalAmount = bookingWrapper.RasuTripInvoiceAmount || booking.InvoiceAmount ||
-                              booking.TotalAmount || booking.totalAmount || booking.amount ||
-                              booking.fare || booking.price || booking.Price?.PublishedPrice ||
-                              booking.Price?.OfferedPrice || '0';
+                booking.TotalAmount || booking.totalAmount || booking.amount ||
+                booking.fare || booking.price || booking.Price?.PublishedPrice ||
+                booking.Price?.OfferedPrice || '0';
 
             // Extract passenger information
             let passengerName = 'N/A';
@@ -299,21 +299,21 @@ const BusBookingHistory = () => {
             if (booking.Passenger && Array.isArray(booking.Passenger) && booking.Passenger.length > 0) {
                 const leadPassenger = booking.Passenger.find(p => p.LeadPassenger) || booking.Passenger[0];
                 passengerName = `${leadPassenger.FirstName || ''} ${leadPassenger.LastName || ''}`.trim() ||
-                              leadPassenger.name || 'N/A';
+                    leadPassenger.name || 'N/A';
                 contactNumber = leadPassenger.Phoneno || leadPassenger.phone || 'N/A';
             } else {
                 passengerName = booking.PassengerName || booking.passengerName ||
-                              booking.leadPassengerName || booking.name || 'N/A';
+                    booking.leadPassengerName || booking.name || 'N/A';
                 contactNumber = booking.ContactNumber || booking.contactNumber ||
-                              booking.mobile || booking.phone || 'N/A';
+                    booking.mobile || booking.phone || 'N/A';
             }
 
             // Extract payment and booking dates
             const paymentStatus = booking.PaymentStatus || booking.paymentStatus ||
-                                (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
+                (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
             const createdAt = bookingWrapper.createdAt || booking.BookingDate || booking.bookingDate ||
-                            booking.InvoiceCreatedOn || booking.createdAt || booking.created_at ||
-                            new Date().toISOString();
+                booking.InvoiceCreatedOn || booking.createdAt || booking.created_at ||
+                new Date().toISOString();
 
             // Format created date
             const formatCreatedDate = (dateString) => {
@@ -506,15 +506,9 @@ const BusBookingHistory = () => {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800">My Bus Bookings</h2>
-                  
+
                 </div>
-                <button
-                    onClick={loadBookings}
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {loading ? 'Refreshing...' : 'Refresh'}
-                </button>
+
             </div>
 
             {/* Error Display */}
@@ -650,20 +644,18 @@ const BusBookingHistory = () => {
                                         </td>
                                         <td className="px-4 py-3 text-sm">
                                             <div className="flex flex-col space-y-1">
-                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                                    booking.bookingStatus?.toLowerCase() === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                    booking.bookingStatus?.toLowerCase() === 'processing' ? 'bg-orange-100 text-orange-800' :
-                                                    booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                    'bg-blue-100 text-blue-800'
-                                                }`}>
+                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${booking.bookingStatus?.toLowerCase() === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                        booking.bookingStatus?.toLowerCase() === 'processing' ? 'bg-orange-100 text-orange-800' :
+                                                            booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                                'bg-blue-100 text-blue-800'
+                                                    }`}>
                                                     {booking.bookingStatus}
                                                 </span>
-                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                                    booking.paymentStatus?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
-                                                    booking.paymentStatus?.toLowerCase() === 'processing' ? 'bg-orange-100 text-orange-800' :
-                                                    booking.paymentStatus?.toLowerCase() === 'failed' ? 'bg-red-100 text-red-800' :
-                                                    'bg-blue-100 text-blue-800'
-                                                }`}>
+                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
+                                                        booking.paymentStatus?.toLowerCase() === 'processing' ? 'bg-orange-100 text-orange-800' :
+                                                            booking.paymentStatus?.toLowerCase() === 'failed' ? 'bg-red-100 text-red-800' :
+                                                                'bg-blue-100 text-blue-800'
+                                                    }`}>
                                                     {booking.paymentStatus}
                                                 </span>
                                             </div>
@@ -708,14 +700,14 @@ const BusBookingHistory = () => {
                 </div>
             </div>
 
-          
-          
+
+
 
             {/* Footer with user context info */}
             <div className="mt-6 pt-4 border-t border-gray-200">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                     <span>
-                        Logged in as: {getUserTypeDisplay()} 
+                        Logged in as: {getUserTypeDisplay()}
                         {user?.mobile && ` (${user.mobile})`}
                         {user?.name && ` - ${user.name}`}
                     </span>

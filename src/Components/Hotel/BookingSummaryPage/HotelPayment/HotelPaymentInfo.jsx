@@ -72,7 +72,7 @@ const HotelPaymentInfo = () => {
     return leadPassenger?.Email || "mohitverma8817@gmail.com";
   };
 
-  // ✅ UPDATED: Enhanced booking data formatter to match exact Postman structure
+  // ✅ CORRECTED: Lead passenger logic - Only ONE lead passenger across ALL rooms
   const formatBookingData = (bookingDetails) => {
     console.log('🔄 Input booking details:', JSON.stringify(bookingDetails, null, 2));
 
@@ -95,8 +95,32 @@ const HotelPaymentInfo = () => {
       throw new Error('No rooms found in booking data');
     }
 
-    // Step 2: Process passengers with EXACT Postman structure
-    let leadPassengerSet = false;
+    // ✅ CRITICAL FIX: Global lead passenger control
+    let leadPassengerAssigned = false;
+    let leadPassengerName = '';
+
+    // First pass: Find the first adult passenger to be the lead passenger
+    let leadPassengerFound = false;
+    for (let roomIndex = 0; roomIndex < hotelRoomsData.length && !leadPassengerFound; roomIndex++) {
+      const room = hotelRoomsData[roomIndex];
+      if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
+        for (let passengerIndex = 0; passengerIndex < room.HotelPassenger.length; passengerIndex++) {
+          const passenger = room.HotelPassenger[passengerIndex];
+          const isAdult = parseInt(passenger.PaxType) === 1 || passenger.Age >= 18;
+          if (isAdult) {
+            leadPassengerName = `${passenger.FirstName || ''} ${passenger.LastName || ''}`.trim();
+            leadPassengerFound = true;
+            console.log(`✅ Selected ${leadPassengerName} as the SINGLE Lead Passenger (Room ${roomIndex + 1})`);
+            break;
+          }
+        }
+      }
+    }
+
+    if (!leadPassengerFound) {
+      throw new Error('❌ No adult passenger found to assign as lead passenger');
+    }
+
     const processedRooms = hotelRoomsData.map((room, roomIndex) => {
       if (!room.HotelPassenger || !Array.isArray(room.HotelPassenger) || room.HotelPassenger.length === 0) {
         throw new Error(`Room ${roomIndex + 1} has no passengers`);
@@ -106,15 +130,16 @@ const HotelPaymentInfo = () => {
         const isAdult = parseInt(passenger.PaxType) === 1 || passenger.Age >= 18;
         const passengerName = `${passenger.FirstName || ''} ${passenger.LastName || ''}`.trim();
 
-        // ✅ CRITICAL FIX: Only ONE lead passenger globally (like Postman)
-        const shouldBeLeadPassenger = !leadPassengerSet && isAdult;
+        // ✅ CRITICAL: Only the FIRST adult passenger becomes lead passenger
+        const shouldBeLeadPassenger = !leadPassengerAssigned && isAdult && passengerName === leadPassengerName;
+
         if (shouldBeLeadPassenger) {
-          leadPassengerSet = true;
-          console.log(`✅ Setting ${passengerName} as Lead Passenger`);
+          leadPassengerAssigned = true;
+          console.log(`✅ Assigning ${passengerName} as Lead Passenger (Room ${roomIndex + 1})`);
         }
 
         if (isAdult) {
-          // ✅ STRICT PAN validation for adults
+          // PAN validation for adults
           const panValue = passenger.PAN;
           if (!panValue || typeof panValue !== 'string') {
             throw new Error(`❌ Adult passenger "${passengerName}" is missing PAN number`);
@@ -129,13 +154,12 @@ const HotelPaymentInfo = () => {
             throw new Error(`❌ Adult passenger "${passengerName}" has invalid PAN: "${panValue}"`);
           }
 
-          // ✅ UPDATED: More flexible PAN validation (like Postman example with BHWPY8763)
-          // Accept both complete format (ABCDE1234F) and incomplete format for testing
-          if (!/^[A-Z]{5}[0-9]{4}[A-Z]?$/.test(cleanPAN) && cleanPAN.length < 5) {
-            throw new Error(`❌ Invalid PAN format for "${passengerName}": "${cleanPAN}". Required format: ABCDE1234F or minimum 5 characters`);
+          // PAN format validation
+          if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(cleanPAN) && cleanPAN.length < 5) {
+            throw new Error(`❌ Invalid PAN format for "${passengerName}": "${cleanPAN}". Required format: ABCDE1234F`);
           }
 
-          // ✅ EXACT Postman structure match
+          // ✅ EXACT format - only ONE lead passenger
           return {
             Title: String(passenger.Title || "Mr").trim(),
             FirstName: String(passenger.FirstName || "").trim(),
@@ -144,13 +168,13 @@ const HotelPaymentInfo = () => {
             Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
             Email: String(passenger.Email || "").trim().toLowerCase(),
             PaxType: 1, // Adult
-            LeadPassenger: shouldBeLeadPassenger ? "true" : "false", // ✅ String format like Postman
-            Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 0, // ✅ Use 0 like Postman
+            LeadPassenger: shouldBeLeadPassenger ? "true" : "false", // ✅ Only ONE true
+            Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 0,
             PassportNo: null,
             PassportIssueDate: null,
             PassportExpDate: null,
-            PAN: cleanPAN, // ✅ Properly validated PAN
-            // ✅ GST fields - null by default (like Postman), only for lead passenger if provided
+            PAN: cleanPAN,
+            // GST fields - only for lead passenger if provided
             GSTCompanyAddress: shouldBeLeadPassenger && passenger.GSTCompanyAddress ? String(passenger.GSTCompanyAddress).trim() : null,
             GSTCompanyContactNumber: shouldBeLeadPassenger && passenger.GSTCompanyContactNumber ? String(passenger.GSTCompanyContactNumber).trim() : null,
             GSTCompanyEmail: shouldBeLeadPassenger && passenger.GSTCompanyEmail ? String(passenger.GSTCompanyEmail).trim() : null,
@@ -158,7 +182,7 @@ const HotelPaymentInfo = () => {
             GSTNumber: shouldBeLeadPassenger && passenger.GSTNumber ? String(passenger.GSTNumber).trim() : null,
           };
         } else {
-          // Child passenger
+          // Child passenger - never lead passenger
           return {
             Title: String(passenger.Title || "Master").trim(),
             FirstName: String(passenger.FirstName || "").trim(),
@@ -167,7 +191,7 @@ const HotelPaymentInfo = () => {
             Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
             Email: String(passenger.Email || "").trim().toLowerCase(),
             PaxType: 2, // Child
-            LeadPassenger: "false", // Children are never lead passengers
+            LeadPassenger: "false", // ✅ Children are NEVER lead passengers
             Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 5,
             PassportNo: null,
             PassportIssueDate: null,
@@ -183,12 +207,28 @@ const HotelPaymentInfo = () => {
       });
 
       return {
-        RoomIndex: roomIndex + 1, // ✅ Number format like Postman
+        RoomIndex: roomIndex + 1,
         HotelPassenger: processedPassengers
       };
     });
 
-    // Step 3: Check for duplicate PANs
+    // ✅ Final validation: Ensure exactly ONE lead passenger
+    const leadCount = processedRooms
+      .flatMap(room => room.HotelPassenger)
+      .filter(passenger => passenger.LeadPassenger === "true")
+      .length;
+
+    if (leadCount === 0) {
+      throw new Error('❌ No lead passenger found. At least one adult passenger is required.');
+    }
+
+    if (leadCount > 1) {
+      throw new Error(`❌ Multiple lead passengers found (${leadCount}). Only ONE lead passenger is allowed.`);
+    }
+
+    console.log(`✅ SUCCESS: Exactly ONE lead passenger set: ${leadPassengerName}`);
+
+    // Check for duplicate PANs
     const panNumbers = new Set();
     const duplicatePANs = [];
 
@@ -209,51 +249,23 @@ const HotelPaymentInfo = () => {
       throw new Error(`❌ Duplicate PAN numbers found: ${duplicatePANs.join(', ')}. Each passenger must have a unique PAN number.`);
     }
 
-    // Step 4: Ensure we have exactly one lead passenger
-    if (!leadPassengerSet) {
-      throw new Error('❌ No lead passenger found. At least one adult passenger is required.');
-    }
-
-    // ✅ Step 5: Build final payload matching EXACT Postman structure
+    // Build final payload
     const finalPayload = {
-      ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`), // ✅ String format
-      HotelCode: String(bookingDetails.HotelCode || 67), // ✅ String format like Postman
+      ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`),
+      HotelCode: String(bookingDetails.HotelCode || 67),
       HotelName: String(bookingDetails.HotelName || "ALILA DIWA"),
-      GuestNationality: "IN", // ✅ Required field
-      NoOfRooms: String(processedRooms.length), // ✅ String format like Postman
-      ClientReferenceNo: bookingDetails.ClientReferenceNo || 0, // ✅ Number format like Postman
-      vendorCommission: bookingDetails.vendorCommission || 10, // ✅ Number format
-      CouponDiscount: bookingDetails.CouponDiscount || 5, // ✅ Number format
-      IsVoucherBooking: "true", // ✅ String format like Postman
+      GuestNationality: "IN",
+      NoOfRooms: String(processedRooms.length),
+      ClientReferenceNo: bookingDetails.ClientReferenceNo || 0,
+      vendorCommission: bookingDetails.vendorCommission || 10,
+      CouponDiscount: bookingDetails.CouponDiscount || 5,
+      IsVoucherBooking: "true",
       HotelRoomsDetails: processedRooms,
-      UserIp: String(bookingDetails.UserIp || "49.36.217.215"), // ✅ String format
-      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed") // ✅ String format
+      UserIp: String(bookingDetails.UserIp || "49.36.217.215"),
+      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed")
     };
 
-    console.log('✅ Final booking payload (Postman-matched):', JSON.stringify(finalPayload, null, 2));
-
-    // Step 6: Final validation
-    const leadCount = finalPayload.HotelRoomsDetails
-      .flatMap(room => room.HotelPassenger)
-      .filter(passenger => passenger.LeadPassenger === "true")
-      .length;
-
-    if (leadCount !== 1) {
-      throw new Error(`❌ Expected exactly 1 lead passenger, found ${leadCount}`);
-    }
-
-    // ✅ Verify structure matches Postman exactly
-    console.log('🔍 Postman comparison:');
-    console.log('- ResultIndex:', typeof finalPayload.ResultIndex, finalPayload.ResultIndex);
-    console.log('- HotelCode:', typeof finalPayload.HotelCode, finalPayload.HotelCode);
-    console.log('- NoOfRooms:', typeof finalPayload.NoOfRooms, finalPayload.NoOfRooms);
-    console.log('- IsVoucherBooking:', typeof finalPayload.IsVoucherBooking, finalPayload.IsVoucherBooking);
-    console.log('- ClientReferenceNo:', typeof finalPayload.ClientReferenceNo, finalPayload.ClientReferenceNo);
-    console.log('- vendorCommission:', typeof finalPayload.vendorCommission, finalPayload.vendorCommission);
-    console.log('- CouponDiscount:', typeof finalPayload.CouponDiscount, finalPayload.CouponDiscount);
-    console.log('- RoomIndex:', typeof finalPayload.HotelRoomsDetails[0].RoomIndex, finalPayload.HotelRoomsDetails[0].RoomIndex);
-    console.log('- LeadPassenger count:', leadCount);
-    console.log('- Age format:', finalPayload.HotelRoomsDetails[0].HotelPassenger.map(p => `${p.FirstName}: ${p.Age}`));
+    console.log('✅ Final booking payload (SINGLE lead passenger):', JSON.stringify(finalPayload, null, 2));
 
     return finalPayload;
   };

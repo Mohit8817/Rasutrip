@@ -17,9 +17,9 @@ const TravelTabs = ({ activeTab, setActiveTab }) => {
             className={`text-center tab-box ${activeTab === 'flight' ? 'active-tab' : ''}`}
             onClick={() => handleTabClick('flight')}
           >
-            <Card.Body>
+            <Card.Body className="d-flex flex-column align-items-center justify-content-center">
               <FaPlane size={30} />
-              <Card.Text className="mt-2">Flight</Card.Text>
+              <Card.Text className="mt-2 mb-0">Flight</Card.Text>
             </Card.Body>
           </Card>
         </Col>
@@ -29,9 +29,9 @@ const TravelTabs = ({ activeTab, setActiveTab }) => {
             className={`text-center tab-box ${activeTab === 'hotel' ? 'active-tab' : ''}`}
             onClick={() => handleTabClick('hotel')}
           >
-            <Card.Body>
+            <Card.Body className="d-flex flex-column align-items-center justify-content-center">
               <FaHotel size={30} />
-              <Card.Text className="mt-2">Hotel</Card.Text>
+              <Card.Text className="mt-2 mb-0">Hotel</Card.Text>
             </Card.Body>
           </Card>
         </Col>
@@ -41,9 +41,9 @@ const TravelTabs = ({ activeTab, setActiveTab }) => {
             className={`text-center tab-box ${activeTab === 'bus' ? 'active-tab' : ''}`}
             onClick={() => handleTabClick('bus')}
           >
-            <Card.Body>
+            <Card.Body className="d-flex flex-column align-items-center justify-content-center">
               <FaBus size={30} />
-              <Card.Text className="mt-2">Bus</Card.Text>
+              <Card.Text className="mt-2 mb-0">Bus</Card.Text>
             </Card.Body>
           </Card>
         </Col>

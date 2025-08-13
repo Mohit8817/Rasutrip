@@ -10,27 +10,59 @@ const HotelBookingHistory = () => {
     const [upcomingBookings, setUpcomingBookings] = useState([]);
     const [allBookings, setAllBookings] = useState([]);
     const [debugInfo, setDebugInfo] = useState(null);
+    const [userRole, setUserRole] = useState('customer');
+    const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest first, 'asc' for oldest first
+
+    // Get user role on component mount
+    useEffect(() => {
+        const role = getUserRole();
+        setUserRole(role);
+    }, []);
+
+    // Get user role function
+    const getUserRole = () => {
+        try {
+            const userKeys = ['user', 'userData', 'userInfo', 'currentUser', 'authUser'];
+            let userData = null;
+
+            for (const key of userKeys) {
+                const value = localStorage?.getItem(key) || sessionStorage?.getItem(key);
+                if (value) {
+                    try {
+                        userData = JSON.parse(value);
+                        break;
+                    } catch (e) {
+                        userData = { role: value };
+                        break;
+                    }
+                }
+            }
+
+            const role = userData?.role ||
+                userData?.userType ||
+                userData?.type ||
+                userData?.accountType ||
+                'customer';
+
+            return role.toLowerCase();
+        } catch (error) {
+            console.error('Error getting user role:', error);
+            return 'customer';
+        }
+    };
 
     // Enhanced authentication headers function
     const getAuthHeaders = () => {
-        // Check multiple possible token storage keys
         const tokenKeys = [
-            'authToken',
-            'token',
-            'accessToken',
-            'jwt',
-            'userToken',
-            'Bearer',
-            'auth_token',
-            'access_token'
+            'authToken', 'token', 'accessToken', 'jwt', 'userToken',
+            'Bearer', 'auth_token', 'access_token'
         ];
 
         let token = null;
         let tokenKey = null;
 
         for (const key of tokenKeys) {
-            // Use memory-based storage for artifacts (in real app, use localStorage/sessionStorage)
-            const value = window.localStorage?.getItem(key) || window.sessionStorage?.getItem(key);
+            const value = localStorage?.getItem(key) || sessionStorage?.getItem(key);
             if (value) {
                 token = value;
                 tokenKey = key;
@@ -119,7 +151,30 @@ const HotelBookingHistory = () => {
         return response;
     };
 
+    // Format booking source badge
+    const formatBookingSourceBadge = (booking) => {
+        const isAgent = booking.isAgentBooking === true ||
+            booking.bookedByRole === 'agent' ||
+            booking.bookingSource === 'AGENT_PORTAL' ||
+            ['agent', 'admin', 'super_admin', 'staff'].includes(booking.bookedByRole?.toLowerCase());
+
+        return (
+            <div className="flex flex-col">
+                <span className={`px-2 py-1 rounded text-xs font-medium inline-block w-fit ${isAgent
+                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                    : 'bg-blue-100 text-blue-800 border border-blue-200'
+                    }`}>
+                    {isAgent ? '🏢 Agent' : '👤 Customer'}
+                </span>
+                <div className="text-xs text-gray-500 mt-1">
+                    Role: {booking.bookedByRole || 'customer'}
+                </div>
+            </div>
+        );
+    };
+
     // Enhanced data formatting with comprehensive field mapping for HOTEL bookings
+    // Enhanced data formatting with better field mapping for room type and guests
     const formatHotelBookingData = (apiResponse, isUpcoming = false) => {
         console.log('📊 Raw API response for formatting:', apiResponse);
 
@@ -137,10 +192,9 @@ const HotelBookingHistory = () => {
         } else if (apiResponse?.response && Array.isArray(apiResponse.response)) {
             bookingsArray = apiResponse.response;
         } else if (typeof apiResponse === 'object' && apiResponse !== null) {
-            // If it's an object, check if it might contain booking data
             const possibleArrays = Object.values(apiResponse).filter(Array.isArray);
             if (possibleArrays.length > 0) {
-                bookingsArray = possibleArrays[0]; // Use the first array found
+                bookingsArray = possibleArrays[0];
                 console.log('📋 Found array in object:', possibleArrays[0]);
             } else {
                 console.warn('⚠️ No array found in response object:', apiResponse);
@@ -157,11 +211,9 @@ const HotelBookingHistory = () => {
         const formattedBookings = bookingsArray.map((bookingWrapper, index) => {
             console.log(`🏨 Processing hotel booking ${index + 1}:`, bookingWrapper);
 
-            // Extract the actual booking data - it might be nested in "Result" field
             const booking = bookingWrapper.Result || bookingWrapper;
             console.log(`🏨 Actual hotel booking data for ${index + 1}:`, booking);
 
-            // Use the outer bookingId if available, otherwise try to find it in the Result
             const bookingId = bookingWrapper.bookingId ||
                 bookingWrapper.BookingId ||
                 bookingWrapper.BookingID ||
@@ -176,7 +228,6 @@ const HotelBookingHistory = () => {
                 booking.ConfirmationNo ||
                 `HTL${Date.now()}${index}`;
 
-            // Extract hotel information
             const hotelName = booking.HotelName ||
                 booking.hotelName ||
                 booking.hotel_name ||
@@ -191,7 +242,6 @@ const HotelBookingHistory = () => {
                 booking.propertyCode ||
                 'N/A';
 
-            // Extract location information
             const city = booking.City ||
                 booking.city ||
                 booking.location ||
@@ -205,7 +255,6 @@ const HotelBookingHistory = () => {
                 booking.location ||
                 'N/A';
 
-            // Extract check-in and check-out dates
             const checkInDate = booking.CheckIn ||
                 booking.checkInDate ||
                 booking.check_in_date ||
@@ -222,30 +271,108 @@ const HotelBookingHistory = () => {
                 booking.toDate ||
                 'N/A';
 
-            // Extract room information
-            const roomType = booking.RoomType ||
-                booking.roomType ||
-                booking.room_type ||
-                booking.RoomTypeName ||
-                booking.roomName ||
-                'N/A';
+            // Enhanced room type extraction
+            let roomType = 'N/A';
+            let numberOfRooms = '1';
+            let numberOfGuests = 'N/A';
 
-            const numberOfRooms = booking.NoOfRooms ||
-                booking.numberOfRooms ||
-                booking.rooms ||
-                booking.room_count ||
-                booking.RoomCount ||
-                '1';
+            // Try to get room details from HotelRoomsDetails first
+            if (booking.HotelRoomsDetails && Array.isArray(booking.HotelRoomsDetails) && booking.HotelRoomsDetails.length > 0) {
+                console.log(`🛏️ Found HotelRoomsDetails:`, booking.HotelRoomsDetails);
 
-            const numberOfGuests = booking.NoOfGuests ||
-                booking.numberOfGuests ||
-                booking.guests ||
-                booking.guest_count ||
-                booking.GuestCount ||
-                booking.totalGuests ||
-                'N/A';
+                const firstRoom = booking.HotelRoomsDetails[0];
 
-            // Extract booking status
+                // Extract room type
+                roomType = firstRoom.RoomTypeName ||
+                    firstRoom.RoomType ||
+                    firstRoom.roomTypeName ||
+                    firstRoom.roomType ||
+                    firstRoom.room_type ||
+                    firstRoom.RoomName ||
+                    firstRoom.roomName ||
+                    booking.RoomType ||
+                    booking.roomType ||
+                    'Standard Room';
+
+                // Count total rooms
+                numberOfRooms = booking.HotelRoomsDetails.length.toString();
+
+                // Count total guests from all rooms
+                let totalGuests = 0;
+                booking.HotelRoomsDetails.forEach(room => {
+                    if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
+                        totalGuests += room.HotelPassenger.length;
+                    } else if (room.NoOfChild || room.NoOfAdult) {
+                        const adults = parseInt(room.NoOfAdult) || 0;
+                        const children = parseInt(room.NoOfChild) || 0;
+                        totalGuests += adults + children;
+                    } else if (room.Adults || room.Children) {
+                        const adults = parseInt(room.Adults) || 0;
+                        const children = parseInt(room.Children) || 0;
+                        totalGuests += adults + children;
+                    }
+                });
+
+                numberOfGuests = totalGuests > 0 ? totalGuests.toString() : 'N/A';
+                console.log(`👥 Calculated guests from rooms: ${numberOfGuests}`);
+            }
+
+            // Fallback to booking level data if room details not available
+            if (roomType === 'N/A') {
+                roomType = booking.RoomType ||
+                    booking.roomType ||
+                    booking.room_type ||
+                    booking.RoomTypeName ||
+                    booking.roomName ||
+                    booking.RoomName ||
+                    booking.RoomDetails?.RoomType ||
+                    booking.RoomDetails?.roomType ||
+                    'Standard Room';
+            }
+
+            if (numberOfRooms === '1') {
+                numberOfRooms = booking.NoOfRooms ||
+                    booking.numberOfRooms ||
+                    booking.rooms ||
+                    booking.room_count ||
+                    booking.RoomCount ||
+                    booking.TotalRooms ||
+                    '1';
+            }
+
+            if (numberOfGuests === 'N/A') {
+                // Try multiple fallback fields for guest count
+                numberOfGuests = booking.NoOfGuests ||
+                    booking.numberOfGuests ||
+                    booking.guests ||
+                    booking.guest_count ||
+                    booking.GuestCount ||
+                    booking.totalGuests ||
+                    booking.TotalGuests ||
+                    booking.Pax ||
+                    booking.pax ||
+                    booking.PassengerCount ||
+                    booking.NoOfAdult ||
+                    booking.Adults ||
+                    booking.adults;
+
+                // If we have adults and children separately, add them
+                if (!numberOfGuests && (booking.NoOfAdult || booking.NoOfChild || booking.Adults || booking.Children)) {
+                    const adults = parseInt(booking.NoOfAdult || booking.Adults || 0);
+                    const children = parseInt(booking.NoOfChild || booking.Children || 0);
+                    numberOfGuests = (adults + children).toString();
+                }
+
+                // Final fallback
+                if (!numberOfGuests || numberOfGuests === '0') {
+                    numberOfGuests = 'N/A';
+                }
+            }
+
+            console.log(`🛏️ Room Type: ${roomType}`);
+            console.log(`🏠 Number of Rooms: ${numberOfRooms}`);
+            console.log(`👥 Number of Guests: ${numberOfGuests}`);
+
             const bookingStatus = booking.Status ||
                 booking.status ||
                 booking.bookingStatus ||
@@ -253,16 +380,16 @@ const HotelBookingHistory = () => {
                 booking.confirmationStatus ||
                 'Confirmed';
 
-            // Extract confirmation number
             const confirmationNo = booking.ConfirmationNo ||
                 booking.confirmationNumber ||
                 booking.confirmation_no ||
                 booking.referenceNumber ||
                 booking.PNR ||
                 booking.pnr ||
+                booking.BookingReference ||
+                booking.bookingReference ||
                 'N/A';
 
-            // Extract amount information
             const totalAmount = bookingWrapper.RasuTripInvoiceAmount ||
                 booking.InvoiceAmount ||
                 booking.TotalAmount ||
@@ -275,27 +402,25 @@ const HotelBookingHistory = () => {
                 booking.TotalFare ||
                 '0';
 
-            // Extract guest information (lead passenger)
             let leadGuestName = 'N/A';
             let contactNumber = 'N/A';
             let email = 'N/A';
 
-            // Check for HotelRoomsDetails structure
             if (booking.HotelRoomsDetails && Array.isArray(booking.HotelRoomsDetails) && booking.HotelRoomsDetails.length > 0) {
                 const firstRoom = booking.HotelRoomsDetails[0];
                 if (firstRoom.HotelPassenger && Array.isArray(firstRoom.HotelPassenger) && firstRoom.HotelPassenger.length > 0) {
                     const leadGuest = firstRoom.HotelPassenger.find(p => p.LeadPassenger === "true") || firstRoom.HotelPassenger[0];
                     leadGuestName = `${leadGuest.Title || ''} ${leadGuest.FirstName || ''} ${leadGuest.LastName || ''}`.trim();
-                    contactNumber = leadGuest.Phoneno || leadGuest.phone || 'N/A';
+                    contactNumber = leadGuest.Phoneno || leadGuest.phone || leadGuest.Phone || 'N/A';
                     email = leadGuest.Email || leadGuest.email || 'N/A';
                 }
-            }
-            // Fallback to direct guest fields
-            else {
+            } else {
                 leadGuestName = booking.GuestName ||
                     booking.guestName ||
                     booking.leadPassengerName ||
                     booking.primaryGuestName ||
+                    booking.CustomerName ||
+                    booking.customerName ||
                     `${booking.FirstName || ''} ${booking.LastName || ''}`.trim() ||
                     'N/A';
 
@@ -303,22 +428,22 @@ const HotelBookingHistory = () => {
                     booking.contactNumber ||
                     booking.mobile ||
                     booking.phone ||
+                    booking.Phone ||
                     booking.Phoneno ||
                     'N/A';
 
                 email = booking.Email ||
                     booking.email ||
                     booking.guestEmail ||
+                    booking.customerEmail ||
                     'N/A';
             }
 
-            // Extract payment status
             const paymentStatus = booking.PaymentStatus ||
                 booking.paymentStatus ||
                 booking.payment_status ||
                 (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
 
-            // Extract booking created date
             const createdAt = bookingWrapper.createdAt ||
                 booking.BookingDate ||
                 booking.bookingDate ||
@@ -328,7 +453,6 @@ const HotelBookingHistory = () => {
                 booking.bookingTime ||
                 new Date().toISOString();
 
-            // Format created date
             const formatCreatedDate = (dateString) => {
                 try {
                     const date = new Date(dateString);
@@ -346,7 +470,6 @@ const HotelBookingHistory = () => {
                 }
             };
 
-            // Calculate number of nights
             const calculateNights = (checkIn, checkOut) => {
                 try {
                     const checkInDate = new Date(checkIn);
@@ -376,14 +499,20 @@ const HotelBookingHistory = () => {
                 confirmationNo: String(confirmationNo),
                 bookingStatus: String(bookingStatus),
                 totalAmount: String(totalAmount),
-                status: String(bookingStatus), // For compatibility
+                status: String(bookingStatus),
                 leadGuestName: String(leadGuestName),
                 contactNumber: String(contactNumber),
                 email: String(email),
                 paymentStatus: String(paymentStatus),
                 createdAt: formatCreatedDate(createdAt),
-                bookingDate: formatCreatedDate(createdAt), // For compatibility
-                rawData: bookingWrapper // Keep original data for debugging
+                bookingDate: formatCreatedDate(createdAt),
+                // Store raw date for sorting
+                rawCreatedDate: new Date(createdAt),
+                // New fields for agent/customer distinction
+                bookedByRole: booking.bookedByRole || booking.userRole || 'customer',
+                isAgentBooking: booking.isAgentBooking || false,
+                bookingSource: booking.bookingSource || 'CUSTOMER_PORTAL',
+                rawData: bookingWrapper
             };
 
             console.log(`✅ Formatted hotel booking ${index + 1}:`, formattedBooking);
@@ -392,6 +521,30 @@ const HotelBookingHistory = () => {
 
         console.log('📊 All formatted hotel bookings:', formattedBookings);
         return formattedBookings;
+    };
+
+    // Sort bookings by date function
+    const sortBookingsByDate = (bookings, order = 'desc') => {
+        console.log(`🔄 Sorting ${bookings.length} bookings by date (${order})`);
+
+        const sortedBookings = [...bookings].sort((a, b) => {
+            const dateA = a.rawCreatedDate || new Date(a.createdAt || 0);
+            const dateB = b.rawCreatedDate || new Date(b.createdAt || 0);
+
+            if (order === 'desc') {
+                return dateB - dateA; // Newest first
+            } else {
+                return dateA - dateB; // Oldest first
+            }
+        });
+
+        console.log(`✅ Sorted bookings:`, sortedBookings.map(b => ({
+            id: b.bookingId,
+            date: b.createdAt,
+            rawDate: b.rawCreatedDate
+        })));
+
+        return sortedBookings;
     };
 
     // Main function to load hotel bookings
@@ -403,7 +556,7 @@ const HotelBookingHistory = () => {
         // Check authentication
         const tokenKeys = ['authToken', 'token', 'accessToken', 'jwt', 'userToken'];
         const hasToken = tokenKeys.some(key =>
-            window.localStorage?.getItem(key) || window.sessionStorage?.getItem(key)
+            localStorage?.getItem(key) || sessionStorage?.getItem(key)
         );
 
         if (!hasToken) {
@@ -428,6 +581,8 @@ const HotelBookingHistory = () => {
                 console.log('📅 Fetching upcoming hotel bookings...');
                 const upcomingResponse = await fetchUpcomingHotelBookings();
                 upcomingData = formatHotelBookingData(upcomingResponse, true);
+                // Sort upcoming bookings by date
+                upcomingData = sortBookingsByDate(upcomingData, sortOrder);
                 debugData.upcomingSuccess = true;
                 debugData.upcomingResponse = upcomingResponse;
                 console.log('✅ Upcoming hotel bookings loaded:', upcomingData.length, 'bookings');
@@ -441,6 +596,8 @@ const HotelBookingHistory = () => {
                 console.log('📋 Fetching all hotel bookings...');
                 const allResponse = await fetchAllHotelBookings();
                 allData = formatHotelBookingData(allResponse, false);
+                // Sort all bookings by date
+                allData = sortBookingsByDate(allData, sortOrder);
                 debugData.allBookingsSuccess = true;
                 debugData.allResponse = allResponse;
                 console.log('✅ All hotel bookings loaded:', allData.length, 'bookings');
@@ -454,8 +611,8 @@ const HotelBookingHistory = () => {
             console.log('📅 Upcoming bookings to set:', upcomingData.length, upcomingData);
             console.log('📋 All bookings to set:', allData.length, allData);
 
-            setUpcomingBookings([...upcomingData]); // Force new array
-            setAllBookings([...allData]); // Force new array
+            setUpcomingBookings([...upcomingData]);
+            setAllBookings([...allData]);
             setDebugInfo(debugData);
 
             // Show success or partial success message
@@ -478,6 +635,16 @@ const HotelBookingHistory = () => {
     useEffect(() => {
         loadHotelBookings();
     }, []);
+
+    // Re-sort when sort order changes
+    useEffect(() => {
+        if (upcomingBookings.length > 0) {
+            setUpcomingBookings(prev => sortBookingsByDate(prev, sortOrder));
+        }
+        if (allBookings.length > 0) {
+            setAllBookings(prev => sortBookingsByDate(prev, sortOrder));
+        }
+    }, [sortOrder]);
 
     // Get current bookings based on selected type
     const getCurrentBookings = () => {
@@ -519,6 +686,11 @@ const HotelBookingHistory = () => {
         return `₹${amount}`;
     };
 
+    // Handle sort order toggle
+    const toggleSortOrder = () => {
+        setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+    };
+
     // Render loading state
     if (loading) {
         return (
@@ -535,14 +707,18 @@ const HotelBookingHistory = () => {
     return (
         <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">My Hotel Bookings</h2>
-                <button
-                    onClick={loadHotelBookings}
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {loading ? 'Refreshing...' : 'Refresh'}
-                </button>
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-800">My Hotel Bookings</h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                        Current user role: <span className="font-medium capitalize">{userRole}</span>
+                        {['agent', 'admin', 'super_admin', 'staff'].includes(userRole) && (
+                            <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
+                                🏢 Agent Portal
+                            </span>
+                        )}
+                    </p>
+                </div>
+
             </div>
 
             {/* Error Display */}
@@ -624,7 +800,11 @@ const HotelBookingHistory = () => {
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Amount</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payment Status</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Booked On</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200"
+                                    onClick={toggleSortOrder}
+                                    title="Click to change sort order">
+                                    Booked On {sortOrder === 'desc' ? '↓' : '↑'}
+                                </th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
                             </tr>
                         </thead>
@@ -644,6 +824,8 @@ const HotelBookingHistory = () => {
                                             </span>
                                             <div className="mt-2 text-xs text-gray-500">
                                                 Debug: Upcoming={upcomingBookings.length}, All={allBookings.length}, Current={currentBookings.length}
+                                                <br />
+                                                Sort Order: {sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
                                             </div>
                                             <button
                                                 onClick={loadHotelBookings}
@@ -698,9 +880,9 @@ const HotelBookingHistory = () => {
                                             </td>
                                             <td className="px-4 py-3 text-sm">
                                                 <span className={`font-medium ${booking.bookingStatus?.toLowerCase() === 'confirmed' ? 'text-green-600' :
-                                                        booking.bookingStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
-                                                            booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'text-red-600' :
-                                                                'text-blue-600'
+                                                    booking.bookingStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
+                                                        booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'text-red-600' :
+                                                            'text-blue-600'
                                                     }`}>
                                                     {booking.bookingStatus}
                                                 </span>
@@ -710,15 +892,20 @@ const HotelBookingHistory = () => {
                                             </td>
                                             <td className="px-4 py-3 text-sm">
                                                 <span className={`font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' ? 'text-green-600' :
-                                                        booking.paymentStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
-                                                            booking.paymentStatus?.toLowerCase() === 'failed' ? 'text-red-600' :
-                                                                'text-blue-600'
+                                                    booking.paymentStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
+                                                        booking.paymentStatus?.toLowerCase() === 'failed' ? 'text-red-600' :
+                                                            'text-blue-600'
                                                     }`}>
                                                     {booking.paymentStatus}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600">
-                                                {booking.createdAt}
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">{booking.createdAt}</span>
+                                                    <span className="text-xs text-gray-400">
+                                                        {sortOrder === 'desc' ? 'Latest First' : 'Oldest First'}
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm">
                                                 <button
@@ -739,12 +926,6 @@ const HotelBookingHistory = () => {
                     </table>
                 </div>
             </div>
-
-
-
-
-
-
 
 
         </div>
