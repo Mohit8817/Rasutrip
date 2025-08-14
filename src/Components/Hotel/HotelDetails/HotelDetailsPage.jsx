@@ -76,8 +76,8 @@
 
     if (!hotelData) {
       return (
-        <div className="d-flex justify-content-center align-items-center mt-5 pt-5">
-          <div className="p-5">
+        <div className="d-flex justify-content-center align-items-center">
+          <div className="">
             <HotelLoader />
           </div>
         </div>

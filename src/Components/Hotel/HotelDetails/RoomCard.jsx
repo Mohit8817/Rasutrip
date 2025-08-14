@@ -56,19 +56,8 @@ const RoomCard = ({
 
     console.log("👥 Total Adults for PAN check:", totalAdults);
 
-    // Enhanced PAN mandatory warning
-    if (isPANMandatory(room)) {
-      const warningMessage = `⚠️ PAN MANDATORY ROOM SELECTED\n\n` +
-        `This room requires UNIQUE PAN numbers for ALL ${totalAdults} adult guest(s).\n\n` +
-        `Important Requirements:\n` +
-        `• Each adult must have a DIFFERENT PAN number\n` +
-        `• PAN format: ABCDE1234F (5 letters + 4 digits + 1 letter)\n` +
-        `• Duplicate PAN numbers will cause booking failure\n\n` +
-        `Please ensure all passengers have valid, unique PAN cards before proceeding.`;
-
-      alert(warningMessage);
-    }
-
+    // ❌ PAN MANDATORY POPUP REMOVED - Direct booking without warning
+    
     setLoadingRoomId(room.RoomId);
 
     // ✅ Enhanced block payload with better error handling
@@ -178,17 +167,9 @@ const RoomCard = ({
 
   return (
     <div>
-      <h5 className="fw-bold mb-3">
+      <h5 className="fw-bold mb-3 mt-3">
         Rooms ({availableRooms.length} available)
       </h5>
-
-      {/* ✅ Debug info (remove in production) */}
-      <div className="mb-3 p-2 bg-light rounded small">
-        <strong>Debug Info:</strong><br />
-        Total Guests: {displayGuests} ({displayAdults} Adults, {displayChildren} Children)<br />
-        Rooms: {displayRooms} | Nights: {displayNights}<br />
-        Dates: {hotel?.checkInDate} → {hotel?.checkOutDate}
-      </div>
 
       {availableRooms.length > 0 ? (
         availableRooms.map((room, idx) => {
@@ -216,8 +197,7 @@ const RoomCard = ({
                 {panMandatory && (
                   <div className="alert alert-warning p-2 mb-2 small">
                     <strong>⚠️ PAN MANDATORY ROOM</strong><br />
-                    All {displayAdults} adult guest{displayAdults > 1 ? 's' : ''} need UNIQUE PAN numbers.<br />
-                    <small className="text-muted">Duplicate PAN will cause booking failure.</small>
+                  
                   </div>
                 )}
 

@@ -37,12 +37,12 @@ const HotelReviewInfo = () => {
     // ✅ PAN validation function
     const validateAllAdultsPAN = (guestInputs) => {
         const panErrors = [];
-        
+
         guestInputs?.forEach((room, roomIndex) => {
             room.adults?.forEach((adult, adultIndex) => {
                 const panValue = adult.panNumber?.trim() || '';
                 const adultName = `${adult.firstName} ${adult.lastName}`;
-                
+
                 // Check if PAN is empty or contains only spaces
                 if (!panValue || panValue.replace(/\s/g, '') === '') {
                     panErrors.push(`❌ ${adultName} (Room ${roomIndex + 1}): PAN number is missing`);
@@ -55,7 +55,7 @@ const HotelReviewInfo = () => {
                 }
             });
         });
-        
+
         return panErrors;
     };
 
@@ -63,7 +63,7 @@ const HotelReviewInfo = () => {
     const handleContinue = () => {
         // ✅ CRITICAL: Validate PAN numbers before proceeding
         const panValidationErrors = validateAllAdultsPAN(guestInputs);
-        
+
         if (panValidationErrors.length > 0) {
             const errorMessage = `PAN Validation Failed:\n\n${panValidationErrors.join('\n')}`;
             alert(errorMessage);
@@ -83,12 +83,12 @@ const HotelReviewInfo = () => {
             const roomTravellerInfo = guestInputs?.map((roomGuests, roomIdx) => {
                 // Combine adults and children for this room
                 const allPassengers = [...roomGuests.adults, ...roomGuests.children];
-                
+
                 const travellerInfo = allPassengers.map((guest, passengerIndex) => {
                     // ✅ Only first passenger of first room is LeadPassenger
                     const isLeadPassenger = roomIdx === 0 && passengerIndex === 0;
                     const isAdult = guest.age >= 18 || roomGuests.adults.includes(guest);
-                    
+
                     // ✅ CRITICAL: Enhanced PAN handling with validation
                     let panNumber = null;
                     if (isAdult && guest.panNumber) {
@@ -98,12 +98,12 @@ const HotelReviewInfo = () => {
                             panNumber = cleanPAN;
                         }
                     }
-                    
+
                     // ✅ Double-check: If adult doesn't have PAN, throw error
                     if (isAdult && !panNumber) {
                         throw new Error(`CRITICAL: Adult "${guest.firstName} ${guest.lastName}" in room ${roomIdx + 1} has no valid PAN number.`);
                     }
-                    
+
                     return {
                         Title: guest.title || "Mr",
                         FirstName: guest.firstName?.trim() || "",
@@ -119,7 +119,7 @@ const HotelReviewInfo = () => {
                         PassportExpDate: null,
                         // ✅ CRITICAL FIX: PAN for all adults, null for children
                         PAN: panNumber,
-                        
+
                         // ✅ GST fields - only for lead passenger
                         GSTCompanyAddress: (isLeadPassenger && gstData?.address) ? gstData.address.trim() : null,
                         GSTCompanyContactNumber: (isLeadPassenger && gstData?.contactNo) ? gstData.contactNo.trim() : null,
@@ -219,11 +219,11 @@ const HotelReviewInfo = () => {
         });
 
         navigate("/guest-details", {
-            state: { 
-                hotel, 
-                room, 
-                roomDetails, 
-                payload, 
+            state: {
+                hotel,
+                room,
+                roomDetails,
+                payload,
                 priceDetails,
                 existingGuestData: {
                     guestInputs: guestInputs, // ✅ Send complete guest inputs
@@ -244,7 +244,7 @@ const HotelReviewInfo = () => {
                         <FaExclamationTriangle className="text-danger mb-3" size={48} />
                         <h5 className="text-danger">Missing Booking Data</h5>
                         <p>Required booking information is missing. Please start the booking process again.</p>
-                        <Button variant="primary" onClick={() => navigate('/')}>
+                        <Button variant="danger" onClick={() => navigate('/')}>
                             Back to Home
                         </Button>
                     </Card.Body>
@@ -292,7 +292,7 @@ const HotelReviewInfo = () => {
                             <Row>
                                 <Col md={3} className="mb-3">
                                     <div className="d-flex align-items-center mb-1">
-                                        <FaCalendarAlt className="me-2 text-primary" />
+                                        <FaCalendarAlt className="me-2 text-danger" />
                                         <strong>Check-in</strong>
                                     </div>
                                     <div className="text-dark fw-semibold">
@@ -302,7 +302,7 @@ const HotelReviewInfo = () => {
 
                                 <Col md={3} className="mb-3">
                                     <div className="d-flex align-items-center mb-1">
-                                        <FaMoon className="me-2 text-primary" />
+                                        <FaMoon className="me-2 text-danger" />
                                         <strong>Nights</strong>
                                     </div>
                                     <div className="fw-semibold">{hotel?.nights || 1}</div>
@@ -310,7 +310,7 @@ const HotelReviewInfo = () => {
 
                                 <Col md={3} className="mb-3">
                                     <div className="d-flex align-items-center mb-1">
-                                        <FaCalendarAlt className="me-2 text-primary" />
+                                        <FaCalendarAlt className="me-2 text-danger" />
                                         <strong>Check-out</strong>
                                     </div>
                                     <div className="text-dark fw-semibold">
@@ -320,7 +320,7 @@ const HotelReviewInfo = () => {
 
                                 <Col md={3} className="mb-3">
                                     <div className="d-flex align-items-center mb-1">
-                                        <FaBed className="me-2 text-primary" />
+                                        <FaBed className="me-2 text-danger" />
                                         <strong>Rooms & Guests</strong>
                                     </div>
                                     <div className="fw-semibold">
@@ -380,30 +380,27 @@ const HotelReviewInfo = () => {
                             <Col md={4}>
                                 <div className="mb-2">
                                     <strong>Email:</strong><br />
-                                    <span className="text-primary">{email}</span>
+                                    <span className="">{email}</span>
                                 </div>
                                 <div>
                                     <strong>Mobile:</strong><br />
-                                    <span className="text-primary">+91 {mobile}</span>
+                                    <span className=""> {mobile}</span>
                                 </div>
                             </Col>
                             <Col md={8}>
                                 {guestInputs?.map((room, roomIndex) => (
                                     <div key={roomIndex} className="mb-3">
-                                        <div className="fw-bold text-primary mb-2 d-flex align-items-center">
+                                        <div className="fw-bold text-danger mb-2 d-flex align-items-center">
                                             <FaBed className="me-2" />
                                             Room {roomIndex + 1}
                                         </div>
-                                        
+
                                         {/* Adults */}
                                         {room.adults?.map((guest, i) => (
                                             <div key={`adult-${roomIndex}-${i}`} className="mb-2 p-2 bg-light rounded">
                                                 <div className="d-flex justify-content-between align-items-center">
                                                     <div>
                                                         <strong>{guest.title} {guest.firstName} {guest.lastName}</strong>
-                                                        {roomIndex === 0 && i === 0 && (
-                                                            <span className="badge bg-primary ms-2 small">Lead Guest</span>
-                                                        )}
                                                         <div className="small text-muted">
                                                             Age: {guest.age} | PAN: {guest.panNumber || "Not provided"}
                                                         </div>
@@ -412,7 +409,7 @@ const HotelReviewInfo = () => {
                                                 </div>
                                             </div>
                                         ))}
-                                        
+
                                         {/* Children */}
                                         {room.children?.map((guest, i) => (
                                             <div key={`child-${roomIndex}-${i}`} className="mb-2 p-2 bg-warning bg-opacity-10 rounded">
@@ -437,7 +434,7 @@ const HotelReviewInfo = () => {
                     {gstData && gstData.gstNumber && (
                         <div className="border rounded p-3 bg-info bg-opacity-10">
                             <h6 className="fw-bold mb-3 d-flex align-items-center">
-                                <FaBuilding className="me-2 text-primary" />
+                                <FaBuilding className="me-2 text-danger" />
                                 GST Invoice Details
                             </h6>
                             <Row>
@@ -472,45 +469,6 @@ const HotelReviewInfo = () => {
                     )}
                 </Card.Body>
             </Card>
-
-            {/* Price Summary */}
-            {priceDetails && (
-                <Card className="shadow-sm border-0 mb-4">
-                    <Card.Body>
-                        <h6 className="fw-bold mb-3">Price Breakdown</h6>
-                        <Row className="mb-2">
-                            <Col>Base Fare</Col>
-                            <Col className="text-end">₹ {Math.round(priceDetails.baseFare || 0)}</Col>
-                        </Row>
-                        {priceDetails.cgst > 0 && (
-                            <Row className="mb-2">
-                                <Col>CGST</Col>
-                                <Col className="text-end">₹ {Math.round(priceDetails.cgst)}</Col>
-                            </Row>
-                        )}
-                        {priceDetails.sgst > 0 && (
-                            <Row className="mb-2">
-                                <Col>SGST</Col>
-                                <Col className="text-end">₹ {Math.round(priceDetails.sgst)}</Col>
-                            </Row>
-                        )}
-                        {priceDetails.discount > 0 && (
-                            <Row className="mb-2">
-                                <Col>Discount</Col>
-                                <Col className="text-end text-success">- ₹ {Math.round(priceDetails.discount)}</Col>
-                            </Row>
-                        )}
-                        <hr />
-                        <Row className="fw-bold fs-5">
-                            <Col>Total Amount</Col>
-                            <Col className="text-end text-primary">
-                                ₹ {Math.round((priceDetails.baseFare || 0) + (priceDetails.cgst || 0) + (priceDetails.sgst || 0) - (priceDetails.discount || 0))}
-                            </Col>
-                        </Row>
-                    </Card.Body>
-                </Card>
-            )}
-
             {/* Terms & Continue */}
             <Card className="shadow-sm border-0 mb-4">
                 <Card.Body>
@@ -532,28 +490,15 @@ const HotelReviewInfo = () => {
                         defaultChecked
                         className="mb-3"
                     />
-                    
-                    <div className="alert alert-info small">
-                        <FaExclamationTriangle className="me-2" />
-                        Please review all details carefully before proceeding to payment. 
-                        Guest names should match government-issued ID documents.
-                    </div>
                 </Card.Body>
             </Card>
 
             {/* Action Buttons */}
-            <div className="d-flex gap-3 justify-content-center">
-                <Button 
-                    variant="outline-secondary" 
-                    onClick={() => navigate(-1)}
-                    className="px-4"
-                >
-                    ← Back
-                </Button>
-                <Button 
-                    variant="primary" 
+            <div className="text-end">
+                <Button
+                    variant="danger"
                     size="lg"
-                    className="btn-red px-5" 
+                    className="btn-red px-5"
                     onClick={handleContinue}
                 >
                     Continue to Payment →

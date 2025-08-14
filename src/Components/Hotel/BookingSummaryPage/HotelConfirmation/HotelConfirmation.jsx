@@ -1,9 +1,9 @@
-// src/components/Hotel/HotelConfirmation.js - ENHANCED VERSION
+// src/components/Hotel/HotelConfirmation.js - FIXED VERSION FOR BOOKING ID MISMATCH
 
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Button, Spinner, Row, Col } from 'react-bootstrap';
+import { Container, Card, Button, Spinner, Row, Col, Alert } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaCheckCircle, FaDownload, FaHotel, FaReceipt, FaRupeeSign, FaCalendarAlt, FaUser } from 'react-icons/fa';
+import { FaCheckCircle, FaDownload, FaHotel, FaReceipt, FaRupeeSign, FaCalendarAlt, FaUser, FaRedo, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { downloadHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
 
@@ -11,8 +11,11 @@ const HotelConfirmation = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
+    const [autoRetryTimer, setAutoRetryTimer] = useState(null);
+    const [bookingIdMismatch, setBookingIdMismatch] = useState(false);
 
-    // Extract data from navigation state (matching your payment flow structure)
+    // Extract data from navigation state
     const {
         booking = {},
         amount = 0,
@@ -26,72 +29,157 @@ const HotelConfirmation = () => {
         invoiceData = null
     } = state || {};
 
-    // Handle both old and new state structures
     const actualBooking = booking || bookingResult || {};
     const actualAmount = amount || 0;
     const actualHotelDetails = hotelDetails || reviewData || {};
-    
-    // Extract contact data from various possible locations
-    const contactData = bookingDetails?.contactData || 
-                       actualBooking?.HotelRoomsDetails?.[0]?.HotelPassenger?.find(p => p.LeadPassenger === "true") ||
-                       actualBooking?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0] ||
-                       {};
-    
-    const searchTokenId = confirmationDetails?.searchTokenId || 
-                         bookingDetails?.searchTokenId || 
-                         actualBooking?.SearchTokenId || 
-                         '';
 
-    const userIp = confirmationDetails?.userIp || 
-                   actualBooking?.UserIp || 
-                   "122.161.64.143";
+    const contactData = bookingDetails?.contactData ||
+        actualBooking?.HotelRoomsDetails?.[0]?.HotelPassenger?.find(p => p.LeadPassenger === "true") ||
+        actualBooking?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0] ||
+        {};
 
-    // Extract BookingId from result (handle multiple possible formats)
-    const extractBookingIdFromResult = (result) => {
+    const searchTokenId = confirmationDetails?.searchTokenId ||
+        bookingDetails?.searchTokenId ||
+        actualBooking?.SearchTokenId ||
+        '';
+
+    const userIp = confirmationDetails?.userIp ||
+        actualBooking?.UserIp ||
+        "122.161.64.143";
+
+    // ✅ CRITICAL FIX: Extract BOTH MongoDB ObjectId AND Numeric BookingId
+    const extractBookingIds = (result) => {
+        const response = {
+            mongoId: null,
+            numericId: null,
+            displayId: null
+        };
+
+        // All possible booking ID fields
         const possiblePaths = [
-            result?.BookingID,           // Your payment flow uses BookingID
+            result?.BookingID,
             result?.bookingId,
             result?.BookingId,
+            result?.id,
+            result?._id,
+            result?.userId,
             result?.data?.BookingID,
             result?.data?.BookingId,
             result?.data?.bookingId,
+            result?.data?.id,
+            result?.data?._id,
             result?.response?.BookingID,
             result?.response?.BookingId,
             result?.result?.BookingID,
             result?.booking?.BookingID,
-            confirmationDetails?.bookingId  // From your payment success
+            confirmationDetails?.bookingId
         ];
 
-        for (let candidateId of possiblePaths) {
-            if (candidateId && String(candidateId).trim() !== '') {
-                return String(candidateId);
+        // Look for numeric booking IDs (for invoice API)
+        const numericPaths = [
+            result?.numericBookingId,
+            result?.bookingNumber,
+            result?.hotelBookingId,
+            result?.reservationId,
+            result?.confirmationNumber,
+            result?.data?.numericBookingId,
+            result?.data?.bookingNumber,
+            result?.data?.hotelBookingId
+        ];
+
+        // Check numeric fields first
+        for (let candidateId of numericPaths) {
+            if (candidateId !== null && candidateId !== undefined) {
+                const numericValue = parseInt(candidateId);
+                if (!isNaN(numericValue)) {
+                    response.numericId = numericValue;
+                    response.displayId = numericValue;
+                    console.log(`✅ Found NUMERIC booking ID: ${numericValue}`);
+                    break;
+                }
             }
         }
-        return null;
+
+        // Check all possible paths
+        for (let candidateId of possiblePaths) {
+            if (candidateId !== null && candidateId !== undefined && String(candidateId).trim() !== '') {
+                const candidateStr = String(candidateId).trim();
+
+                // Check if it's numeric
+                if (/^\d+$/.test(candidateStr)) {
+                    const numericId = parseInt(candidateStr, 10);
+                    if (!isNaN(numericId) && !response.numericId) {
+                        response.numericId = numericId;
+                        response.displayId = numericId;
+                        console.log(`✅ Found numeric BookingId: ${numericId}`);
+                    }
+                } else if (candidateStr.length === 24 && /^[a-fA-F0-9]+$/.test(candidateStr)) {
+                    // Looks like MongoDB ObjectId
+                    response.mongoId = candidateStr;
+                    if (!response.displayId) {
+                        response.displayId = candidateStr;
+                    }
+                    console.log(`⚠️ Found MongoDB ObjectId: ${candidateStr}`);
+                } else {
+                    // Other string format
+                    if (!response.displayId) {
+                        response.displayId = candidateStr;
+                    }
+                    console.log(`📝 Found string booking ID: ${candidateStr}`);
+                }
+            }
+        }
+
+        return response;
     };
 
-    const bookingId = extractBookingIdFromResult(actualBooking);
+    const bookingIds = extractBookingIds(actualBooking);
 
-    // Get invoice payload (matching your payment flow data structure)
+    // Set mismatch warning if we only have MongoDB ObjectId but no numeric ID
+    useEffect(() => {
+        if (bookingIds.mongoId && !bookingIds.numericId) {
+            setBookingIdMismatch(true);
+            console.warn('⚠️ BookingId Mismatch: Only MongoDB ObjectId found, no numeric ID for invoice API');
+        }
+    }, [bookingIds.mongoId, bookingIds.numericId]);
+
+    // ✅ ENHANCED: Get invoice payload with smart BookingId selection
     const getInvoicePayload = () => {
         // First priority: use provided invoiceData
         if (invoiceData && invoiceData.BookingId && invoiceData.SearchTokenId) {
+            console.log('📄 Using provided invoice data:', invoiceData);
             return invoiceData;
         }
 
         // Second priority: construct from confirmation details
-        if (bookingId && searchTokenId) {
+        if (searchTokenId) {
+            // ✅ CRITICAL: Use numeric ID for invoice API if available
+            let bookingIdForInvoice = null;
+
+            if (bookingIds.numericId) {
+                bookingIdForInvoice = bookingIds.numericId;
+                console.log(`✅ Using NUMERIC booking ID for invoice: ${bookingIdForInvoice}`);
+            } else if (bookingIds.mongoId) {
+                // This will likely fail, but we'll try anyway and show a warning
+                bookingIdForInvoice = bookingIds.mongoId;
+                console.warn(`⚠️ Using MongoDB ObjectId for invoice (may fail): ${bookingIdForInvoice}`);
+            } else {
+                console.error('❌ No valid booking ID found for invoice');
+                return null;
+            }
+
             return {
                 UserIp: userIp,
                 SearchTokenId: searchTokenId,
-                BookingId: String(bookingId),
+                BookingId: bookingIdForInvoice,
                 receiverEmail: contactData?.Email ||
                     contactData?.email ||
                     confirmationDetails?.email ||
                     "mohitverma8817@gmail.com"
             };
         }
-        
+
+        console.error('❌ Cannot create invoice payload - missing required data');
         return null;
     };
 
@@ -105,8 +193,17 @@ const HotelConfirmation = () => {
         }
     }, [isBooked, actualBooking, confirmationDetails]);
 
-    // Enhanced invoice download handler with better error handling
-    const handleDownloadInvoice = async () => {
+    // Cleanup auto-retry timer on unmount
+    useEffect(() => {
+        return () => {
+            if (autoRetryTimer) {
+                clearTimeout(autoRetryTimer);
+            }
+        };
+    }, [autoRetryTimer]);
+
+    // Enhanced invoice download handler
+    const handleDownloadInvoice = async (isRetryAttempt = false) => {
         const payload = getInvoicePayload();
 
         if (!payload) {
@@ -114,22 +211,32 @@ const HotelConfirmation = () => {
             return;
         }
 
+        // ✅ Check for BookingId type mismatch
+        if (typeof payload.BookingId === 'string' && payload.BookingId.length === 24) {
+            console.error('❌ BookingId appears to be MongoDB ObjectId, invoice API expects numeric ID');
+            toast.error('❌ Booking ID format incompatible with invoice system. Please contact support for manual invoice generation.', {
+                position: "top-right",
+                autoClose: 10000
+            });
+            return;
+        }
+
         console.log('📤 Sending hotel invoice request with payload:', payload);
+        console.log(`🔄 Attempt ${retryCount + 1}/5`);
+
         setLoading(true);
 
         try {
             const result = await downloadHotelInvoice(payload);
 
             console.log('🏨 Raw API response:', result);
-            console.log('🏨 Response type:', typeof result);
 
-            // Check if the result is a Blob (PDF file)
+            // Handle successful responses (same as before)
             if (result instanceof Blob) {
-                // Handle PDF blob response
                 const url = window.URL.createObjectURL(result);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `hotel-invoice-${bookingId}.pdf`;
+                link.download = `hotel-invoice-${payload.BookingId}.pdf`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -139,14 +246,12 @@ const HotelConfirmation = () => {
                     position: "top-right",
                     autoClose: 5000
                 });
+
+                setRetryCount(0);
                 return;
             }
 
-            // Handle JSON response
             if (result && typeof result === 'object') {
-                console.log('🏨 JSON response received:', result);
-
-                // Check for success in various response formats
                 if (result.success === true || result.status === 'success') {
                     if (result.alreadyExists) {
                         toast.success('✅ Hotel invoice already generated and sent to your email!', {
@@ -164,54 +269,133 @@ const HotelConfirmation = () => {
                             autoClose: 5000
                         });
                     }
+
+                    setRetryCount(0);
+                    return;
+                } else if (result.notFound && result.retryAfter) {
+                    const waitTime = Math.floor((result.retryAfter || 60000) / 1000);
+                    toast.warning(`⏳ Invoice is being generated. Auto-retry in ${waitTime} seconds...`, {
+                        position: "top-right",
+                        autoClose: 8000
+                    });
+
+                    const timer = setTimeout(() => {
+                        console.log('🔄 Auto-retrying invoice download...');
+                        setRetryCount(prev => prev + 1);
+                        handleDownloadInvoice(true);
+                    }, result.retryAfter || 60000);
+
+                    setAutoRetryTimer(timer);
+                    return;
                 } else {
-                    // Handle API error responses
-                    const errorMessage = result.message || 
-                                       result.error || 
-                                       result.errorMessage || 
-                                       'Unknown error occurred';
-                    
+                    const errorMessage = result.message || result.error || result.errorMessage || 'Unknown error occurred';
                     console.error('❌ Hotel API Error Response:', result);
-                    toast.error(`❌ ${errorMessage}`, {
+
+                    if (!isRetryAttempt) {
+                        toast.error(`❌ ${errorMessage}`, {
+                            position: "top-right",
+                            autoClose: 6000
+                        });
+                    }
+                }
+            } else {
+                console.error('❌ Unexpected response format:', result);
+                if (!isRetryAttempt) {
+                    toast.error('❌ Unexpected response format from server', {
                         position: "top-right",
                         autoClose: 6000
                     });
                 }
-            } else {
-                // Handle unexpected response format
-                console.error('❌ Unexpected response format:', result);
-                toast.error('❌ Unexpected response format from server', {
-                    position: "top-right",
-                    autoClose: 6000
-                });
             }
 
         } catch (error) {
             console.error('❌ Hotel invoice download error:', error);
-            
-            // Handle different types of errors
-            let errorMessage = 'Failed to download hotel invoice. Please try again.';
-            
-            if (error.response) {
-                // HTTP error response
-                console.error('❌ HTTP Error Response:', error.response);
-                errorMessage = error.response.data?.message || 
-                              error.response.data?.error || 
-                              `HTTP ${error.response.status}: ${error.response.statusText}`;
-            } else if (error.message) {
-                errorMessage = error.message;
+
+            // ✅ Specific handling for casting error
+            if (error.message && error.message.includes('Cast to Number failed')) {
+                const castError = `❌ BOOKING ID INCOMPATIBILITY
+
+Your booking ID "${payload.BookingId}" cannot be processed by the invoice system.
+
+This is a system compatibility issue:
+• Invoice API expects: Numeric ID (e.g., 1252)
+• Your booking generated: "${payload.BookingId}"
+
+SOLUTION: Please contact customer support with this booking reference for manual invoice generation.
+
+Technical Error: ${error.message}`;
+
+                toast.error(castError, {
+                    position: "top-right",
+                    autoClose: 12000,
+                    style: { whiteSpace: 'pre-line' }
+                });
+
+                setLoading(false);
+                return;
             }
 
-            toast.error(`❌ ${errorMessage}`, {
-                position: "top-right",
-                autoClose: 6000
-            });
+            let errorMessage = 'Failed to download hotel invoice. Please try again.';
+            let shouldRetry = false;
+
+            if (error.response) {
+                console.error('❌ HTTP Error Response:', error.response);
+
+                if (error.response.status === 404) {
+                    errorMessage = 'Invoice not yet available. The booking might be too recent.';
+                    shouldRetry = true;
+                } else {
+                    errorMessage = error.response.data?.message ||
+                        error.response.data?.error ||
+                        `HTTP ${error.response.status}: ${error.response.statusText}`;
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+
+                if (error.message.includes('not found') || error.message.includes('404')) {
+                    shouldRetry = true;
+                }
+            }
+
+            if (!isRetryAttempt || retryCount >= 4) {
+                toast.error(`❌ ${errorMessage}`, {
+                    position: "top-right",
+                    autoClose: shouldRetry ? 8000 : 6000
+                });
+            }
+
+            // Auto-retry logic for recoverable errors
+            if (shouldRetry && retryCount < 4 && !error.message.includes('Cast to Number')) {
+                const waitTime = 60;
+
+                if (!isRetryAttempt) {
+                    toast.info(`🔄 Auto-retry ${retryCount + 2}/5 in ${waitTime} seconds...`, {
+                        position: "top-right",
+                        autoClose: 10000
+                    });
+                }
+
+                const timer = setTimeout(() => {
+                    console.log(`🔄 Auto-retrying invoice download (attempt ${retryCount + 2}/5)...`);
+                    setRetryCount(prev => prev + 1);
+                    handleDownloadInvoice(true);
+                }, waitTime * 1000);
+
+                setAutoRetryTimer(timer);
+            } else if (retryCount >= 4) {
+                toast.error('❌ Maximum retry attempts reached. Please contact support.', {
+                    position: "top-right",
+                    autoClose: 10000
+                });
+                setRetryCount(0);
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    // Redirect if no booking data (handle both structures)
+
+    // Redirect if no booking data
     if (!state || (!isBooked && !confirmationDetails?.bookingId) || (!actualBooking && !confirmationDetails)) {
         navigate('/');
         return null;
@@ -221,115 +405,51 @@ const HotelConfirmation = () => {
 
     return (
         <Container className="py-4 innerpagecontainer mt-5 pt-5">
-            {/* Success Header */}
-            <Card className="mb-4 shadow-lg border-success">
-                <Card.Body className="text-center bg-success text-white">
-                    <FaCheckCircle className="mb-3" size={64} />
-                    <h2 className="fw-bold mb-2">🎉 Hotel Booking Confirmed!</h2>
-                    <p className="mb-0 fs-5">Your hotel reservation has been successfully booked</p>
-                    {bookingId && (
-                        <p className="mb-0 mt-2">
-                            <small>Booking ID: <strong>{bookingId}</strong></small>
-                        </p>
-                    )}
-                </Card.Body>
-            </Card>
 
-            {/* Booking Details Section */}
-            <Row className="mb-4">
-                <Col md={12}>
-                    <Card className="shadow-sm">
-                        <Card.Header className="bg-primary text-white">
-                            <h6 className="fw-bold mb-0">🏨 Booking Summary</h6>
-                        </Card.Header>
-                        <Card.Body>
-                            <Row>
-                                <Col md={6}>
-                                    {(actualHotelDetails?.name || actualHotelDetails?.HotelName) && (
-                                        <p className="mb-2">
-                                            <FaHotel className="me-2 text-primary" />
-                                            <strong>Hotel:</strong> {actualHotelDetails.name || actualHotelDetails.HotelName}
-                                        </p>
-                                    )}
-                                    <p className="mb-2">
-                                        <FaReceipt className="me-2 text-primary" />
-                                        <strong>Booking ID:</strong> {bookingId || 'Processing...'}
-                                    </p>
-                                    <p className="mb-2">
-                                        <FaRupeeSign className="me-2 text-primary" />
-                                        <strong>Total Paid:</strong> ₹{actualAmount}
-                                    </p>
-                                    {paymentDetails?.paymentId && (
-                                        <p className="mb-2">
-                                            <FaReceipt className="me-2 text-success" />
-                                            <strong>Payment ID:</strong> {paymentDetails.paymentId}
-                                        </p>
-                                    )}
-                                </Col>
-                                <Col md={6}>
-                                    {(contactData?.FirstName || contactData?.name) && (
-                                        <p className="mb-2">
-                                            <FaUser className="me-2 text-primary" />
-                                            <strong>Guest Name:</strong> {`${contactData.Title || ''} ${contactData.FirstName || contactData.name || ''} ${contactData.LastName || ''}`.trim()}
-                                        </p>
-                                    )}
-                                    {contactData?.Email && (
-                                        <p className="mb-2">
-                                            <FaUser className="me-2 text-primary" />
-                                            <strong>Email:</strong> {contactData.Email}
-                                        </p>
-                                    )}
-                                    {(actualHotelDetails?.checkIn || reviewData?.checkIn) && (
-                                        <p className="mb-2">
-                                            <FaCalendarAlt className="me-2 text-primary" />
-                                            <strong>Check-in:</strong> {actualHotelDetails.checkIn || reviewData.checkIn}
-                                        </p>
-                                    )}
-                                    {(actualHotelDetails?.checkOut || reviewData?.checkOut) && (
-                                        <p className="mb-2">
-                                            <FaCalendarAlt className="me-2 text-primary" />
-                                            <strong>Check-out:</strong> {actualHotelDetails.checkOut || reviewData.checkOut}
-                                        </p>
-                                    )}
-                                    {confirmationDetails?.bookingTime && (
-                                        <p className="mb-2">
-                                            <FaCalendarAlt className="me-2 text-success" />
-                                            <strong>Booked On:</strong> {new Date(confirmationDetails.bookingTime).toLocaleString()}
-                                        </p>
-                                    )}
-                                </Col>
-                            </Row>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
 
-            {/* Invoice Download Section */}
-            <Card className="shadow-sm">
+            {/* Retry Status Alert */}
+            {(loading || autoRetryTimer) && retryCount > 0 && (
+                <Alert variant="info" className="mb-4">
+                    <div className="d-flex align-items-center">
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        <div>
+                            <strong>Invoice Processing:</strong> Attempt {retryCount + 1}/5 -
+                            {loading ? ' Processing...' : ' Waiting for next retry...'}
+                        </div>
+                    </div>
+                </Alert>
+            )}
+
+            {/* Enhanced Invoice Download Section */}
+            <Card className="shadow-sm mx-auto mb-4 w-50">
                 <Card.Header className="bg-danger text-white">
                     <h6 className="fw-bold mb-0">📄 Download Your Hotel Invoice</h6>
                 </Card.Header>
                 <Card.Body>
                     <div className="text-center">
-                        <Button
-                            variant="danger"
-                            size="lg"
-                            className="fw-bold px-5"
-                            onClick={handleDownloadInvoice}
-                            disabled={loading || !invoicePayload}
-                        >
-                            {loading ? (
-                                <>
-                                    <Spinner animation="border" size="sm" className="me-2" />
-                                    Processing...
-                                </>
-                            ) : (
-                                <>
-                                    <FaDownload className="me-2" />
-                                    Download Hotel Invoice
-                                </>
-                            )}
-                        </Button>
+                        <div className="mb-3">
+                            <Button
+                                variant={bookingIdMismatch ? "warning" : "danger"}
+                                size="lg"
+                                className="fw-bold px-5 me-3"
+                                onClick={() => handleDownloadInvoice(false)}
+                                disabled={loading || !invoicePayload}
+                            >
+                                {loading ? (
+                                    <>
+                                        <Spinner animation="border" size="sm" className="me-2" />
+                                        Processing{retryCount > 0 ? ` (${retryCount + 1}/5)` : ''}...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaDownload className="me-2" />
+                                        {bookingIdMismatch ? 'Try Download' : 'Download Invoice'}
+                                    </>
+                                )}
+                            </Button>
+
+
+                        </div>
 
                         {!invoicePayload && (
                             <div className="mt-3">
@@ -339,32 +459,15 @@ const HotelConfirmation = () => {
                             </div>
                         )}
 
-                        <div className="mt-3">
-                            <small className="text-muted">
-                                📄 Click above to download your hotel booking invoice as a PDF file.
-                            </small>
-                        </div>
+
+
+
+
                     </div>
                 </Card.Body>
             </Card>
 
-            {/* Additional Information */}
-            <Card className="mt-4 shadow-sm">
-                <Card.Body>
-                    <div className="text-center">
-                        <h6 className="fw-bold text-primary mb-3">📧 Important Information</h6>
-                        <p className="mb-2 text-muted">
-                            • A confirmation email has been sent to your registered email address
-                        </p>
-                        <p className="mb-2 text-muted">
-                            • Please carry a valid ID proof during check-in
-                        </p>
-                        <p className="mb-0 text-muted">
-                            • For any queries, contact our customer support
-                        </p>
-                    </div>
-                </Card.Body>
-            </Card>
+
         </Container>
     );
 };

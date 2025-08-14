@@ -177,9 +177,8 @@ export const bookHotel = async (bookingPayload) => {
 
 
 
-
 // ================================================
-// 🏨 ENHANCED HOTEL INVOICE DOWNLOAD FUNCTION
+// 🏨 ENHANCED HOTEL INVOICE DOWNLOAD FUNCTION - FIXED VERSION
 // ================================================
 
 export const downloadHotelInvoice = async (invoiceData) => {
@@ -202,7 +201,7 @@ export const downloadHotelInvoice = async (invoiceData) => {
     const payload = {
       UserIp: invoiceData.UserIp || "122.161.64.143",
       SearchTokenId: invoiceData.SearchTokenId,
-      BookingId: String(invoiceData.BookingId).trim(), // Ensure it's a clean string
+      BookingId: String(invoiceData.BookingId).trim(),
       receiverEmail: invoiceData.receiverEmail || ""
     };
 
@@ -222,8 +221,8 @@ export const downloadHotelInvoice = async (invoiceData) => {
       responseType: 'blob', // Critical for file downloads
       timeout: 30000, // 30 second timeout
       validateStatus: function (status) {
-        // Accept both success and 409 conflict status
-        return (status >= 200 && status < 300) || status === 409;
+        // Accept success, 409 conflict, and 404 status
+        return (status >= 200 && status < 300) || status === 409 || status === 404;
       }
     });
 
@@ -233,12 +232,11 @@ export const downloadHotelInvoice = async (invoiceData) => {
     // Handle 409 Conflict - Invoice already generated
     if (response.status === 409) {
       console.log('⚠️ Hotel invoice already exists (409)');
-
-      // Try to parse the response to get more info
+      
       try {
         const text = await response.data.text();
         const jsonResponse = JSON.parse(text);
-
+        
         return {
           success: true,
           alreadyExists: true,
@@ -252,6 +250,17 @@ export const downloadHotelInvoice = async (invoiceData) => {
           message: 'Hotel invoice already generated and sent to email'
         };
       }
+    }
+
+    // Handle 404 - Invoice not found (booking might be too recent)
+    if (response.status === 404) {
+      console.log('⚠️ Hotel invoice not found (404) - booking might be too recent');
+      return {
+        success: false,
+        notFound: true,
+        message: 'Invoice not yet available. Please wait a few minutes and try again.',
+        retryAfter: 60000 // Suggest retry after 1 minute
+      };
     }
 
     // Check content type for successful responses
@@ -336,21 +345,18 @@ export const downloadHotelInvoice = async (invoiceData) => {
       console.error('❌ Error Status:', error.response.status);
       console.error('❌ Error Data:', error.response.data);
 
-      // Special handling for 409 (should not reach here due to validateStatus)
-      if (error.response.status === 409) {
-        return {
-          success: true,
-          alreadyExists: true,
-          message: 'Hotel invoice already generated and sent to email'
-        };
-      }
-
       let errorMessage = `Server error (${error.response.status})`;
 
       if (error.response.status === 401) {
         errorMessage = 'Authentication failed. Please login again.';
       } else if (error.response.status === 404) {
-        errorMessage = 'Hotel invoice not found. Please check your booking ID.';
+        errorMessage = 'Hotel invoice not found. The booking might be too recent - please wait a few minutes and try again.';
+      } else if (error.response.status === 409) {
+        return {
+          success: true,
+          alreadyExists: true,
+          message: 'Hotel invoice already generated and sent to email'
+        };
       } else if (error.response.status === 500) {
         errorMessage = 'Server error. Please try again later.';
       } else if (error.response.status === 400) {
@@ -391,6 +397,69 @@ export const downloadHotelInvoice = async (invoiceData) => {
       // Re-throw the original error if it's already a custom error
       throw error;
     }
+  }
+};
+
+// ================================================
+// 🏨 NEW FUNCTION: EMAIL-ONLY INVOICE SENDER
+// ================================================
+
+export const sendHotelInvoiceEmail = async (invoiceData) => {
+  try {
+    console.log('📧 Sending hotel invoice email...');
+    
+    // Same validation as downloadHotelInvoice
+    if (!invoiceData.SearchTokenId) {
+      throw new Error('SearchTokenId is required for email invoice');
+    }
+
+    if (!invoiceData.BookingId) {
+      throw new Error('BookingId is required for email invoice');
+    }
+
+    const headers = createAuthHeaders();
+
+    // Enhanced payload for email-only request
+    const payload = {
+      UserIp: invoiceData.UserIp || "122.161.64.143",
+      SearchTokenId: invoiceData.SearchTokenId,
+      BookingId: String(invoiceData.BookingId).trim(),
+      receiverEmail: invoiceData.receiverEmail || "",
+      emailOnly: true // Flag to indicate email-only request
+    };
+
+    console.log('📧 Email payload:', payload);
+
+    const response = await axios({
+      method: 'POST',
+      url: HotelServices.downloadInvoice,
+      data: payload,
+      headers: {
+        ...headers,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      timeout: 30000,
+      validateStatus: function (status) {
+        return (status >= 200 && status < 300) || status === 409;
+      }
+    });
+
+    console.log('✅ Email API Response Status:', response.status);
+
+    if (response.status === 409 || response.data.success) {
+      return {
+        success: true,
+        emailSent: true,
+        message: 'Invoice email sent successfully'
+      };
+    }
+
+    return response.data;
+
+  } catch (error) {
+    console.error('❌ Email invoice error:', error);
+    throw error;
   }
 };
 

@@ -607,7 +607,7 @@ const GuestDetailsInfo = () => {
           <Card.Body className="text-center text-danger">
             <h5>❌ Missing Booking Data</h5>
             <p>Please go back to Hotel Details page and try again.</p>
-            <Button variant="primary" onClick={() => navigate(-1)}>
+            <Button variant="danger" onClick={() => navigate(-1)}>
               Go Back
             </Button>
           </Card.Body>
@@ -635,9 +635,12 @@ const GuestDetailsInfo = () => {
 
             {roomDetails.map((room, roomIndex) => (
               <div key={roomIndex} className="border rounded p-3 mb-4">
-                <div className="mb-3 fw-bold text-primary">
+                <div className="mb-3 fw-bold text-danger d-flex align-items-center">
                   <FaEnvelope className="me-2" />
-                  Room {roomIndex + 1} - {room.adults} Adult(s){room.children > 0 && `, ${room.children} Child(ren)`}
+                  <span>
+                    Room {roomIndex + 1} - {room.adults} Adult(s)
+                    {room.children > 0 && `, ${room.children} Child(ren)`}
+                  </span>
                 </div>
 
                 {/* Adults */}
@@ -646,9 +649,9 @@ const GuestDetailsInfo = () => {
                     <Row className="align-items-center mb-3">
                       <Col lg={2} className="fw-bold">
                         Adult {i + 1}
-                        {roomIndex === 0 && i === 0 && (
-                          <span className="badge bg-primary ms-2 small">Lead Guest</span>
-                        )}
+                        {/* {roomIndex === 0 && i === 0 && (
+                          <span className="badge bg-danger ms-2 small">Lead Guest</span>
+                        )} */}
                       </Col>
                       <Col lg={2}>
                         <Form.Select
@@ -833,7 +836,7 @@ const GuestDetailsInfo = () => {
             <Col md={3} className="text-end">
               <Button
                 onClick={() => setShowGstinForm(!showGstinForm)}
-                variant={showGstinForm ? "outline-danger" : "outline-primary"}
+                variant={showGstinForm ? "outline-danger" : "outline-danger"}
                 size="sm"
               >
                 {showGstinForm ? 'Remove GST' : 'Add GST'}
@@ -905,9 +908,9 @@ const GuestDetailsInfo = () => {
       </Card>
 
       {/* Continue Button */}
-      <div className="text-center">
+      <div className="text-end">
         <Button
-          variant="primary"
+          variant="danger"
           size="lg"
           className="btn-red px-5"
           onClick={handleContinue}

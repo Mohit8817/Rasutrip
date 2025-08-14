@@ -40,25 +40,46 @@ const HotelPaymentInfo = () => {
       document.body.appendChild(script);
     });
 
-  // Async invoice email sender (non-blocking)
+
+  // Async invoice email sender (non-blocking) - FIXED VERSION
   const sendInvoiceEmailAsync = async (invoiceData) => {
     try {
       console.log('📧 Attempting to auto-send invoice email...');
+
+      // Add delay to ensure booking is processed on server
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       const result = await downloadHotelInvoice({
         ...invoiceData,
-        emailOnly: true
+        emailOnly: false // Try normal download first, which may trigger email
       });
 
-      if (result.success || result.message) {
-        console.log('✅ Invoice email sent automatically');
+      if (result.success) {
+        console.log('✅ Invoice processed successfully');
         return result;
       }
-      throw new Error('Email sending failed');
+
+      throw new Error('Invoice processing failed');
     } catch (error) {
-      console.error('❌ Auto-email failed:', error.message);
+      console.error('❌ Auto-invoice failed:', error.message);
+
+      // If it's a 404 error, the booking might be too recent
+      if (error.message.includes('404') || error.message.includes('not found')) {
+        console.log('⚠️ Invoice not ready yet, will be available shortly');
+        return {
+          success: false,
+          message: 'Invoice will be available shortly via email',
+          retryLater: true
+        };
+      }
+
       throw error;
     }
   };
+
+
+
+
 
   // Utility functions for invoice data
   const getLeadPassenger = (formattedBookingData) => {
@@ -345,6 +366,12 @@ Please ensure:
   };
 
   // Payment success handler with invoice integration
+  // ================================================
+  // 🏨 FIXED PAYMENT SUCCESS HANDLER WITH INVOICE LOGIC
+  // ================================================
+
+
+  // Payment success handler with FIXED invoice integration
   const handlePaymentSuccess = async (response, formattedBookingData, validation) => {
     try {
       console.log('🚀 Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
@@ -360,7 +387,7 @@ Please ensure:
         (bookingResponse?.error?.ErrorMessage?.toLowerCase().includes('mandatory pan'))
       ) {
         const panErrorMsg = `❌ HOTEL API ERROR: PAN MANDATORY (Code: 1163)
-        
+      
 API Error: ${bookingResponse?.error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage || 'Mandatory PAN info unavailable.'}
 
 This usually indicates:
@@ -400,7 +427,9 @@ Please check your booking data and contact support if the issue persists.`;
           receiverEmail: getLeadPassengerEmail(formattedBookingData)
         };
 
-        // Navigate to confirmation
+        console.log('📧 Prepared invoice data:', invoiceData);
+
+        // Navigate to confirmation FIRST
         navigate('/hotel/confirmation', {
           state: {
             booking: bookingResponse,
@@ -432,13 +461,38 @@ Please check your booking data and contact support if the issue persists.`;
           },
         });
 
-        // Auto-send invoice email (non-blocking)
-        try {
-          await sendInvoiceEmailAsync(invoiceData);
-          console.log('✅ Invoice automatically sent to email');
-        } catch (emailError) {
-          console.log('⚠️ Auto-email invoice failed (non-critical):', emailError.message);
-        }
+        // Try to send invoice email after navigation (non-blocking)
+        setTimeout(async () => {
+          try {
+            console.log('📧 Starting delayed invoice email attempt...');
+            const emailResult = await sendInvoiceEmailAsync(invoiceData);
+
+            if (emailResult.success) {
+              console.log('✅ Invoice email sent successfully');
+              // Optional: Show a toast notification if still on the page
+              toast.success('📧 Invoice has been sent to your email!', {
+                position: "top-right",
+                autoClose: 5000
+              });
+            } else if (emailResult.retryLater) {
+              console.log('⚠️ Invoice will be available later via email');
+            }
+          } catch (emailError) {
+            console.log('⚠️ Email invoice attempt failed (non-critical):', emailError.message);
+            // Don't show error toast for this as it's non-critical
+
+            // Schedule a retry after 30 seconds
+            setTimeout(async () => {
+              try {
+                console.log('🔄 Retrying invoice email after delay...');
+                await sendInvoiceEmailAsync(invoiceData);
+                console.log('✅ Invoice email sent on retry');
+              } catch (retryError) {
+                console.log('❌ Invoice email retry also failed:', retryError.message);
+              }
+            }, 30000); // Retry after 30 seconds
+          }
+        }, 3000); // Initial delay of 3 seconds
 
       } else {
         let errMsg = 'Booking failed. Please contact support with your payment details.';
@@ -471,7 +525,6 @@ Please check your booking data and contact support if the issue persists.`;
       }
     }
   };
-
   // Main payment handler
   const handlePayment = async () => {
     setLoading(true);
@@ -691,44 +744,6 @@ Please check your booking data and contact support if the issue persists.`;
     <div className="container my-4">
       <div className="row justify-content-center">
         <div className="col">
-          {/* Error Alert */}
-          {error && (
-            <Alert variant="danger" className="mb-4" dismissible onClose={() => setError('')}>
-              <FaExclamationTriangle className="me-2" />
-              <strong>Error:</strong>
-              <div style={{ whiteSpace: 'pre-line', marginTop: 8 }}>{error}</div>
-            </Alert>
-          )}
-
-          {/* PAN Status Alert */}
-          {adultPassengers.length > 0 && (
-            <Alert variant={hasDuplicates ? "danger" : validPANCount === adultPassengers.length ? "success" : "warning"} className="mb-4">
-              <FaExclamationTriangle className="me-2" />
-              <strong>PAN Status Check:</strong><br />
-              {hasDuplicates ? (
-                <span className="text-danger">
-                  ❌ DUPLICATE PAN DETECTED: {duplicatePANs.join(', ')}<br />
-                  Please ensure each passenger has a unique PAN number.
-                </span>
-              ) : validPANCount === adultPassengers.length ? (
-                <span className="text-success">
-                  ✅ All {adultPassengers.length} adult passengers have valid, unique PAN numbers
-                </span>
-              ) : (
-                <span className="text-warning">
-                  ⚠️ {validPANCount}/{adultPassengers.length} adult passengers have valid PAN numbers
-                </span>
-              )}
-              <br />
-              <small>Format required: ABCDE1234F (5 letters + 4 digits + 1 letter)</small>
-              {isPANMandatoryRoom && (
-                <div className="mt-2">
-                  <small><strong>🏨 PAN Mandatory Room:</strong> This room requires valid PAN for ALL adults</small>
-                </div>
-              )}
-            </Alert>
-          )}
-
           {/* Payment Summary */}
           <Card className="shadow-sm rounded mb-4">
             <Card.Header className="bg-danger text-white">
@@ -791,18 +806,7 @@ Please check your booking data and contact support if the issue persists.`;
                 </Row>
               </div>
 
-              {/* Payment security info */}
-              <div className="alert alert-info">
-                <div className="d-flex align-items-center mb-2">
-                  <FaShieldAlt className="me-2" />
-                  <strong>Secure Payment</strong>
-                </div>
-                <small>
-                  Your payment is secured by Razorpay with 256-bit SSL encryption.<br />
-                  We accept all major credit cards, debit cards, UPI, and net banking.<br />
-                  📧 <strong>Invoice will be automatically sent to your email after booking confirmation.</strong>
-                </small>
-              </div>
+
 
               {/* Lead guest info */}
               {leadPassenger && (
@@ -841,34 +845,18 @@ Please check your booking data and contact support if the issue persists.`;
                 <div className="mb-4 p-3 border rounded">
                   <h6 className="fw-bold mb-2">Adult Passenger PAN Information</h6>
                   {adultPassengers.map((adult, idx) => (
-                    <div key={idx} className="d-flex justify-content-between align-items-center mb-2">
+                    <div key={idx} className="">
                       <span>{adult.name} (Room {adult.room})</span>
-                      <span className={`badge ${adult.isValid ? 'bg-success' : 'bg-danger'}`}>
-                        {adult.isValid ? (
-                          `✅ PAN: ${adult.pan.slice(0, 3)}***${adult.pan.slice(-2)}`
-                        ) : (
-                          '❌ Invalid/Missing PAN'
-                        )}
-                      </span>
+
                     </div>
                   ))}
-                  <hr />
-                  <div className="text-center">
-                    <strong className={hasDuplicates ? "text-danger" : validPANCount === adultPassengers.length ? "text-success" : "text-warning"}>
-                      {hasDuplicates
-                        ? `❌ Duplicate PANs Found: ${duplicatePANs.length}`
-                        : `PAN Status: ${validPANCount}/${adultPassengers.length} Valid`}
-                    </strong>
-                  </div>
+
                 </div>
               )}
             </Card.Body>
 
             <Card.Footer className="bg-white">
-              <div className="d-flex gap-3 justify-content-between align-items-center">
-                <Button variant="outline-secondary" onClick={() => navigate(-1)} disabled={loading}>
-                  ← Back to Review
-                </Button>
+              <div className="text-end">
 
                 <Button
                   variant={hasDuplicates || validPANCount !== adultPassengers.length ? "warning" : "danger"}
@@ -891,21 +879,18 @@ Please check your booking data and contact support if the issue persists.`;
                   )}
                 </Button>
               </div>
-              <div className="text-center mt-3">
-                <small className="text-muted">
-                  By clicking "Pay", you agree to our terms and conditions<br />
-                  📧 Invoice will be automatically sent to lead passenger's email
-                </small>
-                {(hasDuplicates || validPANCount !== adultPassengers.length) && (
-                  <div className="mt-2">
-                    <small className="text-warning">
-                      Please ensure all adult passengers have valid, unique PAN numbers before proceeding
-                    </small>
-                  </div>
-                )}
-              </div>
             </Card.Footer>
           </Card>
+
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="danger" className="mb-4" dismissible onClose={() => setError('')}>
+              <FaExclamationTriangle className="me-2" />
+              <strong>Error:</strong>
+              <div style={{ whiteSpace: 'pre-line', marginTop: 8 }}>{error}</div>
+            </Alert>
+          )}
+
         </div>
       </div>
     </div>
