@@ -6,7 +6,7 @@ import BookingTabs from '../components/BookingtTabs';
 import FlightBookingComponent from '../components/FlightBookingComponent';
 import BusBookingHistory from '../components/BusBookingHistory';
 import HotelBookingComponent from '../components/HotelBookingComponent';
-
+import PaymentHistory from '../components/PaymentHistory';
 
 const UserDashboard = () => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -55,6 +55,8 @@ const UserDashboard = () => {
                         </div>
                     </div>
                 );
+            case 'payment-history':
+                return <PaymentHistory />;
             default:
                 return <Profile user={user} userType={userType} />;
         }

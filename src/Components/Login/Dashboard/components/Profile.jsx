@@ -1,4 +1,4 @@
-// components/Profile.js - Updated with Wallet Balance
+// components/Profile.js - Updated with col-4 header and col-8 info layout
 import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Alert, Row, Col } from 'react-bootstrap';
@@ -48,35 +48,28 @@ const Profile = () => {
                 {message && <Alert variant="success" className="m-4 mb-0">{message}</Alert>}
                 {error && <Alert variant="danger" className="m-4 mb-0">{error}</Alert>}
 
-                {/* Header */}
-                <div className="p-4 border-bottom">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-0">
-                        My Profile
-                    </h2>
-                </div>
-
                 <div className="p-4">
-                    {/* Profile Header */}
-                    <div className="text-center mb-4">
-                        <div
-                            className="mx-auto rounded-circle d-flex align-items-center justify-content-center text-white text-3xl font-bold mb-3 shadow-lg"
-                            style={{
-                                width: '80px',
-                                height: '80px',
-                                fontSize: '1.8rem',
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                            }}
-                        >
-                            {getUserInitials()}
-                        </div>
-                        <h3 className="text-xl font-bold mb-2">
-                            {getUserFullName()}
-                        </h3>
-                    </div>
+                    <Row>
+                        {/* Profile Header - Col 4 */}
+                        <Col lg={4} className="text-center mb-4 mb-lg-0 pt-5">
+                            <div
+                                className="mx-auto rounded-circle d-flex align-items-center justify-content-center text-white text-3xl font-bold mb-3 shadow-lg"
+                                style={{
+                                    width: '120px',
+                                    height: '120px',
+                                    fontSize: '2.2rem',
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                                }}
+                            >
+                                {getUserInitials()}
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">
+                                {getUserFullName()}
+                            </h3>
+                        </Col>
 
-                    {/* Profile Information */}
-                    <div className="row justify-content-center">
-                        <div className="col-lg-6">
+                        {/* Profile Information - Col 8 */}
+                        <Col lg={8}>
                             <div className="row g-3">
                                 <div className="col-12">
                                     <label className="form-label text-muted small fw-bold">Full Name</label>
@@ -118,8 +111,8 @@ const Profile = () => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </Col>
+                    </Row>
                 </div>
             </div>
         </div>

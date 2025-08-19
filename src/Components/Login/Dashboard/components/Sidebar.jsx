@@ -1,4 +1,4 @@
-// components/Sidebar.js - Updated with Wallet Balance
+// components/Sidebar.js - Updated with Payment History
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../Context/AuthContext';
@@ -49,11 +49,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         </div>
       </div>
     );
-  }
+  };
 
   const menuItems = [
-    { id: 'profile', label: 'Profile' },
-    { id: 'bookings', label: 'Booking' },
+    { id: 'profile', label: 'Profile', icon: '👤' },
+    { id: 'bookings', label: 'Booking', icon: '📝' },
+    { id: 'payment-history', label: 'Payment History', icon: '💳' },
   ];
 
   return (
@@ -78,7 +79,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           </h3>
 
           <div className="flex items-center justify-center text-sm text-gray-500 mb-2">
-            <span className="mr-1">{userType === 'agent' ? ' ' : ' '}</span>
+            <span className="mr-1">{userType === 'agent' ? '🏢' : '👤'}</span>
             <span className="uppercase tracking-wide">{userType || 'Customer'} Profile</span>
           </div>
 
@@ -101,8 +102,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 ${activeTab === item.id
-                ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-500 transform scale-105'
-                : 'text-gray-700 hover:bg-gray-50 hover:text-blue-500 hover:transform hover:scale-102'
+                  ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-500 transform scale-105'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-blue-500 hover:transform hover:scale-102'
                 }`}
             >
               <span className="mr-3 text-lg">{item.icon}</span>
@@ -118,10 +119,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             onClick={handleLogout}
             className="w-full flex items-center px-4 py-3 text-left rounded-lg text-red-600 hover:bg-red-50 transition-all duration-200 mt-6 border-t pt-4 hover:transform hover:scale-102"
           >
-            <span className="mr-3 text-lg"></span>
+            <span className="mr-3 text-lg">🚪</span>
             <span className="font-medium">Logout</span>
           </button>
-
         </nav>
 
         {/* Enhanced Footer Info */}
@@ -148,8 +148,6 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           )}
         </div>
       </div>
-
-
     </div>
   );
 };
