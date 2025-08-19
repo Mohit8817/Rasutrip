@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from '../../../Context/AuthContext';
+import { downloadBusInvoice } from '../../../APIS/BusApi/BusApis'; // Import your existing API
+import { toast } from 'react-toastify';
 
 // API configuration
 const API_BASE_URL = "https://api.rasutrip.com/api/v1";
@@ -13,6 +15,7 @@ const BusBookingHistory = () => {
     const [allBookings, setAllBookings] = useState([]);
     const [userType, setUserType] = useState(null); // customer या agent
     const [debugInfo, setDebugInfo] = useState(null);
+    const [downloadingInvoices, setDownloadingInvoices] = useState(new Set()); // Track downloading states
 
     // Detect user type from multiple sources
     const detectUserType = () => {
@@ -155,6 +158,7 @@ const BusBookingHistory = () => {
         if (currentUserType === 'agent') {
             return {
                 upcoming: `${API_BASE_URL}/agent/bus-bookings/upcoming`, // Agent-specific endpoint
+                all: `${API_BASE_URL}/agent/bus-bookings/all`, // Agent-specific endpoint
                 // Fallback to customer endpoints if agent endpoints don't exist
                 upcomingFallback: `${API_BASE_URL}/busservice/up-comming-bookings`,
                 allFallback: `${API_BASE_URL}/busservice/my-bookings`
@@ -333,6 +337,13 @@ const BusBookingHistory = () => {
                 }
             };
 
+            // Extract SearchTokenId for invoice download
+            const searchTokenId = bookingWrapper.SearchTokenId ||
+                booking.SearchTokenId ||
+                booking.searchTokenId ||
+                booking.token_id ||
+                null;
+
             const formattedBooking = {
                 bookingId: String(bookingId),
                 from: String(fromCity),
@@ -351,6 +362,7 @@ const BusBookingHistory = () => {
                 createdAt: formatCreatedDate(createdAt),
                 bookingDate: formatCreatedDate(createdAt),
                 userType: userType || 'customer', // Add user type to booking data
+                searchTokenId: searchTokenId, // Add for invoice download
                 rawData: bookingWrapper // Keep original data for debugging
             };
 
@@ -449,6 +461,93 @@ const BusBookingHistory = () => {
         loadBookings();
     }, [user]); // Re-load when user context changes
 
+    // Enhanced Invoice download function with better error handling
+    const handleDownloadInvoice = async (booking) => {
+        const bookingId = booking.bookingId;
+
+        console.log('📄 Starting invoice download process for booking:', bookingId);
+        console.log('📤 Booking data:', booking);
+
+        // Validation checks
+        if (!booking.searchTokenId) {
+            console.error('❌ SearchTokenId not available for booking:', bookingId);
+            toast.error('Cannot download invoice - SearchTokenId not available for this booking');
+            return;
+        }
+
+        // Check if already downloading
+        if (downloadingInvoices.has(bookingId)) {
+            console.warn('⚠️ Invoice already being downloaded for booking:', bookingId);
+            return;
+        }
+
+        // Add booking to downloading set
+        setDownloadingInvoices(prev => new Set(prev.add(bookingId)));
+
+        try {
+            // Prepare invoice data with enhanced information
+            const invoiceData = {
+                UserIp: "122.161.64.143", // You might want to get actual user IP
+                SearchTokenId: booking.searchTokenId,
+                BookingId: String(bookingId),
+                receiverEmail: user?.email ||
+                    user?.mail ||
+                    booking.contactNumber ||
+                    "support@rasutrip.com"
+            };
+
+            console.log('📤 Invoice download data prepared:', invoiceData);
+
+            // Show loading toast
+            const loadingToastId = toast.loading('Downloading invoice...');
+
+            // Call your existing API
+            const result = await downloadBusInvoice(invoiceData);
+
+            console.log('✅ Invoice download API result:', result);
+
+            // Dismiss loading toast
+            toast.dismiss(loadingToastId);
+
+            // Handle different response scenarios
+            if (result && result.success) {
+                if (result.downloaded) {
+                    toast.success('Invoice downloaded successfully!');
+                } else if (result.alreadyExists) {
+                    toast.success('Invoice already generated and sent to email!');
+                } else if (result.sent) {
+                    toast.success('Invoice has been sent to your email!');
+                } else {
+                    toast.success('Invoice processed successfully!');
+                }
+            } else if (result && result.message) {
+                // Handle API error messages
+                toast.error(`Invoice download failed: ${result.message}`);
+            } else {
+                toast.error('Failed to download invoice. Please try again.');
+            }
+
+        } catch (error) {
+            console.error('❌ Invoice download error:', error);
+
+            // Handle different error types
+            if (error.message) {
+                toast.error(`Failed to download invoice: ${error.message}`);
+            } else if (error.response?.data?.message) {
+                toast.error(`Invoice download failed: ${error.response.data.message}`);
+            } else {
+                toast.error('Failed to download invoice. Please check your internet connection and try again.');
+            }
+        } finally {
+            // Remove booking from downloading set
+            setDownloadingInvoices(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(bookingId);
+                return newSet;
+            });
+        }
+    };
+
     // Get current bookings based on selected type
     const getCurrentBookings = () => {
         if (bookingType === 'upcoming') {
@@ -506,9 +605,13 @@ const BusBookingHistory = () => {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800">My Bus Bookings</h2>
-
+                    <p className="text-gray-600 text-sm mt-1">Manage your {getUserTypeDisplay().toLowerCase()} bookings and download invoices</p>
                 </div>
-
+                <div className="text-right">
+                    <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                        {getUserTypeDisplay()}
+                    </span>
+                </div>
             </div>
 
             {/* Error Display */}
@@ -617,80 +720,42 @@ const BusBookingHistory = () => {
                                     </td>
                                 </tr>
                             ) : (
+
                                 currentBookings.map((booking, index) => (
-                                    <tr key={booking.bookingId || index} className="border-b border-gray-200 hover:bg-gray-100">
-                                        <td className="px-4 py-3 text-sm font-medium text-blue-600">
-                                            {booking.bookingId}
+                                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
+                                        <td className="px-4 py-3 text-sm text-gray-700">{booking.bookingId}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">
+                                            {booking.from} → {booking.to}
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                            <div className="font-medium">{booking.from}</div>
-                                            <div className="text-gray-500">to {booking.to}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                            {formatDate(booking.travelDate)}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-600">
-                                            {booking.busType}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                            {booking.seatNumber}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                            <div className="font-medium">{booking.passengerName}</div>
-                                            <div className="text-gray-500 text-xs">{booking.contactNumber}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                        <td className="px-4 py-3 text-sm text-gray-700">{formatDate(booking.travelDate)}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{booking.busType}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{booking.seatNumber}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{booking.passengerName}</td>
+                                        <td className="px-4 py-3 text-sm font-medium text-green-600">
                                             {formatAmount(booking.totalAmount)}
                                         </td>
                                         <td className="px-4 py-3 text-sm">
-                                            <div className="flex flex-col space-y-1">
-                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${booking.bookingStatus?.toLowerCase() === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                        booking.bookingStatus?.toLowerCase() === 'processing' ? 'bg-orange-100 text-orange-800' :
-                                                            booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                                'bg-blue-100 text-blue-800'
-                                                    }`}>
-                                                    {booking.bookingStatus}
-                                                </span>
-                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
-                                                        booking.paymentStatus?.toLowerCase() === 'processing' ? 'bg-orange-100 text-orange-800' :
-                                                            booking.paymentStatus?.toLowerCase() === 'failed' ? 'bg-red-100 text-red-800' :
-                                                                'bg-blue-100 text-blue-800'
-                                                    }`}>
-                                                    {booking.paymentStatus}
-                                                </span>
-                                            </div>
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${booking.bookingStatus.toLowerCase() === "confirmed"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : "bg-yellow-100 text-yellow-700"
+                                                    }`}
+                                            >
+                                                {booking.bookingStatus}
+                                            </span>
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-gray-600">
-                                            <div className="text-xs">{booking.createdAt}</div>
-                                            {booking.pnr !== 'N/A' && (
-                                                <div className="text-xs text-gray-500">PNR: {booking.pnr}</div>
-                                            )}
-                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-500">{booking.createdAt}</td>
                                         <td className="px-4 py-3 text-sm">
-                                            <div className="flex flex-col space-y-1">
-                                                <button
-                                                    onClick={() => {
-                                                        console.log('View booking details:', booking);
-                                                        // Add your view logic here
-                                                    }}
-                                                    className="text-blue-500 hover:text-blue-700 font-medium text-xs flex items-center"
-                                                >
-                                                    <span className="mr-1">👁️</span>
-                                                    View Details
-                                                </button>
-                                                {booking.ticketNo !== 'N/A' && (
-                                                    <button
-                                                        onClick={() => {
-                                                            console.log('Download ticket:', booking.ticketNo);
-                                                            // Add your download logic here
-                                                        }}
-                                                        className="text-green-500 hover:text-green-700 font-medium text-xs flex items-center"
-                                                    >
-                                                        <span className="mr-1">📄</span>
-                                                        Download
-                                                    </button>
-                                                )}
-                                            </div>
+                                            <button
+                                                onClick={() => handleDownloadInvoice(booking)}
+                                                disabled={downloadingInvoices.has(booking.bookingId)}
+                                                className={`px-3 py-1 rounded text-white text-xs ${downloadingInvoices.has(booking.bookingId)
+                                                        ? "bg-gray-400 cursor-not-allowed"
+                                                        : "bg-blue-500 hover:bg-blue-600"
+                                                    }`}
+                                            >
+                                                {downloadingInvoices.has(booking.bookingId) ? "Downloading..." : "Download Invoice"}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))

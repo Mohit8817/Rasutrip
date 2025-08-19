@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { getBlogById } from '../../Components/APIS/GeneralApis/GeneralApis';
 
 const BlogDetail = () => {
     const [blog, setBlog] = useState(null);
@@ -8,25 +9,22 @@ const BlogDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const BASE_URL = 'https://api.rasutrip.com/api/v1';
-
-    // Fetch blog by ID
+    // Fetch blog by ID using centralized API service
     const fetchBlogById = async (blogId) => {
         try {
             setLoading(true);
-            const response = await fetch(`${BASE_URL}/user/blog-by-id/${blogId}`);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const blogData = data.data || data.blog || data;
-            setBlog(blogData);
             setError(null);
+
+            const response = await getBlogById(blogId);
+
+            if (response.success) {
+                setBlog(response.data);
+            } else {
+                throw new Error(response.message);
+            }
         } catch (err) {
             console.error('Error fetching blog details:', err);
-            setError(`Failed to fetch blog details: ${err.message}`);
+            setError(err.message || 'Failed to fetch blog details');
         } finally {
             setLoading(false);
         }
@@ -131,7 +129,6 @@ const BlogDetail = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-
             <div className="max-w-4xl mx-auto px-4 py-8">
                 {/* Blog Header */}
                 <header className="mb-8">

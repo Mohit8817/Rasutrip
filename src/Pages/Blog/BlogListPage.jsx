@@ -1,35 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { getAllBlogs } from '../../Components/APIS/GeneralApis/GeneralApis'; 
 const BlogListPage = () => {
   const [blogPosts, setBlogPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const BASE_URL = 'https://api.rasutrip.com/api/v1';
-
-  // Fetch all blogs
+  // Fetch all blogs using centralized API service
   const fetchBlogs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${BASE_URL}/user/blog`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // Handle your specific API response structure
-      const blogs = data.blogs || [];
-      setBlogPosts(Array.isArray(blogs) ? blogs : []);
       setError(null);
-
-      console.log('Blogs fetched:', blogs.length);
+      
+      const response = await getAllBlogs();
+      
+      if (response.success) {
+        setBlogPosts(response.data);
+        console.log('Blogs fetched:', response.data.length);
+      } else {
+        throw new Error(response.message);
+      }
     } catch (err) {
-      setError(`Failed to fetch blogs: ${err.message}`);
+      setError(err.message || 'Failed to fetch blogs');
       setBlogPosts([]);
+      console.error('Error fetching blogs:', err);
     } finally {
       setLoading(false);
     }
@@ -142,7 +137,6 @@ const BlogListPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-
         {/* <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-gray-900 mb-4">
             Our Blog

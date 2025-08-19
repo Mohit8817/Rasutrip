@@ -172,279 +172,279 @@ const HotelBookingHistory = () => {
             </div>
         );
     };
-// Fixed version of the formatHotelBookingData function with better confirmation number mapping
+    // Fixed version of the formatHotelBookingData function with better confirmation number mapping
 
-const formatHotelBookingData = (apiResponse, isUpcoming = false) => {
-    console.log('📊 Raw API response for formatting:', apiResponse);
+    const formatHotelBookingData = (apiResponse, isUpcoming = false) => {
+        console.log('📊 Raw API response for formatting:', apiResponse);
 
-    // Handle different response structures
-    let bookingsArray = [];
+        // Handle different response structures
+        let bookingsArray = [];
 
-    if (Array.isArray(apiResponse)) {
-        bookingsArray = apiResponse;
-    } else if (apiResponse?.data && Array.isArray(apiResponse.data)) {
-        bookingsArray = apiResponse.data;
-    } else if (apiResponse?.bookings && Array.isArray(apiResponse.bookings)) {
-        bookingsArray = apiResponse.bookings;
-    } else if (apiResponse?.results && Array.isArray(apiResponse.results)) {
-        bookingsArray = apiResponse.results;
-    } else if (apiResponse?.response && Array.isArray(apiResponse.response)) {
-        bookingsArray = apiResponse.response;
-    } else if (typeof apiResponse === 'object' && apiResponse !== null) {
-        const possibleArrays = Object.values(apiResponse).filter(Array.isArray);
-        if (possibleArrays.length > 0) {
-            bookingsArray = possibleArrays[0];
-            console.log('📋 Found array in object:', possibleArrays[0]);
+        if (Array.isArray(apiResponse)) {
+            bookingsArray = apiResponse;
+        } else if (apiResponse?.data && Array.isArray(apiResponse.data)) {
+            bookingsArray = apiResponse.data;
+        } else if (apiResponse?.bookings && Array.isArray(apiResponse.bookings)) {
+            bookingsArray = apiResponse.bookings;
+        } else if (apiResponse?.results && Array.isArray(apiResponse.results)) {
+            bookingsArray = apiResponse.results;
+        } else if (apiResponse?.response && Array.isArray(apiResponse.response)) {
+            bookingsArray = apiResponse.response;
+        } else if (typeof apiResponse === 'object' && apiResponse !== null) {
+            const possibleArrays = Object.values(apiResponse).filter(Array.isArray);
+            if (possibleArrays.length > 0) {
+                bookingsArray = possibleArrays[0];
+                console.log('📋 Found array in object:', possibleArrays[0]);
+            } else {
+                console.warn('⚠️ No array found in response object:', apiResponse);
+                return [];
+            }
         } else {
-            console.warn('⚠️ No array found in response object:', apiResponse);
+            console.warn('⚠️ Unknown response structure:', apiResponse);
             return [];
         }
-    } else {
-        console.warn('⚠️ Unknown response structure:', apiResponse);
-        return [];
-    }
 
-    console.log('📋 Hotel bookings array extracted:', bookingsArray);
+        console.log('📋 Hotel bookings array extracted:', bookingsArray);
 
-    const formattedBookings = bookingsArray.map((bookingWrapper, index) => {
-        console.log(`🏨 Processing hotel booking ${index + 1}:`, bookingWrapper);
+        const formattedBookings = bookingsArray.map((bookingWrapper, index) => {
+            console.log(`🏨 Processing hotel booking ${index + 1}:`, bookingWrapper);
 
-        const booking = bookingWrapper.Result || bookingWrapper;
-        console.log(`🏨 Actual hotel booking data for ${index + 1}:`, booking);
+            const booking = bookingWrapper.Result || bookingWrapper;
+            console.log(`🏨 Actual hotel booking data for ${index + 1}:`, booking);
 
-        // ✅ IMPROVED: Booking ID mapping with more fallbacks
-        const bookingId = bookingWrapper.bookingId ||
-            bookingWrapper.BookingId ||
-            bookingWrapper.BookingID ||
-            booking.BookingId ||
-            booking.bookingId ||
-            booking.booking_id ||
-            booking.id ||
-            booking.Id ||
-            booking.referenceId ||
-            booking.confirmationId ||
-            booking.HotelBookingId ||
-            booking.userId || // This is often returned from your booking API
-            `HTL${Date.now()}${index}`;
+            // ✅ IMPROVED: Booking ID mapping with more fallbacks
+            const bookingId = bookingWrapper.bookingId ||
+                bookingWrapper.BookingId ||
+                bookingWrapper.BookingID ||
+                booking.BookingId ||
+                booking.bookingId ||
+                booking.booking_id ||
+                booking.id ||
+                booking.Id ||
+                booking.referenceId ||
+                booking.confirmationId ||
+                booking.HotelBookingId ||
+                booking.userId || // This is often returned from your booking API
+                `HTL${Date.now()}${index}`;
 
-        // ✅ CRITICAL FIX: Enhanced confirmation number mapping
-        const confirmationNo = 
-            // First priority: Direct confirmation fields
-            booking.ConfirmationNo ||
-            booking.confirmationNumber ||
-            booking.confirmation_no ||
-            booking.confirmationNo ||
-            booking.ConfirmationNumber ||
-            
-            // Second priority: Reference/PNR fields
-            booking.referenceNumber ||
-            booking.ReferenceNumber ||
-            booking.reference_number ||
-            booking.PNR ||
-            booking.pnr ||
-            booking.Pnr ||
-            
-            // Third priority: Booking reference fields
-            booking.BookingReference ||
-            booking.bookingReference ||
-            booking.booking_reference ||
-            booking.BookingRef ||
-            booking.bookingRef ||
-            
-            // Fourth priority: Hotel-specific confirmation fields
-            booking.HotelConfirmationNo ||
-            booking.hotelConfirmationNo ||
-            booking.hotel_confirmation_no ||
-            booking.HotelReference ||
-            booking.hotelReference ||
-            
-            // Fifth priority: Use booking ID if no confirmation found
-            bookingWrapper.bookingId ||
-            booking.BookingId ||
-            booking.bookingId ||
-            
-            // Final fallback
-            'PENDING';
+            // ✅ CRITICAL FIX: Enhanced confirmation number mapping
+            const confirmationNo =
+                // First priority: Direct confirmation fields
+                booking.ConfirmationNo ||
+                booking.confirmationNumber ||
+                booking.confirmation_no ||
+                booking.confirmationNo ||
+                booking.ConfirmationNumber ||
 
-        console.log(`🔍 Confirmation number mapping for booking ${index + 1}:`);
-        console.log(`   - ConfirmationNo: ${booking.ConfirmationNo}`);
-        console.log(`   - confirmationNumber: ${booking.confirmationNumber}`);
-        console.log(`   - PNR: ${booking.PNR}`);
-        console.log(`   - BookingReference: ${booking.BookingReference}`);
-        console.log(`   - bookingId: ${bookingWrapper.bookingId || booking.bookingId}`);
-        console.log(`   - Final selected: ${confirmationNo}`);
+                // Second priority: Reference/PNR fields
+                booking.referenceNumber ||
+                booking.ReferenceNumber ||
+                booking.reference_number ||
+                booking.PNR ||
+                booking.pnr ||
+                booking.Pnr ||
 
-        // Other field mappings remain the same...
-        const hotelName = booking.HotelName ||
-            booking.hotelName ||
-            booking.hotel_name ||
-            booking.name ||
-            booking.propertyName ||
-            'N/A';
+                // Third priority: Booking reference fields
+                booking.BookingReference ||
+                booking.bookingReference ||
+                booking.booking_reference ||
+                booking.BookingRef ||
+                booking.bookingRef ||
 
-        const hotelCode = booking.HotelCode ||
-            booking.hotelCode ||
-            booking.hotel_code ||
-            booking.code ||
-            booking.propertyCode ||
-            'N/A';
+                // Fourth priority: Hotel-specific confirmation fields
+                booking.HotelConfirmationNo ||
+                booking.hotelConfirmationNo ||
+                booking.hotel_confirmation_no ||
+                booking.HotelReference ||
+                booking.hotelReference ||
 
-        const city = booking.City ||
-            booking.city ||
-            booking.location ||
-            booking.destination ||
-            booking.CityName ||
-            'N/A';
+                // Fifth priority: Use booking ID if no confirmation found
+                bookingWrapper.bookingId ||
+                booking.BookingId ||
+                booking.bookingId ||
 
-        const checkInDate = booking.CheckIn ||
-            booking.checkInDate ||
-            booking.check_in_date ||
-            booking.arrivalDate ||
-            booking.CheckInDate ||
-            booking.fromDate ||
-            'N/A';
+                // Final fallback
+                'PENDING';
 
-        const checkOutDate = booking.CheckOut ||
-            booking.checkOutDate ||
-            booking.check_out_date ||
-            booking.departureDate ||
-            booking.CheckOutDate ||
-            booking.toDate ||
-            'N/A';
+            console.log(`🔍 Confirmation number mapping for booking ${index + 1}:`);
+            console.log(`   - ConfirmationNo: ${booking.ConfirmationNo}`);
+            console.log(`   - confirmationNumber: ${booking.confirmationNumber}`);
+            console.log(`   - PNR: ${booking.PNR}`);
+            console.log(`   - BookingReference: ${booking.BookingReference}`);
+            console.log(`   - bookingId: ${bookingWrapper.bookingId || booking.bookingId}`);
+            console.log(`   - Final selected: ${confirmationNo}`);
 
-        // Room type and guest count logic remains the same...
-        let roomType = 'N/A';
-        let numberOfRooms = '1';
-        let numberOfGuests = 'N/A';
+            // Other field mappings remain the same...
+            const hotelName = booking.HotelName ||
+                booking.hotelName ||
+                booking.hotel_name ||
+                booking.name ||
+                booking.propertyName ||
+                'N/A';
 
-        if (booking.HotelRoomsDetails && Array.isArray(booking.HotelRoomsDetails) && booking.HotelRoomsDetails.length > 0) {
-            const firstRoom = booking.HotelRoomsDetails[0];
-            
-            roomType = firstRoom.RoomTypeName ||
-                firstRoom.RoomType ||
-                firstRoom.roomTypeName ||
-                firstRoom.roomType ||
-                booking.RoomType ||
-                'Standard Room';
+            const hotelCode = booking.HotelCode ||
+                booking.hotelCode ||
+                booking.hotel_code ||
+                booking.code ||
+                booking.propertyCode ||
+                'N/A';
 
-            numberOfRooms = booking.HotelRoomsDetails.length.toString();
+            const city = booking.City ||
+                booking.city ||
+                booking.location ||
+                booking.destination ||
+                booking.CityName ||
+                'N/A';
 
-            let totalGuests = 0;
-            booking.HotelRoomsDetails.forEach(room => {
-                if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
-                    totalGuests += room.HotelPassenger.length;
-                }
-            });
-            numberOfGuests = totalGuests > 0 ? totalGuests.toString() : 'N/A';
-        }
+            const checkInDate = booking.CheckIn ||
+                booking.checkInDate ||
+                booking.check_in_date ||
+                booking.arrivalDate ||
+                booking.CheckInDate ||
+                booking.fromDate ||
+                'N/A';
 
-        const bookingStatus = booking.Status ||
-            booking.status ||
-            booking.bookingStatus ||
-            booking.BookingStatus ||
-            booking.confirmationStatus ||
-            'Confirmed';
+            const checkOutDate = booking.CheckOut ||
+                booking.checkOutDate ||
+                booking.check_out_date ||
+                booking.departureDate ||
+                booking.CheckOutDate ||
+                booking.toDate ||
+                'N/A';
 
-        const totalAmount = bookingWrapper.RasuTripInvoiceAmount ||
-            booking.InvoiceAmount ||
-            booking.TotalAmount ||
-            booking.totalAmount ||
-            booking.amount ||
-            booking.fare ||
-            booking.price ||
-            '0';
+            // Room type and guest count logic remains the same...
+            let roomType = 'N/A';
+            let numberOfRooms = '1';
+            let numberOfGuests = 'N/A';
 
-        // Lead guest information
-        let leadGuestName = 'N/A';
-        let contactNumber = 'N/A';
-        let email = 'N/A';
+            if (booking.HotelRoomsDetails && Array.isArray(booking.HotelRoomsDetails) && booking.HotelRoomsDetails.length > 0) {
+                const firstRoom = booking.HotelRoomsDetails[0];
 
-        if (booking.HotelRoomsDetails && Array.isArray(booking.HotelRoomsDetails) && booking.HotelRoomsDetails.length > 0) {
-            const firstRoom = booking.HotelRoomsDetails[0];
-            if (firstRoom.HotelPassenger && Array.isArray(firstRoom.HotelPassenger) && firstRoom.HotelPassenger.length > 0) {
-                const leadGuest = firstRoom.HotelPassenger.find(p => p.LeadPassenger === "true") || firstRoom.HotelPassenger[0];
-                leadGuestName = `${leadGuest.Title || ''} ${leadGuest.FirstName || ''} ${leadGuest.LastName || ''}`.trim();
-                contactNumber = leadGuest.Phoneno || leadGuest.phone || 'N/A';
-                email = leadGuest.Email || leadGuest.email || 'N/A';
-            }
-        }
+                roomType = firstRoom.RoomTypeName ||
+                    firstRoom.RoomType ||
+                    firstRoom.roomTypeName ||
+                    firstRoom.roomType ||
+                    booking.RoomType ||
+                    'Standard Room';
 
-        const paymentStatus = booking.PaymentStatus ||
-            booking.paymentStatus ||
-            (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
+                numberOfRooms = booking.HotelRoomsDetails.length.toString();
 
-        const createdAt = bookingWrapper.createdAt ||
-            booking.BookingDate ||
-            booking.bookingDate ||
-            booking.InvoiceCreatedOn ||
-            booking.createdAt ||
-            new Date().toISOString();
-
-        const formatCreatedDate = (dateString) => {
-            try {
-                const date = new Date(dateString);
-                return date.toLocaleDateString('en-IN', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric'
-                }) + ' / ' + date.toLocaleTimeString('en-IN', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
+                let totalGuests = 0;
+                booking.HotelRoomsDetails.forEach(room => {
+                    if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
+                        totalGuests += room.HotelPassenger.length;
+                    }
                 });
-            } catch {
-                return 'N/A';
+                numberOfGuests = totalGuests > 0 ? totalGuests.toString() : 'N/A';
             }
-        };
 
-        const calculateNights = (checkIn, checkOut) => {
-            try {
-                const checkInDate = new Date(checkIn);
-                const checkOutDate = new Date(checkOut);
-                const timeDiff = checkOutDate - checkInDate;
-                const nights = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-                return nights > 0 ? nights : 1;
-            } catch {
-                return 1;
+            const bookingStatus = booking.Status ||
+                booking.status ||
+                booking.bookingStatus ||
+                booking.BookingStatus ||
+                booking.confirmationStatus ||
+                'Confirmed';
+
+            const totalAmount = bookingWrapper.RasuTripInvoiceAmount ||
+                booking.InvoiceAmount ||
+                booking.TotalAmount ||
+                booking.totalAmount ||
+                booking.amount ||
+                booking.fare ||
+                booking.price ||
+                '0';
+
+            // Lead guest information
+            let leadGuestName = 'N/A';
+            let contactNumber = 'N/A';
+            let email = 'N/A';
+
+            if (booking.HotelRoomsDetails && Array.isArray(booking.HotelRoomsDetails) && booking.HotelRoomsDetails.length > 0) {
+                const firstRoom = booking.HotelRoomsDetails[0];
+                if (firstRoom.HotelPassenger && Array.isArray(firstRoom.HotelPassenger) && firstRoom.HotelPassenger.length > 0) {
+                    const leadGuest = firstRoom.HotelPassenger.find(p => p.LeadPassenger === "true") || firstRoom.HotelPassenger[0];
+                    leadGuestName = `${leadGuest.Title || ''} ${leadGuest.FirstName || ''} ${leadGuest.LastName || ''}`.trim();
+                    contactNumber = leadGuest.Phoneno || leadGuest.phone || 'N/A';
+                    email = leadGuest.Email || leadGuest.email || 'N/A';
+                }
             }
-        };
 
-        const nights = calculateNights(checkInDate, checkOutDate);
+            const paymentStatus = booking.PaymentStatus ||
+                booking.paymentStatus ||
+                (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
 
-        const formattedBooking = {
-            bookingId: String(bookingId),
-            hotelName: String(hotelName),
-            hotelCode: String(hotelCode),
-            city: String(city),
-            checkInDate: String(checkInDate),
-            checkOutDate: String(checkOutDate),
-            roomType: String(roomType),
-            numberOfRooms: String(numberOfRooms),
-            numberOfGuests: String(numberOfGuests),
-            nights: nights,
-            // ✅ FIXED: Confirmation number with proper fallbacks
-            confirmationNo: String(confirmationNo),
-            bookingStatus: String(bookingStatus),
-            totalAmount: String(totalAmount),
-            leadGuestName: String(leadGuestName),
-            contactNumber: String(contactNumber),
-            email: String(email),
-            paymentStatus: String(paymentStatus),
-            createdAt: formatCreatedDate(createdAt),
-            rawCreatedDate: new Date(createdAt),
-            // Agent/customer fields
-            bookedByRole: booking.bookedByRole || 'customer',
-            isAgentBooking: booking.isAgentBooking || false,
-            bookingSource: booking.bookingSource || 'CUSTOMER_PORTAL',
-            rawData: bookingWrapper
-        };
+            const createdAt = bookingWrapper.createdAt ||
+                booking.BookingDate ||
+                booking.bookingDate ||
+                booking.InvoiceCreatedOn ||
+                booking.createdAt ||
+                new Date().toISOString();
 
-        console.log(`✅ Formatted hotel booking ${index + 1} with confirmation: ${confirmationNo}`, formattedBooking);
-        return formattedBooking;
-    });
+            const formatCreatedDate = (dateString) => {
+                try {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                    }) + ' / ' + date.toLocaleTimeString('en-IN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                } catch {
+                    return 'N/A';
+                }
+            };
 
-    return formattedBookings;
-};
+            const calculateNights = (checkIn, checkOut) => {
+                try {
+                    const checkInDate = new Date(checkIn);
+                    const checkOutDate = new Date(checkOut);
+                    const timeDiff = checkOutDate - checkInDate;
+                    const nights = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                    return nights > 0 ? nights : 1;
+                } catch {
+                    return 1;
+                }
+            };
+
+            const nights = calculateNights(checkInDate, checkOutDate);
+
+            const formattedBooking = {
+                bookingId: String(bookingId),
+                hotelName: String(hotelName),
+                hotelCode: String(hotelCode),
+                city: String(city),
+                checkInDate: String(checkInDate),
+                checkOutDate: String(checkOutDate),
+                roomType: String(roomType),
+                numberOfRooms: String(numberOfRooms),
+                numberOfGuests: String(numberOfGuests),
+                nights: nights,
+                // ✅ FIXED: Confirmation number with proper fallbacks
+                confirmationNo: String(confirmationNo),
+                bookingStatus: String(bookingStatus),
+                totalAmount: String(totalAmount),
+                leadGuestName: String(leadGuestName),
+                contactNumber: String(contactNumber),
+                email: String(email),
+                paymentStatus: String(paymentStatus),
+                createdAt: formatCreatedDate(createdAt),
+                rawCreatedDate: new Date(createdAt),
+                // Agent/customer fields
+                bookedByRole: booking.bookedByRole || 'customer',
+                isAgentBooking: booking.isAgentBooking || false,
+                bookingSource: booking.bookingSource || 'CUSTOMER_PORTAL',
+                rawData: bookingWrapper
+            };
+
+            console.log(`✅ Formatted hotel booking ${index + 1} with confirmation: ${confirmationNo}`, formattedBooking);
+            return formattedBooking;
+        });
+
+        return formattedBookings;
+    };
 
     // Sort bookings by date function
     const sortBookingsByDate = (bookings, order = 'desc') => {

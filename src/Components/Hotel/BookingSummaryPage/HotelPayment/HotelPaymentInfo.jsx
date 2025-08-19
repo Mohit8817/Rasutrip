@@ -3,7 +3,7 @@ import { Card, Button, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { createHotelOrder, validateHotelPayment, bookHotel, downloadHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
+import { createHotelOrder, validateHotelPayment, bookHotel, sendHotelInvoiceEmail } from '../../../APIS/HotelApi/HotelAPi';
 
 const HotelPaymentInfo = () => {
   const [loading, setLoading] = useState(false);
@@ -40,48 +40,37 @@ const HotelPaymentInfo = () => {
       document.body.appendChild(script);
     });
 
-
-  // Async invoice email sender (non-blocking) - FIXED VERSION
-  const sendInvoiceEmailAsync = async (invoiceData) => {
+  // ✅ FIXED: Use the actual API function for sending invoice email
+  const sendInvoiceEmail = async (bookingResponse, formattedBookingData) => {
     try {
-      console.log('📧 Attempting to auto-send invoice email...');
+      console.log('📧 Sending invoice email...');
 
-      // Add delay to ensure booking is processed on server
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get lead passenger email for invoice
+      const leadPassengerEmail = getLeadPassengerEmail(formattedBookingData);
 
-      const result = await downloadHotelInvoice({
-        ...invoiceData,
-        emailOnly: false // Try normal download first, which may trigger email
-      });
+      const invoicePayload = {
+        UserIp: bookingResponse.UserIp || "49.36.217.215",
+        BookingId: bookingResponse.BookingID || bookingResponse.userId,
+        SearchTokenId: bookingResponse.SearchTokenId,
+        receiverEmail: leadPassengerEmail // Add recipient email
+      };
 
-      if (result.success) {
-        console.log('✅ Invoice processed successfully');
-        return result;
-      }
+      console.log('📤 Invoice payload:', invoicePayload);
 
-      throw new Error('Invoice processing failed');
+      // ✅ Use the actual API function instead of direct axios call
+      const response = await sendHotelInvoiceEmail(invoicePayload);
+
+      console.log('✅ Invoice email sent successfully:', response);
+      return { success: true, data: response };
+
     } catch (error) {
-      console.error('❌ Auto-invoice failed:', error.message);
-
-      // If it's a 404 error, the booking might be too recent
-      if (error.message.includes('404') || error.message.includes('not found')) {
-        console.log('⚠️ Invoice not ready yet, will be available shortly');
-        return {
-          success: false,
-          message: 'Invoice will be available shortly via email',
-          retryLater: true
-        };
-      }
-
-      throw error;
+      console.error('❌ Invoice email failed:', error.message);
+      // Don't throw error - this is non-critical
+      return { success: false, error: error.message };
     }
   };
 
-
-
-
-
-  // Utility functions for invoice data
+  // Utility functions for lead passenger
   const getLeadPassenger = (formattedBookingData) => {
     return formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.find(p => p.LeadPassenger === "true") ||
       formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0] ||
@@ -103,7 +92,6 @@ const HotelPaymentInfo = () => {
     if (bookingDetails?.HotelRoomsDetails && Array.isArray(bookingDetails.HotelRoomsDetails)) {
       hotelRoomsData = bookingDetails.HotelRoomsDetails;
     } else if (bookingDetails?.roomTravellerInfo && Array.isArray(bookingDetails.roomTravellerInfo)) {
-      // Convert roomTravellerInfo to HotelRoomsDetails format
       hotelRoomsData = bookingDetails.roomTravellerInfo.map((room, index) => ({
         RoomIndex: index + 1,
         HotelPassenger: room.travellerInfo || []
@@ -290,15 +278,14 @@ const HotelPaymentInfo = () => {
 
     return finalPayload;
   };
+
   // API error handler
   const handleApiError = (error, context = 'API') => {
     let errorMessage = `${context} failed. Please try again.`;
-    let errorDetails = null;
 
     if (error?.response) {
       const status = error.response.status;
       const data = error.response.data;
-      errorDetails = { status, data, headers: error.response.headers };
 
       if (data?.error?.ErrorCode === 1163 || data?.Error?.ErrorCode === 1163) {
         errorMessage = `❌ PAN MANDATORY ERROR (Code: 1163): ${data?.error?.ErrorMessage || data?.Error?.ErrorMessage || 'Mandatory PAN information not available.'}
@@ -313,7 +300,7 @@ Please ensure:
 ✅ Only ONE passenger is marked as lead passenger
 ✅ All adult passengers have unique, valid PAN numbers
 ✅ PAN format: 5 letters + 4 digits + 1 letter`;
-        return { message: errorMessage, details: errorDetails, isPANError: true };
+        return { message: errorMessage, isPANError: true };
       }
 
       switch (status) {
@@ -332,12 +319,10 @@ Please ensure:
       }
     } else if (error?.request) {
       errorMessage = 'Network error. Please check your internet connection and try again.';
-      errorDetails = { request: 'No response received' };
     } else {
       errorMessage = error?.message || `${context} failed due to an unexpected error.`;
-      errorDetails = { message: error?.message };
     }
-    return { message: errorMessage, details: errorDetails };
+    return { message: errorMessage };
   };
 
   // Toast helpers
@@ -365,19 +350,12 @@ Please ensure:
     });
   };
 
-  // Payment success handler with invoice integration
-  // ================================================
-  // 🏨 FIXED PAYMENT SUCCESS HANDLER WITH INVOICE LOGIC
-  // ================================================
-
-
-  // Payment success handler with FIXED invoice integration
+  // ✅ FIXED: Payment success handler with proper invoice email integration
   const handlePaymentSuccess = async (response, formattedBookingData, validation) => {
     try {
       console.log('🚀 Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
 
       const bookingResponse = await bookHotel(formattedBookingData);
-
       console.log('📨 Booking API response:', JSON.stringify(bookingResponse, null, 2));
 
       // Check for PAN mandatory errors first
@@ -419,17 +397,24 @@ Please check your booking data and contact support if the issue persists.`;
       if (isBookingSuccessful && hasRequiredBookingData) {
         showSuccessToast('🎉 Hotel booking confirmed successfully!');
 
-        // Prepare invoice data
-        const invoiceData = {
-          UserIp: bookingResponse.UserIp || "122.161.64.143",
-          SearchTokenId: bookingResponse.SearchTokenId,
-          BookingId: String(bookingResponse.BookingID || bookingResponse.userId),
-          receiverEmail: getLeadPassengerEmail(formattedBookingData)
-        };
+        // ✅ SEND INVOICE EMAIL WITH PROPER ERROR HANDLING
+        try {
+          console.log('📧 Attempting to send invoice email...');
+          const invoiceResult = await sendInvoiceEmail(bookingResponse, formattedBookingData);
 
-        console.log('📧 Prepared invoice data:', invoiceData);
+          if (invoiceResult.success) {
+            showSuccessToast('📧 Invoice has been sent to your email!');
+            console.log('✅ Invoice email sent successfully');
+          } else {
+            console.warn('⚠️ Invoice email failed but booking succeeded:', invoiceResult.error);
+            showErrorToast('⚠️ Invoice Email Warning', 'Booking confirmed but invoice email failed. You can download invoice from booking details.');
+          }
+        } catch (invoiceError) {
+          console.error('⚠️ Invoice email error (non-critical):', invoiceError.message);
+          showErrorToast('⚠️ Invoice Email Warning', 'Booking confirmed but invoice email failed. You can download invoice from booking details.');
+        }
 
-        // Navigate to confirmation FIRST
+        // Navigate to confirmation page
         navigate('/hotel/confirmation', {
           state: {
             booking: bookingResponse,
@@ -451,7 +436,6 @@ Please check your booking data and contact support if the issue persists.`;
               message: bookingResponse.message,
               bookingTime: new Date().toISOString(),
             },
-            invoiceData: invoiceData,
             isBooked: true,
             bookingDetails: {
               contactData: getLeadPassenger(formattedBookingData),
@@ -460,39 +444,6 @@ Please check your booking data and contact support if the issue persists.`;
             bookingResult: bookingResponse
           },
         });
-
-        // Try to send invoice email after navigation (non-blocking)
-        setTimeout(async () => {
-          try {
-            console.log('📧 Starting delayed invoice email attempt...');
-            const emailResult = await sendInvoiceEmailAsync(invoiceData);
-
-            if (emailResult.success) {
-              console.log('✅ Invoice email sent successfully');
-              // Optional: Show a toast notification if still on the page
-              toast.success('📧 Invoice has been sent to your email!', {
-                position: "top-right",
-                autoClose: 5000
-              });
-            } else if (emailResult.retryLater) {
-              console.log('⚠️ Invoice will be available later via email');
-            }
-          } catch (emailError) {
-            console.log('⚠️ Email invoice attempt failed (non-critical):', emailError.message);
-            // Don't show error toast for this as it's non-critical
-
-            // Schedule a retry after 30 seconds
-            setTimeout(async () => {
-              try {
-                console.log('🔄 Retrying invoice email after delay...');
-                await sendInvoiceEmailAsync(invoiceData);
-                console.log('✅ Invoice email sent on retry');
-              } catch (retryError) {
-                console.log('❌ Invoice email retry also failed:', retryError.message);
-              }
-            }, 30000); // Retry after 30 seconds
-          }
-        }, 3000); // Initial delay of 3 seconds
 
       } else {
         let errMsg = 'Booking failed. Please contact support with your payment details.';
@@ -506,12 +457,6 @@ Please check your booking data and contact support if the issue persists.`;
 
         setError(`Booking Failed: ${errMsg}`);
         showErrorToast('❌ Booking Failed', errMsg);
-        console.error('Booking failure details:', {
-          isBookingSuccessful,
-          hasRequiredBookingData,
-          responseMessage: bookingResponse?.message,
-          fullResponse: bookingResponse,
-        });
       }
     } catch (bookingError) {
       console.error('❌ Booking API Error:', bookingError);
@@ -525,6 +470,7 @@ Please check your booking data and contact support if the issue persists.`;
       }
     }
   };
+
   // Main payment handler
   const handlePayment = async () => {
     setLoading(true);
@@ -806,8 +752,6 @@ Please check your booking data and contact support if the issue persists.`;
                 </Row>
               </div>
 
-
-
               {/* Lead guest info */}
               {leadPassenger && (
                 <div className="mb-4 p-3 border rounded">
@@ -845,19 +789,31 @@ Please check your booking data and contact support if the issue persists.`;
                 <div className="mb-4 p-3 border rounded">
                   <h6 className="fw-bold mb-2">Adult Passenger PAN Information</h6>
                   {adultPassengers.map((adult, idx) => (
-                    <div key={idx} className="">
-                      <span>{adult.name} (Room {adult.room})</span>
-
+                    <div key={idx} className="mb-2">
+                      <span className={adult.isValid ? 'text-success' : 'text-danger'}>
+                        {adult.isValid ? '✅' : '❌'} {adult.name} (Room {adult.room})
+                        {adult.isValid ? ' - Valid PAN' : ' - Invalid/Missing PAN'}
+                      </span>
                     </div>
                   ))}
-
+                  {hasDuplicates && (
+                    <div className="alert alert-warning mt-2">
+                      <strong>⚠️ Duplicate PAN Numbers Found:</strong> {duplicatePANs.join(', ')}
+                      <br />Each passenger must have a unique PAN number.
+                    </div>
+                  )}
+                  {validPANCount !== adultPassengers.length && !hasDuplicates && (
+                    <div className="alert alert-danger mt-2">
+                      <strong>❌ PAN Issues Found:</strong> {adultPassengers.length - validPANCount} adult passenger(s) have invalid/missing PAN numbers.
+                      <br />All adult passengers must have valid PAN numbers in format: ABCDE1234F
+                    </div>
+                  )}
                 </div>
               )}
             </Card.Body>
 
             <Card.Footer className="bg-white">
               <div className="text-end">
-
                 <Button
                   variant={hasDuplicates || validPANCount !== adultPassengers.length ? "warning" : "danger"}
                   size="lg"
@@ -897,4 +853,4 @@ Please check your booking data and contact support if the issue persists.`;
   );
 };
 
-export default HotelPaymentInfo;
+export default HotelPaymentInfo;  
