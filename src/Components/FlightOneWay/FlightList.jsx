@@ -10,7 +10,6 @@ import FlightLoader from '../FlightLoader/FlightLoader';
 const FlightList = ({ filters }) => {
   const dispatch = useDispatch();
   const { locationData } = useContext(LocationContext);
-  console.log('locationDatakk',locationData)
   const flightsData = useSelector((state) => state?.flight?.flights || []);
   const {
     fromCode = 'DEL',
@@ -140,7 +139,6 @@ const FlightList = ({ filters }) => {
   }
 
   const UserIp = async () => {
-    alert('dddd')
     const UserIpAdd = await getUserIP()
     return UserIpAdd
 
@@ -187,7 +185,6 @@ const FlightList = ({ filters }) => {
         };
         
         const response = await fetchFlightData(requestPayload);
-        console.log('response',response)
         const result = response?.Result?.[0] || [];
         localStorage.setItem("searchToken", response?.SearchTokenId);
         localStorage.setItem("rasocommision", response?.rasutripCommissionPercentage);

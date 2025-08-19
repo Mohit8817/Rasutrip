@@ -20,6 +20,10 @@ const LocationInput = () => {
   const fromRef = useRef(null);
   const toRef = useRef(null);
 
+
+
+
+
   // ✅ Force default for flight page
   useEffect(() => {
     setLocationData((prev) => ({
@@ -33,8 +37,10 @@ const LocationInput = () => {
 
   const fetchAirports = async (query) => {
     try {
+
       setLoading(true);
       const response = await fetchLocationData(query);
+
       setCityList(response?.results || []);
     } catch (error) {
       console.error('Error fetching airport data:', error);
@@ -110,15 +116,15 @@ const LocationInput = () => {
       ...prev,
       ...(type === 'from'
         ? {
-            fromCity: formattedValue,
-            fromAirport: cityObj.name,
-            fromCode: cityObj.code,
-          }
+          fromCity: formattedValue,
+          fromAirport: cityObj.name,
+          fromCode: cityObj.code,
+        }
         : {
-            toCity: formattedValue,
-            toAirport: cityObj.name,
-            toCode: cityObj.code,
-          }),
+          toCity: formattedValue,
+          toAirport: cityObj.name,
+          toCode: cityObj.code,
+        }),
     }));
 
     if (type === 'from') {

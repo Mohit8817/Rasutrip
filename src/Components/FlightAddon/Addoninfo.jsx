@@ -36,7 +36,7 @@ const Addoninfo = () => {
       ? Object.values(rawSeatData).flat()
       : [];
 
-  const { Origin, Destination } = mealOptions;
+  const { Origin, Destination } = mealOptions || [];
   // Initialize state with passenger data or empty selections
   const [passengerSelections, setPassengerSelections] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

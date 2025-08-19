@@ -26,7 +26,6 @@ export const fetchLocationData = async (query) => {
 // flightApis.js
 export const fetchFlightData = async (payload) => {
   const response = await axios.post(Services.fetchFlights, payload, { headers });
-  console.log('response', response)
   return response.data; // ✅ return full data
 };
 
