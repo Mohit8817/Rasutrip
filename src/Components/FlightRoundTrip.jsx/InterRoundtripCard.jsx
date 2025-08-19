@@ -4,7 +4,7 @@ import { FaPlaneDeparture, FaTimes } from 'react-icons/fa';
 import { Button, Col, Row, Tab, Nav } from 'react-bootstrap';
 import FarePopup from '../FlightOneWay/Farepopup';
 
-const InterRoundtripCard = ({ flight, onBook }) => {
+const InterRoundtripCard = ({ flight, onBook,selectedFare }) => {
   const [showFarePopup, setShowFarePopup] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [activeTab, setActiveTab] = useState('flight');

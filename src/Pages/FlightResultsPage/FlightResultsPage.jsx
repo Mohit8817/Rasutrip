@@ -11,6 +11,8 @@ import { useDispatch } from 'react-redux';
 import { clearSelectedFlights } from '../../redux/Slices/SelectedFlight';
 import FlightLoader from '../../Components/FlightLoader/FlightLoader';
 import Slider from '../../Components/hero/Slider';
+
+import MultiCityList from '../../Components/FlightBooking/MultiCity/MultiCityList';
 import { useSelector } from 'react-redux';
 
 
@@ -68,7 +70,7 @@ const FlightResultsPage = () => {
                             <FlightSidebar filters={filters} setFilters={setFilters} />
                         </Col>
                         <Col lg={9}>
-                            <FlightList filters={filters} />
+                            <MultiCityList filters={filters} />
                         </Col>
                     </Row>
                 </Container>

@@ -8,14 +8,17 @@ const cityList = [
     { city: 'Delhi', airport: 'Delhi Indira Gandhi Intl', code: 'DEL', flag: '🇮🇳' },
     { city: 'Mumbai', airport: 'Chhatrapati Shivaji', code: 'BOM', flag: '🇮🇳' },
     { city: 'Kolkata', airport: 'Netaji Subhas Chandra Bose Intl', code: 'CCU', flag: '🇮🇳' },
+    { city: 'Dubai', airport: 'Dabolim Arpt', code: 'DXB', flag: '🇮🇳' },
+
     { city: 'Bengaluru', airport: 'Bengaluru Intl Arpt', code: 'BLR', flag: '🇮🇳' },
     { city: 'Chennai', airport: 'Chennai Arpt', code: 'MAA', flag: '🇮🇳' },
     { city: 'Goa In', airport: 'Dabolim Arpt', code: 'GOI', flag: '🇮🇳' },
+
 ];
 
 const MultiCityForm = ({ fromCityProp }) => {
 
-   const [fromCity, setFromCity] = useState(fromCityProp || 'Mumbai');
+    const [fromCity, setFromCity] = useState(fromCityProp || 'Mumbai');
     const [toCity, setToCity] = useState(''); // initially empty
     const [fromAirport, setFromAirport] = useState('Chhatrapati Shivaji');
     const [toAirport, setToAirport] = useState('');
@@ -27,7 +30,6 @@ const MultiCityForm = ({ fromCityProp }) => {
     const toRef = useRef(null);
 
     const handleCitySelect = (cityObj, type) => {
-        console.log('cityObj',cityObj)
         if (type === 'from') {
             setFromCity(cityObj.city);
             setFromAirport(cityObj.airport);
@@ -36,10 +38,7 @@ const MultiCityForm = ({ fromCityProp }) => {
             setToCity(cityObj.city);
             setToAirport(cityObj.airport);
             setShowToDropdown(false);
-
         }
-
-        console.log('fromCity',fromCity)
     };
 
     const handleFromInputClick = () => {
@@ -75,12 +74,9 @@ const MultiCityForm = ({ fromCityProp }) => {
     }, []);
 
 
-      useEffect(() => {
-        // Jab bhi parent se fromCityProp update ho, use fromCity me set karo
+    useEffect(() => {
         if (fromCityProp) {
             setFromCity(fromCityProp);
-
-            // Optionally, set airport name bhi update kar sakte ho
             const selectedCityObj = cityList.find(cityObj => cityObj.city === fromCityProp);
             if (selectedCityObj) {
                 setFromAirport(selectedCityObj.airport);
@@ -94,7 +90,7 @@ const MultiCityForm = ({ fromCityProp }) => {
                 <Row className="g-0 align-items-center">
                     {/* FROM */}
                     <Col xs={6} className="location-box position-relative" ref={fromRef}>
-                        <span className="location-label">From Airport</span>
+                        <span className="location-label">From Airport </span>
                         <input
                             type="text"
                             className="location-city form-control border-0 p-0"

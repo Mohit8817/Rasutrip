@@ -5,18 +5,23 @@ import '../../Style/Pagescss/FlightResultsPage.css';
 import { parse } from 'postcss';
 
 const getSidebarFilters = (allFlights) => {
-    console.log('allFlightsfilter',allFlights)
     const prices = [];
     const airlineSet = new Set();
     let maxStops = 0;
-    console.log('krishna',allFlights?.length)
+   const  journeyType =localStorage.getItem('tripType')
     if(allFlights){
-         allFlights=allFlights?.length >1 ?allFlights:allFlights[0]
+
+        if(journeyType=='oneway' || journeyType=='multicity'){
+            allFlights=allFlights
+
+        }
+        else{
+            allFlights=allFlights[0]
+
+        }
+        
     }
     
-    console.log('allFlightsfilter',allFlights)
-   
-
     allFlights?.forEach((flight) => {
         // Price
         prices.push(flight.MinPublishedPrice);
@@ -49,6 +54,7 @@ const FlightSidebar = ({ filters=[], setFilters=[]}) => {
 
     const res = localStorage.getItem('SearchedFlights')
     const allFlight = JSON.parse(res)
+
     const filters1 = getSidebarFilters(allFlight);
     const [price, setPrice] = useState(filters1?.minPrice || 1000);
     useEffect(() => {
@@ -134,8 +140,8 @@ const FlightSidebar = ({ filters=[], setFilters=[]}) => {
 
     return (
         <Card className="p-3 filter-sidebar" style={{
-            "position": "sticky",
-            "top": "104px",
+            // "position": "sticky",
+            // "top": "104px",
             // "overflow-y": "hidden"
         }}>
             <div className="d-flex justify-content-between align-items-center mb-3">

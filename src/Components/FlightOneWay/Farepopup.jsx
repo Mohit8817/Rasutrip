@@ -4,26 +4,18 @@ import { Modal, Row, Col, Card, Button, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
 const FarePopup = ({ show, onClose, fares = [], searchToken }) => {
-  console.log('show', show, 'fare', fares);
   const navigate = useNavigate();
-
+  const journeyType = localStorage.getItem('tripType')
   const handleBook = (selectedFare, fareData) => {
-    console.log('Selected Fare:', selectedFare);
-    console.log('Fare Data:', fareData);
-    
-    // Store in localStorage
     localStorage.setItem('selectedFlight', JSON.stringify(fareData));
     localStorage.setItem('fareSummery', JSON.stringify(selectedFare));
-
+    localStorage.setItem('selectedOnwardFlight', JSON.stringify(fareData));
     onClose(); // Close the modal
     navigate('/flight-details', {
-      state: { SelectedFare: selectedFare, FareData: fareData }
+      state: { SelectedFare: selectedFare, FareData: fareData, journeyType }
     });
   };
-
-  // Handle the case where fares might be the full flight object or just FareList
   const fareList = fares?.FareList || (Array.isArray(fares) ? fares : []);
-  
   if (!fareList || fareList.length === 0) {
     return (
       <Modal show={show} onHide={onClose} size="lg" centered dialogClassName="custom-modal-width">
@@ -61,20 +53,20 @@ const FarePopup = ({ show, onClose, fares = [], searchToken }) => {
                       <Badge bg="secondary" text="white">Non-Refundable</Badge>
                     )}
                   </div>
-                  
+
                   <h6 className="fw-bold m-0">{fare?.CabinClass || 'Economy'}</h6>
                   <p className="text-muted small m-0">{fare?.FareType || 'Publish'}</p>
-                  
+
                   {/* Fare Breakdown */}
                   <div className="mt-2 mb-3">
                     <small className="text-muted">
-                      Base: ₹{fare?.Fare?.BaseFare || 0} + 
+                      Base: ₹{fare?.Fare?.BaseFare || 0} +
                       Tax: ₹{fare?.Fare?.Tax || 0}
                     </small>
                   </div>
 
                   <hr />
-                  
+
                   {/* Baggage Information */}
                   <h6>Baggage</h6>
                   <p className="mb-1 text-success">

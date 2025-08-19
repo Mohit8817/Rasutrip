@@ -33,26 +33,38 @@ const SearchButton = ({ type }) => {
       totalPrice,
     } = locationData;
 
-    console.log('locationData',locationData)
+    console.log('locationDatakkkkk',locationData)
 
     switch (type) {
       case 'flight':
-        navigate('/flight-results', {
-          state: {
-            fromCity,
-            toCity,
-            fromAirport,
-            toAirport,
-            fromCode,
-            toCode,
-            departDate: departDate || { PreferredTime: new Date().toISOString() },
-            returnDate: returnDate || null,
-            passengers,
-            cabinClass,
-            tripType: tripType || 'oneway'
-          }
-        });
+        if (locationData.tripType === 'multicity' && locationData.AirSegments) {
+          navigate('/flight-results', {
+            state: {
+              AirSegments: locationData.AirSegments,
+              passengers: locationData.passengers,
+              cabinClass: locationData.cabinClass,
+              tripType: 'multicity'
+            }
+          });
+        } else {
+          navigate('/flight-results', {
+            state: {
+              fromCity,
+              toCity,
+              fromAirport,
+              toAirport,
+              fromCode,
+              toCode,
+              departDate: departDate || { PreferredTime: new Date().toISOString() },
+              returnDate: returnDate || null,
+              passengers,
+              cabinClass,
+              tripType: tripType || 'oneway'
+            }
+          });
+        }
         break;
+       
 
       case 'bus':
         navigate('/bus-results', {

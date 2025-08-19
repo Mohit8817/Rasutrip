@@ -79,8 +79,6 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
 
     try {
       const res = await fetchFareRules(farePayload);
-      console.log("Fare Rule API Response:", res.Result);
-
       if (res?.Error?.ErrorCode === 0 && Array.isArray(res?.Result)) {
         setFareRules(res.Result);
       } else {
@@ -96,11 +94,6 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
     }
   };
   const handleFareSelect = (selectedFareItem) => {
-    console.log("💳 Fare selected in RoundTripCard:", selectedFareItem);
-    console.log("🛫 Flight data:", flight);
-    console.log("📋 Type:", type);
-
-    // Parent function को call करें
     onSelect(flight, selectedFareItem);
   };
 
@@ -131,7 +124,7 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
               </Col>
 
               <Col md={3} className="text-center">
-                <div className="text-muted text-12">{}</div>
+                <div className="text-muted text-12">{ }</div>
                 <div className="my-1 text-12">
                   <span className="dot"></span>
                   <span className="line"></span>
@@ -166,9 +159,9 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
                     name={`${type}-flight-${flight?.ResultIndex}`}
                     className="me-2"
                     onClick={(e) => {
-                   
-                    handleFareSelect(fare);
-                  }}// ✅ यह भी सही है
+
+                      handleFareSelect(fare);
+                    }}// ✅ यह भी सही है
                     checked={selectedFare?.FareID === fare?.FareID}
                   />
                   <div className="me-auto">

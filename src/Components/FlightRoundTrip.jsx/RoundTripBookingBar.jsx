@@ -12,20 +12,12 @@ const RoundTripBookingBar = () => {
     selectedOnwardFare,
     selectedReturnFare
   } = useSelector((state) => state.selectedFlights);
-
-  console.log('selectedOnwardFarek',selectedOnwardFare)
-  console.log('selectedOnwardFarered',selectedReturnFare)
-
   // Don't render if any required data is missing
   if (!selectedOnward || !selectedReturn || !selectedOnwardFare || !selectedReturnFare) {
     return null;
   }
-
-  // Extract segment data
   const onwardSeg = selectedOnward?.Segments?.[0]?.[0] || {};
   const returnSeg = selectedReturn?.Segments?.[0]?.[0] || {};
-
-  // Calculate fares
   const onwardFare = selectedOnwardFare?.PublishedPrice || 0;
   const returnFare = selectedReturnFare?.PublishedPrice || 0;
   const totalFare = onwardFare + returnFare;
@@ -89,8 +81,8 @@ const RoundTripBookingBar = () => {
       {/* Total Fare and Book Button */}
       <div className="text-center">
         <p className="mb-1 fw-bold fs-5">₹ {totalFare.toLocaleString()}</p>
-        <button 
-          onClick={handleBook} 
+        <button
+          onClick={handleBook}
           className="btn btn-light fw-semibold px-4 py-2 rounded-pill"
           disabled={!selectedOnward || !selectedReturn}
         >
