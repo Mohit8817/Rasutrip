@@ -33,7 +33,7 @@ const TOKEN_KEYS = {
 export const saveToken = (token, userType = 'customer', userData = null) => {
   try {
     console.log('🔐 Saving token for user type:', userType);
-    
+
     if (!token) {
       console.error('❌ No token provided to save');
       return false;
@@ -45,15 +45,15 @@ export const saveToken = (token, userType = 'customer', userData = null) => {
     }
 
     const keys = TOKEN_KEYS[userType];
-    
+
     // Save the token using multiple keys for reliability
     localStorage.setItem(keys.primary, token);
     localStorage.setItem(keys.secondary, token);
-    
+
     // Save user type
     localStorage.setItem(keys.userType, userType);
     localStorage.setItem('user_type', userType); // Additional backup
-    
+
     // Save user data if provided
     if (userData) {
       localStorage.setItem(keys.userData, JSON.stringify(userData));
@@ -67,7 +67,7 @@ export const saveToken = (token, userType = 'customer', userData = null) => {
     // Clear tokens from other user type to avoid conflicts
     const otherUserType = userType === 'customer' ? 'agent' : 'customer';
     const otherKeys = TOKEN_KEYS[otherUserType];
-    
+
     localStorage.removeItem(otherKeys.primary);
     localStorage.removeItem(otherKeys.secondary);
     localStorage.removeItem(otherKeys.backup);
@@ -75,7 +75,7 @@ export const saveToken = (token, userType = 'customer', userData = null) => {
 
     console.log(`✅ ${userType} token saved successfully`);
     console.log(`🔐 Token preview: ${token.substring(0, 20)}...`);
-    
+
     return true;
 
   } catch (error) {
@@ -100,10 +100,10 @@ export const getToken = (preferredUserType = null) => {
     // Check preferred user type first
     if (preferredUserType && TOKEN_KEYS[preferredUserType]) {
       const keys = TOKEN_KEYS[preferredUserType];
-      token = localStorage.getItem(keys.primary) || 
-              localStorage.getItem(keys.secondary) || 
-              localStorage.getItem(keys.backup);
-      
+      token = localStorage.getItem(keys.primary) ||
+        localStorage.getItem(keys.secondary) ||
+        localStorage.getItem(keys.backup);
+
       if (token) {
         detectedUserType = preferredUserType;
         try {
@@ -119,10 +119,10 @@ export const getToken = (preferredUserType = null) => {
       const storedUserType = localStorage.getItem('userType') || localStorage.getItem('user_type');
       if (storedUserType && TOKEN_KEYS[storedUserType]) {
         const keys = TOKEN_KEYS[storedUserType];
-        token = localStorage.getItem(keys.primary) || 
-                localStorage.getItem(keys.secondary) || 
-                localStorage.getItem(keys.backup);
-        
+        token = localStorage.getItem(keys.primary) ||
+          localStorage.getItem(keys.secondary) ||
+          localStorage.getItem(keys.backup);
+
         if (token) {
           detectedUserType = storedUserType;
           try {
@@ -138,10 +138,10 @@ export const getToken = (preferredUserType = null) => {
     if (!token) {
       // Check agent first (higher priority)
       const agentKeys = TOKEN_KEYS.agent;
-      token = localStorage.getItem(agentKeys.primary) || 
-              localStorage.getItem(agentKeys.secondary) || 
-              localStorage.getItem(agentKeys.backup);
-      
+      token = localStorage.getItem(agentKeys.primary) ||
+        localStorage.getItem(agentKeys.secondary) ||
+        localStorage.getItem(agentKeys.backup);
+
       if (token) {
         detectedUserType = 'agent';
         try {
@@ -152,10 +152,10 @@ export const getToken = (preferredUserType = null) => {
       } else {
         // Check customer tokens
         const customerKeys = TOKEN_KEYS.customer;
-        token = localStorage.getItem(customerKeys.primary) || 
-                localStorage.getItem(customerKeys.secondary) || 
-                localStorage.getItem(customerKeys.backup);
-        
+        token = localStorage.getItem(customerKeys.primary) ||
+          localStorage.getItem(customerKeys.secondary) ||
+          localStorage.getItem(customerKeys.backup);
+
         if (token) {
           detectedUserType = 'customer';
           try {
@@ -210,7 +210,7 @@ export const getToken = (preferredUserType = null) => {
  */
 export const isAuthenticated = (requiredUserType = null) => {
   const { token, userType } = getToken(requiredUserType);
-  
+
   if (!token) {
     console.log('❌ No token found - not authenticated');
     return false;
@@ -225,7 +225,7 @@ export const isAuthenticated = (requiredUserType = null) => {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const currentTime = Math.floor(Date.now() / 1000);
-    
+
     if (payload.exp && payload.exp < currentTime) {
       console.log('❌ Token expired');
       removeToken(userType);
@@ -268,7 +268,7 @@ export const removeToken = (userType = null) => {
     localStorage.removeItem('userType');
     localStorage.removeItem('user_type');
     localStorage.removeItem('currentUser');
-    
+
     // Clear any additional token keys that might exist
     const additionalKeys = ['accessToken', 'jwt', 'Bearer', 'auth_token'];
     additionalKeys.forEach(key => localStorage.removeItem(key));
@@ -330,7 +330,7 @@ export const getUserType = () => {
  */
 export const getCurrentUser = () => {
   const { userData, userType } = getToken();
-  
+
   try {
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
     return {
@@ -348,7 +348,7 @@ export const getCurrentUser = () => {
  */
 export const debugTokenStorage = () => {
   console.log('🔧 DEBUG: Token Storage State');
-  
+
   Object.entries(TOKEN_KEYS).forEach(([type, keys]) => {
     console.log(`\n📋 ${type.toUpperCase()} TOKENS:`);
     Object.entries(keys).forEach(([keyType, key]) => {

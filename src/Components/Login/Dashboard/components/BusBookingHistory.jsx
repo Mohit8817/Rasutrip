@@ -13,7 +13,7 @@ const BusBookingHistory = () => {
     const [error, setError] = useState(null);
     const [upcomingBookings, setUpcomingBookings] = useState([]);
     const [allBookings, setAllBookings] = useState([]);
-    const [userType, setUserType] = useState(null); // customer या agent
+    const [userType, setUserType] = useState(null); // customer or  agent
     const [debugInfo, setDebugInfo] = useState(null);
     const [downloadingInvoices, setDownloadingInvoices] = useState(new Set()); // Track downloading states
 
@@ -737,8 +737,8 @@ const BusBookingHistory = () => {
                                         <td className="px-4 py-3 text-sm">
                                             <span
                                                 className={`px-2 py-1 rounded-full text-xs font-medium ${booking.bookingStatus.toLowerCase() === "confirmed"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : "bg-yellow-100 text-yellow-700"
+                                                    ? "bg-green-100 text-green-700"
+                                                    : "bg-yellow-100 text-yellow-700"
                                                     }`}
                                             >
                                                 {booking.bookingStatus}
@@ -750,8 +750,8 @@ const BusBookingHistory = () => {
                                                 onClick={() => handleDownloadInvoice(booking)}
                                                 disabled={downloadingInvoices.has(booking.bookingId)}
                                                 className={`px-3 py-1 rounded text-white text-xs ${downloadingInvoices.has(booking.bookingId)
-                                                        ? "bg-gray-400 cursor-not-allowed"
-                                                        : "bg-blue-500 hover:bg-blue-600"
+                                                    ? "bg-gray-400 cursor-not-allowed"
+                                                    : "bg-blue-500 hover:bg-blue-600"
                                                     }`}
                                             >
                                                 {downloadingInvoices.has(booking.bookingId) ? "Downloading..." : "Download Invoice"}

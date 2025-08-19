@@ -152,26 +152,26 @@ const HotelBookingHistory = () => {
     };
 
     // Format booking source badge
-    const formatBookingSourceBadge = (booking) => {
-        const isAgent = booking.isAgentBooking === true ||
-            booking.bookedByRole === 'agent' ||
-            booking.bookingSource === 'AGENT_PORTAL' ||
-            ['agent', 'admin', 'super_admin', 'staff'].includes(booking.bookedByRole?.toLowerCase());
+    // const formatBookingSourceBadge = (booking) => {
+    //     const isAgent = booking.isAgentBooking === true ||
+    //         booking.bookedByRole === 'agent' ||
+    //         booking.bookingSource === 'AGENT_PORTAL' ||
+    //         ['agent', 'admin', 'super_admin', 'staff'].includes(booking.bookedByRole?.toLowerCase());
 
-        return (
-            <div className="flex flex-col">
-                <span className={`px-2 py-1 rounded text-xs font-medium inline-block w-fit ${isAgent
-                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                    : 'bg-blue-100 text-blue-800 border border-blue-200'
-                    }`}>
-                    {isAgent ? '🏢 Agent' : '👤 Customer'}
-                </span>
-                <div className="text-xs text-gray-500 mt-1">
-                    Role: {booking.bookedByRole || 'customer'}
-                </div>
-            </div>
-        );
-    };
+    //     return (
+    //         <div className="flex flex-col">
+    //             <span className={`px-2 py-1 rounded text-xs font-medium inline-block w-fit ${isAgent
+    //                 ? 'bg-purple-100 text-purple-800 border border-purple-200'
+    //                 : 'bg-blue-100 text-blue-800 border border-blue-200'
+    //                 }`}>
+    //                 {isAgent ? '🏢 Agent' : '👤 Customer'}
+    //             </span>
+    //             <div className="text-xs text-gray-500 mt-1">
+    //                 Role: {booking.bookedByRole || 'customer'}
+    //             </div>
+    //         </div>
+    //     );
+    // };
     // Fixed version of the formatHotelBookingData function with better confirmation number mapping
 
     const formatHotelBookingData = (apiResponse, isUpcoming = false) => {
