@@ -95,7 +95,7 @@ const FlightDetails = () => {
 
     return (
         <div>
-            <Container style={{ marginTop: '10rem' }}>
+            <Container style={{ marginTop: '4rem' }}>
                 {loading ? (
                     <>
                         {loading && <p className="text-center text-primary mt-4"><FlightLoader message="Searching Fare Rules" /></p>}

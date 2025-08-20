@@ -11,17 +11,20 @@ import { useDispatch } from 'react-redux';
 import { clearSelectedFlights } from '../../redux/Slices/SelectedFlight';
 import FlightLoader from '../../Components/FlightLoader/FlightLoader';
 import Slider from '../../Components/hero/Slider';
+import SearchButton from '../../Components/Common/SearchButton';
 
 import MultiCityList from '../../Components/FlightBooking/MultiCity/MultiCityList';
 import { useSelector } from 'react-redux';
+import { Loader } from 'lucide-react';
 
 
 const FlightResultsPage = () => {
     const dispatch = useDispatch();
     const { state } = useLocation();
     const tripType = state?.tripType || 'oneway';
+    console.log('triptypeKrishnastate',state)
 
-   
+   console.log('triptypeKrishna',tripType)
 
   useEffect(() => {
         dispatch(clearSelectedFlights());
@@ -38,11 +41,14 @@ const FlightResultsPage = () => {
         refundable: ""
     });
 
+    if(Loader)
+    
+
     return (
        <div className=''>
          <div className='relative'>
             {tripType === 'oneway' && (
-                <Container className="mt-5 pt-5">
+                <Container className="">
                     <Row>
                         <Col>
                             <FlightSearchBar />
@@ -59,7 +65,7 @@ const FlightResultsPage = () => {
                 </Container>
             )}
               {tripType === 'multicity' && (
-                <Container className="mt-5 pt-5">
+                <Container className="">
                     <Row>
                         <Col>
                             <FlightSearchBar />
@@ -78,10 +84,12 @@ const FlightResultsPage = () => {
 
             {/* Round Trip Flights */}
             {tripType === 'roundtrip' && (
-                <Container className="mt-5 pt-5 relative">
+                <Container className=" relative">
                     <Row>
                         <Col>
-                            <RoundsearchBar />
+                        <FlightSearchBar />
+
+                            {/* <RoundsearchBar /> */}
                         </Col>
                     </Row>
                     <Row className="mt-4">

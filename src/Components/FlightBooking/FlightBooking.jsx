@@ -23,7 +23,7 @@ const FlightBooking = () => {
 
     const [toCityFromCitySegment, setToCityFromCitySegment] = useState('');
 
-
+    const [segments, setSegments] = useState([])
     const [cityComponents, setCityComponents] = useState([]);
 
     const handleAddCityClick = () => {
@@ -39,11 +39,27 @@ const FlightBooking = () => {
         const updatedComponents = cityComponents.filter((city) => city.id !== id);
         setCityComponents(updatedComponents);
     };
-
-        const [segments, setSegments] = useState([
+    useEffect(() => {
+        const resKey = localStorage.getItem('locationData');
+        const CheckData = JSON.parse(resKey);
+        
+        if (CheckData) {
+          if (CheckData[0]?.from === "") {
+            setSegments([
+              { id: 0, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
+              { id: 1, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
+            ]);
+          } else {
+            setSegments(CheckData);
+          }
+        } else {
+          setSegments([
             { id: 0, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
             { id: 1, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
-        ]);
+          ]);
+        }
+      }, []);
+ 
         useEffect(() => {
         }, [segments]);
         const handleDateChange = (id, date) => {
@@ -93,10 +109,10 @@ const FlightBooking = () => {
         };
 
         // setLocationData(segments)
-        // if(tripType=='multicity'){
+        if(tripType=='multicity'){
             localStorage.setItem('locationData', JSON.stringify(segments))
 
-        // }
+        }
     // }
     // }
     return (

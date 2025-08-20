@@ -5,6 +5,7 @@ import '../../Style/Pagescss/FlightResultsPage.css';
 import { parse } from 'postcss';
 
 const getSidebarFilters = (allFlights) => {
+    console.log('allFlights',allFlights)
     const prices = [];
     const airlineSet = new Set();
     let maxStops = 0;

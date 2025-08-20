@@ -1,14 +1,15 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { LocationContext } from '../Context/LocationContext'; // ⬅️ Add this line
 import '../../Style/FlightBooking.css';
 
 const TripTypeSelector = ({ tripType, setTripType }) => {
     const { setLocationData } = useContext(LocationContext); // ⬅️ Access context
-
-   
+    useEffect(()=>{
+        const trip = localStorage.getItem('tripType')
+        setTripType(trip)
+    })
 
     const handleTripTypeChange = (type) => { 
-
         localStorage.removeItem('fareSummery');
         localStorage.removeItem('searchToken');
         localStorage.removeItem('passengersData');

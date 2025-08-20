@@ -146,12 +146,13 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
 
             <div className="fare-options mt-2">
               {fareList?.map((fare, index) => (
+                
                 <div
                   key={fare?.FareID || `fare-${index}`}
-                  // onClick={(e) => {
-                  //   e.stopPropagation();
-                  //   handleFareSelect(fare);
-                  // }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleFareSelect(fare);
+                  }}
                   className="d-flex text-12 align-items-center justify-content-between py-2 border-bottom"
                 >
                   <Form.Check
@@ -159,10 +160,10 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
                     name={`${type}-flight-${flight?.ResultIndex}`}
                     className="me-2"
                     onClick={(e) => {
-
+                      e.stopPropagation();
                       handleFareSelect(fare);
                     }}// ✅ यह भी सही है
-                    checked={selectedFare?.FareID === fare?.FareID}
+                    // checked={selectedFare?.FareID === fare?.FareID}
                   />
                   <div className="me-auto">
                     <span className="fw-semibold">

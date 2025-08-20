@@ -186,6 +186,8 @@ const FlightList = ({ filters }) => {
         
         const response = await fetchFlightData(requestPayload);
         const result = response?.Result?.[0] || [];
+        localStorage.setItem('isLoading',false)
+
         localStorage.setItem("searchToken", response?.SearchTokenId);
         localStorage.setItem("rasocommision", response?.rasutripCommissionPercentage);
 

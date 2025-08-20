@@ -1,11 +1,14 @@
-import React, { useContext } from 'react';
-import { Container, Row, Col, Button } from 'react-bootstrap';
+
+import React, { useContext, useState } from 'react';
+import { Container, Row, Col, Button, Modal } from 'react-bootstrap';
 import { LocationContext } from '../Context/LocationContext';
 import '../../Style/Pagescss/FlightResultsPage.css';
-
-import { Link } from 'react-router-dom';
+import Slider from '../hero/Slider';
+import { Link,useNavigate } from 'react-router-dom';
 const FlightSearchBar = () => {
   const { locationData } = useContext(LocationContext);
+  const navigate = useNavigate();
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const {
     fromCity = '',
@@ -45,8 +48,21 @@ const FlightSearchBar = () => {
     5: 'First',
   };
 
+  const Show = () => {
+
+    // alert('fdfdf')
+    setShowLoginModal(true)
+
+
+  }
+
   return (
-    <Container className="p-3 bg-white shadow-sm rounded border mt-5">
+    <Container className="p-3 bg-white shadow-sm rounded border ">
+      <Row className="align-items-center text-center text-md-start">
+        {/* <Col md={8}> */}
+
+        {/* </Col> */}
+      </Row>
       <Row className="align-items-center text-center text-md-start">
         <Col md={2} xs={6}>
           <strong>{fromAirport}</strong>
@@ -78,11 +94,26 @@ const FlightSearchBar = () => {
         </Col>
 
         <Col md={1} xs={12} className="text-end">
-          <Link to='/' variant="primary" className="btn btn-primary ModifyButton">
+          <a onClick={Show} variant="primary" className="btn btn-primary ModifyButton">
             Modify
-          </Link>
+          </a>
         </Col>
       </Row>
+
+      <Modal size="xl" dialogClassName="modal-200w"
+        show={showLoginModal}
+        onHide={() => setShowLoginModal(false)}
+
+        centered
+  
+      >
+        <Modal.Header >
+        </Modal.Header>
+        <Modal.Body className='text-center'>
+          <Slider type="resultPage" />
+        </Modal.Body>
+
+      </Modal>
     </Container>
   );
 };
