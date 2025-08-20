@@ -11,10 +11,10 @@ const PaymentHistory = () => {
     const [userType, setUserType] = useState(null);
 
     const filterOptions = [
-        { value: 'ALL', label: 'All Payments', icon: '📋' },
-        { value: 'FLIGHT', label: 'Flight', icon: '✈️' },
-        { value: 'HOTEL', label: 'Hotel', icon: '🏨' },
-        { value: 'BUS', label: 'Bus', icon: '🚌' }
+        { value: 'ALL', label: 'All Payments' },
+        { value: 'FLIGHT', label: 'Flight' },
+        { value: 'HOTEL', label: 'Hotel' },
+        { value: 'BUS', label: 'Bus' }
     ];
 
     // Detect user type from multiple sources
@@ -148,7 +148,7 @@ const PaymentHistory = () => {
                     title: payment.busOperator || payment.serviceDetails?.busName || payment.serviceName || 'Bus Booking',
                     subtitle: payment.route || payment.serviceDetails?.route || 'N/A',
                     additionalInfo: payment.serviceDetails?.seats ? `Seats: ${payment.serviceDetails.seats}` : null,
-                    icon: '🚌'
+                    icon: ' '
                 };
             default:
                 return {
@@ -177,20 +177,6 @@ const PaymentHistory = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h4 className="text-3xl font-bold text-gray-700 mb-2">Payment History</h4>
-                        <p className="text-gray-400">Track all your booking payments and transactions</p>
-                    </div>
-                    <div className="text-right">
-                        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                            {userType === 'agent' ? 'Agent' : 'Customer'}
-                        </span>
-                    </div>
-                </div>
-            </div>
 
             {/* Filter Tabs */}
             <div className="bg-white rounded-lg shadow p-4">
@@ -248,11 +234,6 @@ const PaymentHistory = () => {
                                     <div className="flex items-start justify-between">
                                         {/* Left Section */}
                                         <div className="flex items-start space-x-4 flex-1">
-                                            <div className="flex-shrink-0">
-                                                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-xl">
-                                                    {serviceDetails.icon}
-                                                </div>
-                                            </div>
 
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center space-x-3 mb-1">

@@ -5,6 +5,7 @@ import baseURL from "../../../Services/Config";
 const FinancialServices = {
     getPaymentHistory: `${baseURL}/user/payment-history`,
     getWalletBalance: `${baseURL}/user/wallet-balance`,
+
     // ✅ New agent endpoints
     getAgentWalletHistory: `${baseURL}/agent/wallet-history`,
 };
@@ -278,22 +279,22 @@ const fetchBusPayments = async () => {
     try {
         let allBusBookings = [];
 
-        console.log('🚌 Fetching bus bookings...');
+        console.log('  Fetching bus bookings...');
 
         // Fetch upcoming bus bookings
         try {
-            console.log('🚌 Trying upcoming bus bookings endpoint...');
+            console.log('  Trying upcoming bus bookings endpoint...');
             const upcomingResponse = await makeAuthenticatedRequest(`${API_BASE_URL}/busservice/up-comming-bookings`);
             const upcomingBookings = extractBookingsArray(upcomingResponse);
             allBusBookings = [...allBusBookings, ...upcomingBookings];
-            console.log('🚌 Upcoming bus bookings found:', upcomingBookings.length);
+            console.log('  Upcoming bus bookings found:', upcomingBookings.length);
         } catch (error) {
             console.warn('⚠️ Failed to fetch upcoming bus bookings:', error.message);
         }
 
         // Fetch all bus bookings
         try {
-            console.log('🚌 Trying all bus bookings endpoint...');
+            console.log('  Trying all bus bookings endpoint...');
             const allResponse = await makeAuthenticatedRequest(`${API_BASE_URL}/busservice/my-bookings`);
             const allBookings = extractBookingsArray(allResponse);
 
@@ -310,12 +311,12 @@ const fetchBusPayments = async () => {
             });
 
             allBusBookings = [...allBusBookings, ...newBookings];
-            console.log('🚌 All bus bookings found:', newBookings.length, 'new bookings added');
+            console.log('  All bus bookings found:', newBookings.length, 'new bookings added');
         } catch (error) {
             console.warn('⚠️ Failed to fetch all bus bookings:', error.message);
         }
 
-        console.log('🚌 Total bus bookings found:', allBusBookings.length);
+        console.log('  Total bus bookings found:', allBusBookings.length);
 
         // Convert bus bookings to payment format
         const busPayments = allBusBookings.map((bookingWrapper, index) => {
@@ -398,7 +399,7 @@ const fetchBusPayments = async () => {
             };
         });
 
-        console.log('🚌 Converted bus payments:', busPayments);
+        console.log('  Converted bus payments:', busPayments);
         return busPayments;
 
     } catch (error) {
