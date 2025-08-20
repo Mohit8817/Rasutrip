@@ -719,7 +719,7 @@ const CustomerLogin = () => {
                   className="w-100 login-btn mb-2"
                   size="lg"
                 >
-                  Login to Dashboard
+                  Login
                 </Button>
               </>
             )}

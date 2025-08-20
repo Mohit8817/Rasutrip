@@ -13,10 +13,10 @@ const UserDashboard = () => {
     const [activeBookingTab, setActiveBookingTab] = useState('Flight');
 
     const user = {
-        name: 'Rahul Sharma',
-        mobile: '+919876543210',
-        email: 'rahul@example.com',
-        createdAt: '2024-01-15T10:00:00Z',
+        name: ' ',
+        mobile: ' ',
+        email: '',
+        createdAt: ' ',
     };
 
     const userType = 'customer';
@@ -63,11 +63,11 @@ const UserDashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 mt-3">
+        <div className="mt-4">
             <Container fluid>
                 <Row>
                     {/* Sidebar */}
-                    <Col md={4} lg={3} className="mb-4">
+                    <Col md={3} lg={3} className="mb-4">
                         <Sidebar
                             user={user}
                             userType={userType}
@@ -78,7 +78,7 @@ const UserDashboard = () => {
                     </Col>
 
                     {/* Main Content */}
-                    <Col md={8} lg={9}>
+                    <Col md={9} lg={9}>
                         <div>
                             {renderContent()}
                         </div>

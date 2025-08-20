@@ -1,4 +1,4 @@
-// components/Sidebar.js - Updated with Payment History
+// components/Sidebar.js - Updated with Modern Design (Same Functionality)
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../Context/AuthContext';
@@ -31,39 +31,39 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     navigate('/'); // Redirect to home page
   };
 
-  // If no user is logged in, show login prompt
+  // If no user is logged in, show login prompt with modern design
   if (!user) {
     return (
-      <div className="bg-white rounded-lg shadow p-6 sticky top-8">
-        <div className="text-center">
-          <div className="w-20 h-20 mx-auto rounded-full bg-gray-300 flex items-center justify-center text-gray-500 text-2xl font-bold mb-4">
+      <div className="h-screen  w-64 bg-gradient-to-b from-grey-400 via-grey-500 to-grey-600 flex flex-col justify-center items-center px-8">
+        <div className="text-center text-grey">
+          <div className="w-20 h-20 mx-auto rounded-full bg-grey-600 bg-opacity-50 flex items-center justify-center text-grey-100 text-2xl font-bold mb-6">
             ?
           </div>
-          <h3 className="text-lg font-medium text-gray-600 mb-4">Please Login</h3>
+          <h3 className="text-lg font-medium text-grey-50 mb-6">Please Login</h3>
           <button
             onClick={() => navigate('/')}
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+            className="w-full bg-grey-600 hover:bg-grey-700 text-grey py-3 px-6 rounded-lg transition-colors"
           >
             Go to Login
           </button>
         </div>
       </div>
     );
-  };
+  }
 
   const menuItems = [
-    { id: 'profile', label: 'Profile', icon: '👤' },
-    { id: 'bookings', label: 'Booking', icon: '📝' },
-    { id: 'payment-history', label: 'Payment History', icon: '💳' },
+    { id: 'profile', label: 'Profile' },
+    { id: 'bookings', label: 'Booking' },
+    { id: 'payment-history', label: 'Payment History' },
   ];
 
   return (
-    <div className="space-y-4">
+    <div className=" card shadow h-screen w-64 bg-gradient-to-b from-grey-400 via-grey-500 to-grey-600 text-grey flex flex-col">
       {/* User Profile Section */}
-      <div className="bg-white rounded-lg shadow p-6 sticky top-8">
-        <div className="text-center mb-8">
+      <div className="px-2 py-2 border-b border-grey-600 border-opacity-30">
+        <div className="text-center">
           <div
-            className="profile-avatar w-20 h-20 mx-auto rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg"
+            className="profile-avatar w-20 h-20 mx-auto rounded-full flex items-center justify-center text-grey text-2xl font-bold mb-4 shadow-lg"
             style={{
               background: userType === 'agent'
                 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
@@ -74,78 +74,56 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           </div>
 
           {/* Enhanced Name Display */}
-          <h3 className="text-xl font-semibold text-gray-800 mb-1">
+          <h3 className="text-xl font-semibold text-grey mb-2">
             {getUserDisplayName()}
           </h3>
 
-          <div className="flex items-center justify-center text-sm text-gray-500 mb-2">
-            <span className="mr-1">{userType === 'agent' ? '🏢' : '👤'}</span>
-            <span className="uppercase tracking-wide">{userType || 'Customer'} Profile</span>
-          </div>
+
 
           {/* Additional User Info */}
-          <div className="text-xs text-gray-400">
+          <div className="text-sm text-grey-100 opacity-90">
             {formatMobile(user?.mobile)}
           </div>
 
           {user?.email && (
-            <div className="text-xs text-gray-400 mt-1 truncate">
+            <div className="text-sm text-grey-100 opacity-90 mt-1 truncate">
               {user.email}
             </div>
           )}
         </div>
+      </div>
 
-        {/* Navigation Menu */}
-        <nav className="space-y-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 ${activeTab === item.id
-                  ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-500 transform scale-105'
-                  : 'text-gray-700 hover:bg-gray-50 hover:text-blue-500 hover:transform hover:scale-102'
-                }`}
-            >
-              <span className="mr-3 text-lg">{item.icon}</span>
-              <span className="font-medium">{item.label}</span>
-              {activeTab === item.id && (
-                <span className="ml-auto text-blue-500">•</span>
-              )}
-            </button>
-          ))}
+      {/* Navigation Menu */}
+      <nav className="flex-1 px-6 py-8 space-y-3">
+        {menuItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.id)}
+            className={`w-full flex items-center px-6 py-4 text-left rounded-lg transition-all duration-200 font-medium text-lg ${activeTab === item.id
+              ? 'bg-grey-600 bg-opacity-40 text-grey shadow-lg transform scale-105'
+              : 'text-grey-50 hover:bg-grey-600 hover:bg-opacity-30 hover:text-grey hover:transform hover:scale-102'
+              }`}
+          >
+            <span>{item.label}</span>
+            {activeTab === item.id && (
+              <span className="ml-auto text-grey-100 text-2xl">•</span>
+            )}
+          </button>
+        ))}
+      </nav>
 
-          {/* Logout Button */}
+      {/* Bottom Section with Footer Info and Logout */}
+      <div className="border-t border-purple-700">
+
+
+        {/* Logout Button */}
+        <div className="p-4">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-4 py-3 text-left rounded-lg text-red-600 hover:bg-red-50 transition-all duration-200 mt-6 border-t pt-4 hover:transform hover:scale-102"
+            className="w-full flex items-center px-4 py-3 text-left rounded-lg text-purple-200 hover:bg-grey-600 hover:bg-opacity-20 hover:text-grey-300 transition-all duration-200 hover:transform hover:scale-102"
           >
-            <span className="mr-3 text-lg">🚪</span>
-            <span className="font-medium">Logout</span>
+            <span className="font-medium text-dark">Logout</span>
           </button>
-        </nav>
-
-        {/* Enhanced Footer Info */}
-        <div className="mt-6 pt-4 border-t text-center">
-          <p className="text-xs text-gray-400">
-            Active since: {user?.lastLoginTime ?
-              new Date(user.lastLoginTime).toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'short'
-              }) :
-              new Date().toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'short'
-              })
-            }
-          </p>
-          {user?.registrationDate && (
-            <p className="text-xs text-gray-400 mt-1">
-              Member since: {new Date(user.registrationDate).toLocaleDateString('en-IN', {
-                month: 'short',
-                year: 'numeric'
-              })}
-            </p>
-          )}
         </div>
       </div>
     </div>
