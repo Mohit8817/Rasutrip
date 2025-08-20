@@ -684,7 +684,7 @@ const CustomerLogin = () => {
                   maxLength={6}
                   className="form-control-lg"
                 />
-                <Form.Text className="text-muted">
+                <Form.Text className="text-light">
                   OTP sent to your mobile number
                 </Form.Text>
               </Form.Group>
