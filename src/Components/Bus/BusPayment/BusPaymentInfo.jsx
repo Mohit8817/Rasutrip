@@ -858,24 +858,18 @@ const BusPaymentInfo = () => {
                             <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Privacy Policy</a>
                         </p>
                     </div>
-                    <div className="d-flex gap-3 justify-content-between align-items-center">
 
+                    <div className="d-flex gap-3 justify-content-between align-items-center">
                         <Button
                             variant="danger"
                             className="btn-red"
-                            disabled={!totalPrice || loading || !!error}
+                            disabled={!totalPrice || !!error} 
                             onClick={handlePayment}
                         >
-                            {loading ? (
-                                <>
-                                    <Spinner animation="border" size="sm" className="me-2" />
-                                    Processing Payment...
-                                </>
-                            ) : (
-                                `Pay Now ₹${finalAmount}`
-                            )}
+                            {`Pay Now ₹${finalAmount}`}
                         </Button>
                     </div>
+
                 </Card.Body>
             </Card>
 

@@ -784,57 +784,22 @@ Please check your booking data and contact support if the issue persists.`;
                 </div>
               )}
 
-              {/* Adult passengers PAN info list */}
-              {adultPassengers.length > 0 && (
-                <div className="mb-4 p-3 border rounded">
-                  <h6 className="fw-bold mb-2">Adult Passenger PAN Information</h6>
-                  {adultPassengers.map((adult, idx) => (
-                    <div key={idx} className="mb-2">
-                      <span className={adult.isValid ? 'text-success' : 'text-danger'}>
-                        {adult.isValid ? '✅' : '❌'} {adult.name} (Room {adult.room})
-                        {adult.isValid ? ' - Valid PAN' : ' - Invalid/Missing PAN'}
-                      </span>
-                    </div>
-                  ))}
-                  {hasDuplicates && (
-                    <div className="alert alert-warning mt-2">
-                      <strong>⚠️ Duplicate PAN Numbers Found:</strong> {duplicatePANs.join(', ')}
-                      <br />Each passenger must have a unique PAN number.
-                    </div>
-                  )}
-                  {validPANCount !== adultPassengers.length && !hasDuplicates && (
-                    <div className="alert alert-danger mt-2">
-                      <strong>❌ PAN Issues Found:</strong> {adultPassengers.length - validPANCount} adult passenger(s) have invalid/missing PAN numbers.
-                      <br />All adult passengers must have valid PAN numbers in format: ABCDE1234F
-                    </div>
-                  )}
-                </div>
-              )}
+            
             </Card.Body>
 
             <Card.Footer className="bg-white">
               <div className="text-end">
                 <Button
-                  variant={hasDuplicates || validPANCount !== adultPassengers.length ? "warning" : "danger"}
+                  variant="danger"
                   size="lg"
                   className="px-5"
                   onClick={handlePayment}
-                  disabled={loading || roundedTotal <= 0 || hasDuplicates || validPANCount !== adultPassengers.length}
+                  disabled={roundedTotal <= 0}
                 >
-                  {loading ? (
-                    <>
-                      <Spinner animation="border" size="sm" className="me-2" />
-                      Processing Payment...
-                    </>
-                  ) : hasDuplicates ? (
-                    <>Fix Duplicate PANs First</>
-                  ) : validPANCount !== adultPassengers.length ? (
-                    <>Fix PAN Issues First</>
-                  ) : (
-                    <>Pay ₹ {roundedTotal}</>
-                  )}
+                  Pay ₹ {roundedTotal}
                 </Button>
               </div>
+
             </Card.Footer>
           </Card>
 

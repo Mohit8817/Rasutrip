@@ -48,7 +48,7 @@ const RoomCard = ({
 
     // ✅ Calculate total adults properly
     let totalAdults = hotel?.adult || 1;
-    
+
     // Try to get from roomDetails if available
     if (hotel?.searchDetails?.roomDetails && Array.isArray(hotel.searchDetails.roomDetails)) {
       totalAdults = hotel.searchDetails.roomDetails.reduce((sum, r) => sum + (r.Adult || r.adults || 0), 0);
@@ -57,7 +57,7 @@ const RoomCard = ({
     console.log("👥 Total Adults for PAN check:", totalAdults);
 
     // ❌ PAN MANDATORY POPUP REMOVED - Direct booking without warning
-    
+
     setLoadingRoomId(room.RoomId);
 
     // ✅ Enhanced block payload with better error handling
@@ -79,7 +79,7 @@ const RoomCard = ({
 
     try {
       const blockRes = await blockRoom(blockPayload);
-      
+
       console.log("📥 Block Room Response:", blockRes);
 
       if (blockRes?.Error?.ErrorCode === 0) {
@@ -224,18 +224,15 @@ const RoomCard = ({
                   </div>
                 )}
 
+
                 <button
                   className="btn btn-danger btn-sm px-4"
                   onClick={() => handleBookNow(room)}
-                  disabled={loadingRoomId === room.RoomId}
-                  title={
-                    panMandatory
-                      ? "Ensure all adults have valid PAN numbers"
-                      : "Book this room"
-                  }
+                  title={panMandatory ? "Ensure all adults have valid PAN numbers" : "Book this room"}
                 >
-                  {loadingRoomId === room.RoomId ? "Blocking..." : "Book Now"}
+                  Book Now
                 </button>
+
               </div>
             </div>
           );
