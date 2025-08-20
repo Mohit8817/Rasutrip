@@ -10,6 +10,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setOnwardFlight, setReturnFlight, setSelectedOnwardFare, setSelectedReturnFare } from './../../redux/Slices/SelectedFlight';
 import { fetchFlightData } from '../APIS/FlightApi/FlightApi';
 import FlightLoader from '../FlightLoader/FlightLoader';
+import { async } from 'q';
 
 const RoundTripCardList = ({ filters }) => {
   const dispatch = useDispatch()
@@ -48,13 +49,13 @@ const RoundTripCardList = ({ filters }) => {
     localStorage.setItem('fareSummery', JSON.stringify(updatedData));
   };
 
-  const handleOnwardSelect = (flight, fare) => {
+  const handleOnwardSelect = async(flight, fare) => {
     updateFareSummery(fare, 'onward');
     dispatch(setSelectedOnwardFare(fare));
     dispatch(setOnwardFlight(flight));
   };
 
-  const handleReturnSelect = (flight, fare) => {
+  const handleReturnSelect =async (flight, fare) => {
     updateFareSummery(fare, 'return');
     dispatch(setSelectedReturnFare(fare));
     dispatch(setReturnFlight(flight));

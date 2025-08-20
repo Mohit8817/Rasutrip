@@ -1,12 +1,13 @@
 // src/Components/Common/SearchButton.jsx
-import React, { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useContext} from 'react';
+import { useNavigate,useLocation } from 'react-router-dom';
 import { LocationContext } from '../Context/LocationContext';
 import { HotelSearchContext } from '../Context/HotelSearchContext';
 import '../../Style/FlightBooking.css';
 
 const SearchButton = ({ type }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { locationData } = useContext(LocationContext);
   const { hotelSearchData } = useContext(HotelSearchContext);
 
@@ -35,36 +36,48 @@ const SearchButton = ({ type }) => {
     console.log('locationDatakkkkk',locationData)
 
     switch (type) {
-      case 'flight':
+      case 'flight': {
+        const searchParams = new URLSearchParams();
+    
+        // Build common state object
+        let state = {};
         if (locationData.tripType === 'multicity' && locationData.AirSegments) {
-          navigate('/flight-results', {
-            state: {
-              AirSegments: locationData.AirSegments,
-              passengers: locationData.passengers,
-              cabinClass: locationData.cabinClass,
-              tripType: 'multicity'
-            }
-          });
+          state = {
+            AirSegments: locationData.AirSegments,
+            passengers: locationData.passengers,
+            cabinClass: locationData.cabinClass,
+            tripType: 'multicity'
+          };
         } else {
-          navigate('/flight-results', {
-            state: {
-              fromCity,
-              toCity,
-              fromAirport,
-              toAirport,
-              fromCode,
-              toCode,
-              departDate: departDate || { PreferredTime: new Date().toISOString() },
-              returnDate: returnDate || null,
-              passengers,
-              cabinClass,
-              tripType: tripType || 'oneway'
-            }
-          });
+          state = {
+            fromCity,
+            toCity,
+            fromAirport,
+            toAirport,
+            fromCode,
+            toCode,
+            departDate: departDate || { PreferredTime: new Date().toISOString() },
+            returnDate: returnDate || null,
+            passengers,
+            cabinClass,
+            tripType: tripType || 'oneway'
+          };
         }
+    
+        // Helper function to handle navigation
+        const goToResults = () => {
+          navigate('/flight-results', { state });
+        };
+    
+        if (location.pathname === '/flight-results') {
+          navigate(`/?${searchParams.toString()}`, { replace: true });
+          setTimeout(goToResults, 10);
+        } else {
+          goToResults();
+        }
+    
         break;
-       
-
+      }
       case 'bus':
         navigate('/bus-results', {
           state: {
