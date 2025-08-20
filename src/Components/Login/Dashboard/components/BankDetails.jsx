@@ -166,7 +166,7 @@ const BankDetails = () => {
                 <div className="p-4 border-b">
                     <div className="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2 className="text-2xl font-bold mb-1 text-gray-800">Bank Details</h2>
+                            <h4 className="text-2xl font-bold mb-1 text-gray-800">Bank Details</h4>
                             <p className="text-gray-600">Manage your banking information for payments</p>
                         </div>
                         <div className="text-end">
@@ -357,21 +357,7 @@ const BankDetails = () => {
                 </div>
             </div>
 
-            {/* Security Notice */}
-            <Card className="border-warning">
-                <Card.Body className="bg-warning bg-opacity-10">
-                    <div className="d-flex align-items-start">
-                        <span className="text-warning me-3 fs-4">🔒</span>
-                        <div>
-                            <h6 className="text-warning fw-bold mb-2">Security Notice</h6>
-                            <p className="text-muted small mb-0">
-                                Your banking information is encrypted and securely stored.
-                                Only authorized personnel can access this information for payment processing.
-                            </p>
-                        </div>
-                    </div>
-                </Card.Body>
-            </Card>
+
         </div>
     );
 };

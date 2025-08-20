@@ -70,7 +70,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   ];
 
   // Combine menu items based on user type
-  const menuItems = isAgent() 
+  const menuItems = isAgent()
     ? [...baseMenuItems, ...agentMenuItems]
     : baseMenuItems;
 
@@ -121,18 +121,17 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center px-6 py-4 text-left rounded-lg transition-all duration-200 font-medium text-lg ${
-              activeTab === item.id
-                ? 'bg-grey-600 bg-opacity-40 text-grey shadow-lg transform scale-105'
-                : 'text-grey-50 hover:bg-grey-600 hover:bg-opacity-30 hover:text-grey hover:transform hover:scale-102'
-            }`}
+            className={`w-full flex items-center px-6 py-4 text-left rounded-lg transition-all duration-200 font-medium text-lg ${activeTab === item.id
+              ? 'bg-grey-600 bg-opacity-40 text-grey shadow-lg transform scale-105'
+              : 'text-grey-50 hover:bg-grey-600 hover:bg-opacity-30 hover:text-grey hover:transform hover:scale-102'
+              }`}
           >
             <span className="flex items-center">
               {/* Add icons for better visual distinction */}
-              {item.id === 'profile' && <span className="mr-3">👤</span>}
-              {item.id === 'bookings' && <span className="mr-3">📋</span>}
-              {item.id === 'payment-history' && <span className="mr-3">💳</span>}
-              {item.id === 'bank-details' && <span className="mr-3">🏦</span>}
+              {item.id === 'profile'}
+              {item.id === 'bookings'}
+              {item.id === 'payment-history'}
+              {item.id === 'bank-details'}
               {item.label}
             </span>
             {activeTab === item.id && (
@@ -150,7 +149,6 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             onClick={handleLogout}
             className="w-full flex items-center px-4 py-3 text-left rounded-lg text-purple-200 hover:bg-grey-600 hover:bg-opacity-20 hover:text-grey-300 transition-all duration-200 hover:transform hover:scale-102"
           >
-            <span className="mr-3">🚪</span>
             <span className="font-medium text-dark">Logout</span>
           </button>
         </div>
