@@ -155,7 +155,7 @@
 //                                     Your trusted travel companion for flights, hotels, and bus bookings across India.
 //                                 </p>
 //                             </div>
-                            
+
 //                             <div className="contact-info">
 //                                 <div className="contact-item d-flex mb-3">
 //                                     <div className="contact-icon-wrapper me-3">
@@ -166,7 +166,7 @@
 //                                         <div className="contact-detail">+91 9266424809</div>
 //                                     </div>
 //                                 </div>
-                                
+
 //                                 <div className="contact-item d-flex mb-3">
 //                                     <div className="contact-icon-wrapper me-3">
 //                                         <FaEnvelope className="footer-icon" size={16} />
@@ -180,7 +180,7 @@
 //                                         </div>
 //                                     </div>
 //                                 </div>
-                                
+
 //                                 <div className="contact-item d-flex mb-3">
 //                                     <div className="contact-icon-wrapper me-3">
 //                                         <FaMapMarkerAlt className="footer-icon" size={16} />
@@ -312,7 +312,7 @@
 //                                     <FaYoutube />
 //                                 </a>
 //                             </div>
-                            
+
 //                             <div className="app-download">
 //                                 <h6 className="download-title">Download App</h6>
 //                                 <div className="app-buttons">
@@ -359,6 +359,8 @@
 import React from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
 import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
+import icon1 from '../../assest/footericon.svg';
+import icon2 from '../../assest/footericon2.svg';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../../Style/Footer.css';
 import footerlogo from '../../assest/rasutrip.png'
@@ -383,7 +385,7 @@ const Footer = () => {
                                     Your trusted travel companion for flights, hotels, and bus bookings across India.
                                 </p>
                             </div>
-                            
+
                             <div className="contact-info">
                                 <div className="contact-item d-flex mb-3">
                                     <div className="contact-icon-wrapper me-3">
@@ -398,7 +400,7 @@ const Footer = () => {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="contact-item d-flex mb-3">
                                     <div className="contact-icon-wrapper me-3">
                                         <FaEnvelope className="footer-icon" size={16} />
@@ -412,7 +414,7 @@ const Footer = () => {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="contact-item d-flex mb-3">
                                     <div className="contact-icon-wrapper me-3">
                                         <FaMapMarkerAlt className="footer-icon" size={16} />
@@ -528,84 +530,72 @@ const Footer = () => {
                         <Col lg={2} md={6} className="mb-4">
                             <h5 className="footer-heading">Follow Us</h5>
                             <div className="social-links mb-4">
-                                <a 
-                                    href="https://facebook.com/rasutrip" 
-                                    className="social-link me-2" 
-                                    target="_blank" 
+                                <a
+                                    href="https://facebook.com/rasutrip"
+                                    className="social-link me-2"
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     aria-label="Follow us on Facebook"
                                 >
                                     <FaFacebookF />
                                 </a>
-                                <a 
-                                    href="https://twitter.com/rasutrip" 
-                                    className="social-link me-2" 
-                                    target="_blank" 
+                                <a
+                                    href="https://twitter.com/rasutrip"
+                                    className="social-link me-2"
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     aria-label="Follow us on Twitter"
                                 >
                                     <FaTwitter />
                                 </a>
-                                <a 
-                                    href="https://instagram.com/rasutrip" 
-                                    className="social-link me-2" 
-                                    target="_blank" 
+                                <a
+                                    href="https://instagram.com/rasutrip"
+                                    className="social-link me-2"
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     aria-label="Follow us on Instagram"
                                 >
                                     <FaInstagram />
                                 </a>
-                                <a 
-                                    href="https://linkedin.com/company/rasutrip" 
-                                    className="social-link me-2" 
-                                    target="_blank" 
+                                <a
+                                    href="https://linkedin.com/company/rasutrip"
+                                    className="social-link me-2"
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     aria-label="Follow us on LinkedIn"
                                 >
                                     <FaLinkedinIn />
                                 </a>
-                                <a 
-                                    href="https://youtube.com/@rasutrip" 
-                                    className="social-link" 
-                                    target="_blank" 
+                                <a
+                                    href="https://youtube.com/@rasutrip"
+                                    className="social-link"
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     aria-label="Subscribe to our YouTube channel"
                                 >
                                     <FaYoutube />
                                 </a>
                             </div>
-                            
+
                             <div className="app-download">
                                 <h6 className="download-title">Download App</h6>
-                                <div className="app-buttons">
-                                    <a 
-                                        href="https://play.google.com/store/apps/details?id=com.om.rasutrip&pcampaignid=web_share" 
-                                        className="app-button mb-2 d-block"
-                                        target="_blank" 
+                                <div className="app-buttons d-flex">
+                                    <a
+                                        href="https://apps.apple.com/in/app/tagxi/id1608868419"
+                                        target="_blank"
                                         rel="noopener noreferrer"
-                                        aria-label="Download Rasutrip app from Google Play Store"
                                     >
-                                        <img 
-                                            src="https://static.vecteezy.com/system/resources/previews/012/871/364/non_2x/google-play-store-download-button-in-white-colors-download-on-the-google-play-store-free-png.png" 
-                                            alt="Get it on Google Play" 
-                                            className="img-fluid"
-                                            style={{ maxHeight: '40px' }}
-                                        />
+                                        <img src={icon1} alt="Download on App Store" className="w-100 mb-2" />
                                     </a>
-                                    <a 
-                                        href="https://apps.apple.com/app/rasutrip/id123456789" 
-                                        className="app-button d-block"
-                                        target="_blank" 
+
+                                    <a
+                                        href="https://play.google.com/store/apps/details?id=com.rasutaxi.customer&pli=1"
+                                        target="_blank"
                                         rel="noopener noreferrer"
-                                        aria-label="Download Rasutrip app from App Store"
                                     >
-                                        <img 
-                                            src="https://www.logo.wine/a/logo/App_Store_(iOS)/App_Store_(iOS)-Badge-Logo.wine.svg" 
-                                            alt="Download on App Store" 
-                                            className="img-fluid"
-                                            style={{ maxHeight: '40px' }}
-                                        />
+                                        <img src={icon2} alt="Get it on Google Play" className="w-100" />
                                     </a>
+
                                 </div>
                             </div>
                         </Col>
@@ -625,21 +615,21 @@ const Footer = () => {
                         <Col md={4}>
                             <div className="payment-methods text-md-end">
                                 <span className="payment-text me-2">We Accept:</span>
-                                <img 
-                                    src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOK-ExH64w4vaz6r2HY7kpEc0SEZKmpq7CKg&s" 
-                                    alt="Visa" 
+                                <img
+                                    src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSOK-ExH64w4vaz6r2HY7kpEc0SEZKmpq7CKg&s"
+                                    alt="Visa"
                                     className="payment-icon me-1"
                                     style={{ height: '24px' }}
                                 />
-                                <img 
-                                    src="https://pngimg.com/d/mastercard_PNG23.png" 
-                                    alt="Mastercard" 
+                                <img
+                                    src="https://pngimg.com/d/mastercard_PNG23.png"
+                                    alt="Mastercard"
                                     className="payment-icon me-1"
                                     style={{ height: '24px' }}
                                 />
-                                <img 
-                                    src="https://t3.ftcdn.net/jpg/05/60/50/16/360_F_560501607_x7crxqBWbmbgK2k8zOL0gICbIbK9hP6y.jpg" 
-                                    alt="UPI" 
+                                <img
+                                    src="https://t3.ftcdn.net/jpg/05/60/50/16/360_F_560501607_x7crxqBWbmbgK2k8zOL0gICbIbK9hP6y.jpg"
+                                    alt="UPI"
                                     className="payment-icon"
                                     style={{ height: '24px' }}
                                 />

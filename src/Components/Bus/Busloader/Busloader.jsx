@@ -3,7 +3,7 @@ import React from 'react';
 const Busloader = ({ from, to, departDate }) => {
     return (
         <div className="d-flex justify-content-center align-items-center mt-0 pt-0">
-            <div className="text-center bg-white p-4 shadow rounded-4">
+            <div className="text-center bg-white p-4  rounded-4">
                 {/* Bus Animation */}
                 <div className="loader-wrapper mb-4">
                     <div className="truck-wrapper">
