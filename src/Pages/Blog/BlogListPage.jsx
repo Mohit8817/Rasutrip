@@ -143,7 +143,7 @@ const BlogListPage = () => {
           {blogPosts.map((post, index) => (
             <article
               key={post._id || post.id || index}
-              className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer transform hover:-translate-y-2"
+              className="bg-white rounded-2xl shadow-sm hover:shadow-2sm transition-all duration-300 overflow-hidden group cursor-pointer transform hover:-translate-y-2"
               onClick={() => handleBlogClick(post._id || post.id)}
             >
               {/* Image */}
