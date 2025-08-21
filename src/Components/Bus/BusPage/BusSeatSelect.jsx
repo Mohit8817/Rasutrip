@@ -602,7 +602,8 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
     });
   };
 
-  return (
+  return (   
+    
     <Modal show={show} onHide={onHide} size="xl" centered scrollable>
       <Modal.Header closeButton>
         <Modal.Title>
