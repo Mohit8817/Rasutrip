@@ -374,17 +374,167 @@ const Footer = () => {
                 <Container>
                     <Row>
                         {/* Column 1 - Logo & Contact */}
-                        <Col lg={4} md={6} className="mb-4">
-                            <div className="footer-brand mb-4">
+                        <Col lg={3} md={6} className="">
+                            <div className="footer-brand">
                                 <img
                                     className='footerlogo'
                                     src={footerlogo}
                                     alt="rasutrip"
                                 />
-                                <p className="brand-tagline mt-3 text-muted">
+                                <p className="text-muted">
                                     Your trusted travel companion for flights, hotels, and bus bookings across India.
                                 </p>
                             </div>
+
+
+
+                            <div className="app-download">
+                                <h6 className="download-title mb-2">Taxi App</h6>
+                                {/* Buttons Side by Side */}
+                                <div className="flex items-center gap-3">
+                                    <a
+                                        href="https://apps.apple.com/in/app/tagxi/id1608868419"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <img
+                                            src={icon1}
+                                            alt="Download on App Store"
+                                            className="w-32"  // size adjust yaha se
+                                        />
+                                    </a>
+
+                                    <a
+                                        href="https://play.google.com/store/apps/details?id=com.rasutaxi.customer&pli=1"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <img
+                                            src={icon2}
+                                            alt="Get it on Google Play"
+                                            className="w-32"
+                                        />
+                                    </a>
+                                </div>
+
+                                <div>
+                                    <h6 className="download-title mt-2">Driver App</h6>
+                                    <a
+                                        href="https://play.google.com/store/apps/details?id=com.rasutaxi.driver&pli=1"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        <img
+                                            src={icon2}
+                                            alt="Get it on Google Play"
+                                            className="w-32"
+                                        />
+                                    </a>
+                                </div>
+                            </div>
+
+                        </Col>
+
+                        {/* Column 2 - Quick Links */}
+                        <Col lg={2} md={6} className="mb-4">
+                            <h5 className="footer-heading">Quick Links</h5>
+                            <ul className="footer-links">
+                                <li>
+                                    <Link to="/Aboutus" className="footer-link">
+                                        About Us
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/faq" className="footer-link">
+                                        FAQ
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/contact" className="footer-link">
+                                        Contact Us
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/careers" className="footer-link">
+                                        Careers
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/blog" className="footer-link">
+                                        Blog
+                                    </Link>
+                                </li>
+                            </ul>
+                        </Col>
+
+                        {/* Column 3 - Our Services */}
+                        <Col lg={2} md={6} className="mb-4">
+                            <h5 className="footer-heading">Our Services</h5>
+                            <ul className="footer-links">
+                                <li>
+                                    <Link to="/flights" className="footer-link">
+                                        Flight Booking
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/hotels" className="footer-link">
+                                        Hotel Booking
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/bus" className="footer-link">
+                                        Bus Booking
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/packages" className="footer-link">
+                                        Rider
+
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/offers" className="footer-link">
+                                        Driver
+                                    </Link>
+                                </li>
+                            </ul>
+                        </Col>
+
+                        {/* Column 4 - Legal */}
+                        <Col lg={2} md={6} className="mb-4">
+                            <h5 className="footer-heading">Legal</h5>
+                            <ul className="footer-links">
+                                <li>
+                                    <Link to="/terms-and-conditions" className="footer-link">
+                                        Terms & Conditions
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/privacy-policy" className="footer-link">
+                                        Privacy Policy
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/disclaimer" className="footer-link">
+                                        Disclaimer
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/UserAgreement" className="footer-link">
+                                        User Agreement
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/CancellationRefundpolicy" className="footer-link">
+                                        Refund Policy
+                                    </Link>
+                                </li>
+                            </ul>
+                        </Col>
+
+                        {/* Column 5 - Follow Us */}
+                        <Col lg={3} md={6} className="mb-4">
+                            <h5 className="footer-heading">Contact Us</h5>
 
                             <div className="contact-info">
                                 <div className="contact-item d-flex mb-3">
@@ -428,108 +578,10 @@ const Footer = () => {
                                     </div>
                                 </div>
                             </div>
-                        </Col>
 
-                        {/* Column 2 - Quick Links */}
-                        <Col lg={2} md={6} className="mb-4">
-                            <h5 className="footer-heading">Quick Links</h5>
-                            <ul className="footer-links">
-                                <li>
-                                    <Link to="/Aboutus" className="footer-link">
-                                        About Us
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/faq" className="footer-link">
-                                        FAQ
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/contact" className="footer-link">
-                                        Contact Us
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/careers" className="footer-link">
-                                        Careers
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/blog" className="footer-link">
-                                        Travel Blog
-                                    </Link>
-                                </li>
-                            </ul>
-                        </Col>
 
-                        {/* Column 3 - Our Services */}
-                        <Col lg={2} md={6} className="mb-4">
-                            <h5 className="footer-heading">Our Services</h5>
-                            <ul className="footer-links">
-                                <li>
-                                    <Link to="/flights" className="footer-link">
-                                        Flight Booking
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/hotels" className="footer-link">
-                                        Hotel Booking
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/bus" className="footer-link">
-                                        Bus Booking
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/packages" className="footer-link">
-                                        Holiday Packages
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/offers" className="footer-link">
-                                        Special Offers
-                                    </Link>
-                                </li>
-                            </ul>
-                        </Col>
 
-                        {/* Column 4 - Legal */}
-                        <Col lg={2} md={6} className="mb-4">
-                            <h5 className="footer-heading">Legal</h5>
-                            <ul className="footer-links">
-                                <li>
-                                    <Link to="/terms-and-conditions" className="footer-link">
-                                        Terms & Conditions
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/privacy-policy" className="footer-link">
-                                        Privacy Policy
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/disclaimer" className="footer-link">
-                                        Disclaimer
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/UserAgreement" className="footer-link">
-                                        User Agreement
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/CancellationRefundpolicy" className="footer-link">
-                                        Refund Policy
-                                    </Link>
-                                </li>
-                            </ul>
-                        </Col>
-
-                        {/* Column 5 - Follow Us */}
-                        <Col lg={2} md={6} className="mb-4">
-                            <h5 className="footer-heading">Follow Us</h5>
-                            <div className="social-links mb-4">
+                            <div className="social-links mb-4 mx-1">
                                 <a
                                     href="https://facebook.com/rasutrip"
                                     className="social-link me-2"
@@ -538,15 +590,6 @@ const Footer = () => {
                                     aria-label="Follow us on Facebook"
                                 >
                                     <FaFacebookF />
-                                </a>
-                                <a
-                                    href="https://twitter.com/rasutrip"
-                                    className="social-link me-2"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    aria-label="Follow us on Twitter"
-                                >
-                                    <FaTwitter />
                                 </a>
                                 <a
                                     href="https://instagram.com/rasutrip"
@@ -575,28 +618,6 @@ const Footer = () => {
                                 >
                                     <FaYoutube />
                                 </a>
-                            </div>
-
-                            <div className="app-download">
-                                <h6 className="download-title">Download App</h6>
-                                <div className="app-buttons d-flex">
-                                    <a
-                                        href="https://apps.apple.com/in/app/tagxi/id1608868419"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        <img src={icon1} alt="Download on App Store" className="w-100 mb-2" />
-                                    </a>
-
-                                    <a
-                                        href="https://play.google.com/store/apps/details?id=com.rasutaxi.customer&pli=1"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        <img src={icon2} alt="Get it on Google Play" className="w-100" />
-                                    </a>
-
-                                </div>
                             </div>
                         </Col>
                     </Row>

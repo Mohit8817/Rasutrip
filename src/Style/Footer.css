@@ -43,18 +43,18 @@
 }
 
 .footer-main {
-  background-color: #f8f9fa;
+  background-color: #ffffff;
   border-top: 1px solid #e9ecef;
 }
 
 /* Brand Section */
 .footer-brand {
-  border-bottom: 1px solid #e9ecef;
-  padding-bottom: 20px;
+  border-bottom: 1px solid #ffffff;
+
 }
 
 .footerlogo {
-  width: 8rem;
+  width: 5rem;
   height: auto;
   margin-bottom: 0;
 }
