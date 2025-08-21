@@ -4,10 +4,19 @@ import "react-day-picker/dist/style.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import './MultiCity.css'; // Your custom styles
 
-const DateSelect = () => {
+const DateSelect = ({onDateChange}) => {
 
     const [travelDate, setTravelDate] = useState(new Date());
     const [showCalendar, setShowCalendar] = useState(false);
+
+
+    const handleSelect = (date) => {
+        setTravelDate(date);
+        setShowCalendar(false);
+    
+        onDateChange(date)
+        
+      };
 
     const formatDate = (date) =>
         date?.toLocaleDateString("en-GB", {
@@ -33,10 +42,7 @@ const DateSelect = () => {
                             <DayPicker
                                 mode="single"
                                 selected={travelDate}
-                                onSelect={(date) => {
-                                    setTravelDate(date);
-                                    setShowCalendar(false);
-                                }}
+                                onSelect={handleSelect}
                             />
                         </div>
                     )}

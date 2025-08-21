@@ -10,15 +10,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setOnwardFlight, setReturnFlight, setSelectedOnwardFare, setSelectedReturnFare } from './../../redux/Slices/SelectedFlight';
 import { fetchFlightData } from '../APIS/FlightApi/FlightApi';
 import FlightLoader from '../FlightLoader/FlightLoader';
+import { async } from 'q';
 
-const RoundTripCardList = () => {
+const RoundTripCardList = ({ filters }) => {
   const dispatch = useDispatch()
   const { state } = useLocation();
   const [showdetailsBar, setShowdetailsBar] = useState(false)
   const selectedOnwardFare = useSelector((state) => state.selectedFlights.selectedOnwardFare);
   const selectedReturnFare = useSelector((state) => state.selectedFlights.selectedReturnFare);
-
-  console.log("selectedOnwardFare", selectedOnwardFare, "selectedReturnFare", selectedReturnFare)
 
   const {
     fromCode = 'DEL',
@@ -40,36 +39,27 @@ const RoundTripCardList = () => {
   const [selectedReturnIndex, setSelectedReturnIndex] = useState(0);
 
   const updateFareSummery = (fare, type) => {
-  const existingData = JSON.parse(localStorage.getItem('fareSummery')) || {};
+    const existingData = JSON.parse(localStorage.getItem('fareSummery')) || {};
 
-  const updatedData = {
-    ...existingData,
-    [type]: fare, // type can be 'onward' or 'return'
+    const updatedData = {
+      ...existingData,
+      [type]: fare, // type can be 'onward' or 'return'
+    };
+
+    localStorage.setItem('fareSummery', JSON.stringify(updatedData));
   };
 
-  console.log('updateFareSummery',updatedData)
-  localStorage.setItem('fareSummery', JSON.stringify(updatedData));
-};
+  const handleOnwardSelect = async(flight, fare) => {
+    updateFareSummery(fare, 'onward');
+    dispatch(setSelectedOnwardFare(fare));
+    dispatch(setOnwardFlight(flight));
+  };
 
-const handleOnwardSelect = (flight, fare) => {
-  console.log("🛫 handleOnwardSelect - Flight:", flight);
-  console.log("🛫 handleOnwardSelect - Fare:", fare);
-
-  updateFareSummery(fare, 'onward');
-
-  dispatch(setSelectedOnwardFare(fare));
-  dispatch(setOnwardFlight(flight));
-};
-
-const handleReturnSelect = (flight, fare) => {
-  console.log("🛬 handleReturnSelect - Flight:", flight);
-  console.log("🛬 handleReturnSelect - Fare:", fare);
-
-  updateFareSummery(fare, 'return');
-
-  dispatch(setSelectedReturnFare(fare));
-  dispatch(setReturnFlight(flight));
-};
+  const handleReturnSelect =async (flight, fare) => {
+    updateFareSummery(fare, 'return');
+    dispatch(setSelectedReturnFare(fare));
+    dispatch(setReturnFlight(flight));
+  };
 
 
   useEffect(() => {
@@ -124,22 +114,19 @@ const handleReturnSelect = (flight, fare) => {
   // Default selection useEffect - flights load होने के बाद automatically पहला fare select करेगा
   useEffect(() => {
     if (flights?.length > 1 && !selectedOnwardFare && !selectedReturnFare) {
-      // Onward flight का पहला fare select करें
+
       const firstOnwardFlight = flights[0]?.[0];
       const firstOnwardFare = firstOnwardFlight?.FareList?.[0];
-      
-      // Return flight का पहला fare select करें
+
       const firstReturnFlight = flights[1]?.[0];
       const firstReturnFare = firstReturnFlight?.FareList?.[0];
 
       if (firstOnwardFlight && firstOnwardFare) {
-        console.log("🔄 Auto-selecting first onward flight and fare");
         dispatch(setSelectedOnwardFare(firstOnwardFare));
         dispatch(setOnwardFlight(firstOnwardFlight));
       }
 
       if (firstReturnFlight && firstReturnFare) {
-        console.log("🔄 Auto-selecting first return flight and fare");
         dispatch(setSelectedReturnFare(firstReturnFare));
         dispatch(setReturnFlight(firstReturnFlight));
       }
@@ -149,19 +136,96 @@ const handleReturnSelect = (flight, fare) => {
   if (loading) return <div className="text-center my-4"><FlightLoader></FlightLoader></div>;
   if (error) return <div className="text-danger text-center my-4">{error}</div>;
 
-  console.log('flights', flights)
-  console.log('flights[0]', flights[0])
-  console.log('flights[1]', flights[1])
+  const filterFares = (flights, filters) => {
+    if (!Array.isArray(flights)) return [];
+    const isReset =
+      (!filters.airlines || filters.airlines.length === 0) &&
+      (!filters.stops || filters.stops.length === 0) &&
+      (!filters.priceRange || filters.priceRange.length === 0) &&
+      (filters.refundable === null || filters.refundable === undefined) &&
+      (!filters.departureTime || filters.departureTime === null) &&
+      (!filters.arrivalTime || filters.arrivalTime === null);
+
+    if (isReset) {
+      return flights; // bina modification ke return
+    }
+
+    return flights
+      .map(flight => {
+        const firstSegment = flight.Segments[0][0];
+        const lastSegment = flight.Segments[0][flight.Segments[0].length - 1];
+
+        // Airline filter — AirlineName match karega (case-insensitive)
+        const airlineName = firstSegment.Airline.AirlineName?.toLowerCase();
+        const airlineMatch =
+          !filters.airlines || filters.airlines.length === 0 ||
+          filters.airlines.some(a => airlineName.includes(a.toLowerCase()));
+
+        // Stops filter
+        const stopsCount = flight.Segments[0].length - 1;
+        const stopMatch =
+          !filters.stops || filters.stops.length === 0 ||
+          filters.stops.includes(String(stopsCount));
+
+        // Departure Time filter
+        const depHour = new Date(firstSegment.Origin.DepartTime).getHours();
+        const depTimeMatch =
+          !filters.departureTime ||
+          (depHour >= filters.departureTime[0] && depHour <= filters.departureTime[1]);
+
+        // Arrival Time filter
+        const arrHour = new Date(lastSegment.Destination.ArrivalTime).getHours();
+        const arrTimeMatch =
+          !filters.arrivalTime ||
+          (arrHour >= filters.arrivalTime[0] && arrHour <= filters.arrivalTime[1]);
+
+        // FareList filter
+        const filteredFareList = flight.FareList.filter(fare => {
+          // Price range
+          const inPriceRange =
+            !filters.priceRange ||
+            (fare.OfferedPrice >= filters.priceRange[0] &&
+              fare.OfferedPrice <= filters.priceRange[1]);
+
+          // Refundable check
+          const refundableCheck =
+            filters.refundable === null || filters.refundable === undefined
+              ? true
+              : filters.refundable === "refundable"
+                ? fare.IsRefundable === true
+                : filters.refundable === "non-refundable"
+                  ? fare.IsRefundable === false
+                  : true;
+
+          return inPriceRange && refundableCheck;
+        });
+
+        if (
+          airlineMatch &&
+          stopMatch &&
+          depTimeMatch &&
+          arrTimeMatch &&
+          filteredFareList.length > 0
+        ) {
+          return { ...flight, FareList: filteredFareList };
+        }
+        return null;
+      })
+      .filter(f => f !== null);
+  };
+
+  const onwardFilteredFlights = filterFares(flights[0], filters);
+  const returnFilteredFlights = filterFares(flights[1], filters);
 
   return (
-    <div className="px-4 pb-32">
+    <div className="">
       {flights?.length > 1 ? (
         <Row>
           {/* Onward Flights */}
           <Col md={6}>
             {Array.isArray(flights[0]) &&
-              flights[0].map((flight, index) => (
-                <div key={flight.FlightNumber || `onward-${index+1}`}>
+              onwardFilteredFlights.map((flight, index) => (
+                <div key={flight.FlightNumber || `onward-${index + 1}`}>
                   <RoundTripCard
                     flight={flight}
                     type="onward"
@@ -174,8 +238,8 @@ const handleReturnSelect = (flight, fare) => {
 
           <Col md={6}>
             {Array.isArray(flights[1]) &&
-              flights[1].map((flight, index) => (
-                <div key={flight.FlightNumber || `return-${index+2}`}>
+              returnFilteredFlights.map((flight, index) => (
+                <div key={flight.FlightNumber || `return-${index + 2}`}>
                   <RoundTripCard
                     flight={flight}
                     type="return"
@@ -191,8 +255,10 @@ const handleReturnSelect = (flight, fare) => {
         <Row>
           <Col md={12}>
             {Array.isArray(flights[0]) &&
-              flights[0].map((flight, index) => (
-                <InterRoundtripCard key={index} flight={flight} />
+              onwardFilteredFlights.map((flight, index) => (
+                <InterRoundtripCard key={index} flight={flight}
+                  type="onward"
+                  selectedFare={selectedOnwardFare} />
               ))}
           </Col>
         </Row>

@@ -24,7 +24,8 @@ const Addoninfo = () => {
   // const passengersData = useSelector((state) => state.passengersData || []);
   //  const passengersData = JSON.parse(localStorage.getItem('passengersData'));
   // const mealOptions = SSR?.Meal?.[0] || [];
-  const mealOptions = Array.isArray(SSR?.Meal?.[0]) ? SSR?.Meal?.[0] : [];
+  const mealOptions = Array.isArray(SSR?.Meal?.[0]) ? SSR?.Meal?.[0] : SSR?.Meal;
+  console.log('mealOptions',SSR.Meal)
   const [selectedSeat, setSelectedSeat] = React.useState(null);
   const [Passengers, setPassengers] = React.useState(null);
   const baggageOptions = SSR?.Baggage?.[0] || [];
@@ -35,7 +36,7 @@ const Addoninfo = () => {
       ? Object.values(rawSeatData).flat()
       : [];
 
-  const { Origin, Destination } = mealOptions;
+  const { Origin, Destination } = mealOptions || [];
   // Initialize state with passenger data or empty selections
   const [passengerSelections, setPassengerSelections] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

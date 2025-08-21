@@ -1,12 +1,13 @@
 // src/Components/Common/SearchButton.jsx
-import React, { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useContext} from 'react';
+import { useNavigate,useLocation } from 'react-router-dom';
 import { LocationContext } from '../Context/LocationContext';
 import { HotelSearchContext } from '../Context/HotelSearchContext';
 import '../../Style/FlightBooking.css';
 
 const SearchButton = ({ type }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { locationData } = useContext(LocationContext);
   const { hotelSearchData } = useContext(HotelSearchContext);
 
@@ -32,12 +33,23 @@ const SearchButton = ({ type }) => {
       totalPrice,
     } = locationData;
 
-    console.log('locationData',locationData)
+    console.log('locationDatakkkkk',locationData)
 
     switch (type) {
-      case 'flight':
-        navigate('/flight-results', {
-          state: {
+      case 'flight': {
+        const searchParams = new URLSearchParams();
+    
+        // Build common state object
+        let state = {};
+        if (locationData.tripType === 'multicity' && locationData.AirSegments) {
+          state = {
+            AirSegments: locationData.AirSegments,
+            passengers: locationData.passengers,
+            cabinClass: locationData.cabinClass,
+            tripType: 'multicity'
+          };
+        } else {
+          state = {
             fromCity,
             toCity,
             fromAirport,
@@ -49,10 +61,23 @@ const SearchButton = ({ type }) => {
             passengers,
             cabinClass,
             tripType: tripType || 'oneway'
-          }
-        });
+          };
+        }
+    
+        // Helper function to handle navigation
+        const goToResults = () => {
+          navigate('/flight-results', { state });
+        };
+    
+        if (location.pathname === '/flight-results') {
+          navigate(`/?${searchParams.toString()}`, { replace: true });
+          setTimeout(goToResults, 10);
+        } else {
+          goToResults();
+        }
+    
         break;
-
+      }
       case 'bus':
         navigate('/bus-results', {
           state: {

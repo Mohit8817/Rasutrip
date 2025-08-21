@@ -19,7 +19,7 @@ const FlightTravellerDetails = () => {
 
     return (
         <div>
-            <Container style={{ marginTop: '10rem' }}>
+            <Container style={{ marginTop: '4rem' }}>
 
                 <Row>
                     <div>
