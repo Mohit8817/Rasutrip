@@ -374,14 +374,14 @@ const Footer = () => {
                 <Container>
                     <Row>
                         {/* Column 1 - Logo & Contact */}
-                        <Col lg={3} md={6} className="mb-4">
-                            <div className="footer-brand mb-4">
+                        <Col lg={3} md={6} className="">
+                            <div className="footer-brand">
                                 <img
                                     className='footerlogo'
                                     src={footerlogo}
                                     alt="rasutrip"
                                 />
-                                <p className="brand-tagline mt-3 text-muted">
+                                <p className="text-muted">
                                     Your trusted travel companion for flights, hotels, and bus bookings across India.
                                 </p>
                             </div>

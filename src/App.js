@@ -164,6 +164,8 @@ import UserDashboard from './Components/Login/Dashboard/pages/UserDashboard';
 import Blogpage from './Pages/Blog/BlogListPage';
 import BlogListPage from './Pages/Blog/BlogListPage';
 import BlogDetail from './Pages/Blog/BlogDetail';
+
+import { FaWhatsapp } from "react-icons/fa";
 function App() {
   return (
     <>
@@ -229,6 +231,16 @@ function App() {
 
       </Routes>
       <Footer />
+
+       {/* Fixed WhatsApp Icon */}
+        <a
+          href="https://wa.me/919266424809" // yaha apna WhatsApp number daalo
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-5 right-5 bg-green-800 text-white p-3 rounded-full shadow-lg hover:bg-green-600 transition duration-400 z-50"
+        >
+          <FaWhatsapp size={30} />
+        </a>
       {/* </Router> */}
       <ToastContainer position="top-right" autoClose={3000} />
     </>
