@@ -283,9 +283,8 @@ export const bookBus = async (bookingData) => {
 
 
 
-
 // ================================================
-// 🚌 ENHANCED BUS INVOICE DOWNLOAD API - IMPROVED 409 HANDLING
+// 🚌 ENHANCED BUS INVOICE DOWNLOAD API 
 // ================================================
 
 export const downloadBusInvoice = async (invoiceData) => {
@@ -304,12 +303,19 @@ export const downloadBusInvoice = async (invoiceData) => {
 
     const headers = createAuthHeaders();
 
-    // Enhanced payload with proper data structure
+    // Helper to generate unique IDs
+    const generateUniqueId = (prefix) => {
+      return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    };
+
+    // Enhanced payload with proper data structure + unique invoiceId
     const payload = {
       UserIp: invoiceData.UserIp || "122.161.64.143",
       SearchTokenId: invoiceData.SearchTokenId,
       BookingId: String(invoiceData.BookingId).trim(), // Ensure it's a clean string
-      receiverEmail: invoiceData.receiverEmail || ""
+      receiverEmail: invoiceData.receiverEmail || "",
+      invoiceNo: generateUniqueId("INV"), // 👈 unique invoice number
+      transactionId: generateUniqueId("TXN"), // 👈 unique transactionId
     };
 
     console.log('📤 Final payload being sent:', payload);

@@ -1,4 +1,4 @@
-// src/components/common/Login.js
+// src/components/common/Login.js - Updated to work with cleaned AuthContext
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dropdown } from 'react-bootstrap';
@@ -8,7 +8,16 @@ import '../../Style/user.css';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { user, userType, logout, getUserDisplayName } = useContext(AuthContext);
+  const {
+    user,
+    userType,
+    isLoggedIn,
+    logout,
+    getUserDisplayName,
+    getUserMobile,
+    isAgent,
+    isCustomer
+  } = useContext(AuthContext);
 
   const handleSelect = (type) => {
     if (type === 'customer') navigate('/login/customer');
@@ -28,43 +37,77 @@ const Login = () => {
     return mobile;
   };
 
+  // Get display name with fallback
+  const getDisplayName = () => {
+    if (!isLoggedIn || !user) return 'Login or Signup';
+
+    const displayName = getUserDisplayName();
+
+    // If we have a proper name, use it
+    if (displayName && displayName !== 'User' && displayName !== 'Agent') {
+      return displayName;
+    }
+
+    // Fallback to formatted mobile
+    return formatMobileForDisplay(user.mobile);
+  };
+
+  // Get user type display
+  const getUserTypeDisplay = () => {
+    if (!isLoggedIn || !userType) return '';
+
+    if (isAgent()) return 'Agent';
+    if (isCustomer()) return 'Customer';
+    return userType;
+  };
+
   return (
     <div className="d-flex justify-content-center align-items-center login-container">
       <div className="login-dropdown-box">
         <Dropdown>
           <Dropdown.Toggle as="div" className="user-profile" role="button" tabIndex="0">
             <div className="user-profile-inner">
-              {user && userType === 'agent' ? (
+              {isLoggedIn && isAgent() ? (
                 <BsPersonBadge size={24} />
               ) : (
                 <BsPersonCircle size={24} />
               )}
               <p>
-                {user 
-                  ? (user.name || formatMobileForDisplay(user.mobile))
-                  : 'Login or Signup'
-                }
+                {getDisplayName()}
               </p>
-              {user && userType && (
-                <span className={`small text-capitalize ${userType === 'agent' ? 'text-primary' : 'text-success'}`}>
-                  {/* ({userType}) */}
+              {/* {isLoggedIn && userType && (
+                <span className={`small text-capitalize ${isAgent() ? 'text-primary' : 'text-success'}`}>
+                  ({getUserTypeDisplay()})
                 </span>
-              )}
+              )} */}
             </div>
           </Dropdown.Toggle>
-          
+
           <Dropdown.Menu>
-            {user ? (
+            {isLoggedIn ? (
               <>
-                {/* <Dropdown.Item onClick={() => navigate('/profile')}>
-                  <BsPersonCircle size={16} className="me-2" />
-                  View Profile
-                </Dropdown.Item> */}
+                {/* <Dropdown.Header>
+                  <div className="text-center">
+                    <strong>{getUserDisplayName()}</strong>
+                    <br />
+                    <small className="text-muted">
+                      {getUserMobile()}
+                    </small>
+                    <br />
+                    <small className={`badge ${isAgent() ? 'bg-primary' : 'bg-success'}`}>
+                      {getUserTypeDisplay()}
+                    </small>
+                  </div>
+                </Dropdown.Header> */}
+                <Dropdown.Divider />
+
                 <Dropdown.Item onClick={() => navigate('/dashboard')}>
                   <i className="fas fa-tachometer-alt me-2"></i>
                   Dashboard
                 </Dropdown.Item>
+
                 <Dropdown.Divider />
+
                 <Dropdown.Item onClick={handleLogout} className="text-danger">
                   <i className="fas fa-sign-out-alt me-2"></i>
                   Logout
@@ -72,14 +115,20 @@ const Login = () => {
               </>
             ) : (
               <>
+
+
                 <Dropdown.Item onClick={() => handleSelect('customer')}>
                   <BsPersonCircle size={20} className="me-2" />
                   Customer Login
+
                 </Dropdown.Item>
+
                 <Dropdown.Divider />
+
                 <Dropdown.Item onClick={() => handleSelect('agent')}>
                   <BsPersonBadge size={20} className="me-2" />
                   Agent Login
+
                 </Dropdown.Item>
               </>
             )}

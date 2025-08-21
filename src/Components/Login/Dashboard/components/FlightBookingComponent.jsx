@@ -27,11 +27,11 @@ const FlightBookingComponent = () => {
           'Authorization': `Bearer ${token}`,
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('API call failed:', error);
@@ -43,10 +43,10 @@ const FlightBookingComponent = () => {
   const loadFlightBookings = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       console.log('🛫 Loading flight bookings...');
-      
+
       // Fetch all bookings
       const allResponse = await apiCall('/airservice/booking-details');
       if (allResponse?.Error?.ErrorCode === 0) {
@@ -133,17 +133,10 @@ const FlightBookingComponent = () => {
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">My Flight Bookings</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Current user role: <span className="font-medium capitalize">{userRole}</span>
-            {['agent', 'admin', 'super_admin', 'staff'].includes(userRole) && (
-              <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                ✈️ Agent Portal
-              </span>
-            )}
-          </p>
+          <h5 className="text-2xl font-bold text-gray-800">My Flight Bookings</h5>
+
         </div>
-       
+
       </div>
 
       {/* Error Display
@@ -218,8 +211,8 @@ const FlightBookingComponent = () => {
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Amount</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payment Status</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200"
-                    onClick={toggleSortOrder}
-                    title="Click to change sort order">
+                  onClick={toggleSortOrder}
+                  title="Click to change sort order">
                   Booked On {sortOrder === 'desc' ? '↓' : '↑'}
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
@@ -305,15 +298,14 @@ const FlightBookingComponent = () => {
                         {booking.pnr || booking.confirmationNo || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        <span className={`font-medium ${
-                          booking.status?.toLowerCase() === 'confirmed' || booking.bookingStatus?.toLowerCase() === 'confirmed' 
+                        <span className={`font-medium ${booking.status?.toLowerCase() === 'confirmed' || booking.bookingStatus?.toLowerCase() === 'confirmed'
                             ? 'text-green-600' :
-                          booking.status?.toLowerCase() === 'pending' || booking.bookingStatus?.toLowerCase() === 'pending'
-                            ? 'text-orange-600' :
-                          booking.status?.toLowerCase() === 'cancelled' || booking.bookingStatus?.toLowerCase() === 'cancelled'
-                            ? 'text-red-600' :
-                            'text-blue-600'
-                        }`}>
+                            booking.status?.toLowerCase() === 'pending' || booking.bookingStatus?.toLowerCase() === 'pending'
+                              ? 'text-orange-600' :
+                              booking.status?.toLowerCase() === 'cancelled' || booking.bookingStatus?.toLowerCase() === 'cancelled'
+                                ? 'text-red-600' :
+                                'text-blue-600'
+                          }`}>
                           {booking.status || booking.bookingStatus || 'Confirmed'}
                         </span>
                       </td>
@@ -321,15 +313,14 @@ const FlightBookingComponent = () => {
                         {formatAmount(booking.totalAmount || booking.amount)}
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        <span className={`font-medium ${
-                          booking.paymentStatus?.toLowerCase() === 'completed' || booking.paymentStatus?.toLowerCase() === 'paid'
+                        <span className={`font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' || booking.paymentStatus?.toLowerCase() === 'paid'
                             ? 'text-green-600' :
-                          booking.paymentStatus?.toLowerCase() === 'processing'
-                            ? 'text-orange-600' :
-                          booking.paymentStatus?.toLowerCase() === 'failed'
-                            ? 'text-red-600' :
-                            'text-green-600'
-                        }`}>
+                            booking.paymentStatus?.toLowerCase() === 'processing'
+                              ? 'text-orange-600' :
+                              booking.paymentStatus?.toLowerCase() === 'failed'
+                                ? 'text-red-600' :
+                                'text-green-600'
+                          }`}>
                           {booking.paymentStatus || 'Completed'}
                         </span>
                       </td>
