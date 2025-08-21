@@ -161,15 +161,12 @@ const BlogDetail = () => {
                     {/* Meta Information */}
                     <div className="flex flex-wrap items-center gap-6 text-gray-500 mb-8">
                         <div className="flex items-center">
-                            <span className="mr-2">👤</span>
                             <span>{blog.author?.name || blog.author === "67f3a54abb43170178d6094d" ? "Admin" : (typeof blog.author === 'string' ? blog.author : 'Anonymous')}</span>
                         </div>
                         <div className="flex items-center">
-                            <span className="mr-2">📅</span>
                             <span>{formatDate(blog.uploadDate || blog.createdAt)}</span>
                         </div>
                         <div className="flex items-center">
-                            <span className="mr-2">⏱️</span>
                             <span>{getReadingTime(blog.content)}</span>
                         </div>
                         {blog.status && (
