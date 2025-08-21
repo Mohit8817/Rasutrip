@@ -8,8 +8,8 @@
 .user-profile {
   cursor: pointer;
   padding: 6px 12px;
-  border-radius: 2px;
-  background-color: #ca0e27;
+  border-radius: 5px;
+  background-color: #000;
   display: inline-flex;
   align-items: center;
   color: #fff;

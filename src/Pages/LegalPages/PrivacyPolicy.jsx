@@ -25,7 +25,7 @@ const PrivacyPolicy = () => {
                     </p>
 
                     <h3 className="text-xl font-bold mt-6 mb-3 text-gray-800">A. Information You Provide to Us</h3>
-                    
+
                     <h4 className="text-lg font-semibold mt-4 mb-2 text-gray-800">Account Registration</h4>
                     <p className="text-gray-700 mb-4">
                         When you create an account with RASUTRIP, we collect information including:
@@ -199,7 +199,7 @@ const PrivacyPolicy = () => {
                         If you have any questions or concerns about this Privacy Policy, feel free to contact us directly at <strong>yourapp@rasutrip.com</strong>. If you have any questions about your privacy or anything in this policy, including if you need to access this policy in an alternative format, we encourage you to contact us.
                     </p>
 
-                   
+
                 </div>
             </div>
         </Container>
