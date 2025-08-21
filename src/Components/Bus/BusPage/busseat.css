@@ -1,0 +1,27 @@
+.seat {
+    width: 50px;
+    height: 50px;
+    margin: 10px;
+    display: inline-block;
+    background-color: #b0c4de;
+    text-align: center;
+    line-height: 50px;
+    cursor: pointer;
+}
+
+.selected {
+    background-color: #32CD32;
+}
+
+.taken {
+    background-color: #d3d3d3;
+    cursor: not-allowed;
+}
+
+.ladies {
+    background-color: #ffb6c1;
+}
+
+.bulk {
+    background-color: #f0e68c;
+}
