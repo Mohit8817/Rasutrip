@@ -225,7 +225,7 @@ const Header = () => {
                     {/* Desktop Right Side */}
                     <div className="header-right gap-3 d-none d-lg-flex align-items-center">
                         <a
-                            href="https://play.google.com/store/apps/details?id=com.rasutaxi.customer&pli=1"
+                            href="https://play.google.com/store/apps/details?id=com.om.rasutrip&pcampaignid=web_share"
                             target="_blank"
                             rel="noopener noreferrer"
                         >
