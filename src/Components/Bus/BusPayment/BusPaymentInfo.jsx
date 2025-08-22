@@ -1,7 +1,7 @@
-// src/components/Bus/BusPaymentInfo.js - UPDATED VERSION without email invoice sending
+// src/components/Bus/BusPaymentInfo.js - UPDATED VERSION with Loading States
 
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Spinner, Alert, Modal } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -11,6 +11,7 @@ const BusPaymentInfo = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [loadingStep, setLoadingStep] = useState('');
     const [error, setError] = useState(null);
 
     // Debug mode configuration
@@ -523,15 +524,17 @@ const BusPaymentInfo = () => {
         modal: {
             ondismiss: function () {
                 setLoading(false);
+                setLoadingStep('');
                 showErrorToast('⚠️ Payment Cancelled', 'Payment was cancelled by user');
             }
         },
     });
 
-    // ✅ ENHANCED: Payment handler with comprehensive booking flow (WITHOUT EMAIL INVOICE)
+    // ✅ ENHANCED: Payment handler with comprehensive booking flow and loading states
     const handlePayment = async () => {
         setError(null);
         setLoading(true);
+        setLoadingStep('Initializing payment gateway...');
 
         try {
             console.log('🚀 Starting bus payment process...');
@@ -539,16 +542,19 @@ const BusPaymentInfo = () => {
             debugLog('👥 Passenger data debug:', passengerData);
 
             // ✅ Load Razorpay script
+            setLoadingStep('Loading payment system...');
             const razorpayLoaded = await loadRazorpayScript();
             if (!razorpayLoaded) {
                 const errorMsg = 'Payment system failed to load. Please refresh and try again.';
                 setError(errorMsg);
                 showErrorToast('Payment System Error', errorMsg);
                 setLoading(false);
+                setLoadingStep('');
                 return;
             }
 
             // ✅ Create payment order
+            setLoadingStep('Creating payment order...');
             const orderData = formatBusOrderData(state, finalAmount);
             console.log('📦 Creating payment order with data:', orderData);
 
@@ -593,11 +599,13 @@ const BusPaymentInfo = () => {
             }
 
             console.log('✅ Payment order created:', { orderId, orderAmount });
+            setLoadingStep('Opening payment gateway...');
 
-            // ✅ ENHANCED: Success handler with comprehensive booking flow (WITHOUT EMAIL INVOICE)
+            // ✅ ENHANCED: Success handler with comprehensive booking flow and loading states
             const handleSuccess = async (response) => {
                 try {
                     console.log('✅ Payment successful, validating...', response);
+                    setLoadingStep('Validating payment...');
 
                     const validateData = formatValidatePaymentData(state, response, orderObject);
                     console.log('📤 Validation data being sent:', validateData);
@@ -614,6 +622,8 @@ const BusPaymentInfo = () => {
                     if (isValidationSuccessful) {
                         // ✅ Proceed to book bus after successful validation
                         console.log('🎫 Proceeding to book bus...');
+                        setLoadingStep('Confirming your booking...');
+
                         const bookingData = formatBookingData(state);
 
                         // ✅ Final validation before booking API call
@@ -629,14 +639,16 @@ const BusPaymentInfo = () => {
                         console.log('✅ Bus booking result:', bookingResult);
 
                         // ✅ ENHANCED: BookingId extraction with comprehensive fallback strategies
+                        setLoadingStep('Generating booking confirmation...');
                         const extractedBookingId = extractBookingIdFromResponse(bookingResult);
 
                         console.log('🎯 EXTRACTED BOOKING ID:', extractedBookingId);
 
-                        // ✅ Show success message (no mention of invoice since it will be handled on confirmation page)
+                        // ✅ Show success message
+                        setLoadingStep('Booking confirmed successfully!');
                         showSuccessToast('🎉 Bus booking confirmed successfully!');
 
-                        // ✅ Navigate to confirmation page with all necessary data (WITHOUT invoice download attempt)
+                        // ✅ Navigate to confirmation page with all necessary data
                         navigate('/bus-confirm', {
                             state: {
                                 paymentId: response.razorpay_payment_id,
@@ -683,6 +695,7 @@ const BusPaymentInfo = () => {
                     }
                 } finally {
                     setLoading(false);
+                    setLoadingStep('');
                 }
             };
 
@@ -699,9 +712,11 @@ const BusPaymentInfo = () => {
                 setError(`Payment failed: ${failureMessage}`);
                 showErrorToast('❌ Payment Failed', failureMessage);
                 setLoading(false);
+                setLoadingStep('');
             });
 
             // ✅ Open Razorpay modal
+            setLoadingStep('');
             rzp.open();
 
         } catch (err) {
@@ -710,6 +725,7 @@ const BusPaymentInfo = () => {
             setError(errorMessage);
             showErrorToast('❌ Payment Initialization Failed', errorMessage);
             setLoading(false);
+            setLoadingStep('');
         }
     };
 
@@ -733,18 +749,43 @@ const BusPaymentInfo = () => {
 
     return (
         <Container className="py-4">
-
+            {/* ✅ NEW: Loading Overlay Modal */}
+            <Modal
+                show={loading}
+                backdrop="static"
+                keyboard={false}
+                centered
+                size="md"
+            >
+                <Modal.Body className="text-center py-5">
+                    <div className="mb-4">
+                        <Spinner animation="border" variant="danger" size="lg" />
+                    </div>
+                    <h5 className="mb-3">Processing Your Booking</h5>
+                    {loadingStep && (
+                        <p className="text-muted mb-0">{loadingStep}</p>
+                    )}
+                    <div className="mt-4 p-3 bg-light rounded">
+                        <small className="text-danger fw-bold">
+                            ⚠️ Please don't close or refresh this page
+                        </small>
+                        <br />
+                        <small className="text-muted">
+                            Your payment is being processed securely
+                        </small>
+                    </div>
+                </Modal.Body>
+            </Modal>
 
             {/* ✅ Enhanced Travel Summary */}
             <Card className="mb-4 shadow-sm">
-                <Card.Header className="bg-danger text-white">
+                <Card.Header className="">
                     <div className="d-flex align-items-center">
-                        <FaShieldAlt className="me-2" />
                         <h5 className="fw-bold mb-0"> Bus Booking Summary</h5>
                     </div>
                 </Card.Header>
                 <Card.Body>
-                    <div className="mb-4 p-3 bg-light rounded">
+                    <div className="mb-4 p-3">
                         <Row>
                             <Col md={3}>
                                 <div><strong>Route:</strong></div>
@@ -760,8 +801,8 @@ const BusPaymentInfo = () => {
                                 <div>{passengerData.length} Passenger(s)</div>
                             </Col>
                             <Col md={3}>
-                                <div><strong>Seats:</strong></div>
-                                <div className="fw-bold text-success">
+                                <div><strong>Seats No:</strong></div>
+                                <div className="fw-bold">
                                     {selectedSeats.map((seat, index) =>
                                         extractSeatName(seat, index)
                                     ).join(', ')}
@@ -771,48 +812,6 @@ const BusPaymentInfo = () => {
                     </div>
                 </Card.Body>
             </Card>
-
-            {/* Passenger Details */}
-            {passengerData.length > 0 && (
-                <Card className="mb-3 shadow-sm">
-                    <Card.Header className="bg-white">
-                        <h6 className="fw-bold mb-0">Passenger Details</h6>
-                    </Card.Header>
-                    <Card.Body>
-                        {passengerData.map((passenger, index) => (
-                            <Row key={index} className="mb-2 p-2 border rounded">
-                                <Col md={4}>
-                                    <strong>Name:</strong> {passenger.firstName} {passenger.lastName}
-                                </Col>
-                                <Col md={2}>
-                                    <strong>Age:</strong> {passenger.age}
-                                </Col>
-                                <Col md={3}>
-                                    <strong>Seat:</strong> {extractSeatName(selectedSeats[index], index)}
-                                </Col>
-                                <Col md={3}>
-                                    <strong>Gender:</strong> {passenger.gender}
-                                </Col>
-                            </Row>
-                        ))}
-                    </Card.Body>
-                </Card>
-            )}
-
-            {/* Contact Info */}
-            {contactData && Object.keys(contactData).length > 0 && (
-                <Card className="mb-4 shadow-sm">
-                    <Card.Header className="bg-white">
-                        <h6 className="fw-bold mb-0"> Contact Information</h6>
-                    </Card.Header>
-                    <Card.Body>
-                        <Row>
-                            <Col md={6}><strong>Contact:</strong> {contactData.mobile || 'N/A'}</Col>
-                            <Col md={6}><strong> Email:</strong> {contactData.email || 'N/A'}</Col>
-                        </Row>
-                    </Card.Body>
-                </Card>
-            )}
 
             {/* ✅ Enhanced Payment Summary */}
             <Card className="mb-4 shadow-sm">
@@ -846,8 +845,6 @@ const BusPaymentInfo = () => {
                 </Card.Body>
             </Card>
 
-
-
             {/* ✅ Enhanced Payment Button Section */}
             <Card className="shadow-sm">
                 <Card.Body>
@@ -863,24 +860,24 @@ const BusPaymentInfo = () => {
                         <Button
                             variant="danger"
                             className="btn-red"
-                            disabled={!totalPrice || !!error} 
+                            disabled={!totalPrice || !!error || loading}
                             onClick={handlePayment}
                         >
-                            {`Pay Now ₹${finalAmount}`}
+                            {loading ? (
+                                "Processing..."
+                            ) : (
+                                `Pay Now ₹${finalAmount}`
+                            )}
                         </Button>
-                    </div>
 
+                    </div>
                 </Card.Body>
             </Card>
 
-
-
             {/* ✅ Enhanced Error Alert */}
-
             {error && (
                 <Alert variant="danger" className="mb-4 mt-3" dismissible onClose={() => setError(null)}>
                     <FaExclamationTriangle className="me-2" />
-
                     <span style={{ whiteSpace: 'pre-line', marginTop: '8px' }}>
                         <strong>Error: </strong>
                         {error}
