@@ -132,7 +132,7 @@ const Header = () => {
 
                                 {/* Rider / Driver / Service Areas */}
                                 <Nav.Link
-                                    href="/rider"
+                                    href="https://test.rasutrip.com/"
                                     className="nav-item-link"
                                     onClick={closeOffcanvas} // ✅ close on click
                                 >
