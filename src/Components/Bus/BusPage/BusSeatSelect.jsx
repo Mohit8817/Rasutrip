@@ -673,7 +673,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
               <div className="selected-seats-summary p-3 mb-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <strong className="text-dark">Selected Seats:</strong>
-                             </div>
+                </div>
                 <div className="selected-seats-list">
                   {selectedSeats.length > 0 ? (
                     <div className="d-flex flex-wrap gap-1">
