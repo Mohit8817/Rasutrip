@@ -16,7 +16,6 @@ const BusBooking = () => {
                     </Col>
                     <Col lg={2}>
                         <div className='mt-4'>
-                        
                             <SearchButton type="bus" />
                         </div>
 
