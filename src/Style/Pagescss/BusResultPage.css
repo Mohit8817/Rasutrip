@@ -106,3 +106,14 @@
 .promo-input-group input {
   flex: 1;
 }
+
+
+
+
+
+
+
+.berth-section {
+  color: #000 !important;   /* Dark Black */
+  font-weight: 600;         /* Bold */
+}

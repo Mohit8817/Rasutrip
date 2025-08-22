@@ -1,18 +1,18 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Modal, Button, Row, Col, Form, Card, Spinner, Table, Alert } from "react-bootstrap";
+import { Modal, Button, Row, Col, Form, Card, Table, Alert } from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchSeatLayout, fetchBoardingDroppingPoints } from "../../APIS/BusApi/BusApis";
 import "../../../Style/Pagescss/BusResultPage.css";
 
-// SVG Seat Components
+// SVG Seat Components - Made smaller
 const SvgSeatIcon = ({
   fill = "#f8f9fa",
   stroke = "#6c757d",
   isSelected = false,
   isBooked = false,
   isLadies = false,
-  width = 45,
-  height = 32
+  width = 35,
+  height = 25
 }) => (
   <svg
     width={width}
@@ -67,8 +67,8 @@ const SvgSleeperIcon = ({
   isSelected = false,
   isBooked = false,
   isLadies = false,
-  width = 65,
-  height = 35
+  width = 55,
+  height = 28
 }) => (
   <svg
     width={width}
@@ -138,8 +138,8 @@ const SvgUpperBerthIcon = ({
   isSelected = false,
   isBooked = false,
   isLadies = false,
-  width = 60,
-  height = 35
+  width = 50,
+  height = 28
 }) => (
   <svg
     width={width}
@@ -393,7 +393,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
         key={seat.SeatName}
         className="seat-container position-relative"
         style={{
-          margin: '3px',
+          margin: '1px',
           cursor: isBooked ? 'not-allowed' : 'pointer',
           display: 'inline-block'
         }}
@@ -407,23 +407,6 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
           isBooked={isBooked}
           isLadies={seat.IsLadiesSeat}
         />
-
-        {/* Seat Info Overlay - Only showing seat number */}
-        <div
-          className="seat-info position-absolute d-flex flex-column align-items-center justify-content-center"
-          style={{
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            fontSize: '10px',
-            fontWeight: 'bold',
-            color: isBooked ? '#6c757d' : (isSelected ? '#fff' : '#000'),
-            textShadow: '0 0 2px rgba(255,255,255,0.8)',
-            pointerEvents: 'none'
-          }}
-        >
-          <div>{seat.SeatName}</div>
-        </div>
       </div>
     );
   };
@@ -437,16 +420,16 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
           <i className={`fas ${berthName === 'Upper' ? 'fa-bed' : 'fa-chair'} me-2`}></i>
           {berthName} Berth
         </h6>
-        <div className="seat-grid border rounded p-3" style={{ backgroundColor: '#f8f9fa' }}>
+        <div className="seat-grid border rounded p-2" style={{ backgroundColor: '#f8f9fa' }}>
           {rows.map(rowNo => (
-            <div key={rowNo} className="seat-row d-flex justify-content-center align-items-center mb-2">
+            <div key={rowNo} className="seat-row d-flex justify-content-center align-items-center mb-1">
               <div className="d-flex">
                 {berthSeats[rowNo].map((seat, index) => (
                   <React.Fragment key={seat.SeatName}>
                     {renderSeat(seat)}
                     {/* Add aisle space after 2nd seat if more than 4 seats in row */}
                     {index === 1 && berthSeats[rowNo].length > 4 && (
-                      <div style={{ width: '15px', borderRight: '2px dashed #dee2e6', margin: '0 5px' }}></div>
+                      <div style={{ width: '10px', borderRight: '2px dashed #dee2e6', margin: '0 2px' }}></div>
                     )}
                   </React.Fragment>
                 ))}
@@ -471,53 +454,47 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
     const organizedSeats = organizeSeatsByLayout(seatLayout);
 
     return (
-      <div className="seat-layout-container" style={{ height: '100vh', padding: '15px' }}>
+      <div className="seat-layout-container">
         <div className="row h-100">
           {/* Seat Layout (col-9) */}
           <div className="col-md-9 h-100">
             {/* Fixed Scrollable Container */}
             <div
-              className="position-relative border rounded p-3 shadow-sm"
+              className="position-relative border rounded p-2 shadow-sm"
               style={{
-                height: '100%',
-                width: '100%',
                 overflow: 'auto',
-                backgroundColor: '#fafafa',
-                minHeight: '500px',
-                maxHeight: '80vh'
+                minHeight: 'auto',
+                maxHeight: 'auto'
               }}
             >
               {/* Content Container */}
               <div style={{
-                minWidth: '800px',
-                minHeight: 'fit-content',
-                padding: '15px',
+                minWidth: '600px',
                 width: '100%'
               }}>
                 {/* Upper Berth */}
                 {organizedSeats.upper && (
-                  <div className="berth-section">
+                  <div className="berth-section text-dark">
                     {renderBerthLayout(organizedSeats.upper, "Upper")}
                   </div>
                 )}
 
                 {/* Lower Berth */}
                 {organizedSeats.lower && (
-                  <div className="berth-section">
+                  <div className="berth-section text-dark">
                     {renderBerthLayout(organizedSeats.lower, "Lower")}
                   </div>
                 )}
+
               </div>
             </div>
           </div>
 
           {/* Legend Info (col-3) */}
-          <div className="col-md-3 h-100">
+          <div className="col-md-3">
             <div
-              className="h-100 p-3 bg-light rounded shadow-sm d-flex flex-column"
+              className="d-flex flex-column"
               style={{
-                minHeight: '500px',
-                maxHeight: '80vh',
                 overflow: 'auto'
               }}
             >
@@ -527,25 +504,25 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
 
               {/* Legend Items */}
               <div className="flex-grow-1">
-                <div className="d-flex flex-column gap-3">
+                <div className="d-flex flex-column gap-2">
                   <div className="d-flex align-items-center">
-                    <SvgSeatIcon fill="#ffffff" stroke="#6c757d" width={30} height={20} />
+                    <SvgSeatIcon fill="#ffffff" stroke="#6c757d" width={25} height={18} />
                     <small className="fw-medium ms-2">Available</small>
                   </div>
                   <div className="d-flex align-items-center">
-                    <SvgSeatIcon fill="#28a745" stroke="#28a745" width={30} height={20} />
+                    <SvgSeatIcon fill="#28a745" stroke="#28a745" width={25} height={18} />
                     <small className="fw-medium ms-2">Selected</small>
                   </div>
                   <div className="d-flex align-items-center">
-                    <SvgSeatIcon fill="#fd7e14" stroke="#6c757d" isLadies={true} width={30} height={20} />
+                    <SvgSeatIcon fill="#fd7e14" stroke="#6c757d" isLadies={true} width={25} height={18} />
                     <small className="fw-medium ms-2">Ladies Only</small>
                   </div>
                   <div className="d-flex align-items-center">
-                    <SvgSeatIcon fill="#d6d8db" stroke="#6c757d" width={30} height={20} />
+                    <SvgSeatIcon fill="#d6d8db" stroke="#6c757d" width={25} height={18} />
                     <small className="fw-medium ms-2">Booked</small>
                   </div>
                   <div className="d-flex align-items-center">
-                    <SvgUpperBerthIcon fill="#ffffff" stroke="#6c757d" width={35} height={20} />
+                    <SvgUpperBerthIcon fill="#ffffff" stroke="#6c757d" width={30} height={18} />
                     <small className="fw-medium ms-2">Sleeper</small>
                   </div>
                 </div>
@@ -602,8 +579,8 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
     });
   };
 
-  return (   
-    
+  return (
+
     <Modal show={show} onHide={onHide} size="xl" centered scrollable>
       <Modal.Header closeButton>
         <Modal.Title>
@@ -625,8 +602,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
           <Col md={8}>
             {loading ? (
               <div className="text-center py-5">
-                <Spinner animation="border" size="sm" />
-                <div className="mt-2">Loading seats...</div>
+                <div className="text-muted">Please wait...</div>
               </div>
             ) : (
               renderSeatLayout()
@@ -643,8 +619,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
 
               {loading ? (
                 <div className="text-center py-3">
-                  <Spinner animation="border" size="sm" />
-                  <div className="mt-2">Loading boarding/dropping points...</div>
+                  <div className="text-muted">Please wait...</div>
                 </div>
               ) : (
                 <>
@@ -698,13 +673,12 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
               <div className="selected-seats-summary p-3 mb-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <strong className="text-dark">Selected Seats:</strong>
-                  <span className="badge bg-primary">{selectedSeats.length}</span>
-                </div>
+                             </div>
                 <div className="selected-seats-list">
                   {selectedSeats.length > 0 ? (
                     <div className="d-flex flex-wrap gap-1">
                       {selectedSeats.map(seat => (
-                        <span key={seat.SeatName} className="badge bg-success">
+                        <span key={seat.SeatName} className="badge bg-danger text-white">
                           {seat.SeatName}
                         </span>
                       ))}
@@ -719,7 +693,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
               <div className="price-breakdown p-3 mb-3">
                 <div className="d-flex justify-content-between align-items-center">
                   <strong className="text-dark">Total Amount:</strong>
-                  <strong className="text-success fs-5">₹ {totalPrice.toFixed(2)}</strong>
+                  <strong className="text-dark fs-5">₹ {totalPrice.toFixed(2)}</strong>
                 </div>
               </div>
 
