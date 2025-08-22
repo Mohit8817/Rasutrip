@@ -8,32 +8,41 @@ import Modal from "react-bootstrap/Modal";
 import "../../Style/header.css";
 import logo from "../../assest/rasutrip.png";
 import Login from "../Login/Login";
-import EnquiryForm from "../EnquiryForm/EnquiryForm"; // ✅ enquiry form import
+import EnquiryForm from "../EnquiryForm/EnquiryForm";
 import icon1 from '../../assest/footericon2.svg';
 
 const Header = () => {
     const [showLogin, setShowLogin] = useState(false);
-    const [showEnquiry, setShowEnquiry] = useState(false); // ✅ enquiry modal state
+    const [showEnquiry, setShowEnquiry] = useState(false);
+    const [showOffcanvas, setShowOffcanvas] = useState(false); // ✅ offcanvas state control
+
+    // ✅ Function to close offcanvas
+    const closeOffcanvas = () => {
+        setShowOffcanvas(false);
+    };
+
+    // ✅ Function to handle enquiry click
+    const handleEnquiryClick = () => {
+        setShowEnquiry(true);
+        closeOffcanvas(); // Close sidebar when enquiry modal opens
+    };
 
     return (
         <>
-
-
             {/* Main Header */}
             <Navbar expand="lg" className="header_navbar">
                 <Container fluid>
                     {/* Logo */}
                     <Navbar.Brand href="/" className="brand-container">
                         <img src={logo} alt="RasuTrip Logo" className="Header_logo" />
-                        {/* <div className="brand-text d-none d-md-block">
-                            <div className="brand-name">RasuTrip</div>
-                            <div className="brand-tagline">Book with Confidence</div>
-                        </div> */}
                     </Navbar.Brand>
 
                     {/* Mobile Toggle */}
                     <div className="d-flex align-items-center d-lg-none">
-                        <Navbar.Toggle aria-controls="offcanvasNavbar" />
+                        <Navbar.Toggle
+                            aria-controls="offcanvasNavbar"
+                            onClick={() => setShowOffcanvas(true)} // ✅ open offcanvas
+                        />
                     </div>
 
                     {/* Offcanvas Menu for Mobile */}
@@ -41,6 +50,8 @@ const Header = () => {
                         id="offcanvasNavbar"
                         aria-labelledby="offcanvasNavbarLabel"
                         placement="start"
+                        show={showOffcanvas} // ✅ controlled by state
+                        onHide={closeOffcanvas} // ✅ close handler
                     >
                         <Offcanvas.Header closeButton>
                             <Offcanvas.Title id="offcanvasNavbarLabel">
@@ -49,7 +60,11 @@ const Header = () => {
                         </Offcanvas.Header>
                         <Offcanvas.Body>
                             <Nav className="header-nav mx-auto">
-                                <Nav.Link href="/" className="nav-item-link">
+                                <Nav.Link
+                                    href="/"
+                                    className="nav-item-link"
+                                    onClick={closeOffcanvas} // ✅ close on click
+                                >
                                     Home
                                 </Nav.Link>
 
@@ -59,9 +74,24 @@ const Header = () => {
                                         Flights
                                     </Dropdown.Toggle>
                                     <Dropdown.Menu>
-                                        <Dropdown.Item href="/flights/domestic">Domestic Flights</Dropdown.Item>
-                                        <Dropdown.Item href="/flights/international">International Flights</Dropdown.Item>
-                                        <Dropdown.Item href="/flights/multi-city">Multi-City</Dropdown.Item>
+                                        <Dropdown.Item
+                                            href="/flights/domestic"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
+                                            Domestic Flights
+                                        </Dropdown.Item>
+                                        <Dropdown.Item
+                                            href="/flights/international"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
+                                            International Flights
+                                        </Dropdown.Item>
+                                        <Dropdown.Item
+                                            href="/flights/multi-city"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
+                                            Multi-City
+                                        </Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
 
@@ -71,20 +101,41 @@ const Header = () => {
                                         Hotels
                                     </Dropdown.Toggle>
                                     <Dropdown.Menu>
-                                        <Dropdown.Item href="/hotels">Search Hotels</Dropdown.Item>
-                                        <Dropdown.Item href="/hotels/deals">Hotel Deals</Dropdown.Item>
-                                        <Dropdown.Item href="/hotels/luxury">Luxury Hotels</Dropdown.Item>
+                                        <Dropdown.Item
+                                            href="/hotels"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
+                                            Search Hotels
+                                        </Dropdown.Item>
+                                        <Dropdown.Item
+                                            href="/hotels/deals"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
+                                            Hotel Deals
+                                        </Dropdown.Item>
+                                        <Dropdown.Item
+                                            href="/hotels/luxury"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
+                                            Luxury Hotels
+                                        </Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
 
-                                <Nav.Link href="/bus" className="nav-item-link">
+                                <Nav.Link
+                                    href="/bus"
+                                    className="nav-item-link"
+                                    onClick={closeOffcanvas} // ✅ close on click
+                                >
                                     Bus
                                 </Nav.Link>
 
-
-
-                                {/* ✅ Rider / Driver / Service Areas */}
-                                <Nav.Link href="/rider" className="nav-item-link">
+                                {/* Rider / Driver / Service Areas */}
+                                <Nav.Link
+                                    href="/rider"
+                                    className="nav-item-link"
+                                    onClick={closeOffcanvas} // ✅ close on click
+                                >
                                     Rider
                                 </Nav.Link>
 
@@ -94,45 +145,85 @@ const Header = () => {
                                         Driver
                                     </Dropdown.Toggle>
                                     <Dropdown.Menu>
-                                        <Dropdown.Item href="https://test.rasutrip.com/driverpage">
+                                        <Dropdown.Item
+                                            href="https://test.rasutrip.com/driverpage"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
                                             Apply Drive
                                         </Dropdown.Item>
-                                        <Dropdown.Item href="https://test.rasutrip.com/howdriving">
+                                        <Dropdown.Item
+                                            href="https://test.rasutrip.com/howdriving"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
                                             How it Works
                                         </Dropdown.Item>
-                                        <Dropdown.Item href="https://test.rasutrip.com/driverrequirements">
+                                        <Dropdown.Item
+                                            href="https://test.rasutrip.com/driverrequirements"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
                                             Driver Requirement
                                         </Dropdown.Item>
-                                        <Dropdown.Item href="https://test.rasutrip.com/safety">
+                                        <Dropdown.Item
+                                            href="https://test.rasutrip.com/safety"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
                                             Safety
                                         </Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
 
-                                <Nav.Link href="https://test.rasutrip.com/serviceareas" className="nav-item-link">
+                                <Nav.Link
+                                    href="https://test.rasutrip.com/serviceareas"
+                                    className="nav-item-link"
+                                    onClick={closeOffcanvas} // ✅ close on click
+                                >
                                     Service Areas
                                 </Nav.Link>
+
                                 {/* Blog */}
-                                <Nav.Link href="/Blogs" className="nav-item-link">
+                                <Nav.Link
+                                    href="/Blogs"
+                                    className="nav-item-link"
+                                    onClick={closeOffcanvas} // ✅ close on click
+                                >
                                     Blog
                                 </Nav.Link>
 
                                 <Nav.Link
                                     as="span"
-                                    onClick={() => setShowEnquiry(true)} // ✅ open enquiry modal
+                                    onClick={handleEnquiryClick} // ✅ close sidebar and open enquiry
                                     className="nav-item-link"
                                     style={{ cursor: "pointer" }}>
                                     Enquiry
                                 </Nav.Link>
 
-                            </Nav>
+                                {/* ✅ Mobile/Tablet Login Button */}
+                                <div className="d-lg-none mt-3 pt-3">
+                                    <div className="text-start float-left">
+                                        <Login />
 
+                                        {/* Mobile App Download Link */}
+                                        <a
+                                            href="https://play.google.com/store/apps/details?id=com.rasutaxi.customer&pli=1"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="d-block text-center mt-2"
+                                            onClick={closeOffcanvas} // ✅ close on click
+                                        >
+                                            <img
+                                                src={icon1}
+                                                alt="Get it on Google Play"
+                                                style={{ maxWidth: "120px" }}
+                                            />
+                                        </a>
+                                    </div>
+                                </div>
+                            </Nav>
                         </Offcanvas.Body>
                     </Navbar.Offcanvas>
 
                     {/* Desktop Right Side */}
                     <div className="header-right gap-3 d-none d-lg-flex align-items-center">
-
                         <a
                             href="https://play.google.com/store/apps/details?id=com.rasutaxi.customer&pli=1"
                             target="_blank"
