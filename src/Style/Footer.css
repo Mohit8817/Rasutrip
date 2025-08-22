@@ -1,40 +1,4 @@
-/* .footer {
-  font-size: 15px;
-  color: #343a40;
-}
 
-.footerlogo{
-  width: 8rem;
-  margin: 0 0 0 0;
-}
-.footer .footer-heading {
-  font-weight: bold;
-  text-align: left;
-  margin-bottom: 10px;
-  position: relative;
-}
-
-.footer .footer-heading::after {
-  content: '';
-  display: block;
-  width: 45px;
-  height: 2.5px;
-  background-color: #cb0d26;
-  margin-top: 5px;
-}
-
-.footer-icon {
-  color: #cb0d26;
-}
-
-.bootomstrip{
-  background-color: #cb0d26;
-}
-
-.Copyright{
-  color: white;
-  padding: 15px 18px;
-} */
  /* Footer Main Styles */
 .footer {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

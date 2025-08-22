@@ -319,7 +319,7 @@ const CustomerLogin = () => {
 
       const token = response?.data?.token;
       if (token) {
-        // Create comprehensive user data with name priority
+        // Create comprehensive user data with name priority - FIXED: No duplicate keys
         const userData = {
           mobile: cleanMobile,
           name: cleanName,
@@ -327,15 +327,17 @@ const CustomerLogin = () => {
           lastName: cleanName.split(' ').slice(1).join(' ') || '',
           fullName: cleanName,
           displayName: cleanName,
+          email: response?.data?.user?.email || '',
+          userType: 'customer',
+          registrationDate: new Date().toISOString(),
+          signupCompleted: true,
+          // Spread backend user data but override name fields
           ...response?.data?.user,
-          // Always override with the name we collected during signup
+          // Override with our signup name (this ensures our name takes priority)
           name: cleanName,
           firstName: cleanName.split(' ')[0],
           fullName: cleanName,
-          displayName: cleanName,
-          userType: 'customer',
-          registrationDate: new Date().toISOString(),
-          signupCompleted: true
+          displayName: cleanName
         };
 
         console.log('💾 Saving complete user data after signup:', userData);
@@ -365,7 +367,7 @@ const CustomerLogin = () => {
     }
   };
 
-  // ENHANCED MPIN LOGIN - Main fix for your issue
+  // ENHANCED MPIN LOGIN - Main fix for your issue - FIXED: No duplicate keys
   const handleLoginWithMPIN = async () => {
     setError('');
     setMessage('');
@@ -401,7 +403,7 @@ const CustomerLogin = () => {
           // Get existing user profile data
           const existingProfile = getUserProfile(cleanMobile);
 
-          // Create comprehensive user data with priority to existing profile
+          // Create comprehensive user data with priority to existing profile - FIXED: No duplicate keys
           const userData = {
             mobile: cleanMobile,
             name: finalName,
@@ -410,16 +412,18 @@ const CustomerLogin = () => {
             fullName: finalName,
             displayName: finalName,
             email: backendUser.email || existingProfile?.email || '',
-            ...existingProfile, // Include existing profile data
-            ...backendUser, // Include backend data
-            // Override with our determined name (this is crucial)
+            userType: 'customer',
+            lastLoginTime: new Date().toISOString(),
+            isReturningUser: !!existingProfile,
+            // Spread existing profile first
+            ...existingProfile,
+            // Then spread backend data
+            ...backendUser,
+            // Finally override with our determined name values (this ensures name priority)
             name: finalName,
             firstName: finalName.split(' ')[0],
             fullName: finalName,
-            displayName: finalName,
-            userType: 'customer',
-            lastLoginTime: new Date().toISOString(),
-            isReturningUser: !!existingProfile
+            displayName: finalName
           };
 
           console.log('💾 Saving login user data:', userData);
@@ -486,7 +490,7 @@ const CustomerLogin = () => {
     }
   };
 
-  // Enhanced forgot password with better name preservation
+  // Enhanced forgot password with better name preservation - FIXED: No duplicate keys
   const handleForgotVerify = async () => {
     setError('');
     setMessage('');
@@ -522,6 +526,7 @@ const CustomerLogin = () => {
         const finalName = getNameFromMultipleSources(cleanMobile, backendUser);
         const existingProfile = getUserProfile(cleanMobile);
 
+        // FIXED: No duplicate keys
         const userData = {
           mobile: cleanMobile,
           name: finalName,
@@ -529,15 +534,17 @@ const CustomerLogin = () => {
           lastName: finalName.split(' ').slice(1).join(' ') || '',
           fullName: finalName,
           displayName: finalName,
+          userType: 'customer',
+          lastLoginTime: new Date().toISOString(),
+          // Spread existing profile first
           ...existingProfile,
+          // Then spread backend data
           ...backendUser,
-          // Override with determined name
+          // Finally override with determined name values
           name: finalName,
           firstName: finalName.split(' ')[0],
           fullName: finalName,
-          displayName: finalName,
-          userType: 'customer',
-          lastLoginTime: new Date().toISOString(),
+          displayName: finalName
         };
 
         // Save updated name locally
@@ -617,7 +624,7 @@ const CustomerLogin = () => {
                   }}
                   maxLength={50}
                   required
-                  className="form-control-lg"
+                  className="form-control"
                 />
 
               </Form.Group>
@@ -660,7 +667,7 @@ const CustomerLogin = () => {
                   value={mpin}
                   onChange={(e) => setMpin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   maxLength={4}
-                  className="form-control-lg"
+                  className="form-control"
                 />
                 {step === 'verifyAndMpin' && (
                   <Form.Text className="text-muted">
@@ -682,7 +689,7 @@ const CustomerLogin = () => {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   maxLength={6}
-                  className="form-control-lg"
+                  className="form-control"
                 />
                 <Form.Text className="text-light">
                   OTP sent to your mobile number
@@ -717,7 +724,7 @@ const CustomerLogin = () => {
                 <Button
                   onClick={handleLoginWithMPIN}
                   className="w-100 login-btn mb-2"
-                  size="lg"
+
                 >
                   Login
                 </Button>
@@ -729,7 +736,6 @@ const CustomerLogin = () => {
                 <Button
                   onClick={handleSignup}
                   className="w-100 login-btn mb-2"
-                  size="lg"
                   disabled={!name.trim() || !mobile}
                 >
                   Create Account & Send OTP
@@ -754,7 +760,7 @@ const CustomerLogin = () => {
                 <Button
                   onClick={handleVerifyAndSetMpin}
                   className="w-100 login-btn mb-2"
-                  size="lg"
+
                   disabled={!otp || !mpin || mpin.length !== 4}
                 >
                   Complete Registration
@@ -780,7 +786,6 @@ const CustomerLogin = () => {
                 <Button
                   onClick={handleForgotVerify}
                   className="w-100 login-btn mb-2"
-                  size="lg"
                   disabled={!otp || !mpin || mpin.length !== 4}
                 >
                   Reset MPIN & Login
