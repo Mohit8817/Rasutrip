@@ -34,9 +34,9 @@ const Busloader = ({ from, to, departDate }) => {
                 {/* Route & Date Info - Only show if data is available */}
                 {from && to && (
                     <div className="fw-bold mb-1">
-                        <span className="text-primary">{from}</span> 
+                        <span className="text-dark">{from}</span> 
                         <span className="text-muted mx-2">→</span> 
-                        <span className="text-success">{to}</span>
+                        <span className="text-dark">{to}</span>
                     </div>
                 )}
                 

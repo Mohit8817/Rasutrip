@@ -39,13 +39,14 @@ const BusDetailsList = ({
 
   return (
     <Container className="bus-list-container">
-      <div className="sort-header d-flex p-2 mb-2">
-        <div className="flex-fill text-center">Sort By:</div>
-        <div className="flex-fill text-center fw-bold">Depart</div>
-        <div className="flex-fill text-center fw-bold">Duration</div>
-        <div className="flex-fill text-center fw-bold">Arrive</div>
-        <div className="flex-fill text-center fw-bold">Price</div>
+      <div className="sort-header flex flex-wrap items-center justify-between bg-gray-100 rounded-md p-2 mb-2 text-sm sm:text-base">
+        <div className="w-1/2 sm:w-1/5 text-center py-1 font-medium">Sort By:</div>
+        <div className="w-1/2 sm:w-1/5 text-center py-1">Depart</div>
+        <div className="w-1/2 sm:w-1/5 text-center py-1">Duration</div>
+        <div className="w-1/2 sm:w-1/5 text-center py-1">Arrive</div>
+        <div className="w-1/2 sm:w-1/5 text-center py-1">Price</div>
       </div>
+
 
       {busList.map((bus, idx) => (
         <BusDetailsCard key={idx} bus={bus} onSelect={handleBusClick} />
