@@ -206,7 +206,7 @@ const BusDetailinfo = () => {
     return (
         <div className=" container mt-3">
             {/* Header */}
-            <div className="bg-light text-dark px-4 py-3 mb-4 fw-semibold border rounded shadow-sm">
+            <div className="bg-light text-dark px-4 py-3 mb-2 fw-semibold border rounded">
                 <div className="d-flex justify-content-between align-items-center">
                     <h5 className="mb-0">
                         Review Your Bus Details
@@ -220,10 +220,10 @@ const BusDetailinfo = () => {
                     {/* Route and Times Section */}
                     <Row className="mb-4 align-items-center">
                         <Col md={4} className="text-center text-md-start mb-3 mb-md-0">
-                            <div className="fw-semibold mb-2 text-muted">
-                                <FaCity className="me-2" /> Departure
+                            <div className="fw-semibold mb-2">
+                               Departure
                             </div>
-                            <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.5rem' }}>
+                            <div className="fw-bold text-dark mb-1 fs-5">
                                 {departTime || "-"}
                             </div>
                             <div className="fw-semibold text-dark mb-1">
@@ -269,10 +269,10 @@ const BusDetailinfo = () => {
                         </Col>
 
                         <Col md={4} className="text-center text-md-end">
-                            <div className="fw-semibold mb-2 text-muted">
-                                <FaCity className="me-2" /> Arrival
+                            <div className="fw-semibold mb-2">
+                                Arrival
                             </div>
-                            <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.5rem' }}>
+                            <div className="fw-bold text-dark mb-1 fs-5">
                                 {arriveTime || "-"}
                             </div>
                             <div className="fw-semibold text-dark mb-1">
@@ -313,8 +313,7 @@ const BusDetailinfo = () => {
 
                         <Col md={4} className="text-md-end">
                             <div className="text-muted small mb-1">Total Fare</div>
-                            <div className="fw-bold text-success" style={{ fontSize: '1.5rem' }}>
-                                ₹ {totalPrice?.toLocaleString() || "-"}
+                            <div className="fw-bold fs-5"> ₹ {totalPrice?.toLocaleString() || "-"}
                             </div>
                             <div className="text-muted small mt-1">
                                 Including all taxes
@@ -332,7 +331,7 @@ const BusDetailinfo = () => {
                                 <div className="fw-bold text-dark mb-1">
                                     {boarding?.CityPointName || boarding?.name || "-"}
                                 </div>
-                                <div className="text-primary fw-semibold mb-1">
+                                <div className=" fw-semibold mb-1">
                                     Time: {boardingTime || boarding?.DepTime || boarding?.time || "-"}
                                 </div>
                                 {boarding?.CityPointAddress && (
@@ -354,7 +353,7 @@ const BusDetailinfo = () => {
                                 <div className="fw-bold text-dark mb-1">
                                     {dropping?.CityPointName || dropping?.name || "-"}
                                 </div>
-                                <div className="text-success fw-semibold mb-1">
+                                <div className="  fw-semibold mb-1">
                                     Time: {droppingTime || dropping?.ArrTime || dropping?.time || "-"}
                                 </div>
                                 {dropping?.CityPointAddress && (
@@ -374,34 +373,17 @@ const BusDetailinfo = () => {
             </Card>
 
             {/* Action Buttons */}
-            <div className="d-flex justify-content-between align-items-center mt-4">
+            <div className="d-flex justify-content-between align-items-center mt-4 mb-4">
                 <Button
-                    variant="primary"
+                    variant="danger"
                     className="btn-red px-5 py-2"
-                    onClick={handleContinue}
-                    style={{ fontSize: '1.1rem' }}
+                    onClick={handleContinue}                   
                 >
-                    Continue to Passenger Details →
+                    Continue to Passenger
                 </Button>
             </div>
 
-            {/* Important Notes */}
-            <div className="mt-4">
-                <Card className="border-danger bg-danger bg-opacity-10">
-                    <Card.Body className="py-3">
-                        <h6 className="text-warning mb-2">
-                            📋 Important Information
-                        </h6>
-                        <ul className="text-muted small mb-0 ps-3">
-                            <li>Please arrive at the boarding point at least 15 minutes before departure</li>
-                            <li>Carry a valid ID proof for verification</li>
-                            <li>Your seats have been temporarily reserved for 15 minutes</li>
-                            <li>All required API parameters are ready for seat blocking</li>
-                            <li>Cancellation and refund policies apply as per operator terms</li>
-                        </ul>
-                    </Card.Body>
-                </Card>
-            </div>
+       
         </div>
     );
 };

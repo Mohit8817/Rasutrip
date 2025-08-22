@@ -330,34 +330,19 @@ const BusReviewInfo = () => {
 
     return (
         <div className="container my-4">
-            {/* Header */}
-            <Card className="p-2 mb-4">
-                <div>
-                    <h5 className="mb-1">Review Your Booking</h5>
-                    <p className="text-muted mb-0">
-                        Please review all details before proceeding to payment
-                        {metadata && (
-                            <small className="d-block text-success">
-                                ✓ Data passed from {metadata.passedFrom} at {new Date(metadata.passedAt).toLocaleTimeString()}
-                            </small>
-                        )}
-                    </p>
-                </div>
-            </Card>
-
             {/* Enhanced Route Info */}
-            <Card className="mb-4 shadow-sm border-0" style={{ borderRadius: "10px" }}>
-                <Card.Header className="bg-danger text-white">
+            <Card className="mb-4">
+                <Card.Header className="">
                     <h5 className="mb-0">Journey Details</h5>
                 </Card.Header>
                 <Card.Body className="p-4">
                     <Row className="align-items-center">
                         <Col md={4}>
                             <div className="d-flex align-items-center mb-2">
-                                <FaCity className="me-2 text-danger" />
+
                                 <strong className="fs-5">{journeyDetails.fromCity}</strong>
                             </div>
-                            <h4 className="fw-bold text-success">{journeyDetails.departTime}</h4>
+                            <h4 className="fw-bold fs-5">{journeyDetails.departTime}</h4>
                             <div className="text-muted">
                                 {formatDate(journeyDetails.departDate)}
                             </div>
@@ -384,19 +369,15 @@ const BusReviewInfo = () => {
                                         {getSeatDisplayText()}
                                     </span>
                                 </div>
-                                {/* <div className="text-success fw-bold mt-2" style={{ fontSize: '1.3rem' }}>
-                                    ₹ {totalPrice?.toLocaleString() || 0}
-                                </div>
-                                <div className="text-muted small">Total Fare</div> */}
                             </div>
                         </Col>
 
                         <Col md={4} className="text-end">
                             <div className="d-flex justify-content-end align-items-center mb-2">
                                 <strong className="fs-5">{journeyDetails.toCity}</strong>
-                                <FaCity className="ms-2 text-danger" />
+
                             </div>
-                            <h4 className="fw-bold text-success">{journeyDetails.arriveTime}</h4>
+                            <h4 className="fw-bold fs-5">{journeyDetails.arriveTime}</h4>
                             <div className="text-muted">
                                 {formatDate(journeyDetails.arriveDate)}
                             </div>
@@ -417,11 +398,11 @@ const BusReviewInfo = () => {
                         <Col md={6}>
                             <div className="border rounded p-3 bg-light">
                                 <div className="d-flex align-items-center mb-2">
-                                    <FaCity className="me-2 text-success" />
+
                                     <strong>Boarding Point</strong>
                                 </div>
                                 <div className="fw-bold mb-1">{journeyDetails.boardingPoint.name}</div>
-                                <div className="text-primary fw-semibold mb-2">
+                                <div className=" fw-semibold mb-2">
                                     Time: {journeyDetails.boardingPoint.time}
                                 </div>
                                 {journeyDetails.boardingPoint.address && (
@@ -440,11 +421,10 @@ const BusReviewInfo = () => {
                         <Col md={6}>
                             <div className="border rounded p-3 bg-light">
                                 <div className="d-flex align-items-center mb-2">
-                                    <FaCity className="me-2 text-danger" />
                                     <strong>Dropping Point</strong>
                                 </div>
                                 <div className="fw-bold mb-1">{journeyDetails.droppingPoint.name}</div>
-                                <div className="text-success fw-semibold mb-2">
+                                <div className="fw-semibold mb-2">
                                     Time: {journeyDetails.droppingPoint.time}
                                 </div>
                                 {journeyDetails.droppingPoint.address && (
@@ -518,11 +498,7 @@ const BusReviewInfo = () => {
                             <Card key={index} className="border mb-3">
                                 <Card.Body>
                                     <div className="d-flex justify-content-between align-items-center mb-3">
-                                        <div className="d-flex align-items-center">
-                                            <Badge bg={details.isLead ? "danger" : "secondary"} className="me-2">
-                                                {details.isLead ? "Lead Passenger" : `Passenger ${index + 1}`}
-                                            </Badge>
-                                            <span className="fw-semibold">Seat {details.seatName}</span>
+                                        <div className="d-flex align-items-center">                                            <span className="fw-semibold">Seat {details.seatName}</span>
                                         </div>
                                         {details.isLead && (
                                             <small className="text-muted">* Primary contact person</small>
@@ -623,7 +599,7 @@ const BusReviewInfo = () => {
                             className="btn-red px-5 py-2"
                             onClick={handlePayment}
                             disabled={!termsAccepted}
-                        >Continue to Payment →</Button>
+                        >Continue to Payment</Button>
                     </div>
                 </Card.Body>
             </Card>
