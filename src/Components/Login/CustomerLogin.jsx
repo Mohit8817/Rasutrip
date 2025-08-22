@@ -319,7 +319,7 @@ const CustomerLogin = () => {
 
       const token = response?.data?.token;
       if (token) {
-        // Create comprehensive user data with name priority
+        // Create comprehensive user data with name priority - FIXED: No duplicate keys
         const userData = {
           mobile: cleanMobile,
           name: cleanName,
@@ -327,15 +327,17 @@ const CustomerLogin = () => {
           lastName: cleanName.split(' ').slice(1).join(' ') || '',
           fullName: cleanName,
           displayName: cleanName,
+          email: response?.data?.user?.email || '',
+          userType: 'customer',
+          registrationDate: new Date().toISOString(),
+          signupCompleted: true,
+          // Spread backend user data but override name fields
           ...response?.data?.user,
-          // Always override with the name we collected during signup
+          // Override with our signup name (this ensures our name takes priority)
           name: cleanName,
           firstName: cleanName.split(' ')[0],
           fullName: cleanName,
-          displayName: cleanName,
-          userType: 'customer',
-          registrationDate: new Date().toISOString(),
-          signupCompleted: true
+          displayName: cleanName
         };
 
         console.log('💾 Saving complete user data after signup:', userData);
@@ -365,7 +367,7 @@ const CustomerLogin = () => {
     }
   };
 
-  // ENHANCED MPIN LOGIN - Main fix for your issue
+  // ENHANCED MPIN LOGIN - Main fix for your issue - FIXED: No duplicate keys
   const handleLoginWithMPIN = async () => {
     setError('');
     setMessage('');
@@ -401,7 +403,7 @@ const CustomerLogin = () => {
           // Get existing user profile data
           const existingProfile = getUserProfile(cleanMobile);
 
-          // Create comprehensive user data with priority to existing profile
+          // Create comprehensive user data with priority to existing profile - FIXED: No duplicate keys
           const userData = {
             mobile: cleanMobile,
             name: finalName,
@@ -410,16 +412,18 @@ const CustomerLogin = () => {
             fullName: finalName,
             displayName: finalName,
             email: backendUser.email || existingProfile?.email || '',
-            ...existingProfile, // Include existing profile data
-            ...backendUser, // Include backend data
-            // Override with our determined name (this is crucial)
+            userType: 'customer',
+            lastLoginTime: new Date().toISOString(),
+            isReturningUser: !!existingProfile,
+            // Spread existing profile first
+            ...existingProfile,
+            // Then spread backend data
+            ...backendUser,
+            // Finally override with our determined name values (this ensures name priority)
             name: finalName,
             firstName: finalName.split(' ')[0],
             fullName: finalName,
-            displayName: finalName,
-            userType: 'customer',
-            lastLoginTime: new Date().toISOString(),
-            isReturningUser: !!existingProfile
+            displayName: finalName
           };
 
           console.log('💾 Saving login user data:', userData);
@@ -486,7 +490,7 @@ const CustomerLogin = () => {
     }
   };
 
-  // Enhanced forgot password with better name preservation
+  // Enhanced forgot password with better name preservation - FIXED: No duplicate keys
   const handleForgotVerify = async () => {
     setError('');
     setMessage('');
@@ -522,6 +526,7 @@ const CustomerLogin = () => {
         const finalName = getNameFromMultipleSources(cleanMobile, backendUser);
         const existingProfile = getUserProfile(cleanMobile);
 
+        // FIXED: No duplicate keys
         const userData = {
           mobile: cleanMobile,
           name: finalName,
@@ -529,15 +534,17 @@ const CustomerLogin = () => {
           lastName: finalName.split(' ').slice(1).join(' ') || '',
           fullName: finalName,
           displayName: finalName,
+          userType: 'customer',
+          lastLoginTime: new Date().toISOString(),
+          // Spread existing profile first
           ...existingProfile,
+          // Then spread backend data
           ...backendUser,
-          // Override with determined name
+          // Finally override with determined name values
           name: finalName,
           firstName: finalName.split(' ')[0],
           fullName: finalName,
-          displayName: finalName,
-          userType: 'customer',
-          lastLoginTime: new Date().toISOString(),
+          displayName: finalName
         };
 
         // Save updated name locally
@@ -570,34 +577,36 @@ const CustomerLogin = () => {
 
   return (
     <div className="login-wrapper">
-      <div className="login-box d-flex">
+      <div className="login-box d-flex flex-column flex-md-row">
         {/* Left Panel */}
-        <div className="col-md-6 left-panel p-4">
-          <h4 className="fw-bold text-white bg-danger py-2 px-3 rounded-pill d-inline-block">
+        <div className="col-12 col-md-6 left-panel p-3 p-md-4 order-2 order-md-1">
+          <h4 className="fw-bold text-white bg-danger py-2 px-3 rounded-pill d-inline-block mb-3">
             Registration Benefits:
           </h4>
           <ul className="list-unstyled mt-3">
-            <li>✅ No Registration Fees</li>
-            <li>✅ Easy Steps for registration</li>
-            <li>✅ Manage Your Bookings</li>
-            <li>✅ Print Ticket or Voucher</li>
-            <li>✅ 24*7 Dedicated Support</li>
-            <li>✅ Your Profile is Saved Forever</li>
+            <li className="mb-2">✅ No Registration Fees</li>
+            <li className="mb-2">✅ Easy Steps for registration</li>
+            <li className="mb-2">✅ Manage Your Bookings</li>
+            <li className="mb-2">✅ Print Ticket or Voucher</li>
+            <li className="mb-2">✅ 24*7 Dedicated Support</li>
+            <li className="mb-2">✅ Your Profile is Saved Forever</li>
           </ul>
-          <img src={loginImage} alt="Login" className="img-fluid w-75 rounded mt-4" />
+          <div className="text-center d-none d-md-block">
+            <img src={loginImage} alt="Login" className="img-fluid w-75 rounded mt-4" />
+          </div>
         </div>
 
         {/* Right Panel */}
-        <div className="col-md-6 right-panel d-flex flex-column justify-content-center">
-          <h2 className="login-title mb-3 text-center">
+        <div className="col-12 col-md-6 right-panel d-flex flex-column justify-content-center p-3 p-md-4 order-1 order-md-2">
+          <h2 className="login-title mb-3 text-center fs-4 fs-md-2">
             {step === 'login' && 'Login with MPIN'}
             {step === 'signup' && 'Create Your Account'}
             {step === 'verifyAndMpin' && 'Complete Registration'}
             {step === 'forgot' && 'Reset MPIN'}
           </h2>
 
-          {error && <Alert variant="danger">{error}</Alert>}
-          {message && <Alert variant="success">{message}</Alert>}
+          {error && <Alert variant="danger" className="mb-3">{error}</Alert>}
+          {message && <Alert variant="success" className="mb-3">{message}</Alert>}
 
           <Form>
             {/* Enhanced Name field with validation */}
@@ -617,9 +626,8 @@ const CustomerLogin = () => {
                   }}
                   maxLength={50}
                   required
-                  className="form-control-lg"
+                  className="form-control"
                 />
-
               </Form.Group>
             )}
 
@@ -641,7 +649,7 @@ const CustomerLogin = () => {
                   }}
                   placeholder="Enter mobile number"
                   inputClass="custom-phone-input w-100"
-                  containerClass="phone-input-container"
+                  containerClass="phone-input-container w-100"
                 />
               </Form.Group>
             )}
@@ -660,10 +668,10 @@ const CustomerLogin = () => {
                   value={mpin}
                   onChange={(e) => setMpin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   maxLength={4}
-                  className="form-control-lg"
+                  className="form-control"
                 />
                 {step === 'verifyAndMpin' && (
-                  <Form.Text className="text-muted">
+                  <Form.Text className="text-muted small">
                     Choose a secure 4-digit MPIN for future logins
                   </Form.Text>
                 )}
@@ -682,9 +690,9 @@ const CustomerLogin = () => {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   maxLength={6}
-                  className="form-control-lg"
+                  className="form-control"
                 />
-                <Form.Text className="text-light">
+                <Form.Text className="text-light small">
                   OTP sent to your mobile number
                 </Form.Text>
               </Form.Group>
@@ -693,10 +701,10 @@ const CustomerLogin = () => {
             {/* Step-wise Enhanced Buttons */}
             {step === 'login' && (
               <>
-                <div className="d-flex justify-content-between mb-3">
+                <div className="d-flex flex-column flex-sm-row justify-content-between mb-3 gap-2">
                   <Button
                     variant="link"
-                    className="p-0 text-light"
+                    className="p-0 text-light text-start text-sm-start"
                     onClick={() => {
                       setStep('signup');
                       setMessage('');
@@ -708,7 +716,7 @@ const CustomerLogin = () => {
                   </Button>
                   <Button
                     variant="link"
-                    className="p-0 text-light"
+                    className="p-0 text-light text-start text-sm-end"
                     onClick={handleSendForgotOtp}
                   >
                     Forgot MPIN?
@@ -717,7 +725,6 @@ const CustomerLogin = () => {
                 <Button
                   onClick={handleLoginWithMPIN}
                   className="w-100 login-btn mb-2"
-                  size="lg"
                 >
                   Login
                 </Button>
@@ -729,14 +736,13 @@ const CustomerLogin = () => {
                 <Button
                   onClick={handleSignup}
                   className="w-100 login-btn mb-2"
-                  size="lg"
                   disabled={!name.trim() || !mobile}
                 >
                   Create Account & Send OTP
                 </Button>
                 <Button
                   variant="link"
-                  className="w-100 text-light"
+                  className="w-100 text-light text-center"
                   onClick={() => {
                     setStep('login');
                     setMessage('');
@@ -754,14 +760,13 @@ const CustomerLogin = () => {
                 <Button
                   onClick={handleVerifyAndSetMpin}
                   className="w-100 login-btn mb-2"
-                  size="lg"
                   disabled={!otp || !mpin || mpin.length !== 4}
                 >
                   Complete Registration
                 </Button>
                 <Button
                   variant="link"
-                  className="w-100 text-light"
+                  className="w-100 text-light text-center"
                   onClick={() => {
                     setStep('signup');
                     setMessage('');
@@ -780,14 +785,13 @@ const CustomerLogin = () => {
                 <Button
                   onClick={handleForgotVerify}
                   className="w-100 login-btn mb-2"
-                  size="lg"
                   disabled={!otp || !mpin || mpin.length !== 4}
                 >
                   Reset MPIN & Login
                 </Button>
                 <Button
                   variant="link"
-                  className="w-100 text-light"
+                  className="w-100 text-light text-center"
                   onClick={() => {
                     setStep('login');
                     setMessage('');
