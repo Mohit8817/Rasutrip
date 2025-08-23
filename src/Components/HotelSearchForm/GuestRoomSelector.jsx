@@ -54,97 +54,120 @@ const GuestRoomSelector = () => {
   return (
     <div className="position-relative d-inline-block" ref={popupRef}>
       {/* Main Summary Box */}
-      <Card className="guest-room-box" onClick={() => setShowPopup(!showPopup)} style={{ cursor: 'pointer' }}>
+      <Card className="guest-room-box" onClick={() => setShowPopup(!showPopup)}>
         <Card.Body>
           <div className="guest-label">Rooms & Guests</div>
-          <div className="fw-bold fs-5">
+          <div className="fw-bold fs-5 guest-count">
             {rooms.reduce((sum, r) => sum + r.adults + r.children, 0)}  Guest
-       
-           <span>  {rooms.length} Room</span>
+
+            <span>  {rooms.length} Room</span>
           </div>
         </Card.Body>
       </Card>
 
       {/* Popup Panel */}
       {showPopup && (
-        <Card className="position-absolute rounded p-2" style={{ width: '300px', zIndex: 999 }}>
-          <Form.Group className="mb-2">
-            <Row>
-              <Col xs={6}><Form.Label className="fw-bold pt-2">Star Rating</Form.Label></Col>
-              <Col xs={6}>
-                <Form.Select value={starRating} onChange={(e) => setStarRating(e.target.value)}>
-                  <option>2 Star or More</option>
-                  <option>3 Star or less</option>
-                  <option>4 Star</option>
-                  <option>5 Star</option>
-                </Form.Select>
-              </Col>
-            </Row>
-          </Form.Group>
+        <div className="absolute  top-full mt-1 z-[9999]   
+  sm:w-100 
+  md:w-100 
+  lg:w-[40px] 
+  xl:w-[450px]">
+          <Card className="rounded-lg shadow-lg w-11/12 sm:w-70 p-3">
 
-          <hr />
+            {/* Star Rating */}
+            <Form.Group className="mb-3">
+              <Row className="align-items-center">
+                <Col xs={6}>
+                  <Form.Label className="fw-bold">Star Rating</Form.Label>
+                </Col>
+                <Col xs={6}>
+                  <Form.Select
+                    value={starRating}
+                    onChange={(e) => setStarRating(e.target.value)}
+                  >
+                    <option>2 Star or More</option>
+                    <option>3 Star or less</option>
+                    <option>4 Star</option>
+                    <option>5 Star</option>
+                  </Form.Select>
+                </Col>
+              </Row>
+            </Form.Group>
 
-          {/* Room Inputs */}
-          {rooms.map((room, index) => (
-            <div key={index}>
-              <div className="fw-bold text-primary mb-2">Room {index + 1}</div>
+            <hr />
 
-              {/* Adults */}
-              <Form.Group className="mb-1">
-                <Row>
-                  <Col xs={6} className="text-start">
-                    <Form.Label className="fw-bold mb-0">Adults
-                      <div className="text-muted small">12y +</div>
-                    </Form.Label>
-                  </Col>
-                  <Col xs={6}>
-                    <Form.Select
-                      value={room.adults}
-                      onChange={(e) => handleRoomChange(index, 'adults', e.target.value)}
-                    >
-                      {[1, 2, 3, 4, 5].map(num => (
-                        <option key={num} value={num}>{num}</option>
-                      ))}
-                    </Form.Select>
-                  </Col>
-                </Row>
-              </Form.Group>
+            {/* Room Inputs */}
+            {rooms.map((room, index) => (
+              <div key={index}>
+                <div className="fw-bold text-primary mb-2">Room {index + 1}</div>
 
-              {/* Children */}
-              <Form.Group className="mb-3">
-                <Row>
-                  <Col xs={6} className="text-start">
-                    <Form.Label className="fw-bold mb-0">Children
-                      <div className="text-muted small">Under 12y</div>
-                    </Form.Label>
-                  </Col>
-                  <Col xs={6}>
-                    <Form.Select
-                      value={room.children}
-                      onChange={(e) => handleRoomChange(index, 'children', e.target.value)}
-                    >
-                      {[0, 1, 2, 3, 4].map(num => (
-                        <option key={num} value={num}>{num}</option>
-                      ))}
-                    </Form.Select>
-                  </Col>
-                </Row>
-              </Form.Group>
+                {/* Adults */}
+                <Form.Group className="mb-2">
+                  <Row className="align-items-center">
+                    <Col xs={6} className="text-start">
+                      <Form.Label className="fw-bold mb-0">
+                        Adults
+                        <div className="text-muted small">12y +</div>
+                      </Form.Label>
+                    </Col>
+                    <Col xs={6}>
+                      <Form.Select
+                        value={room.adults}
+                        onChange={(e) =>
+                          handleRoomChange(index, "adults", e.target.value)
+                        }
+                      >
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <option key={num} value={num}>
+                            {num}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Col>
+                  </Row>
+                </Form.Group>
 
-              <hr />
+                {/* Children */}
+                <Form.Group className="mb-3">
+                  <Row className="align-items-center">
+                    <Col xs={6} className="text-start">
+                      <Form.Label className="fw-bold mb-0">
+                        Children
+                        <div className="text-muted small">Under 12y</div>
+                      </Form.Label>
+                    </Col>
+                    <Col xs={6}>
+                      <Form.Select
+                        value={room.children}
+                        onChange={(e) =>
+                          handleRoomChange(index, "children", e.target.value)
+                        }
+                      >
+                        {[0, 1, 2, 3, 4].map((num) => (
+                          <option key={num} value={num}>
+                            {num}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Col>
+                  </Row>
+                </Form.Group>
+
+                <hr />
+              </div>
+            ))}
+
+            {/* Add Room Button */}
+            <div
+              className="text-success fw-bold text-center cursor-pointer underline"
+              onClick={handleAddRoom}
+            >
+              + Add Room
             </div>
-          ))}
-
-          {/* Add Room Button */}
-          <div
-            className="text-success fw-bold text-center"
-            style={{ cursor: 'pointer', textDecoration: 'underline' }}
-            onClick={handleAddRoom}
-          >
-            + Add Room
-          </div>
-        </Card>
+          </Card>
+        </div>
       )}
+
     </div>
   );
 };

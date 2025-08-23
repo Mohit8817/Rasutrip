@@ -207,7 +207,7 @@ const BusResultPage = () => {
     }
 
     return (
-        <div className="container mx-auto">
+        <div className="container">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* Top section */}
                 <div className="col-span-12">
@@ -230,7 +230,7 @@ const BusResultPage = () => {
                 </div>
 
                 {/* Bus details list */}
-                <div className="col-span-12 lg:col-span-9">
+                <div className="col-span-12 lg:col-span-9 p-0 m-0">
                     <BusDetailsList
                         masterBusList={masterBusList}
                         priceRange={priceRange}

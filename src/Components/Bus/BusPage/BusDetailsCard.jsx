@@ -44,8 +44,8 @@ const BusDetailsCard = ({ bus }) => {
                     <Col lg={10} className="p-3">
                         <Card.Body className="p-2">
                             <Row className="items-center">
-                                {/* Operator & Type */}
-                                <Col xs={12} sm={6} md={4} className="mb-3 md:mb-0">
+                                {/* ---------------- DESKTOP Operator & Type ---------------- */}
+                                <Col xs={12} sm={6} md={4} className="mb-3 md:mb-0 hidden md:block">
                                     <h6 className="fw-bold">{bus.operator}</h6>
                                     <div>{bus.busType}</div>
                                     {bus.serviceName && (
@@ -56,46 +56,88 @@ const BusDetailsCard = ({ bus }) => {
                                     )}
                                 </Col>
 
-                                {/* Departure Info */}
-                                <Col xs={6} md={2} className="text-start mb-3 md:mb-0">
-                                    <div className="fw-semibold fs-6">{bus.departDate}</div>
-                                    <div className="fs-5 fw-bold">{bus.departTime}</div>
-                                    <div>{bus.departLocation}</div>
+                                {/* ---------------- DESKTOP Departure - Duration - Arrival ---------------- */}
+                                <Col md={8} className="hidden md:flex items-center">
+                                    {/* Departure */}
+                                    <Col md={4} className="text-start">
+                                        <div className="fw-semibold fs-6">{bus.departDate}</div>
+                                        <div className="fs-5 fw-bold">{bus.departTime}</div>
+                                        <div>{bus.departLocation}</div>
+                                    </Col>
+
+                                    {/* Duration */}
+                                    <Col md={4} className="text-center">
+                                        <div className="inline-block px-3 py-1 border rounded-full text-sm font-medium">
+                                            {bus.duration}
+                                        </div>
+                                    </Col>
+
+                                    {/* Arrival */}
+                                    <Col md={4} className="text-end">
+                                        <div className="fw-semibold fs-6">{bus.arriveDate}</div>
+                                        <div className="fs-5 fw-bold">{bus.arriveTime}</div>
+                                        <div>{bus.arriveLocation}</div>
+                                    </Col>
                                 </Col>
 
-                                {/* Duration */}
-                                <Col xs={12} md={4} className="text-center mb-3 md:mb-0">
-                                    <div className="inline-block px-3 py-1 border rounded-full text-sm font-medium">
+                                {/* ---------------- MOBILE Operator + Duration in one row ---------------- */}
+                                <Col xs={12} className="flex md:hidden justify-between items-center text-sm mb-2">
+                                    {/* Operator & Type */}
+                                    <div>
+                                        <h6 className="fw-bold">{bus.operator}</h6>
+                                        <div>{bus.busType}</div>
+                                        {bus.serviceName && (
+                                            <div className="text-muted text-xs mt-1">
+                                                <i className="bi bi-truck me-1" />
+                                                {bus.serviceName}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Duration */}
+                                    <div className="inline-block px-2 py-1 border rounded-full text-xs font-medium">
                                         {bus.duration}
                                     </div>
                                 </Col>
 
-                                {/* Arrival Info */}
-                                <Col xs={6} md={2} className="text-end mb-3 md:mb-0">
-                                    <div className="fw-semibold fs-6">{bus.arriveDate}</div>
-                                    <div className="fs-5 fw-bold">{bus.arriveTime}</div>
-                                    <div>{bus.arriveLocation}</div>
+                                {/* ---------------- MOBILE Departure + Arrival in same row ---------------- */}
+                                <Col xs={12} className="flex md:hidden justify-between text-sm">
+                                    {/* Departure */}
+                                    <div className="text-start w-1/2">
+                                        <div className="fw-semibold">{bus.departDate}</div>
+                                        <div className="fw-bold">{bus.departTime}</div>
+                                        <div>{bus.departLocation}</div>
+                                    </div>
+
+                                    {/* Arrival */}
+                                    <div className="text-end w-1/2">
+                                        <div className="fw-semibold">{bus.arriveDate}</div>
+                                        <div className="fw-bold">{bus.arriveTime}</div>
+                                        <div>{bus.arriveLocation}</div>
+                                    </div>
                                 </Col>
                             </Row>
 
+
                             <hr className="my-2" />
 
-                            {/* Cancellation Policy Toggle */}
+                            {/* Cancellation + Seats (always one row) */}
                             <div
-                                className="d-flex justify-content-between items-center cursor-pointer"
+                                className="d-flex justify-content-between items-center cursor-pointer text-xs sm:text-sm"
                                 onClick={() => setShowPolicy(!showPolicy)}
                             >
-                                <div className="text-red-600 fw-semibold">
+                                <div className="text-red-600 fw-semibold text-xs sm:text-sm md:text-base">
                                     Cancellation Policy{" "}
                                     <i
-                                        className={`bi ${showPolicy ? "bi-chevron-up" : "bi-chevron-down"
-                                            } ms-1`}
+                                        className={`bi ${showPolicy ? "bi-chevron-up" : "bi-chevron-down"} ms-1`}
                                     />
                                 </div>
-                                <small className="text-red-600 fw-semibold flex items-center">
+
+                                <small className="text-red-700 fw-semibold d-flex text-xs sm:text-sm md:text-base">
                                     <FaWheelchair className="me-1" /> {bus.seatsAvailable} Seats Available
                                 </small>
                             </div>
+
 
                             {/* Cancellation Policy Box */}
                             {showPolicy && bus.cancellationPolicies && (
@@ -137,12 +179,13 @@ const BusDetailsCard = ({ bus }) => {
                         </Card.Body>
                     </Col>
 
-                    {/* Right Section: Price */}
+                    {/* Right Section */}
                     <Col
                         lg={2}
-                        className="bg-gray-50 border-t lg:border-t-0 lg:border-l border-gray-200 flex items-center justify-center p-3"
+                        className="bg-gray-50 border-t lg:border-t-0 lg:border-l border-gray-200 flex items-center justify-center p-2"
                     >
-                        <div className="text-center w-full">
+                        {/* Desktop Price Box */}
+                        <div className="hidden md:block text-center w-full">
                             <div className="text-muted text-sm">Starting From</div>
                             <div className="fs-5 fw-bold">{bus.price}</div>
                             <Button
@@ -153,9 +196,25 @@ const BusDetailsCard = ({ bus }) => {
                                 Show Seat
                             </Button>
                         </div>
+
+                        {/* Mobile Row Layout */}
+                        <div className="flex justify-between items-center w-full md:hidden">
+                            <div>
+                                <div className="text-muted text-xs">From</div>
+                                <div className="fw-bold text-sm">{bus.price}</div>
+                            </div>
+                            <Button
+                                className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded btn-red"
+                                variant="danger"
+                                onClick={handleShowSeat}
+                            >
+                                Show Seat
+                            </Button>
+                        </div>
                     </Col>
                 </Row>
             </Card>
+
 
             {/* Login Prompt Modal */}
             <Modal

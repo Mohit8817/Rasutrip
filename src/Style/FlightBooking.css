@@ -21,7 +21,8 @@ body {
 
 /* Tagline */
 .flight-tagline {
-  font-size: 1.125rem; /* 18px */
+  font-size: 1.125rem;
+  /* 18px */
   font-weight: 600;
   color: #131313;
   margin: 0;
@@ -203,6 +204,31 @@ body {
   border-bottom-left-radius: 0;
 }
 
+@media (max-width: 768px) {
+
+  .Depart,
+  .Return {
+    margin-bottom: 8px;
+    border-radius: 12px !important;
+  }
+
+  .custom-date-picker .date-button-wrapper {
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+  }
+
+  .custom-date-picker .date {
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .date {
+    font-size: 14px !important;
+    font-weight: 500;
+  }
+
+}
+
 .custom-date-picker .date-button {
   display: flex;
   flex-direction: column;
@@ -336,12 +362,13 @@ body {
   box-shadow: 6px 6px 10px rgba(37, 37, 37, 0.1);
   border: none;
   width: fit;
-/*   
+  /*   
   max-width: 300px; */
 }
 
 /* Media Queries */
 @media screen and (max-width: 1024px) {
+
   .tab-box,
   .passenger-class-box,
   .passenger-class-wrapper,
