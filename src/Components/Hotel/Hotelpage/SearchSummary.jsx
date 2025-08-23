@@ -19,38 +19,39 @@ const SearchSummary = () => {
 
   return (
     <Container className="mt-4 p-3 bg-white shadow-sm rounded border">
-      <Row className="flex-nowrap align-items-center text-center text-md-start">
-        <Col style={{ minWidth: 200 }}>
-          <strong>📍 {city}</strong>
-        </Col>
-
-        <Col style={{ minWidth: 140 }}>
+      <Row className="items-center text-center md:text-left">
+        {/* First Row on Mobile - Check-In & Check-Out */}
+        <Col xs={6} md>
           <div className="fw-semibold">Check-In</div>
           <small className="text-muted">{checkIn}</small>
         </Col>
 
-        <Col style={{ minWidth: 80 }}>
-          <div className="fw-semibold">Nights</div>
-          <small className="text-muted">{nights}</small>
-        </Col>
-
-        <Col style={{ minWidth: 140 }}>
+        <Col xs={6} md>
           <div className="fw-semibold">Check-Out</div>
           <small className="text-muted">{checkOut}</small>
         </Col>
 
-        <Col style={{ minWidth: 200 }}>
+        {/* Second Row on Mobile - Nights & Rooms/Guests */}
+        <Col xs={6} md className="mt-2 md:mt-0">
+          <div className="fw-semibold">Nights</div>
+          <small className="text-muted">{nights}</small>
+        </Col>
+
+        <Col xs={6} md className="mt-2 md:mt-0">
           <div className="fw-semibold">Rooms & Guests</div>
           <small className="text-muted">
-            {guests} Guest{guests > 1 ? "s" : ""} &bull; {rooms} Room{rooms > 1 ? "s" : ""}
+            {guests} Guest{guests > 1 ? "s" : ""}, {rooms} Room{rooms > 1 ? "s" : ""}
           </small>
         </Col>
 
-        <Col className="text-end" style={{ minWidth: 150 }}>
-          <Button className="btn-red">Modify Search</Button>
+        {/* Button - Full width on mobile, auto on desktop */}
+        <Col xs={12} md="auto" className="text-center md:text-end mt-3 md:mt-0">
+          <Button className="btn-red w-full md:w-auto">Modify Search</Button>
         </Col>
       </Row>
     </Container>
+
+
   );
 };
 
