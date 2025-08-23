@@ -39,15 +39,14 @@ const BusDetailsList = ({
 
   return (
     <Container className="bus-list-container">
-      <div className="sort-header flex flex-wrap items-center justify-between bg-gray-100 rounded-md p-2 mb-2 text-sm sm:text-base">
-        <div className="w-1/2 sm:w-1/5 text-center py-1 font-medium">Sort By:</div>
-        <div className="w-1/2 sm:w-1/5 text-center py-1">Depart</div>
-        <div className="w-1/2 sm:w-1/5 text-center py-1">Duration</div>
-        <div className="w-1/2 sm:w-1/5 text-center py-1">Arrive</div>
-        <div className="w-1/2 sm:w-1/5 text-center py-1">Price</div>
+      <div className="sort-header flex items-center bg-gray-100 rounded-md p-2 mb-2 text-sm sm:text-base 
+                flex-nowrap sm:flex-wrap justify-start sm:justify-between overflow-x-auto">
+        <div className="px-2 text-center py-1 font-medium whitespace-nowrap">Sort By:</div>
+        <div className="px-2 text-center py-1 whitespace-nowrap">Depart</div>
+        <div className="px-2 text-center py-1 whitespace-nowrap">Duration</div>
+        <div className="px-2 text-center py-1 whitespace-nowrap">Arrive</div>
+        <div className="px-2 text-center py-1 whitespace-nowrap">Price</div>
       </div>
-
-
       {busList.map((bus, idx) => (
         <BusDetailsCard key={idx} bus={bus} onSelect={handleBusClick} />
       ))}

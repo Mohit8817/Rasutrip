@@ -1,17 +1,20 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Card } from "react-bootstrap";
 import { FaCalendarCheck, FaCalendarTimes, FaMoon } from "react-icons/fa";
 import { PiBed } from "react-icons/pi";
+import { HotelSearchContext } from "../../Context/HotelSearchContext"; // ✅ Import Context
 import "./HotelDetails.css";
 
-const BookingInfoCard = ({ searchDetails }) => {
+const BookingInfoCard = () => {
+  const { hotelSearchData } = useContext(HotelSearchContext); // ✅ Get from Context
+
   const {
-    checkIn = "",
-    checkOut = "",
+    checkIn = "—",
+    checkOut = "—",
     nights = 1,
     rooms = 1,
     guests = 1,
-  } = searchDetails || {};
+  } = hotelSearchData || {}; // ✅ Same as SearchSummary
 
   // Optional: Get weekday names
   const getDay = (dateStr) => {
@@ -67,10 +70,10 @@ const BookingInfoCard = ({ searchDetails }) => {
         <Card.Body className="d-flex justify-content-between align-items-center py-2 px-3">
           <div className="d-flex align-items-center">
             <PiBed size={22} className="me-3" />
-            <span className="fw-medium text-muted">Rooms & guests</span>
+            <span className="fw-medium text-muted">Rooms & Guests</span>
           </div>
           <div className="fw-bold text-end">
-            {rooms} Room <span className="fw-normal">{guests} Guest</span>
+            {rooms} Room <span className="fw-normal">{guests} Guest{guests > 1 ? "s" : ""}</span>
           </div>
         </Card.Body>
       </Card>
