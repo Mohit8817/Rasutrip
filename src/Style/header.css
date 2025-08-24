@@ -4,7 +4,6 @@
     color: white;
     font-size: 12px;
     position: static;
-    /* Changed from fixed */
     padding: 5px;
     z-index: 1001;
 }
@@ -37,8 +36,7 @@
     font-size: 14px;
 }
 
-
-
+/* Desktop Header Styles */
 .header_navbar.sticky {
     position: fixed;
     top: 0;
@@ -47,14 +45,12 @@
     animation: slideDown 0.3s ease-in-out;
 }
 
-/* Remove white background and shadow from Navbar */
 .header_navbar {
     background: transparent !important;
     box-shadow: none !important;
     border: none !important;
 }
 
-/* Optional: Remove any inner box-shadow or background from Nav elements */
 .header-nav,
 .navbar,
 .navbar-nav {
@@ -66,7 +62,6 @@
     from {
         transform: translateY(-100%);
     }
-
     to {
         transform: translateY(0);
     }
@@ -106,7 +101,7 @@
     margin-top: -2px;
 }
 
-/* Navigation Styles - Centered */
+/* Desktop Navigation Styles */
 .header-nav {
     justify-content: center;
     flex-grow: 1;
@@ -170,50 +165,240 @@
     align-items: center;
 }
 
-/* Offcanvas Styles */
-.offcanvas {
-    border: none;
+/* Mobile Header Styles */
+.mobile-header {
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 10px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
 }
 
-.offcanvas-header {
+.mobile-header .Header_logo {
+    width: 3.5rem;
+    margin-left: 0;
+}
+
+.mobile-menu-btn {
+    border: none;
+    background: none;
+    font-size: 20px;
+    color: #333;
+    padding: 5px;
+}
+
+/* Mobile Bottom Navigation */
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1020;
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+}
+
+.bottom-nav-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.bottom-nav-item {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.bottom-nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #666;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 4px;
+    transition: all 0.2s ease;
+    min-width: 60px;
+}
+
+.bottom-nav-link:hover,
+.bottom-nav-link:focus {
+    color: #ca0d27;
+    text-decoration: none;
+}
+
+.bottom-nav-link i {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+.bottom-nav-link.active {
+    color: #ca0d27;
+}
+
+/* Mobile Offcanvas Styles */
+.mobile-offcanvas {
+    border: none;
+    width: 300px !important;
+}
+
+.mobile-offcanvas .offcanvas-header {
+    border-bottom: 1px solid #e0e0e0;
+    padding: 20px;
+    background: #f8f9fa;
+}
+
+.mobile-offcanvas .offcanvas-body {
+    padding: 0;
+}
+
+.mobile-nav {
+    flex-direction: column;
+    background: transparent;
+}
+
+.mobile-nav-section {
     border-bottom: 1px solid #e0e0e0;
     padding: 20px;
 }
 
-.offcanvas-body {
-    padding: 20px;
+.mobile-nav-section:last-child {
+    border-bottom: none;
 }
 
-/* Mobile Styles */
+.mobile-nav-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mobile-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    color: #333 !important;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 400;
+    transition: all 0.2s ease;
+    gap: 15px;
+}
+
+.mobile-nav-link:hover {
+    color: #ca0d27 !important;
+    background: none;
+}
+
+.mobile-nav-link i {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    color: #666;
+}
+
+.mobile-nav-link:hover i {
+    color: #ca0d27;
+}
+
+.mobile-app-download {
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+}
+
+/* Add padding to body for mobile fixed header and bottom nav */
 @media (max-width: 991px) {
-    .header_navbar {
-        padding: 10px 0;
+    body {
+        padding-top: 70px; /* Height of mobile header */
+        padding-bottom: 80px; /* Height of bottom navigation */
     }
 
     .top-bar {
         display: none !important;
     }
 
-    .Header_logo {
-        width: 3.5rem;
-        margin-left: 0.5rem;
+    /* Main content area adjustments for mobile */
+    .main-content {
+        min-height: calc(100vh - 150px);
     }
 
-    .brand-name {
+    /* Hide desktop elements on mobile */
+    .d-lg-block {
+        display: none !important;
+    }
+
+    /* Ensure mobile elements are shown */
+    .d-lg-none {
+        display: block !important;
+    }
+
+    .mobile-bottom-nav.d-lg-none {
+        display: block !important;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 991px) {
+    .bottom-nav-container {
+        max-width: 500px;
+    }
+    
+    .bottom-nav-link {
+        font-size: 14px;
+        min-width: 80px;
+    }
+    
+    .bottom-nav-link i {
+        font-size: 22px;
+    }
+}
+
+/* Large mobile adjustments */
+@media (max-width: 575px) {
+    .mobile-header .Header_logo {
+        width: 3rem;
+    }
+    
+    .bottom-nav-link {
+        font-size: 11px;
+        min-width: 50px;
+    }
+    
+    .bottom-nav-link i {
         font-size: 18px;
+        margin-bottom: 2px;
     }
+    
+    .mobile-offcanvas {
+        width: 280px !important;
+    }
+}
 
-    .header-nav {
-        flex-direction: column;
-        align-items: stretch;
-        background-color: transparent !important;
-    }
+/* Active state for bottom navigation */
+.bottom-nav-item.active .bottom-nav-link {
+    color: #ca0d27;
+}
 
-    .header-nav .nav-item-link {
-        padding: 12px 20px;
-        margin: 4px 0;
-        border-radius: 8px;
-        font-size: 15px;
-        color: #333 !important;
-    }
+/* Smooth transitions */
+.mobile-bottom-nav,
+.mobile-header,
+.mobile-offcanvas {
+    transition: all 0.3s ease;
+}
+
+/* Fix for Bootstrap offcanvas backdrop */
+.offcanvas-backdrop {
+    z-index: 1025;
 }
