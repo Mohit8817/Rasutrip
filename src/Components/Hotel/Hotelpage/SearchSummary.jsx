@@ -19,34 +19,56 @@ const SearchSummary = () => {
 
   return (
     <Container className="mt-4 p-3 bg-white shadow-sm rounded border">
-      <Row className="items-center text-center md:text-left">
-        {/* First Row on Mobile - Check-In & Check-Out */}
-        <Col xs={6} md>
+      {/* Mobile Layout */}
+      <div className="d-block d-md-none">
+        {/* First Line: Check-In date | Check-Out date */}
+        <div className="text-center mb-1 text-sm">
+          <span className="fw-semibold">Check-In</span> <span className="text-muted">{checkIn}</span>
+          <span className="mx-2">|</span>
+          <span className="fw-semibold">Check-Out</span> <span className="text-muted">{checkOut}</span>
+        </div>
+
+        {/* Second Line: Nights number | Rooms & Guests */}
+        <div className="text-center mb-2 text-sm">
+          <span className="fw-semibold">Nights</span> <span className="text-muted">{nights}</span>
+          <span className="mx-2">|</span>
+          <span className="fw-semibold">Rooms & Guests</span> <span className="text-muted">
+            {rooms} Room{rooms > 1 ? "s" : ""}, {guests} Guest{guests > 1 ? "s" : ""}
+          </span>
+        </div>
+
+        {/* Button */}
+        <div className="text-center">
+          <Button className="btn-red w-full text-sm">Modify Search</Button>
+        </div>
+      </div>
+
+      {/* Desktop Layout */}
+      <Row className="items-center text-left d-none d-md-flex">
+        <Col md>
           <div className="fw-semibold">Check-In</div>
           <small className="text-muted">{checkIn}</small>
         </Col>
 
-        <Col xs={6} md>
+        <Col md>
           <div className="fw-semibold">Check-Out</div>
           <small className="text-muted">{checkOut}</small>
         </Col>
 
-        {/* Second Row on Mobile - Nights & Rooms/Guests */}
-        <Col xs={6} md className="mt-2 md:mt-0">
+        <Col md>
           <div className="fw-semibold">Nights</div>
           <small className="text-muted">{nights}</small>
         </Col>
 
-        <Col xs={6} md className="mt-2 md:mt-0">
+        <Col md>
           <div className="fw-semibold">Rooms & Guests</div>
           <small className="text-muted">
             {guests} Guest{guests > 1 ? "s" : ""}, {rooms} Room{rooms > 1 ? "s" : ""}
           </small>
         </Col>
 
-        {/* Button - Full width on mobile, auto on desktop */}
-        <Col xs={12} md="auto" className="text-center md:text-end mt-3 md:mt-0">
-          <Button className="btn-red w-full md:w-auto">Modify Search</Button>
+        <Col md="auto" className="text-end">
+          <Button className="btn-red">Modify Search</Button>
         </Col>
       </Row>
     </Container>

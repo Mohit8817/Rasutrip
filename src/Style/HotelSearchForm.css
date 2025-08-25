@@ -83,7 +83,7 @@
 /* Tablet screens (768px se neeche) */
 @media (max-width: 768px) {
   .guest-room-box {
-    width: 520px !important;
+    width: 620px !important;
     padding: 8px;
   }
 }
@@ -91,11 +91,10 @@
 /* Mobile screens (576px se neeche) */
 @media (max-width: 576px) {
 
-
   .guest-room-box {
-    max-width: 236px !important;
+    max-width: 280px !important;
     padding: 0px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
 
