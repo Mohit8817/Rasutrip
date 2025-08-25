@@ -50,13 +50,13 @@ const FlightResultsPage = () => {
             {tripType === 'oneway' && (
                 <Container className="">
                     <Row>
-                        <Col>
+                        <Col className='d-none d-lg-block'>
                             <FlightSearchBar />
                         </Col>
                     </Row>
-                    <Row className="mt-4">
-                        <Col lg={3}>
-                            <FlightSidebar filters={filters} setFilters={setFilters} />
+                    <Row className="mt-4 ">
+                        <Col lg={3} className='d-none d-lg-block'>
+                            <FlightSidebar className="" filters={filters} setFilters={setFilters} />
                         </Col>
                         <Col lg={9}>
                             <FlightList filters={filters} />
@@ -67,13 +67,13 @@ const FlightResultsPage = () => {
               {tripType === 'multicity' && (
                 <Container className="">
                     <Row>
-                        <Col>
+                        <Col className='d-none d-lg-block'>
                             <FlightSearchBar />
                         </Col>
                     </Row>
                     <Row className="mt-4">
-                        <Col lg={3}>
-                            <FlightSidebar filters={filters} setFilters={setFilters} />
+                        <Col lg={3} className='d-none d-lg-block'>
+                            <FlightSidebar className="d-none d-lg-block" filters={filters} setFilters={setFilters} />
                         </Col>
                         <Col lg={9}>
                             <MultiCityList filters={filters} />
@@ -86,15 +86,16 @@ const FlightResultsPage = () => {
             {tripType === 'roundtrip' && (
                 <Container className=" relative">
                     <Row>
-                        <Col>
+                        <Col className='d-none d-lg-block'>
                         <FlightSearchBar />
 
                             {/* <RoundsearchBar /> */}
                         </Col>
                     </Row>
                     <Row className="mt-4">
-                        <Col lg={3}>
-                            <FlightSidebar filters={filters} setFilters={setFilters} />
+                        <Col lg={3} className='d-none d-lg-block'>
+                        <FlightSidebar className="d-none d-lg-block" filters={filters} setFilters={setFilters} />
+
                         </Col>
                         <Col lg={9}>
                             <RoundTripCardList filters={filters} />

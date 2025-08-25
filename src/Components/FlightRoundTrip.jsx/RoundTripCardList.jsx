@@ -151,7 +151,7 @@ const RoundTripCardList = ({ filters }) => {
     }
 
     return flights
-      .map(flight => {
+.map(flight => {
         const firstSegment = flight.Segments[0][0];
         const lastSegment = flight.Segments[0][flight.Segments[0].length - 1];
 
@@ -222,7 +222,7 @@ const RoundTripCardList = ({ filters }) => {
       {flights?.length > 1 ? (
         <Row>
           {/* Onward Flights */}
-          <Col md={6}>
+          <Col  xs={6} md={6}>
             {Array.isArray(flights[0]) &&
               onwardFilteredFlights.map((flight, index) => (
                 <div key={flight.FlightNumber || `onward-${index + 1}`}>
@@ -236,7 +236,7 @@ const RoundTripCardList = ({ filters }) => {
               ))}
           </Col>
 
-          <Col md={6}>
+          <Col  xs={6} md={6}>
             {Array.isArray(flights[1]) &&
               returnFilteredFlights.map((flight, index) => (
                 <div key={flight.FlightNumber || `return-${index + 2}`}>

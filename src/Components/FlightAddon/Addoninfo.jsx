@@ -266,12 +266,14 @@ const Addoninfo = () => {
                   );
                 })}
 
+{rawSeatData&&(
                 <SeatSelect
                   rawSeatData={rawSeatData}
                   passengersData={passengersData || []} // Fallback value
                   onSeatSelect={handleSeatSelect}
                   onAssignSeat={onAssignSeat}
                 />
+                )}
                 <div className="text-start mt-4 mb-4">
                   <Button
                     variant="primary"

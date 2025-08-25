@@ -83,7 +83,7 @@ const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare ,Select
 
                 const [resFarePayloadOnward, resFarePayloadReturn] = await Promise.all([
                     fetchFareConfirmation(farePayloadOnward),
-                    fetchFareConfirmation(farePayloadReturn)
+                    // fetchFareConfirmation(farePayloadReturn)
                     ]);
 
                     const confirmedFare = {

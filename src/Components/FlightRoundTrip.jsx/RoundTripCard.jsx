@@ -99,8 +99,8 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
 
   return (
     <Container className="mb-4">
-      <Row>
-        <Col md={12}>
+      {/* <Row>
+        <Col md={12}> */}
           <Card
             role="button"
             tabIndex={0}
@@ -400,8 +400,8 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
               </div>
             )}
           </Card>
-        </Col>
-      </Row>
+        {/* </Col>
+      </Row> */}
     </Container>
   );
 };

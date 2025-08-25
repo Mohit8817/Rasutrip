@@ -67,7 +67,7 @@ const RoundTripBookingBar = () => {
       </div>
 
       {/* Return Flight Info */}
-      <div className="d-flex flex-column flex-sm-row align-items-center gap-3 mb-3 mb-md-0">
+      <div className="d-flex   flex-sm-row align-items-center gap-3 mb-3 mb-md-0">
         <div className="me-3">
           <p className="mb-0 small">{returnSeg?.Airline?.AirlineName || 'Return Flight'}</p>
           <p className="mb-0 fw-semibold">
@@ -83,7 +83,7 @@ const RoundTripBookingBar = () => {
         <p className="mb-1 fw-bold fs-5">₹ {totalFare.toLocaleString()}</p>
         <button
           onClick={handleBook}
-          className="btn btn-light fw-semibold px-4 py-2 rounded-pill"
+          className="btn btn-light w-fitcontent fw-semibold px-4 py-2 rounded-pill"
           disabled={!selectedOnward || !selectedReturn}
         >
           BOOK NOW
