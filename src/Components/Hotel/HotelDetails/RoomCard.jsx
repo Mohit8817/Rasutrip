@@ -3,6 +3,54 @@ import { useNavigate } from "react-router-dom";
 import { CheckCircle } from "react-bootstrap-icons";
 import { blockRoom } from "../../APIS/HotelApi/HotelAPi";
 
+// Loading Popup Component
+const LoadingPopup = ({ isVisible, roomName }) => {
+  if (!isVisible) return null;
+
+  return (
+    <div
+      className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        zIndex: 9999,
+        backdropFilter: 'blur(3px)'
+      }}
+    >
+      <div
+        className="bg-white rounded-4 p-4 text-center shadow-lg"
+        style={{ maxWidth: '500px', width: '90%' }}
+      >
+        {/* Main Message */}
+        <h5 className="fw-bold text-dark mb-2">
+           Blocking Your Room...
+        </h5>
+
+        <p className="text-muted mb-3">
+          Please wait while we secure <strong>"{roomName}"</strong> for you
+        </p>
+
+        {/* Warning Message */}
+        <div className="alert alert-danger py-2 mb-3" role="alert">
+          <strong>Please don't refresh the page!</strong>
+        </div>
+
+        {/* Progress Message */}
+        <div className="text-muted small">
+          <div className="d-flex align-items-center justify-content-center">
+            <div className="spinner-grow spinner-grow-sm text-danger me-2" role="status"></div>
+            <span>Processing your booking request...</span>
+          </div>
+        </div>
+
+        {/* Decorative dots */}
+        <div className="mt-3">
+          <span className="text-danger">• • •</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const RoomCard = ({
   roomData = [],
   hotel = {},
@@ -12,6 +60,7 @@ const RoomCard = ({
 }) => {
   const navigate = useNavigate();
   const [loadingRoomId, setLoadingRoomId] = useState(null);
+  const [loadingRoomName, setLoadingRoomName] = useState("");
 
   console.log("🛏️ RoomCard - Hotel Data:", hotel);
   console.log("🛏️ RoomCard - Room Data:", roomData);
@@ -56,9 +105,9 @@ const RoomCard = ({
 
     console.log("👥 Total Adults for PAN check:", totalAdults);
 
-    // ❌ PAN MANDATORY POPUP REMOVED - Direct booking without warning
-
+    // Show loading popup
     setLoadingRoomId(room.RoomId);
+    setLoadingRoomName(room.RoomTypeName || "Selected Room");
 
     // ✅ Enhanced block payload with better error handling
     const blockPayload = {
@@ -151,6 +200,7 @@ const RoomCard = ({
       alert("❌ Something went wrong while blocking the room.");
     } finally {
       setLoadingRoomId(null);
+      setLoadingRoomName("");
     }
   };
 
@@ -167,6 +217,12 @@ const RoomCard = ({
 
   return (
     <div>
+      {/* Loading Popup */}
+      <LoadingPopup
+        isVisible={loadingRoomId !== null}
+        roomName={loadingRoomName}
+      />
+
       <h5 className="fw-bold mb-3 mt-3">
         Rooms ({availableRooms.length} available)
       </h5>
@@ -175,6 +231,7 @@ const RoomCard = ({
         availableRooms.map((room, idx) => {
           const offeredPrice = Number(room?.Price?.OfferedPrice || 0);
           const panMandatory = isPANMandatory(room);
+          const isCurrentRoomLoading = loadingRoomId === room.RoomId;
 
           return (
             <div
@@ -182,7 +239,14 @@ const RoomCard = ({
               className="border rounded bg-white p-3 d-flex justify-content-between align-items-center flex-wrap mb-3"
             >
               <div>
-                <div className="fw-bold">{room.RoomTypeName || "Room"}</div>
+                <div className="fw-bold">{room.RoomTypeName || "Room"}
+                  {/* Enhanced PAN mandatory warning */}
+                  {panMandatory && (
+                    <span className="">
+                      *
+                    </span>
+                  )}</div>
+
                 <div className="small text-muted mb-1">
                   {hotel.checkInDate} → {hotel.checkOutDate} • {displayNights} Night{displayNights > 1 ? 's' : ''}
                 </div>
@@ -193,14 +257,6 @@ const RoomCard = ({
                   ₹{offeredPrice.toLocaleString()}
                 </div>
 
-                {/* Enhanced PAN mandatory warning */}
-                {panMandatory && (
-                  <div className="alert alert-warning p-2 mb-2 small">
-                    <strong>PAN MANDATORY ROOM</strong><br />
-
-                  </div>
-                )}
-
                 {/* ✅ Show room amenities if available */}
                 {room.RoomAmenities && room.RoomAmenities.length > 0 && (
                   <div className="small text-muted">
@@ -210,29 +266,54 @@ const RoomCard = ({
               </div>
 
               <div className="text-end ms-auto d-flex flex-column align-items-end">
-                <div className="text-success d-flex align-items-center mb-2">
+                <div className="text-success d-flex align-items-center mb-2 d-none d-md-flex">
                   <CheckCircle size={16} className="me-1" />
                   <span className="small">
                     {room.Inclusion?.[0] || room.RatePlanName || "ROOM ONLY"}
                   </span>
                 </div>
 
-                {/* ✅ Show cancellation policy if available */}
-                {room.CancellationPolicy && (
-                  <div className="small text-muted mb-2">
-                    {room.CancellationPolicy}
+                {/* Mobile view - single line layout */}
+                <div className="d-flex d-md-none align-items-center justify-content-between w-100 mb-2">
+                  <div className="text-success d-flex align-items-center">
+                    <CheckCircle size={16} className="me-1" />
+                    <span className="small">
+                      {room.Inclusion?.[0] || room.RatePlanName || "ROOM ONLY"}
+                    </span>
                   </div>
-                )}
+                  <button
+                    className="btn btn-danger btn-sm px-3 ms-2"
+                    onClick={() => handleBookNow(room)}
+                    disabled={isCurrentRoomLoading}
+                    title={panMandatory ? "Ensure all adults have valid PAN numbers" : "Book this room"}
+                  >
+                    {isCurrentRoomLoading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                        Booking...
+                      </>
+                    ) : (
+                      "Book Now"
+                    )}
+                  </button>
+                </div>
 
-
+                {/* Desktop view - original layout */}
                 <button
-                  className="btn btn-danger btn-sm px-4"
+                  className="btn btn-danger btn-sm px-4 d-none d-md-block"
                   onClick={() => handleBookNow(room)}
+                  disabled={isCurrentRoomLoading}
                   title={panMandatory ? "Ensure all adults have valid PAN numbers" : "Book this room"}
                 >
-                  Book Now
+                  {isCurrentRoomLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-1" role="status"></span>
+                      Booking...
+                    </>
+                  ) : (
+                    "Book Now"
+                  )}
                 </button>
-
               </div>
             </div>
           );
