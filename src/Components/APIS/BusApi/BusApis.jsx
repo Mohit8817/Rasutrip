@@ -21,13 +21,11 @@ const getAuthToken = () => {
 
 // Helper function to create auth headers
 const createAuthHeaders = () => {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error('Authentication token not found. Please login again.');
-  }
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   return {
-    'Authorization': `Bearer ${token}`,
+    'Authorization': token ? `Bearer ${token}` : '',
     'Content-Type': 'application/json',
+    'Accept': 'application/json'
   };
 };
 
@@ -283,225 +281,34 @@ export const bookBus = async (bookingData) => {
 
 
 
-// ================================================
-// 🚌 ENHANCED BUS INVOICE DOWNLOAD API 
-// ================================================
 
+// ✅ NEW: Download Invoice API - Sends invoice to user's email
 export const downloadBusInvoice = async (invoiceData) => {
   try {
-    console.log('📄 Starting bus invoice download...');
-    console.log('📤 Invoice Data:', invoiceData);
-
-    // Input validation
-    if (!invoiceData.SearchTokenId) {
-      throw new Error('SearchTokenId is required for invoice download');
-    }
-
-    if (!invoiceData.BookingId) {
-      throw new Error('BookingId is required for invoice download');
-    }
+    console.log('📧 Sending bus invoice to email with payload:', invoiceData);
 
     const headers = createAuthHeaders();
 
-    // Helper to generate unique IDs
-    const generateUniqueId = (prefix) => {
-      return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    };
-
-    // Enhanced payload with proper data structure + unique invoiceId
+    // Construct payload as per your Postman structure
     const payload = {
       UserIp: invoiceData.UserIp || "122.161.64.143",
       SearchTokenId: invoiceData.SearchTokenId,
-      BookingId: String(invoiceData.BookingId).trim(), // Ensure it's a clean string
-      receiverEmail: invoiceData.receiverEmail || "",
-      invoiceNo: generateUniqueId("INV"), // 👈 unique invoice number
-      transactionId: generateUniqueId("TXN"), // 👈 unique transactionId
+      BookingId: invoiceData.BookingId,
+      receiverEmail: invoiceData.receiverEmail
     };
 
-    console.log('📤 Final payload being sent:', payload);
-    console.log('🔗 API Endpoint:', BusServices.downloadInvoice);
+    console.log('📤 Sending invoice email payload:', payload);
 
-    // Make API request with enhanced configuration
-    const response = await axios({
-      method: 'POST',
-      url: BusServices.downloadInvoice,
-      data: payload,
-      headers: {
-        ...headers,
-        'Accept': 'application/pdf, application/json',
-        'Content-Type': 'application/json',
-      },
-      responseType: 'blob', // Critical for file downloads
-      timeout: 30000, // 30 second timeout
-      validateStatus: function (status) {
-        // Accept both success and 409 conflict status
-        return (status >= 200 && status < 300) || status === 409;
-      }
-    });
+    const response = await axios.post(
+      BusServices.downloadInvoice,
+      payload,
+      { headers }
+    );
 
-    console.log('✅ API Response Status:', response.status);
-    console.log('📄 Response Headers:', response.headers);
-
-    // Handle 409 Conflict - Invoice already generated
-    if (response.status === 409) {
-      console.log('⚠️ Invoice already exists (409)');
-
-      // Try to parse the response to get more info
-      try {
-        const text = await response.data.text();
-        const jsonResponse = JSON.parse(text);
-
-        return {
-          success: true,
-          alreadyExists: true,
-          message: jsonResponse.message || 'Invoice already generated and sent to email',
-          data: jsonResponse
-        };
-      } catch (parseError) {
-        return {
-          success: true,
-          alreadyExists: true,
-          message: 'Invoice already generated and sent to email'
-        };
-      }
-    }
-
-    // Check content type for successful responses
-    const contentType = response.headers['content-type'] || response.headers['Content-Type'];
-    console.log('📋 Content Type:', contentType);
-
-    // Handle PDF response
-    if (contentType && (contentType.includes('application/pdf') || contentType.includes('application/octet-stream'))) {
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const fileSize = blob.size;
-
-      console.log('📊 PDF File Size:', fileSize, 'bytes');
-
-      if (fileSize < 100) {
-        throw new Error('Downloaded file seems too small, might be corrupted');
-      }
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-
-      // Generate filename with timestamp
-      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-      const filename = `bus-invoice-${invoiceData.BookingId}-${timestamp}.pdf`;
-
-      link.setAttribute('download', filename);
-      link.style.display = 'none';
-      document.body.appendChild(link);
-
-      // Trigger download
-      link.click();
-
-      // Cleanup
-      setTimeout(() => {
-        if (document.body.contains(link)) {
-          document.body.removeChild(link);
-        }
-        window.URL.revokeObjectURL(url);
-      }, 100);
-
-      console.log('✅ Invoice downloaded successfully:', filename);
-      return { success: true, filename, fileSize, downloaded: true };
-
-    } else {
-      // Handle non-PDF response (might be JSON success message)
-      try {
-        const text = await response.data.text();
-        console.log('📄 Non-PDF Response:', text);
-
-        let jsonResponse;
-        try {
-          jsonResponse = JSON.parse(text);
-        } catch (parseError) {
-          throw new Error(`Expected PDF but received: ${contentType}`);
-        }
-
-        // Check if it's a success message without PDF
-        if (jsonResponse.success || jsonResponse.Success) {
-          return {
-            success: true,
-            message: jsonResponse.message || 'Invoice processed successfully',
-            data: jsonResponse
-          };
-        }
-
-        if (jsonResponse.error || jsonResponse.Error) {
-          throw new Error(jsonResponse.error?.message || jsonResponse.Error?.ErrorMessage || 'Server returned an error');
-        }
-
-        throw new Error('Expected PDF but received JSON response');
-      } catch (textError) {
-        throw new Error(`Unexpected response format: ${contentType}`);
-      }
-    }
-
+    console.log('✅ downloadBusInvoice Success:', response.data);
+    return response.data;
   } catch (error) {
-    console.error('❌ Invoice Download Error:', error);
-
-    // Enhanced error handling
-    if (error.response) {
-      console.error('❌ Error Status:', error.response.status);
-      console.error('❌ Error Data:', error.response.data);
-
-      // Special handling for 409 (should not reach here due to validateStatus)
-      if (error.response.status === 409) {
-        return {
-          success: true,
-          alreadyExists: true,
-          message: 'Invoice already generated and sent to email'
-        };
-      }
-
-      let errorMessage = `Server error (${error.response.status})`;
-
-      if (error.response.status === 401) {
-        errorMessage = 'Authentication failed. Please login again.';
-      } else if (error.response.status === 404) {
-        errorMessage = 'Invoice not found. Please check your booking ID.';
-      } else if (error.response.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
-      } else if (error.response.status === 400) {
-        errorMessage = 'Invalid request. Please check your booking details.';
-      }
-
-      // Try to extract error message from response
-      if (error.response.data) {
-        try {
-          let errorData = error.response.data;
-
-          // If it's a blob, convert to text first
-          if (errorData instanceof Blob) {
-            const text = await errorData.text();
-            errorData = JSON.parse(text);
-          }
-
-          if (errorData.Error?.ErrorMessage) {
-            errorMessage = errorData.Error.ErrorMessage;
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
-          }
-        } catch (parseError) {
-          console.error('Could not parse error response');
-        }
-      }
-
-      throw new Error(errorMessage);
-
-    } else if (error.request) {
-      console.error('❌ Network Error:', error.request);
-      throw new Error('Network error. Please check your internet connection.');
-
-    } else if (error.code === 'ECONNABORTED') {
-      throw new Error('Request timeout. Please try again.');
-
-    } else {
-      // Re-throw the original error if it's already a custom error
-      throw error;
-    }
+    console.error('❌ downloadBusInvoice Error:', error.response?.data || error.message);
+    throw error;
   }
 };
