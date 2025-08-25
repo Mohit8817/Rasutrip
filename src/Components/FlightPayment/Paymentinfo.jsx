@@ -13,23 +13,17 @@ import MyVerticallyCenteredModal from './paymentLoader';
 
 const RazorpayPayment = () => {
   const navigate = useNavigate();
-
   const rasocommision = localStorage.getItem('rasocommision')
   const location = useLocation();
   const { passengerSelections = [], SSR, SelectedFare } = location.state || {};
-  console.log('SelectedFare',SelectedFare)
   const [loading, setLoading] = useState(false);
   const [fare, setfare] = useState(SelectedFare);
   const [journeyType, setjourneyType] = useState(null);
-
   const [modalShow, setModalShow] = useState(false);
-  
 
-
-   useEffect(() => {
-     const journeyType = localStorage.getItem('tripType');
-     console.log('journeyType',journeyType)
-     setjourneyType(journeyType)
+  useEffect(() => {
+    const journeyType = localStorage.getItem('tripType');
+    setjourneyType(journeyType)
 
     if (journeyType == 'roundtrip') {
       const resD = localStorage.getItem('fareSummery');
@@ -44,19 +38,13 @@ const RazorpayPayment = () => {
     }
   }, []); // run only once on mount
 
-  console.log('faredata:', fare?.onward);
-  
-  
-  
+  // const baseFare = journeyType=='roundtrip'? fare?.onward.Fare.PublishedPrice+fare?.return.Fare.PublishedPrice : fare?.PublishedPrice || 0;
+  const baseFare = journeyType === 'roundtrip'
+    ? (fare?.onward?.Fare?.PublishedPrice && fare?.return?.Fare?.PublishedPrice
+      ? fare.onward.Fare.PublishedPrice + fare.return.Fare.PublishedPrice
+      : fare?.PublishedPrice || 0)
+    : fare?.PublishedPrice || 0;
 
-
-
-  // const [passengerData, setpassengerData] = useState(false);
-
-  console.log('faredata',fare.onward)
-  console.log('journeyType',journeyType)
-
-  const baseFare = journeyType=='roundtrip'? fare?.onward.Fare.PublishedPrice+fare?.return.Fare.PublishedPrice : fare?.PublishedPrice || 0;
   const tax = baseFare * 0.18;
   const serviceCharge = baseFare * rasocommision / 100;
   const totalMeal = passengerSelections.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0);
@@ -79,9 +67,9 @@ const RazorpayPayment = () => {
         const selection = passengerSelections[index] || {};
         return {
           ...passenger,
-          Baggage: journeyType=='roundtrip'?[]: selection.baggage ? [selection.baggage] : [],
-          Meal: journeyType=='roundtrip'?[]: selection.meal ? [selection.meal] : [],
-          Seat: journeyType=='roundtrip'?[]: selection.seat ? [selection.seat] : [],
+          Baggage: journeyType == 'roundtrip' ? [] : selection.baggage ? [selection.baggage] : [],
+          Meal: journeyType == 'roundtrip' ? [] : selection.meal ? [selection.meal] : [],
+          Seat: journeyType == 'roundtrip' ? [] : selection.seat ? [selection.seat] : [],
         };
       });
       const IP = localStorage.getItem('UserIp');
@@ -99,24 +87,47 @@ const RazorpayPayment = () => {
 
       const payload = {
         UserIp: IP,
-        ResultIndex: journeyType=='roundtrip'? fare.onward.FareId: selectedFlight?.FareList[0].FareId || '',
+        ResultIndex: journeyType === 'roundtrip'
+          ? (fare?.onward?.FareId || selectedFlight?.FareList[0]?.FareId || '')
+          : (selectedFlight?.FareList[0]?.FareId || ''),
+
+        // ResultIndex: journeyType=='roundtrip'? fare.onward.FareId: selectedFlight?.FareList[0].FareId || '',
         SearchTokenId: SearchTokenId || '',
         CouponDiscount: SelectedFare?.CouponDiscount || 0,
+        vendorCommission: serviceCharge,
         Passengers: passengersData
       };
       const response = await post(payload, '/airservice/book');
 
-      if(journeyType=='roundtrip'){
+      if (
+        journeyType === 'roundtrip' &&
+        fare?.onward?.FareId &&
+        fare?.return?.FareId
+      ) {
         const payload = {
           UserIp: IP,
-          ResultIndex: journeyType=='roundtrip'? fare.return.FareId: selectedFlight?.FareList[0].FareId || '',
+          ResultIndex: fare.return.FareId || selectedFlight?.FareList?.[0]?.FareId || '',
           SearchTokenId: SearchTokenId || '',
           CouponDiscount: SelectedFare?.CouponDiscount || 0,
+          vendorCommission: serviceCharge,
           Passengers: passengersData
         };
+
         const response = await post(payload, '/airservice/book');
       }
-     
+
+
+      // if(journeyType=='roundtrip'){
+      //   const payload = {
+      //     UserIp: IP,
+      //     ResultIndex: journeyType=='roundtrip'? fare.return.FareId: selectedFlight?.FareList[0].FareId || '',
+      //     SearchTokenId: SearchTokenId || '',
+      //     CouponDiscount: SelectedFare?.CouponDiscount || 0,
+      //     Passengers: passengersData
+      //   };
+      //   const response = await post(payload, '/airservice/book');
+      // }
+
 
       if (response?.Error?.ErrorCode === 0) {
         setModalShow(false);

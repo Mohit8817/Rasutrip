@@ -67,7 +67,6 @@ const FlightCard = ({ flight }) => {
 
 
     const segment = flight?.Segments[0][0];
-    console.log('gggg', flight)
 
     const getStartAndEnd = (segmentsGroup) => {
         if (!segmentsGroup?.length) return null;
@@ -89,7 +88,6 @@ const FlightCard = ({ flight }) => {
     };
 
     const tripSummary = getStartAndEnd(flight.Segments);
-    console.log('tripSummary', tripSummary)
     const formatTime = (dateTimeStr) => {
         const options = { hour: '2-digit', minute: '2-digit' };
         return new Date(dateTimeStr).toLocaleTimeString([], options);

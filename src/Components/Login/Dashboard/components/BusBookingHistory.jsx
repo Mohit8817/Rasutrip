@@ -1,214 +1,101 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from '../../../Context/AuthContext';
+import { downloadBusInvoice } from '../../../APIS/BusApi/BusApis';
+import { toast } from 'react-toastify';
 
-// API configuration
-const API_BASE_URL = "https://api.rasutrip.com/api/v1";
+import {
+    fetchUpcomingBookings,
+    fetchAllBookings,
+    getUserType,
+    isUserAuthenticated,
+    fetchRealTimeStatus,
+    fetchMultipleRealTimeStatus
+} from '../../services/bookingApi';
 
 const BusBookingHistory = () => {
-    const { user } = useContext(AuthContext); // Get user from context
+    const { user } = useContext(AuthContext);
     const [bookingType, setBookingType] = useState('all');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [upcomingBookings, setUpcomingBookings] = useState([]);
     const [allBookings, setAllBookings] = useState([]);
-    const [userType, setUserType] = useState(null); // customer या agent
+    const [userType, setUserType] = useState(null);
     const [debugInfo, setDebugInfo] = useState(null);
+    const [downloadingInvoices, setDownloadingInvoices] = useState(new Set());
 
-    // Detect user type from multiple sources
-    const detectUserType = () => {
-        console.log('🔍 Detecting user type...');
-        console.log('👤 User from context:', user);
-        
-        // Method 1: Check localStorage for userType
-        const storedUserType = localStorage.getItem('userType') || localStorage.getItem('user_type');
-        console.log('💾 Stored user type:', storedUserType);
-        
-        // Method 2: Check token key patterns (from your login components)
-        let detectedType = null;
-        
-        // Check for customer token patterns
-        const customerTokenKeys = ['token', 'authToken', 'customer_token', 'customerToken'];
-        const hasCustomerToken = customerTokenKeys.some(key => localStorage.getItem(key));
-        
-        // Check for agent token patterns
-        const agentTokenKeys = ['agent_token', 'agentToken', 'agent_auth_token'];
-        const hasAgentToken = agentTokenKeys.some(key => localStorage.getItem(key));
-        
-        console.log('🏪 Customer token found:', hasCustomerToken);
-        console.log('🏢 Agent token found:', hasAgentToken);
-        
-        // Method 3: Check user context properties
-        if (user) {
-            // Check if user has agent-specific properties
-            if (user.isAgent || user.userType === 'agent' || user.role === 'agent') {
-                detectedType = 'agent';
-            } else if (user.isCustomer || user.userType === 'customer' || user.role === 'customer') {
-                detectedType = 'customer';
-            }
-        }
-        
-        // Priority logic for user type detection
-        if (storedUserType) {
-            detectedType = storedUserType.toLowerCase();
-        } else if (hasAgentToken && !hasCustomerToken) {
-            detectedType = 'agent';
-        } else if (hasCustomerToken && !hasAgentToken) {
-            detectedType = 'customer';
-        } else if (detectedType) {
-            // Use context-based detection
-        } else {
-            // Default fallback - assume customer if we have any token
-            const hasAnyToken = localStorage.getItem('token') || localStorage.getItem('authToken');
-            detectedType = hasAnyToken ? 'customer' : null;
-        }
-        
-        console.log('✅ Final detected user type:', detectedType);
-        return detectedType;
-    };
+    // Real-time status states
+    const [realTimeStatuses, setRealTimeStatuses] = useState({});
+    const [loadingStatuses, setLoadingStatuses] = useState(new Set());
 
-    // Enhanced authentication headers with user type awareness
-    const getAuthHeaders = () => {
-        const currentUserType = userType || detectUserType();
-        console.log('🔐 Getting auth headers for user type:', currentUserType);
-        
-        // Try different token keys based on user type
-        let token = null;
-        let tokenKey = null;
-        
-        const tokenKeys = currentUserType === 'agent' 
-            ? ['agent_token', 'agentToken', 'agent_auth_token', 'token', 'authToken'] // Agent token priority
-            : ['token', 'authToken', 'customer_token', 'customerToken', 'accessToken']; // Customer token priority
-        
-        for (const key of tokenKeys) {
-            const value = localStorage.getItem(key) || sessionStorage.getItem(key);
-            if (value) {
-                token = value;
-                tokenKey = key;
-                break;
-            }
+    // Handle real-time status check for single booking
+    const handleRealTimeCheck = async (booking) => {
+        const bookingId = booking.bookingId;
+
+        if (!bookingId) {
+            toast.error('No booking ID available for real-time check');
+            return;
         }
 
-        console.log('🔐 Token found with key:', tokenKey);
-        console.log('🔐 Token preview:', token ? `${token.substring(0, 15)}...` : 'None');
+        setLoadingStatuses(prev => new Set(prev.add(bookingId)));
 
-        if (!token) {
-            console.error('❌ No authentication token found for user type:', currentUserType);
-        }
-
-        return {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'User-Type': currentUserType || 'customer', // Send user type in headers
-        };
-    };
-
-    // API call function with user type awareness
-    const makeAuthenticatedRequest = async (url, method = 'GET', data = null) => {
         try {
-            console.log(`🚀 Making ${method} request to:`, url);
-            console.log('👤 Current user type:', userType);
+            const result = await fetchRealTimeStatus(booking, userType);
 
-            const headers = getAuthHeaders();
-            console.log('📤 Request headers:', headers);
+            setRealTimeStatuses(prev => ({
+                ...prev,
+                [bookingId]: result
+            }));
 
-            const config = {
-                method,
-                headers,
-                ...(data && { body: JSON.stringify(data) })
-            };
-
-            const response = await fetch(url, config);
-            console.log('✅ API Response status:', response.status);
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                console.error('❌ API Error response:', errorData);
-
-                switch (response.status) {
-                    case 401:
-                        throw new Error(`Authentication failed for ${userType || 'user'}. Please login again.`);
-                    case 403:
-                        throw new Error(`Access denied. ${userType === 'agent' ? 'Agent' : 'Customer'} permissions required.`);
-                    case 404:
-                        throw new Error('Booking service endpoint not found.');
-                    default:
-                        throw new Error(`Request failed with status ${response.status}`);
-                }
+            if (result.success) {
+                toast.success('Real-time status updated!');
+            } else {
+                toast.error(`Failed to update status: ${result.error}`);
             }
-
-            const responseData = await response.json();
-            console.log('✅ API Response data:', responseData);
-            return responseData;
 
         } catch (error) {
-            console.error('❌ API Request failed:', error);
-            throw error;
+            console.error('Error in real-time status check:', error);
+            toast.error('Failed to fetch real-time status');
+        } finally {
+            setLoadingStatuses(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(bookingId);
+                return newSet;
+            });
         }
     };
 
-    // User type specific API endpoints
-    const getBookingEndpoints = (currentUserType) => {
-        console.log('🎯 Getting endpoints for user type:', currentUserType);
-        
-        if (currentUserType === 'agent') {
-            return {
-                upcoming: `${API_BASE_URL}/agent/bus-bookings/upcoming`, // Agent-specific endpoint
-                // Fallback to customer endpoints if agent endpoints don't exist
-                upcomingFallback: `${API_BASE_URL}/busservice/up-comming-bookings`,
-                allFallback: `${API_BASE_URL}/busservice/my-bookings`
-            };
-        } else {
-            return {
-                upcoming: `${API_BASE_URL}/busservice/up-comming-bookings`, // Customer endpoints
-                all: `${API_BASE_URL}/busservice/my-bookings` // Customer endpoints
-            };
-        }
-    };
+    // Auto-fetch real-time status for all current bookings
+    const autoFetchRealTimeStatus = async () => {
+        const currentBookings = getCurrentBookings();
 
-    // Fetch upcoming bookings with user type awareness
-    const fetchUpcomingBookings = async () => {
-        const currentUserType = userType || detectUserType();
-        const endpoints = getBookingEndpoints(currentUserType);
-        
-        console.log('🚀 Fetching upcoming bookings for:', currentUserType);
-        
+        // Only fetch for confirmed/active bookings
+        const activeBookings = currentBookings.filter(booking =>
+            booking.bookingStatus?.toLowerCase() === 'confirmed' ||
+            booking.status?.toLowerCase() === 'confirmed'
+        );
+
+        if (activeBookings.length === 0) {
+            console.log('No active bookings found for real-time status check');
+            return;
+        }
+
+        console.log(`Auto-fetching real-time status for ${activeBookings.length} active bookings`);
+
         try {
-            return await makeAuthenticatedRequest(endpoints.upcoming);
+            const results = await fetchMultipleRealTimeStatus(activeBookings, userType);
+            setRealTimeStatuses(prev => ({
+                ...prev,
+                ...results
+            }));
         } catch (error) {
-            // Try fallback for agents if available
-            if (currentUserType === 'agent' && endpoints.upcomingFallback) {
-                console.log('⚠️ Trying fallback endpoint for agent...');
-                return await makeAuthenticatedRequest(endpoints.upcomingFallback);
-            }
-            throw error;
-        }
-    };
-
-    // Fetch all bookings with user type awareness
-    const fetchAllBookings = async () => {
-        const currentUserType = userType || detectUserType();
-        const endpoints = getBookingEndpoints(currentUserType);
-        
-        console.log('🚀 Fetching all bookings for:', currentUserType);
-        
-        try {
-            return await makeAuthenticatedRequest(endpoints.all);
-        } catch (error) {
-            // Try fallback for agents if available
-            if (currentUserType === 'agent' && endpoints.allFallback) {
-                console.log('⚠️ Trying fallback endpoint for agent...');
-                return await makeAuthenticatedRequest(endpoints.allFallback);
-            }
-            throw error;
+            console.error('Error in auto-fetch real-time status:', error);
         }
     };
 
     // Enhanced data formatting with user type context
     const formatBookingData = (apiResponse, isUpcoming = false) => {
-        console.log('📊 Formatting booking data for user type:', userType);
-        console.log('📊 Raw API response:', apiResponse);
+        console.log('Formatting booking data for user type:', userType);
+        console.log('Raw API response:', apiResponse);
 
         // Handle different response structures
         let bookingsArray = [];
@@ -228,20 +115,20 @@ const BusBookingHistory = () => {
             if (possibleArrays.length > 0) {
                 bookingsArray = possibleArrays[0];
             } else {
-                console.warn('⚠️ No array found in response object:', apiResponse);
+                console.warn('No array found in response object:', apiResponse);
                 return [];
             }
         } else {
-            console.warn('⚠️ Unknown response structure:', apiResponse);
+            console.warn('Unknown response structure:', apiResponse);
             return [];
         }
 
-        console.log('📋 Bookings array extracted:', bookingsArray.length, 'items');
+        console.log('Bookings array extracted:', bookingsArray.length, 'items');
 
         const formattedBookings = bookingsArray.map((bookingWrapper, index) => {
             // Extract booking data (might be nested in "Result" field)
             const booking = bookingWrapper.Result || bookingWrapper;
-            
+
             // Enhanced booking ID extraction with user type prefix
             const rawBookingId = bookingWrapper.bookingId ||
                 bookingWrapper.BookingId ||
@@ -257,18 +144,18 @@ const BusBookingHistory = () => {
             const bookingId = String(rawBookingId);
 
             // Extract route information
-            const fromCity = booking.Origin || booking.FromCity || booking.fromCity || 
-                           booking.from || booking.origin || booking.source || 'N/A';
-            const toCity = booking.Destination || booking.ToCity || booking.toCity || 
-                         booking.to || booking.destination || 'N/A';
+            const fromCity = booking.Origin || booking.FromCity || booking.fromCity ||
+                booking.from || booking.origin || booking.source || 'N/A';
+            const toCity = booking.Destination || booking.ToCity || booking.toCity ||
+                booking.to || booking.destination || 'N/A';
 
             // Extract travel date
             const travelDate = booking.DateOfJourney || booking.TravelDate || booking.travelDate ||
-                             booking.departureDate || booking.journeyDate || booking.date || 'N/A';
+                booking.departureDate || booking.journeyDate || booking.date || 'N/A';
 
             // Extract bus information
             const busType = booking.BusType || booking.busType || booking.TravelName ||
-                          booking.operator || booking.busName || booking.serviceName || 'N/A';
+                booking.operator || booking.busName || booking.serviceName || 'N/A';
 
             // Extract seat information from Passenger array
             let seatNumber = 'N/A';
@@ -277,21 +164,21 @@ const BusBookingHistory = () => {
                 seatNumber = seats.join(', ') || 'N/A';
             } else {
                 seatNumber = booking.SeatNumbers || booking.seatNumbers || booking.seats ||
-                           booking.seatNumber || booking.SeatName || 'N/A';
+                    booking.seatNumber || booking.SeatName || 'N/A';
             }
 
             // Extract other booking details
             const ticketNo = booking.TicketNo || booking.ticketNo || booking.ticketNumber ||
-                           booking.ticket || 'N/A';
+                booking.ticket || 'N/A';
             const pnr = booking.TravelOperatorPNR || booking.PNR || booking.pnr ||
-                      booking.referenceNumber || booking.confirmationNumber || 'N/A';
+                booking.referenceNumber || booking.confirmationNumber || 'N/A';
             const bookingStatus = booking.Status || booking.status || booking.bookingStatus || 'Confirmed';
 
             // Extract amount information
             const totalAmount = bookingWrapper.RasuTripInvoiceAmount || booking.InvoiceAmount ||
-                              booking.TotalAmount || booking.totalAmount || booking.amount ||
-                              booking.fare || booking.price || booking.Price?.PublishedPrice ||
-                              booking.Price?.OfferedPrice || '0';
+                booking.TotalAmount || booking.totalAmount || booking.amount ||
+                booking.fare || booking.price || booking.Price?.PublishedPrice ||
+                booking.Price?.OfferedPrice || '0';
 
             // Extract passenger information
             let passengerName = 'N/A';
@@ -299,21 +186,21 @@ const BusBookingHistory = () => {
             if (booking.Passenger && Array.isArray(booking.Passenger) && booking.Passenger.length > 0) {
                 const leadPassenger = booking.Passenger.find(p => p.LeadPassenger) || booking.Passenger[0];
                 passengerName = `${leadPassenger.FirstName || ''} ${leadPassenger.LastName || ''}`.trim() ||
-                              leadPassenger.name || 'N/A';
+                    leadPassenger.name || 'N/A';
                 contactNumber = leadPassenger.Phoneno || leadPassenger.phone || 'N/A';
             } else {
                 passengerName = booking.PassengerName || booking.passengerName ||
-                              booking.leadPassengerName || booking.name || 'N/A';
+                    booking.leadPassengerName || booking.name || 'N/A';
                 contactNumber = booking.ContactNumber || booking.contactNumber ||
-                              booking.mobile || booking.phone || 'N/A';
+                    booking.mobile || booking.phone || 'N/A';
             }
 
             // Extract payment and booking dates
             const paymentStatus = booking.PaymentStatus || booking.paymentStatus ||
-                                (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
+                (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
             const createdAt = bookingWrapper.createdAt || booking.BookingDate || booking.bookingDate ||
-                            booking.InvoiceCreatedOn || booking.createdAt || booking.created_at ||
-                            new Date().toISOString();
+                booking.InvoiceCreatedOn || booking.createdAt || booking.created_at ||
+                new Date().toISOString();
 
             // Format created date
             const formatCreatedDate = (dateString) => {
@@ -333,6 +220,13 @@ const BusBookingHistory = () => {
                 }
             };
 
+            // Extract SearchTokenId for invoice download
+            const searchTokenId = bookingWrapper.SearchTokenId ||
+                booking.SearchTokenId ||
+                booking.searchTokenId ||
+                booking.token_id ||
+                null;
+
             const formattedBooking = {
                 bookingId: String(bookingId),
                 from: String(fromCity),
@@ -351,44 +245,40 @@ const BusBookingHistory = () => {
                 createdAt: formatCreatedDate(createdAt),
                 bookingDate: formatCreatedDate(createdAt),
                 userType: userType || 'customer', // Add user type to booking data
+                searchTokenId: searchTokenId, // Add for invoice download
                 rawData: bookingWrapper // Keep original data for debugging
             };
 
-            console.log(`✅ Formatted booking ${index + 1} for ${userType}:`, formattedBooking);
+            console.log(`Formatted booking ${index + 1} for ${userType}:`, formattedBooking);
             return formattedBooking;
         });
 
-        console.log('📊 All formatted bookings:', formattedBookings.length, 'items');
+        console.log('All formatted bookings:', formattedBookings.length, 'items');
         return formattedBookings;
     };
 
-    // Main function to load bookings with user type awareness
+    // Main function to load bookings using services
     const loadBookings = async () => {
         setLoading(true);
         setError(null);
         setDebugInfo(null);
 
-        // Detect and set user type
-        const detectedUserType = detectUserType();
-        setUserType(detectedUserType);
-
-        console.log('🚀 Loading bookings for user type:', detectedUserType);
-
-        // Check authentication
-        if (!detectedUserType) {
-            setError('Unable to determine user type. Please login again.');
-            setLoading(false);
-            return;
-        }
-
-        const headers = getAuthHeaders();
-        if (!headers.Authorization || headers.Authorization === 'Bearer null') {
-            setError(`Please login as ${detectedUserType} to view booking history.`);
-            setLoading(false);
-            return;
-        }
-
         try {
+            // Detect and set user type using service function
+            const detectedUserType = getUserType();
+            setUserType(detectedUserType);
+
+            console.log('Loading bookings for user type:', detectedUserType);
+
+            // Check authentication using service function
+            if (!detectedUserType) {
+                throw new Error('Unable to determine user type. Please login again.');
+            }
+
+            if (!isUserAuthenticated(detectedUserType)) {
+                throw new Error(`Please login as ${detectedUserType} to view booking history.`);
+            }
+
             let upcomingData = [];
             let allData = [];
             let debugData = {
@@ -398,29 +288,39 @@ const BusBookingHistory = () => {
                 errors: []
             };
 
-            // Fetch upcoming bookings
+            // Fetch upcoming bookings using service
             try {
-                console.log('📅 Fetching upcoming bookings...');
-                const upcomingResponse = await fetchUpcomingBookings();
-                upcomingData = formatBookingData(upcomingResponse, true);
-                debugData.upcomingSuccess = true;
-                debugData.upcomingResponse = upcomingResponse;
-                console.log(`✅ Upcoming bookings loaded for ${detectedUserType}:`, upcomingData.length);
+                console.log('Fetching upcoming bookings using service...');
+                const upcomingResponse = await fetchUpcomingBookings(detectedUserType);
+
+                if (upcomingResponse.success) {
+                    upcomingData = formatBookingData(upcomingResponse.data, true);
+                    debugData.upcomingSuccess = true;
+                    debugData.upcomingResponse = upcomingResponse.data;
+                    console.log(`Upcoming bookings loaded for ${detectedUserType}:`, upcomingData.length);
+                } else {
+                    throw new Error(upcomingResponse.message);
+                }
             } catch (err) {
-                console.warn('⚠️ Failed to fetch upcoming bookings:', err.message);
+                console.warn('Failed to fetch upcoming bookings:', err.message);
                 debugData.errors.push(`Upcoming: ${err.message}`);
             }
 
-            // Fetch all bookings
+            // Fetch all bookings using service
             try {
-                console.log('📋 Fetching all bookings...');
-                const allResponse = await fetchAllBookings();
-                allData = formatBookingData(allResponse, false);
-                debugData.allBookingsSuccess = true;
-                debugData.allResponse = allResponse;
-                console.log(`✅ All bookings loaded for ${detectedUserType}:`, allData.length);
+                console.log('Fetching all bookings using service...');
+                const allResponse = await fetchAllBookings(detectedUserType);
+
+                if (allResponse.success) {
+                    allData = formatBookingData(allResponse.data, false);
+                    debugData.allBookingsSuccess = true;
+                    debugData.allResponse = allResponse.data;
+                    console.log(`All bookings loaded for ${detectedUserType}:`, allData.length);
+                } else {
+                    throw new Error(allResponse.message);
+                }
             } catch (err) {
-                console.warn('⚠️ Failed to fetch all bookings:', err.message);
+                console.warn('Failed to fetch all bookings:', err.message);
                 debugData.errors.push(`All bookings: ${err.message}`);
             }
 
@@ -429,16 +329,25 @@ const BusBookingHistory = () => {
             setAllBookings([...allData]);
             setDebugInfo(debugData);
 
+            // Auto-fetch real-time status after loading bookings
+            setTimeout(() => {
+                autoFetchRealTimeStatus();
+            }, 1000);
+
             if (upcomingData.length > 0 || allData.length > 0) {
-                console.log(`✅ Successfully loaded ${detectedUserType} booking data - Upcoming: ${upcomingData.length}, All: ${allData.length}`);
+                console.log(`Successfully loaded ${detectedUserType} booking data - Upcoming: ${upcomingData.length}, All: ${allData.length}`);
             } else if (debugData.errors.length === 0) {
-                console.log(`ℹ️ No bookings found for ${detectedUserType}`);
+                console.log(`No bookings found for ${detectedUserType}`);
             }
 
         } catch (error) {
-            console.error(`❌ Error loading ${detectedUserType} bookings:`, error);
-            setError(error.message || `Failed to load ${detectedUserType} booking history. Please try again.`);
-            setDebugInfo({ userType: detectedUserType, error: error.message, fullError: error });
+            console.error(`Error loading bookings:`, error);
+            setError(error.message || error.error?.message || `Failed to load booking history. Please try again.`);
+            setDebugInfo({
+                userType: userType,
+                error: error.message,
+                fullError: error
+            });
         } finally {
             setLoading(false);
         }
@@ -448,6 +357,102 @@ const BusBookingHistory = () => {
     useEffect(() => {
         loadBookings();
     }, [user]); // Re-load when user context changes
+
+    // Auto-refresh real-time status every 3 minutes
+    useEffect(() => {
+        const interval = setInterval(() => {
+            autoFetchRealTimeStatus();
+        }, 180000); // 3 minutes
+
+        return () => clearInterval(interval);
+    }, [allBookings, upcomingBookings]);
+
+    // Enhanced Invoice download function with better error handling
+    const handleDownloadInvoice = async (booking) => {
+        const bookingId = booking.bookingId;
+
+        console.log('Starting invoice download process for booking:', bookingId);
+        console.log('Booking data:', booking);
+
+        // Validation checks
+        if (!booking.searchTokenId) {
+            console.error('SearchTokenId not available for booking:', bookingId);
+            toast.error('Cannot download invoice - SearchTokenId not available for this booking');
+            return;
+        }
+
+        // Check if already downloading
+        if (downloadingInvoices.has(bookingId)) {
+            console.warn('Invoice already being downloaded for booking:', bookingId);
+            return;
+        }
+
+        // Add booking to downloading set
+        setDownloadingInvoices(prev => new Set(prev.add(bookingId)));
+
+        try {
+            // Prepare invoice data with enhanced information
+            const invoiceData = {
+                UserIp: "122.161.64.143", // You might want to get actual user IP
+                SearchTokenId: booking.searchTokenId,
+                BookingId: String(bookingId),
+                receiverEmail: user?.email ||
+                    user?.mail ||
+                    booking.contactNumber ||
+                    "support@rasutrip.com"
+            };
+
+            console.log('Invoice download data prepared:', invoiceData);
+
+            // Show loading toast
+            const loadingToastId = toast.loading('Downloading invoice...');
+
+            // Call your existing API
+            const result = await downloadBusInvoice(invoiceData);
+
+            console.log('Invoice download API result:', result);
+
+            // Dismiss loading toast
+            toast.dismiss(loadingToastId);
+
+            // Handle different response scenarios
+            if (result && result.success) {
+                if (result.downloaded) {
+                    toast.success('Invoice downloaded successfully!');
+                } else if (result.alreadyExists) {
+                    toast.success('Invoice already generated and sent to email!');
+                } else if (result.sent) {
+                    toast.success('Invoice has been sent to your email!');
+                } else {
+                    toast.success('Invoice processed successfully!');
+                }
+            } else if (result && result.message) {
+                // Handle API error messages
+                toast.error(`Invoice download failed: ${result.message}`);
+            } else {
+                toast.error('Failed to download invoice. Please try again.');
+            }
+
+        } catch (error) {
+            console.error('Invoice download error:', error);
+
+            // Handle different error types
+            if (error.message) {
+                toast.error(`Failed to download invoice: ${error.message}`);
+            } else if (error.response?.data?.message) {
+                toast.error(`Invoice download failed: ${error.response.data.message}`);
+            } else {
+                toast.error('Failed to download invoice. Please check your internet connection and try again.');
+            }
+        } finally {
+            // Remove booking from downloading set
+            setDownloadingInvoices(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(bookingId);
+                return newSet;
+            });
+        }
+    };
 
     // Get current bookings based on selected type
     const getCurrentBookings = () => {
@@ -487,6 +492,108 @@ const BusBookingHistory = () => {
         return userType === 'agent' ? 'Agent' : 'Customer';
     };
 
+    // Get status badge color
+    const getStatusColor = (status) => {
+        const statusLower = String(status).toLowerCase();
+
+        switch (statusLower) {
+            case 'confirmed':
+            case 'booked':
+            case 'active':
+                return 'bg-green-100 text-green-700';
+            case 'departed':
+            case 'in-transit':
+            case 'running':
+                return 'bg-blue-100 text-blue-700';
+            case 'completed':
+            case 'arrived':
+                return 'bg-purple-100 text-purple-700';
+            case 'cancelled':
+            case 'failed':
+                return 'bg-red-100 text-red-700';
+            case 'delayed':
+            case 'waiting':
+                return 'bg-yellow-100 text-yellow-700';
+            case 'pending':
+            case 'processing':
+                return 'bg-orange-100 text-orange-700';
+            case 'error':
+                return 'bg-red-100 text-red-700';
+            case 'unknown':
+            default:
+                return 'bg-gray-100 text-gray-700';
+        }
+    };
+
+    // Render real-time status
+    const renderRealTimeStatus = (booking) => {
+        const bookingId = booking.bookingId;
+        const isLoading = loadingStatuses.has(bookingId);
+        const statusData = realTimeStatuses[bookingId];
+
+        if (isLoading) {
+            return (
+                <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                    <span className="text-xs text-gray-500">Checking...</span>
+                </div>
+            );
+        }
+
+        if (statusData?.error) {
+            return (
+                <div className="flex flex-col items-start">
+                    <span className="text-xs text-red-500">Error: {statusData.error}</span>
+                    <button
+                        onClick={() => handleRealTimeCheck(booking)}
+                        className="mt-1 text-xs text-blue-500 hover:text-blue-700"
+                        title="Retry"
+                    >
+                        Retry
+                    </button>
+                </div>
+            );
+        }
+
+        if (statusData?.status && statusData.success) {
+            return (
+                <div className="flex flex-col items-start">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(statusData.status)}`}>
+                        {statusData.status}
+                    </span>
+                    <div className="flex items-center mt-1">
+                        <span className="text-xs text-gray-400">
+                            {statusData.lastUpdated.toLocaleTimeString('en-IN', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}
+                        </span>
+                        <button
+                            onClick={() => handleRealTimeCheck(booking)}
+                            className="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                            title="Refresh Status"
+                        >
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="flex items-center">
+                <span className="text-xs text-gray-400">No data</span>
+                <button
+                    onClick={() => handleRealTimeCheck(booking)}
+                    className="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                    title="Check Status"
+                >
+                    Check
+                </button>
+            </div>
+        );
+    };
+
     // Loading state
     if (loading) {
         return (
@@ -505,29 +612,9 @@ const BusBookingHistory = () => {
             {/* Header with user type indicator */}
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800">My Bus Bookings</h2>
-                    <div className="flex items-center mt-1">
-                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            userType === 'agent' 
-                                ? 'bg-purple-100 text-purple-800' 
-                                : 'bg-blue-100 text-blue-800'
-                        }`}>
-                            {getUserTypeDisplay()} Dashboard
-                        </span>
-                        {user && (
-                            <span className="ml-2 text-sm text-gray-600">
-                                Welcome, {user.name || user.mobile || 'User'}
-                            </span>
-                        )}
-                    </div>
+                    <h5 className="text-2xl font-bold text-gray-800">My Bus Bookings</h5>
                 </div>
-                <button
-                    onClick={loadBookings}
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {loading ? 'Refreshing...' : 'Refresh'}
-                </button>
+
             </div>
 
             {/* Error Display */}
@@ -606,12 +693,13 @@ const BusBookingHistory = () => {
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Created</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-Time Status</th>
                             </tr>
                         </thead>
                         <tbody className="bg-gray-50">
                             {currentBookings.length === 0 ? (
                                 <tr>
-                                    <td colSpan="10" className="px-4 py-12 text-center">
+                                    <td colSpan="11" className="px-4 py-12 text-center">
                                         <div className="flex flex-col items-center">
                                             <span className="text-4xl mb-4">🚌</span>
                                             <span className="text-lg font-medium text-gray-600">
@@ -637,81 +725,43 @@ const BusBookingHistory = () => {
                                 </tr>
                             ) : (
                                 currentBookings.map((booking, index) => (
-                                    <tr key={booking.bookingId || index} className="border-b border-gray-200 hover:bg-gray-100">
-                                        <td className="px-4 py-3 text-sm font-medium text-blue-600">
-                                            {booking.bookingId}
+                                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
+                                        <td className="px-4 py-3 text-sm text-gray-700">{booking.bookingId}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">
+                                            {booking.from} → {booking.to}
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                            <div className="font-medium">{booking.from}</div>
-                                            <div className="text-gray-500">to {booking.to}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                            {formatDate(booking.travelDate)}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-600">
-                                            {booking.busType}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                            {booking.seatNumber}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-900">
-                                            <div className="font-medium">{booking.passengerName}</div>
-                                            <div className="text-gray-500 text-xs">{booking.contactNumber}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                        <td className="px-4 py-3 text-sm text-gray-700">{formatDate(booking.travelDate)}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{booking.busType}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{booking.seatNumber}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{booking.passengerName}</td>
+                                        <td className="px-4 py-3 text-sm font-medium text-green-600">
                                             {formatAmount(booking.totalAmount)}
                                         </td>
                                         <td className="px-4 py-3 text-sm">
-                                            <div className="flex flex-col space-y-1">
-                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                                    booking.bookingStatus?.toLowerCase() === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                    booking.bookingStatus?.toLowerCase() === 'processing' ? 'bg-orange-100 text-orange-800' :
-                                                    booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                    'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                    {booking.bookingStatus}
-                                                </span>
-                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                                    booking.paymentStatus?.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
-                                                    booking.paymentStatus?.toLowerCase() === 'processing' ? 'bg-orange-100 text-orange-800' :
-                                                    booking.paymentStatus?.toLowerCase() === 'failed' ? 'bg-red-100 text-red-800' :
-                                                    'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                    {booking.paymentStatus}
-                                                </span>
-                                            </div>
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${booking.bookingStatus.toLowerCase() === "confirmed"
+                                                    ? "bg-green-100 text-green-700"
+                                                    : "bg-yellow-100 text-yellow-700"
+                                                    }`}
+                                            >
+                                                {booking.bookingStatus}
+                                            </span>
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-gray-600">
-                                            <div className="text-xs">{booking.createdAt}</div>
-                                            {booking.pnr !== 'N/A' && (
-                                                <div className="text-xs text-gray-500">PNR: {booking.pnr}</div>
-                                            )}
+                                        <td className="px-4 py-3 text-sm text-gray-500">{booking.createdAt}</td>
+                                        <td className="px-4 py-3 text-sm">
+                                            <button
+                                                onClick={() => handleDownloadInvoice(booking)}
+                                                disabled={downloadingInvoices.has(booking.bookingId)}
+                                                className={`px-3 py-1 rounded text-white text-xs ${downloadingInvoices.has(booking.bookingId)
+                                                    ? "bg-gray-400 cursor-not-allowed"
+                                                    : "bg-blue-500 hover:bg-blue-600"
+                                                    }`}
+                                            >
+                                                {downloadingInvoices.has(booking.bookingId) ? "Downloading..." : "Download Invoice"}
+                                            </button>
                                         </td>
                                         <td className="px-4 py-3 text-sm">
-                                            <div className="flex flex-col space-y-1">
-                                                <button
-                                                    onClick={() => {
-                                                        console.log('View booking details:', booking);
-                                                        // Add your view logic here
-                                                    }}
-                                                    className="text-blue-500 hover:text-blue-700 font-medium text-xs flex items-center"
-                                                >
-                                                    <span className="mr-1">👁️</span>
-                                                    View Details
-                                                </button>
-                                                {booking.ticketNo !== 'N/A' && (
-                                                    <button
-                                                        onClick={() => {
-                                                            console.log('Download ticket:', booking.ticketNo);
-                                                            // Add your download logic here
-                                                        }}
-                                                        className="text-green-500 hover:text-green-700 font-medium text-xs flex items-center"
-                                                    >
-                                                        <span className="mr-1">📄</span>
-                                                        Download
-                                                    </button>
-                                                )}
-                                            </div>
+                                            {renderRealTimeStatus(booking)}
                                         </td>
                                     </tr>
                                 ))
@@ -721,63 +771,11 @@ const BusBookingHistory = () => {
                 </div>
             </div>
 
-            {/* Summary Cards */}
-            {(upcomingBookings.length > 0 || allBookings.length > 0) && (
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-2xl font-bold text-blue-600">{upcomingBookings.length}</div>
-                                <div className="text-sm text-blue-800">Upcoming Trips</div>
-                            </div>
-                            <div className="text-blue-400 text-2xl">🚌</div>
-                        </div>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-2xl font-bold text-green-600">{allBookings.length}</div>
-                                <div className="text-sm text-green-800">Total Bookings</div>
-                            </div>
-                            <div className="text-green-400 text-2xl">📊</div>
-                        </div>
-                    </div>
-                    <div className={`p-4 rounded-lg ${userType === 'agent' ? 'bg-purple-50' : 'bg-indigo-50'}`}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className={`text-2xl font-bold ${userType === 'agent' ? 'text-purple-600' : 'text-indigo-600'}`}>
-                                    {getUserTypeDisplay()}
-                                </div>
-                                <div className={`text-sm ${userType === 'agent' ? 'text-purple-800' : 'text-indigo-800'}`}>
-                                    Account Type
-                                </div>
-                            </div>
-                            <div className={`text-2xl ${userType === 'agent' ? 'text-purple-400' : 'text-indigo-400'}`}>
-                                {userType === 'agent' ? '🏢' : '👤'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Pagination info */}
-            {currentBookings.length > 0 && (
-                <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
-                    <span>
-                        Showing {currentBookings.length} {getUserTypeDisplay().toLowerCase()} booking{currentBookings.length !== 1 ? 's' : ''}
-                        {bookingType === 'upcoming' ? ' - upcoming trips' : ' - all bookings'}
-                    </span>
-                    <div className="flex items-center space-x-2">
-                        <span className="bg-gray-700 text-white px-2 py-1 rounded text-xs">Page 1 of 1</span>
-                    </div>
-                </div>
-            )}
-
             {/* Footer with user context info */}
             <div className="mt-6 pt-4 border-t border-gray-200">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                     <span>
-                        Logged in as: {getUserTypeDisplay()} 
+                        Logged in as: {getUserTypeDisplay()}
                         {user?.mobile && ` (${user.mobile})`}
                         {user?.name && ` - ${user.name}`}
                     </span>
@@ -789,6 +787,19 @@ const BusBookingHistory = () => {
                         })}
                     </span>
                 </div>
+
+                {/* Real-time status summary */}
+                {Object.keys(realTimeStatuses).length > 0 && (
+                    <div className="mt-2 text-xs text-gray-500">
+                        <span className="font-medium">Real-time Status Updates:</span>
+                        <span className="ml-2">
+                            {Object.keys(realTimeStatuses).length} booking(s) with live status
+                        </span>
+                        <span className="ml-2 text-blue-500">
+                            Auto-refresh every 3 minutes for confirmed bookings
+                        </span>
+                    </div>
+                )}
             </div>
         </div>
     );

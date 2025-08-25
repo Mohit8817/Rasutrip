@@ -236,7 +236,7 @@ const BusTravellerinfo = () => {
                     blockResponse?.message ||
                     blockResponse?.error ||
                     "API call failed - no specific error message returned";
-                
+
                 console.error("❌ API returned error:", blockResponse);
                 throw new Error(errorMessage);
             }
@@ -263,9 +263,9 @@ const BusTravellerinfo = () => {
     const hasRequiredData = () => {
         // Check if all passengers have basic required fields
         const passengersValid = passengerData.every(passenger =>
-            passenger.firstName?.trim() && 
-            passenger.lastName?.trim() && 
-            passenger.age && 
+            passenger.firstName?.trim() &&
+            passenger.lastName?.trim() &&
+            passenger.age &&
             passenger.gender
         );
 
@@ -338,12 +338,6 @@ const BusTravellerinfo = () => {
 
     return (
         <div className="container my-4">
-            {/* API Error Display - Only shows API response errors */}
-            {apiError && (
-                <Alert variant="danger" className="mb-4" dismissible onClose={() => setApiError(null)}>
-                    <strong>Error:</strong> {apiError}
-                </Alert>
-            )}
 
             {/* Traveller Details */}
             <Card className="mb-4 shadow-sm border-0">
@@ -490,7 +484,7 @@ const BusTravellerinfo = () => {
                                 value={contactData.email}
                                 onChange={(e) => handleContactChange('email', e.target.value)}
                             />
-                           
+
                         </Col>
                     </Row>
                 </Card.Body>
@@ -570,43 +564,9 @@ const BusTravellerinfo = () => {
                 )}
             </Card>
 
-            {/* Important Information */}
-            <Card className="mb-4 border-warning bg-warning bg-opacity-10">
-                <Card.Body className="py-3">
-                    <h6 className="text-warning mb-2">
-                        ⚠️ Important Information
-                    </h6>
-                    <Row>
-                        <Col md={6}>
-                            <ul className="text-muted small mb-0 ps-3">
-                                <li>Ensure all passenger names match their ID proofs exactly</li>
-                                <li>Children above 5 years need separate tickets</li>
-                                <li>Senior citizen discounts may apply (ask operator)</li>
-                            </ul>
-                        </Col>
-                        <Col md={6}>
-                            <ul className="text-muted small mb-0 ps-3">
-                                <li>ID proof is mandatory for all passengers during travel</li>
-                                <li>Contact details will be used for booking updates</li>
-                                <li>GST invoice will be sent to company email if provided</li>
-                            </ul>
-                        </Col>
-                    </Row>
-                </Card.Body>
-            </Card>
 
             {/* Action Buttons */}
-            <div className="d-flex justify-content-between align-items-center mt-4">
-                <Button
-                    variant="outline-secondary"
-                    onClick={handleGoBack}
-                    disabled={isSubmitting}
-                    className="px-4"
-                >
-                    <FaArrowLeft className="me-2" />
-                    Back to Seats
-                </Button>
-
+            <div className="text-end mb-4 mt-4">
                 <Button
                     onClick={handleContinue}
                     disabled={isSubmitting}
@@ -614,25 +574,19 @@ const BusTravellerinfo = () => {
                     style={{ fontSize: '1.1rem' }}
                     type="button"
                 >
-                    {isSubmitting ? (
-                        <>
-                            <Spinner
-                                as="span"
-                                animation="border"
-                                size="sm"
-                                role="status"
-                                aria-hidden="true"
-                                className="me-2"
-                            />
-                            Processing...
-                        </>
-                    ) : (
-                        <>
-                            Continue to Review →
-                        </>
-                    )}
+                    Continue to Review →
                 </Button>
             </div>
+
+
+
+            {/* API Error Display - Only shows API response errors */}
+            {apiError && (
+                <Alert variant="danger" className="mb-4" dismissible onClose={() => setApiError(null)}>
+                    <strong>Error:</strong> {apiError}
+                </Alert>
+            )}
+
         </div>
     );
 };

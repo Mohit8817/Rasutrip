@@ -52,25 +52,43 @@ const DatePicker = ({ tripType, setTripType }) => {
     };
 
     // Save dates to context on update
-    useEffect(() => {
-        if (departDate) {
-            const formatted = formatToPreferredTime(departDate);
-            setLocationData((prev) => ({
-                ...prev,
-                departDate: formatted,
-            }));
+    // Depart date change -> auto update returnDate if needed
+useEffect(() => {
+    if (departDate) {
+      const formatted = formatToPreferredTime(departDate);
+      setLocationData((prev) => ({
+        ...prev,
+        departDate: formatted,
+      }));
+  
+      // Agar tripType roundtrip hai aur returnDate <= departDate hai to +1 day set karo
+      if (tripType !== "oneway") {
+        if (!returnDate || returnDate <= departDate) {
+          const nextDay = new Date(departDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          setReturnDate(nextDay);
+  
+          const formattedReturn = formatToPreferredTime(nextDay);
+          setLocationData((prev) => ({
+            ...prev,
+            returnDate: formattedReturn,
+          }));
         }
-    }, [departDate]);
-
-    useEffect(() => {
-        if ((tripType === "roundtrip" || tripType === "multicity") && returnDate) {
-            const formatted = formatToPreferredTime(returnDate);
-            setLocationData((prev) => ({
-                ...prev,
-                returnDate: formatted,
-            }));
-        }
-    }, [returnDate, tripType]);
+      }
+    }
+  }, [departDate, tripType]);
+  
+  // Return date change -> save to context
+  useEffect(() => {
+    if ((tripType === "roundtrip" || tripType === "multicity") && returnDate) {
+      const formatted = formatToPreferredTime(returnDate);
+      setLocationData((prev) => ({
+        ...prev,
+        returnDate: formatted,
+      }));
+    }
+  }, [returnDate, tripType]);
+  
 
     return (
         <div className="d-flex flex align-items-start custom-date-picker">

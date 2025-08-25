@@ -3,7 +3,7 @@ import { Card, Button, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { createHotelOrder, validateHotelPayment, bookHotel, downloadHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
+import { createHotelOrder, validateHotelPayment, bookHotel, sendHotelInvoiceEmail } from '../../../APIS/HotelApi/HotelAPi';
 
 const HotelPaymentInfo = () => {
   const [loading, setLoading] = useState(false);
@@ -40,27 +40,37 @@ const HotelPaymentInfo = () => {
       document.body.appendChild(script);
     });
 
-  // Async invoice email sender (non-blocking)
-  const sendInvoiceEmailAsync = async (invoiceData) => {
+  // ✅ FIXED: Use the actual API function for sending invoice email
+  const sendInvoiceEmail = async (bookingResponse, formattedBookingData) => {
     try {
-      console.log('📧 Attempting to auto-send invoice email...');
-      const result = await downloadHotelInvoice({
-        ...invoiceData,
-        emailOnly: true
-      });
+      console.log('📧 Sending invoice email...');
 
-      if (result.success || result.message) {
-        console.log('✅ Invoice email sent automatically');
-        return result;
-      }
-      throw new Error('Email sending failed');
+      // Get lead passenger email for invoice
+      const leadPassengerEmail = getLeadPassengerEmail(formattedBookingData);
+
+      const invoicePayload = {
+        UserIp: bookingResponse.UserIp || "49.36.217.215",
+        BookingId: bookingResponse.BookingID || bookingResponse.userId,
+        SearchTokenId: bookingResponse.SearchTokenId,
+        receiverEmail: leadPassengerEmail // Add recipient email
+      };
+
+      console.log('📤 Invoice payload:', invoicePayload);
+
+      // ✅ Use the actual API function instead of direct axios call
+      const response = await sendHotelInvoiceEmail(invoicePayload);
+
+      console.log('✅ Invoice email sent successfully:', response);
+      return { success: true, data: response };
+
     } catch (error) {
-      console.error('❌ Auto-email failed:', error.message);
-      throw error;
+      console.error('❌ Invoice email failed:', error.message);
+      // Don't throw error - this is non-critical
+      return { success: false, error: error.message };
     }
   };
 
-  // Utility functions for invoice data
+  // Utility functions for lead passenger
   const getLeadPassenger = (formattedBookingData) => {
     return formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.find(p => p.LeadPassenger === "true") ||
       formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0] ||
@@ -72,7 +82,7 @@ const HotelPaymentInfo = () => {
     return leadPassenger?.Email || "mohitverma8817@gmail.com";
   };
 
-  // ✅ UPDATED: Enhanced booking data formatter to match exact Postman structure
+  // ✅ CORRECTED: Lead passenger logic - Only ONE lead passenger across ALL rooms
   const formatBookingData = (bookingDetails) => {
     console.log('🔄 Input booking details:', JSON.stringify(bookingDetails, null, 2));
 
@@ -82,7 +92,6 @@ const HotelPaymentInfo = () => {
     if (bookingDetails?.HotelRoomsDetails && Array.isArray(bookingDetails.HotelRoomsDetails)) {
       hotelRoomsData = bookingDetails.HotelRoomsDetails;
     } else if (bookingDetails?.roomTravellerInfo && Array.isArray(bookingDetails.roomTravellerInfo)) {
-      // Convert roomTravellerInfo to HotelRoomsDetails format
       hotelRoomsData = bookingDetails.roomTravellerInfo.map((room, index) => ({
         RoomIndex: index + 1,
         HotelPassenger: room.travellerInfo || []
@@ -95,8 +104,32 @@ const HotelPaymentInfo = () => {
       throw new Error('No rooms found in booking data');
     }
 
-    // Step 2: Process passengers with EXACT Postman structure
-    let leadPassengerSet = false;
+    // ✅ CRITICAL FIX: Global lead passenger control
+    let leadPassengerAssigned = false;
+    let leadPassengerName = '';
+
+    // First pass: Find the first adult passenger to be the lead passenger
+    let leadPassengerFound = false;
+    for (let roomIndex = 0; roomIndex < hotelRoomsData.length && !leadPassengerFound; roomIndex++) {
+      const room = hotelRoomsData[roomIndex];
+      if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
+        for (let passengerIndex = 0; passengerIndex < room.HotelPassenger.length; passengerIndex++) {
+          const passenger = room.HotelPassenger[passengerIndex];
+          const isAdult = parseInt(passenger.PaxType) === 1 || passenger.Age >= 18;
+          if (isAdult) {
+            leadPassengerName = `${passenger.FirstName || ''} ${passenger.LastName || ''}`.trim();
+            leadPassengerFound = true;
+            console.log(`✅ Selected ${leadPassengerName} as the SINGLE Lead Passenger (Room ${roomIndex + 1})`);
+            break;
+          }
+        }
+      }
+    }
+
+    if (!leadPassengerFound) {
+      throw new Error('❌ No adult passenger found to assign as lead passenger');
+    }
+
     const processedRooms = hotelRoomsData.map((room, roomIndex) => {
       if (!room.HotelPassenger || !Array.isArray(room.HotelPassenger) || room.HotelPassenger.length === 0) {
         throw new Error(`Room ${roomIndex + 1} has no passengers`);
@@ -106,15 +139,16 @@ const HotelPaymentInfo = () => {
         const isAdult = parseInt(passenger.PaxType) === 1 || passenger.Age >= 18;
         const passengerName = `${passenger.FirstName || ''} ${passenger.LastName || ''}`.trim();
 
-        // ✅ CRITICAL FIX: Only ONE lead passenger globally (like Postman)
-        const shouldBeLeadPassenger = !leadPassengerSet && isAdult;
+        // ✅ CRITICAL: Only the FIRST adult passenger becomes lead passenger
+        const shouldBeLeadPassenger = !leadPassengerAssigned && isAdult && passengerName === leadPassengerName;
+
         if (shouldBeLeadPassenger) {
-          leadPassengerSet = true;
-          console.log(`✅ Setting ${passengerName} as Lead Passenger`);
+          leadPassengerAssigned = true;
+          console.log(`✅ Assigning ${passengerName} as Lead Passenger (Room ${roomIndex + 1})`);
         }
 
         if (isAdult) {
-          // ✅ STRICT PAN validation for adults
+          // PAN validation for adults
           const panValue = passenger.PAN;
           if (!panValue || typeof panValue !== 'string') {
             throw new Error(`❌ Adult passenger "${passengerName}" is missing PAN number`);
@@ -129,13 +163,12 @@ const HotelPaymentInfo = () => {
             throw new Error(`❌ Adult passenger "${passengerName}" has invalid PAN: "${panValue}"`);
           }
 
-          // ✅ UPDATED: More flexible PAN validation (like Postman example with BHWPY8763)
-          // Accept both complete format (ABCDE1234F) and incomplete format for testing
-          if (!/^[A-Z]{5}[0-9]{4}[A-Z]?$/.test(cleanPAN) && cleanPAN.length < 5) {
-            throw new Error(`❌ Invalid PAN format for "${passengerName}": "${cleanPAN}". Required format: ABCDE1234F or minimum 5 characters`);
+          // PAN format validation
+          if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(cleanPAN) && cleanPAN.length < 5) {
+            throw new Error(`❌ Invalid PAN format for "${passengerName}": "${cleanPAN}". Required format: ABCDE1234F`);
           }
 
-          // ✅ EXACT Postman structure match
+          // ✅ EXACT format - only ONE lead passenger
           return {
             Title: String(passenger.Title || "Mr").trim(),
             FirstName: String(passenger.FirstName || "").trim(),
@@ -144,13 +177,13 @@ const HotelPaymentInfo = () => {
             Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
             Email: String(passenger.Email || "").trim().toLowerCase(),
             PaxType: 1, // Adult
-            LeadPassenger: shouldBeLeadPassenger ? "true" : "false", // ✅ String format like Postman
-            Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 0, // ✅ Use 0 like Postman
+            LeadPassenger: shouldBeLeadPassenger ? "true" : "false", // ✅ Only ONE true
+            Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 0,
             PassportNo: null,
             PassportIssueDate: null,
             PassportExpDate: null,
-            PAN: cleanPAN, // ✅ Properly validated PAN
-            // ✅ GST fields - null by default (like Postman), only for lead passenger if provided
+            PAN: cleanPAN,
+            // GST fields - only for lead passenger if provided
             GSTCompanyAddress: shouldBeLeadPassenger && passenger.GSTCompanyAddress ? String(passenger.GSTCompanyAddress).trim() : null,
             GSTCompanyContactNumber: shouldBeLeadPassenger && passenger.GSTCompanyContactNumber ? String(passenger.GSTCompanyContactNumber).trim() : null,
             GSTCompanyEmail: shouldBeLeadPassenger && passenger.GSTCompanyEmail ? String(passenger.GSTCompanyEmail).trim() : null,
@@ -158,7 +191,7 @@ const HotelPaymentInfo = () => {
             GSTNumber: shouldBeLeadPassenger && passenger.GSTNumber ? String(passenger.GSTNumber).trim() : null,
           };
         } else {
-          // Child passenger
+          // Child passenger - never lead passenger
           return {
             Title: String(passenger.Title || "Master").trim(),
             FirstName: String(passenger.FirstName || "").trim(),
@@ -167,7 +200,7 @@ const HotelPaymentInfo = () => {
             Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
             Email: String(passenger.Email || "").trim().toLowerCase(),
             PaxType: 2, // Child
-            LeadPassenger: "false", // Children are never lead passengers
+            LeadPassenger: "false", // ✅ Children are NEVER lead passengers
             Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 5,
             PassportNo: null,
             PassportIssueDate: null,
@@ -183,12 +216,28 @@ const HotelPaymentInfo = () => {
       });
 
       return {
-        RoomIndex: roomIndex + 1, // ✅ Number format like Postman
+        RoomIndex: roomIndex + 1,
         HotelPassenger: processedPassengers
       };
     });
 
-    // Step 3: Check for duplicate PANs
+    // ✅ Final validation: Ensure exactly ONE lead passenger
+    const leadCount = processedRooms
+      .flatMap(room => room.HotelPassenger)
+      .filter(passenger => passenger.LeadPassenger === "true")
+      .length;
+
+    if (leadCount === 0) {
+      throw new Error('❌ No lead passenger found. At least one adult passenger is required.');
+    }
+
+    if (leadCount > 1) {
+      throw new Error(`❌ Multiple lead passengers found (${leadCount}). Only ONE lead passenger is allowed.`);
+    }
+
+    console.log(`✅ SUCCESS: Exactly ONE lead passenger set: ${leadPassengerName}`);
+
+    // Check for duplicate PANs
     const panNumbers = new Set();
     const duplicatePANs = [];
 
@@ -209,63 +258,34 @@ const HotelPaymentInfo = () => {
       throw new Error(`❌ Duplicate PAN numbers found: ${duplicatePANs.join(', ')}. Each passenger must have a unique PAN number.`);
     }
 
-    // Step 4: Ensure we have exactly one lead passenger
-    if (!leadPassengerSet) {
-      throw new Error('❌ No lead passenger found. At least one adult passenger is required.');
-    }
-
-    // ✅ Step 5: Build final payload matching EXACT Postman structure
+    // Build final payload
     const finalPayload = {
-      ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`), // ✅ String format
-      HotelCode: String(bookingDetails.HotelCode || 67), // ✅ String format like Postman
+      ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`),
+      HotelCode: String(bookingDetails.HotelCode || 67),
       HotelName: String(bookingDetails.HotelName || "ALILA DIWA"),
-      GuestNationality: "IN", // ✅ Required field
-      NoOfRooms: String(processedRooms.length), // ✅ String format like Postman
-      ClientReferenceNo: bookingDetails.ClientReferenceNo || 0, // ✅ Number format like Postman
-      vendorCommission: bookingDetails.vendorCommission || 10, // ✅ Number format
-      CouponDiscount: bookingDetails.CouponDiscount || 5, // ✅ Number format
-      IsVoucherBooking: "true", // ✅ String format like Postman
+      GuestNationality: "IN",
+      NoOfRooms: String(processedRooms.length),
+      ClientReferenceNo: bookingDetails.ClientReferenceNo || 0,
+      vendorCommission: bookingDetails.vendorCommission || 10,
+      CouponDiscount: bookingDetails.CouponDiscount || 5,
+      IsVoucherBooking: "true",
       HotelRoomsDetails: processedRooms,
-      UserIp: String(bookingDetails.UserIp || "49.36.217.215"), // ✅ String format
-      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed") // ✅ String format
+      UserIp: String(bookingDetails.UserIp || "49.36.217.215"),
+      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed")
     };
 
-    console.log('✅ Final booking payload (Postman-matched):', JSON.stringify(finalPayload, null, 2));
-
-    // Step 6: Final validation
-    const leadCount = finalPayload.HotelRoomsDetails
-      .flatMap(room => room.HotelPassenger)
-      .filter(passenger => passenger.LeadPassenger === "true")
-      .length;
-
-    if (leadCount !== 1) {
-      throw new Error(`❌ Expected exactly 1 lead passenger, found ${leadCount}`);
-    }
-
-    // ✅ Verify structure matches Postman exactly
-    console.log('🔍 Postman comparison:');
-    console.log('- ResultIndex:', typeof finalPayload.ResultIndex, finalPayload.ResultIndex);
-    console.log('- HotelCode:', typeof finalPayload.HotelCode, finalPayload.HotelCode);
-    console.log('- NoOfRooms:', typeof finalPayload.NoOfRooms, finalPayload.NoOfRooms);
-    console.log('- IsVoucherBooking:', typeof finalPayload.IsVoucherBooking, finalPayload.IsVoucherBooking);
-    console.log('- ClientReferenceNo:', typeof finalPayload.ClientReferenceNo, finalPayload.ClientReferenceNo);
-    console.log('- vendorCommission:', typeof finalPayload.vendorCommission, finalPayload.vendorCommission);
-    console.log('- CouponDiscount:', typeof finalPayload.CouponDiscount, finalPayload.CouponDiscount);
-    console.log('- RoomIndex:', typeof finalPayload.HotelRoomsDetails[0].RoomIndex, finalPayload.HotelRoomsDetails[0].RoomIndex);
-    console.log('- LeadPassenger count:', leadCount);
-    console.log('- Age format:', finalPayload.HotelRoomsDetails[0].HotelPassenger.map(p => `${p.FirstName}: ${p.Age}`));
+    console.log('✅ Final booking payload (SINGLE lead passenger):', JSON.stringify(finalPayload, null, 2));
 
     return finalPayload;
   };
+
   // API error handler
   const handleApiError = (error, context = 'API') => {
     let errorMessage = `${context} failed. Please try again.`;
-    let errorDetails = null;
 
     if (error?.response) {
       const status = error.response.status;
       const data = error.response.data;
-      errorDetails = { status, data, headers: error.response.headers };
 
       if (data?.error?.ErrorCode === 1163 || data?.Error?.ErrorCode === 1163) {
         errorMessage = `❌ PAN MANDATORY ERROR (Code: 1163): ${data?.error?.ErrorMessage || data?.Error?.ErrorMessage || 'Mandatory PAN information not available.'}
@@ -280,7 +300,7 @@ Please ensure:
 ✅ Only ONE passenger is marked as lead passenger
 ✅ All adult passengers have unique, valid PAN numbers
 ✅ PAN format: 5 letters + 4 digits + 1 letter`;
-        return { message: errorMessage, details: errorDetails, isPANError: true };
+        return { message: errorMessage, isPANError: true };
       }
 
       switch (status) {
@@ -299,12 +319,10 @@ Please ensure:
       }
     } else if (error?.request) {
       errorMessage = 'Network error. Please check your internet connection and try again.';
-      errorDetails = { request: 'No response received' };
     } else {
       errorMessage = error?.message || `${context} failed due to an unexpected error.`;
-      errorDetails = { message: error?.message };
     }
-    return { message: errorMessage, details: errorDetails };
+    return { message: errorMessage };
   };
 
   // Toast helpers
@@ -332,13 +350,12 @@ Please ensure:
     });
   };
 
-  // Payment success handler with invoice integration
+  // ✅ FIXED: Payment success handler with proper invoice email integration
   const handlePaymentSuccess = async (response, formattedBookingData, validation) => {
     try {
       console.log('🚀 Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
 
       const bookingResponse = await bookHotel(formattedBookingData);
-
       console.log('📨 Booking API response:', JSON.stringify(bookingResponse, null, 2));
 
       // Check for PAN mandatory errors first
@@ -348,7 +365,7 @@ Please ensure:
         (bookingResponse?.error?.ErrorMessage?.toLowerCase().includes('mandatory pan'))
       ) {
         const panErrorMsg = `❌ HOTEL API ERROR: PAN MANDATORY (Code: 1163)
-        
+      
 API Error: ${bookingResponse?.error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage || 'Mandatory PAN info unavailable.'}
 
 This usually indicates:
@@ -380,15 +397,24 @@ Please check your booking data and contact support if the issue persists.`;
       if (isBookingSuccessful && hasRequiredBookingData) {
         showSuccessToast('🎉 Hotel booking confirmed successfully!');
 
-        // Prepare invoice data
-        const invoiceData = {
-          UserIp: bookingResponse.UserIp || "122.161.64.143",
-          SearchTokenId: bookingResponse.SearchTokenId,
-          BookingId: String(bookingResponse.BookingID || bookingResponse.userId),
-          receiverEmail: getLeadPassengerEmail(formattedBookingData)
-        };
+        // ✅ SEND INVOICE EMAIL WITH PROPER ERROR HANDLING
+        try {
+          console.log('📧 Attempting to send invoice email...');
+          const invoiceResult = await sendInvoiceEmail(bookingResponse, formattedBookingData);
 
-        // Navigate to confirmation
+          if (invoiceResult.success) {
+            showSuccessToast('📧 Invoice has been sent to your email!');
+            console.log('✅ Invoice email sent successfully');
+          } else {
+            console.warn('⚠️ Invoice email failed but booking succeeded:', invoiceResult.error);
+            showErrorToast('⚠️ Invoice Email Warning', 'Booking confirmed but invoice email failed. You can download invoice from booking details.');
+          }
+        } catch (invoiceError) {
+          console.error('⚠️ Invoice email error (non-critical):', invoiceError.message);
+          showErrorToast('⚠️ Invoice Email Warning', 'Booking confirmed but invoice email failed. You can download invoice from booking details.');
+        }
+
+        // Navigate to confirmation page
         navigate('/hotel/confirmation', {
           state: {
             booking: bookingResponse,
@@ -410,7 +436,6 @@ Please check your booking data and contact support if the issue persists.`;
               message: bookingResponse.message,
               bookingTime: new Date().toISOString(),
             },
-            invoiceData: invoiceData,
             isBooked: true,
             bookingDetails: {
               contactData: getLeadPassenger(formattedBookingData),
@@ -419,14 +444,6 @@ Please check your booking data and contact support if the issue persists.`;
             bookingResult: bookingResponse
           },
         });
-
-        // Auto-send invoice email (non-blocking)
-        try {
-          await sendInvoiceEmailAsync(invoiceData);
-          console.log('✅ Invoice automatically sent to email');
-        } catch (emailError) {
-          console.log('⚠️ Auto-email invoice failed (non-critical):', emailError.message);
-        }
 
       } else {
         let errMsg = 'Booking failed. Please contact support with your payment details.';
@@ -440,12 +457,6 @@ Please check your booking data and contact support if the issue persists.`;
 
         setError(`Booking Failed: ${errMsg}`);
         showErrorToast('❌ Booking Failed', errMsg);
-        console.error('Booking failure details:', {
-          isBookingSuccessful,
-          hasRequiredBookingData,
-          responseMessage: bookingResponse?.message,
-          fullResponse: bookingResponse,
-        });
       }
     } catch (bookingError) {
       console.error('❌ Booking API Error:', bookingError);
@@ -679,44 +690,6 @@ Please check your booking data and contact support if the issue persists.`;
     <div className="container my-4">
       <div className="row justify-content-center">
         <div className="col">
-          {/* Error Alert */}
-          {error && (
-            <Alert variant="danger" className="mb-4" dismissible onClose={() => setError('')}>
-              <FaExclamationTriangle className="me-2" />
-              <strong>Error:</strong>
-              <div style={{ whiteSpace: 'pre-line', marginTop: 8 }}>{error}</div>
-            </Alert>
-          )}
-
-          {/* PAN Status Alert */}
-          {adultPassengers.length > 0 && (
-            <Alert variant={hasDuplicates ? "danger" : validPANCount === adultPassengers.length ? "success" : "warning"} className="mb-4">
-              <FaExclamationTriangle className="me-2" />
-              <strong>PAN Status Check:</strong><br />
-              {hasDuplicates ? (
-                <span className="text-danger">
-                  ❌ DUPLICATE PAN DETECTED: {duplicatePANs.join(', ')}<br />
-                  Please ensure each passenger has a unique PAN number.
-                </span>
-              ) : validPANCount === adultPassengers.length ? (
-                <span className="text-success">
-                  ✅ All {adultPassengers.length} adult passengers have valid, unique PAN numbers
-                </span>
-              ) : (
-                <span className="text-warning">
-                  ⚠️ {validPANCount}/{adultPassengers.length} adult passengers have valid PAN numbers
-                </span>
-              )}
-              <br />
-              <small>Format required: ABCDE1234F (5 letters + 4 digits + 1 letter)</small>
-              {isPANMandatoryRoom && (
-                <div className="mt-2">
-                  <small><strong>🏨 PAN Mandatory Room:</strong> This room requires valid PAN for ALL adults</small>
-                </div>
-              )}
-            </Alert>
-          )}
-
           {/* Payment Summary */}
           <Card className="shadow-sm rounded mb-4">
             <Card.Header className="bg-danger text-white">
@@ -779,19 +752,6 @@ Please check your booking data and contact support if the issue persists.`;
                 </Row>
               </div>
 
-              {/* Payment security info */}
-              <div className="alert alert-info">
-                <div className="d-flex align-items-center mb-2">
-                  <FaShieldAlt className="me-2" />
-                  <strong>Secure Payment</strong>
-                </div>
-                <small>
-                  Your payment is secured by Razorpay with 256-bit SSL encryption.<br />
-                  We accept all major credit cards, debit cards, UPI, and net banking.<br />
-                  📧 <strong>Invoice will be automatically sent to your email after booking confirmation.</strong>
-                </small>
-              </div>
-
               {/* Lead guest info */}
               {leadPassenger && (
                 <div className="mb-4 p-3 border rounded">
@@ -824,80 +784,38 @@ Please check your booking data and contact support if the issue persists.`;
                 </div>
               )}
 
-              {/* Adult passengers PAN info list */}
-              {adultPassengers.length > 0 && (
-                <div className="mb-4 p-3 border rounded">
-                  <h6 className="fw-bold mb-2">Adult Passenger PAN Information</h6>
-                  {adultPassengers.map((adult, idx) => (
-                    <div key={idx} className="d-flex justify-content-between align-items-center mb-2">
-                      <span>{adult.name} (Room {adult.room})</span>
-                      <span className={`badge ${adult.isValid ? 'bg-success' : 'bg-danger'}`}>
-                        {adult.isValid ? (
-                          `✅ PAN: ${adult.pan.slice(0, 3)}***${adult.pan.slice(-2)}`
-                        ) : (
-                          '❌ Invalid/Missing PAN'
-                        )}
-                      </span>
-                    </div>
-                  ))}
-                  <hr />
-                  <div className="text-center">
-                    <strong className={hasDuplicates ? "text-danger" : validPANCount === adultPassengers.length ? "text-success" : "text-warning"}>
-                      {hasDuplicates
-                        ? `❌ Duplicate PANs Found: ${duplicatePANs.length}`
-                        : `PAN Status: ${validPANCount}/${adultPassengers.length} Valid`}
-                    </strong>
-                  </div>
-                </div>
-              )}
+            
             </Card.Body>
 
             <Card.Footer className="bg-white">
-              <div className="d-flex gap-3 justify-content-between align-items-center">
-                <Button variant="outline-secondary" onClick={() => navigate(-1)} disabled={loading}>
-                  ← Back to Review
-                </Button>
-
+              <div className="text-end">
                 <Button
-                  variant={hasDuplicates || validPANCount !== adultPassengers.length ? "warning" : "danger"}
+                  variant="danger"
                   size="lg"
                   className="px-5"
                   onClick={handlePayment}
-                  disabled={loading || roundedTotal <= 0 || hasDuplicates || validPANCount !== adultPassengers.length}
+                  disabled={roundedTotal <= 0}
                 >
-                  {loading ? (
-                    <>
-                      <Spinner animation="border" size="sm" className="me-2" />
-                      Processing Payment...
-                    </>
-                  ) : hasDuplicates ? (
-                    <>Fix Duplicate PANs First</>
-                  ) : validPANCount !== adultPassengers.length ? (
-                    <>Fix PAN Issues First</>
-                  ) : (
-                    <>Pay ₹ {roundedTotal}</>
-                  )}
+                  Pay ₹ {roundedTotal}
                 </Button>
               </div>
-              <div className="text-center mt-3">
-                <small className="text-muted">
-                  By clicking "Pay", you agree to our terms and conditions<br />
-                  📧 Invoice will be automatically sent to lead passenger's email
-                </small>
-                {(hasDuplicates || validPANCount !== adultPassengers.length) && (
-                  <div className="mt-2">
-                    <small className="text-warning">
-                      Please ensure all adult passengers have valid, unique PAN numbers before proceeding
-                    </small>
-                  </div>
-                )}
-              </div>
+
             </Card.Footer>
           </Card>
+
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="danger" className="mb-4" dismissible onClose={() => setError('')}>
+              <FaExclamationTriangle className="me-2" />
+              <strong>Error:</strong>
+              <div style={{ whiteSpace: 'pre-line', marginTop: 8 }}>{error}</div>
+            </Alert>
+          )}
+
         </div>
       </div>
     </div>
   );
 };
 
-export default HotelPaymentInfo;
+export default HotelPaymentInfo;  

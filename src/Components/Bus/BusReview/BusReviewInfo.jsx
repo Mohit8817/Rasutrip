@@ -588,7 +588,7 @@ const BusReviewInfo = () => {
                                 <div className="mb-2">
                                     <strong>Address:</strong> {gstData.address || 'Not provided'}
                                 </div>
-                               
+
                             </Col>
                         </Row>
                     </Card.Body>

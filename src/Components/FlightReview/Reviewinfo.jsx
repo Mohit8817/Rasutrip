@@ -10,29 +10,33 @@ const ReviewInfo = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(true);
   const [activeTab, setActiveTab] = useState('onward');
 
-  const { 
-    passengerSelections = {}, 
-    SSR, 
-    SelectedFare, 
-    passengersData, 
-   
+  const {
+    passengerSelections = {},
+    SSR,
+    SelectedFare,
+    passengersData,
+
   } = location.state || {};
 
   // Get flight data from localStorage
   const [onwardSegments, setOnwardSegments] = useState(null);
   const [returnSegments, setReturnSegments] = useState(null);
 
-  const tripType =localStorage.getItem('tripType')
-  const isRoundTrip = tripType=='roundtrip' ? true:false
+  const tripType = localStorage.getItem('tripType')
+  const isRoundTrip = tripType == 'roundtrip' ? true : false
 
   useEffect(() => {
     // Check if it's round-trip or one-way
     if (isRoundTrip) {
       const onwardData = localStorage.getItem('selectedOnwardFlight');
       const returnData = localStorage.getItem('selectedReturnFlight');
-      
       if (onwardData) {
-        setOnwardSegments(JSON.parse(onwardData));
+        if (JSON.parse(onwardData).Segments.length > 1) {
+          setOnwardSegments(JSON.parse(onwardData));
+          setReturnSegments(JSON.parse(onwardData));
+        } else {
+          setOnwardSegments(JSON.parse(onwardData));
+        }
       }
       if (returnData) {
         setReturnSegments(JSON.parse(returnData));
@@ -45,20 +49,12 @@ const ReviewInfo = () => {
       }
     }
   }, [isRoundTrip]);
-
-  // Merge passenger data with selections
   const mergedPassengersData = passengersData?.map((passenger, index) => {
     const onwardSelection = passengerSelections.onward?.[index] || passengerSelections[index] || {};
     const returnSelection = passengerSelections.return?.[index] || {};
 
     return {
       ...passenger,
-      // Onward flight selections
-      OnwardMeal: onwardSelection.meal ? [onwardSelection.meal] : [],
-      OnwardSeat: onwardSelection.seat ? [onwardSelection.seat] : [],
-      OnwardBaggage: onwardSelection.baggage ? [onwardSelection.baggage] : [],
-      
-      // Return flight selections (if round-trip)
       ...(isRoundTrip && {
         ReturnMeal: returnSelection.meal ? [returnSelection.meal] : [],
         ReturnSeat: returnSelection.seat ? [returnSelection.seat] : [],
@@ -85,18 +81,22 @@ const ReviewInfo = () => {
     if (!segments || !segments.Segments?.[0]?.[0]) {
       return <div>Flight data not available</div>;
     }
+    const segmentGroups = segments.Segments;
+    const currentSegments = flightType === 'return' && segmentGroups.length > 1
+      ? segmentGroups[1]
+      : segmentGroups[0];
 
-    const segment = segments.Segments[0][0];
-    const airline = segment.Airline || {};
-    const origin = segment.Origin || {};
-    const destination = segment.Destination || {};
-    const durationMin = segment.Duration || 0;
-
-    const departTime = moment(origin.DepartTime).format("HH:mm");
-    const departDate = moment(origin.DepartTime).format("DD MMM");
-    const arrivalTime = moment(destination.ArrivalTime).format("HH:mm");
-    const arrivalDate = moment(destination.ArrivalTime).format("DD MMM");
-    const durationText = `${Math.floor(durationMin / 60)} h ${durationMin % 60} m`;
+    const firstSegment = currentSegments[0];
+    const lastSegment = currentSegments[currentSegments.length - 1];
+    const firstAirline = firstSegment.Airline || {};
+    const firstOrigin = firstSegment.Origin || {};
+    const lastDestination = lastSegment.Destination || {};
+    const totalDuration = currentSegments.reduce((total, seg) => total + (seg.Duration || 0), 0);
+    const totalDurationText = `${Math.floor(totalDuration / 60)} h ${totalDuration % 60} m`;
+    const departTime = moment(firstOrigin.DepartTime).format("HH:mm");
+    const departDate = moment(firstOrigin.DepartTime).format("DD MMM");
+    const arrivalTime = moment(lastDestination.ArrivalTime).format("HH:mm");
+    const arrivalDate = moment(lastDestination.ArrivalTime).format("DD MMM");
 
     return (
       <Card className="shadow-sm mb-3 flight-card-custom">
@@ -108,16 +108,18 @@ const ReviewInfo = () => {
             </div>
           )}
 
-          <Row className="align-items-center justify-content-between">
+          {/* Overall Journey Summary */}
+          <Row className="align-items-center justify-content-between mb-3 p-2 bg-light rounded">
             <Col md="auto">
-              <img src={airline.airlineLogo} alt={airline.AirlineName} width={35} />
+              <img src={firstAirline.airlineLogo} alt={firstAirline.AirlineName} width={35} />
             </Col>
 
             <Col md={4}>
               <div className="fw-bold">
-                {origin.CityName} → {destination.CityName}{" "}
+                {firstOrigin.CityName} → {lastDestination.CityName}{" "}
                 <span className="fw-normal">
-                  {airline.AirlineName} {airline.AirlineCode} - {airline.FlightNumber} | Economy
+                  {firstAirline.AirlineName} {firstAirline.AirlineCode} - {firstAirline.FlightNumber}
+                  {currentSegments.length > 1 && ` +${currentSegments.length - 1} more`} | Economy
                 </span>
               </div>
             </Col>
@@ -137,48 +139,110 @@ const ReviewInfo = () => {
             </Col>
 
             <Col md="auto" className="text-center">
-              <div className="small text-muted">{durationText}</div>
+              <div className="small text-muted">{totalDurationText}</div>
             </Col>
           </Row>
 
           <hr />
 
-          <Row>
-            <Col md={8}>
-              <Row>
-                <Col xs={2} className="text-center">
-                  <div><strong>{departTime}</strong></div>
-                </Col>
-                <Col xs={10}>
-                  <div><strong>{origin.CityName}</strong></div>
-                  <div className="text-muted small">{origin.AirportName}</div>
-                  <div className="text-muted small">Terminal {origin.Terminal || "N/A"}</div>
-                </Col>
+          {/* Individual Segments */}
+          {currentSegments.map((segment, index) => {
+            const airline = segment.Airline || {};
+            const origin = segment.Origin || {};
+            const destination = segment.Destination || {};
+            const durationMin = segment.Duration || 0;
+            const durationText = `${Math.floor(durationMin / 60)} h ${durationMin % 60} m`;
+            const segmentDepartTime = moment(origin.DepartTime).format("HH:mm");
+            const segmentDepartDate = moment(origin.DepartTime).format("DD MMM");
+            const segmentArrivalTime = moment(destination.ArrivalTime).format("HH:mm");
+            const segmentArrivalDate = moment(destination.ArrivalTime).format("DD MMM");
 
-                <Col xs={2} className="d-flex justify-content-center">
-                  <div className="flight-dot-line"></div>
-                </Col>
+            return (
+              <div key={index}>
+                {/* Segment Header */}
+                <Row className="align-items-center mb-2">
+                  <Col md="auto">
+                    <img src={airline.airlineLogo} alt={airline.AirlineName} width={30} />
+                  </Col>
+                  <Col>
+                    <div className="fw-bold small">
+                      {airline.AirlineName} {airline.AirlineCode} - {airline.FlightNumber}
+                      {segment.Craft === "BUS" && " (Bus Service)"}
+                    </div>
+                  </Col>
+                  <Col md="auto">
+                    <Badge bg="secondary" className="small">{durationText}</Badge>
+                  </Col>
+                </Row>
 
-                <Col xs={10} className="d-flex align-items-center">
-                  <Badge bg="light" text="dark">{durationText}</Badge>
-                </Col>
+                {/* Segment Details */}
+                <Row className="mb-3">
+                  <Col md={8}>
+                    <Row>
+                      <Col xs={2} className="text-center">
+                        <div><strong>{segmentDepartTime}</strong></div>
+                        <div className="text-muted small">{segmentDepartDate}</div>
+                      </Col>
+                      <Col xs={10}>
+                        <div><strong>{origin.CityName}</strong></div>
+                        <div className="text-muted small">{origin.AirportName}</div>
+                        <div className="text-muted small">Terminal {origin.Terminal || "N/A"}</div>
+                      </Col>
 
-                <Col xs={2} className="text-center mt-2">
-                  <div><strong>{arrivalTime}</strong></div>
-                </Col>
-                <Col xs={10} className="mt-2">
-                  <div><strong>{destination.CityName}</strong></div>
-                  <div className="text-muted small">{destination.AirportName}</div>
-                  <div className="text-muted small">Terminal {destination.Terminal || "N/A"}</div>
-                </Col>
-              </Row>
-            </Col>
+                      <Col xs={2} className="d-flex justify-content-center my-2">
+                        <div className="flight-dot-line"></div>
+                      </Col>
 
-            <Col md={4} className="text-md-end text-start mt-3 mt-md-0 small">
-              <div><strong>Fare Class:</strong> {airline.FareClass || "N/A"}</div>
-              <div><strong>Aircraft:</strong> {segment.Craft || "N/A"}</div>
-            </Col>
-          </Row>
+                      <Col xs={10} className="d-flex align-items-center my-2">
+                        <Badge bg="light" text="dark">{durationText}</Badge>
+                        {segment.Craft && (
+                          <Badge bg="info" className="ms-2 small">{segment.Craft}</Badge>
+                        )}
+                      </Col>
+
+                      <Col xs={2} className="text-center">
+                        <div><strong>{segmentArrivalTime}</strong></div>
+                        <div className="text-muted small">{segmentArrivalDate}</div>
+                      </Col>
+                      <Col xs={10}>
+                        <div><strong>{destination.CityName}</strong></div>
+                        <div className="text-muted small">{destination.AirportName}</div>
+                        <div className="text-muted small">Terminal {destination.Terminal || "N/A"}</div>
+                      </Col>
+                    </Row>
+                  </Col>
+
+                  <Col md={4} className="text-md-end text-start mt-3 mt-md-0 small">
+                    <div><strong>Fare Class:</strong> {airline.FareClass || "N/A"}</div>
+                    <div><strong>Aircraft:</strong> {segment.Craft || "N/A"}</div>
+                    {segment.OperatingCarrier && (
+                      <div><strong>Operated by:</strong> {segment.OperatingCarrier}</div>
+                    )}
+                  </Col>
+                </Row>
+
+                {/* Layover Information */}
+                {index < currentSegments.length - 1 && segment.LayoverTime > 0 && (
+                  <Row className="mb-3">
+                    <Col xs={12} className="text-center">
+                      <div className="p-2 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded">
+                        <small className="text-warning-emphasis">
+                          <FaInfoCircle className="me-1" />
+                          Layover: {segment.Layover || `${Math.floor(segment.LayoverTime / 60)} h ${segment.LayoverTime % 60} m`}
+                          in {destination.CityName}
+                        </small>
+                      </div>
+                    </Col>
+                  </Row>
+                )}
+
+                {/* Separator between segments */}
+                {index < currentSegments.length - 1 && (
+                  <hr className="my-3" style={{ borderStyle: 'dashed' }} />
+                )}
+              </div>
+            );
+          })}
         </Card.Body>
       </Card>
     );
@@ -186,7 +250,7 @@ const ReviewInfo = () => {
 
   // Passenger Add-ons Component
   const PassengerAddons = ({ flightType }) => {
-    const selections = flightType === 'onward' 
+    const selections = flightType === 'onward'
       ? (passengerSelections.onward || passengerSelections)
       : passengerSelections.return;
 
@@ -194,7 +258,7 @@ const ReviewInfo = () => {
 
     return (
       <>
-        {selections.map((selection, i) => {
+        {selections?.map((selection, i) => {
           const passenger = passengersData[i];
           if (!passenger || passenger.type === 'INF') return null;
 
@@ -204,7 +268,7 @@ const ReviewInfo = () => {
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
                     <p className="fw-bold mb-2">
-                      Passenger {i + 1} 
+                      Passenger {i + 1}
                       {isRoundTrip && (
                         <Badge bg={flightType === 'onward' ? 'primary' : 'success'} className="ms-2">
                           {flightType === 'onward' ? 'Onward' : 'Return'}
@@ -308,16 +372,16 @@ const ReviewInfo = () => {
 
           {/* Display flight based on active tab */}
           {activeTab === 'onward' && onwardSegments && (
-            <FlightCard 
-              segments={onwardSegments} 
-              flightType="onward" 
+            <FlightCard
+              segments={onwardSegments}
+              flightType="onward"
               title="Onward Flight"
             />
           )}
           {activeTab === 'return' && returnSegments && (
-            <FlightCard 
-              segments={returnSegments} 
-              flightType="return" 
+            <FlightCard
+              segments={returnSegments}
+              flightType="return"
               title="Return Flight"
             />
           )}

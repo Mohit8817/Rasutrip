@@ -6,3 +6,8 @@
 .flight-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
+
+.text-12 { font-size: 13px; }
+.text-14 { font-size: 14px; }
+.text-8 { font-size: 8px; }
+

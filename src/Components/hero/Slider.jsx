@@ -5,12 +5,12 @@ import slidimg2 from '../../assest/img (2).png';
 import slidimg3 from '../../assest/img (1).png';
 import '../../Style/Slider.css'; // Make sure path is correct
 import FlightBooking from '../FlightBooking/FlightBooking';
-import TravelTabs from '../FlightBooking/TravelTabs';
+import TravelTabs from './TravelTabs';
 import HotelSearchForm from '../HotelSearchForm/HotelSearchForm';
 import BusBooking from '../Busbooking/BusBooking';
 import { useLocation } from 'react-router-dom';
 
-const Slider = () => {
+const Slider = ({type='home'}) => {
   const [index, setIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('flight'); // Add activeTab state
   const location = useLocation();
@@ -37,7 +37,7 @@ const Slider = () => {
     <div className="slider-container">
       {/* White box for your components */}
       {/* Three tabs */}
-      <div className="overlay-box">
+      <div className={type === "home" ? "overlay-box" : ""}>
         {location.pathname === '/' && (
           <div className="travel-tabs">
             <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} className="" />

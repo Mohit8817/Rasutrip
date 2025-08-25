@@ -11,15 +11,20 @@ import { useDispatch } from 'react-redux';
 import { clearSelectedFlights } from '../../redux/Slices/SelectedFlight';
 import FlightLoader from '../../Components/FlightLoader/FlightLoader';
 import Slider from '../../Components/hero/Slider';
+import SearchButton from '../../Components/Common/SearchButton';
+
+import MultiCityList from '../../Components/FlightBooking/MultiCity/MultiCityList';
 import { useSelector } from 'react-redux';
+import { Loader } from 'lucide-react';
 
 
 const FlightResultsPage = () => {
     const dispatch = useDispatch();
     const { state } = useLocation();
     const tripType = state?.tripType || 'oneway';
+    console.log('triptypeKrishnastate',state)
 
-   
+   console.log('triptypeKrishna',tripType)
 
   useEffect(() => {
         dispatch(clearSelectedFlights());
@@ -36,19 +41,22 @@ const FlightResultsPage = () => {
         refundable: ""
     });
 
+    if(Loader)
+    
+
     return (
        <div className=''>
          <div className='relative'>
             {tripType === 'oneway' && (
-                <Container className="mt-5 pt-5">
+                <Container className="">
                     <Row>
-                        <Col>
+                        <Col className='d-none d-lg-block'>
                             <FlightSearchBar />
                         </Col>
                     </Row>
-                    <Row className="mt-4">
-                        <Col lg={3}>
-                            <FlightSidebar filters={filters} setFilters={setFilters} />
+                    <Row className="mt-4 ">
+                        <Col lg={3} className='d-none d-lg-block'>
+                            <FlightSidebar className="" filters={filters} setFilters={setFilters} />
                         </Col>
                         <Col lg={9}>
                             <FlightList filters={filters} />
@@ -57,18 +65,18 @@ const FlightResultsPage = () => {
                 </Container>
             )}
               {tripType === 'multicity' && (
-                <Container className="mt-5 pt-5">
+                <Container className="">
                     <Row>
-                        <Col>
+                        <Col className='d-none d-lg-block'>
                             <FlightSearchBar />
                         </Col>
                     </Row>
                     <Row className="mt-4">
-                        <Col lg={3}>
-                            <FlightSidebar filters={filters} setFilters={setFilters} />
+                        <Col lg={3} className='d-none d-lg-block'>
+                            <FlightSidebar className="d-none d-lg-block" filters={filters} setFilters={setFilters} />
                         </Col>
                         <Col lg={9}>
-                            <FlightList filters={filters} />
+                            <MultiCityList filters={filters} />
                         </Col>
                     </Row>
                 </Container>
@@ -76,15 +84,18 @@ const FlightResultsPage = () => {
 
             {/* Round Trip Flights */}
             {tripType === 'roundtrip' && (
-                <Container className="mt-5 pt-5 relative">
+                <Container className=" relative">
                     <Row>
-                        <Col>
-                            <RoundsearchBar />
+                        <Col className='d-none d-lg-block'>
+                        <FlightSearchBar />
+
+                            {/* <RoundsearchBar /> */}
                         </Col>
                     </Row>
                     <Row className="mt-4">
-                        <Col lg={3}>
-                            <FlightSidebar filters={filters} setFilters={setFilters} />
+                        <Col lg={3} className='d-none d-lg-block'>
+                        <FlightSidebar className="d-none d-lg-block" filters={filters} setFilters={setFilters} />
+
                         </Col>
                         <Col lg={9}>
                             <RoundTripCardList filters={filters} />

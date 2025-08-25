@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
-import Container from 'react-bootstrap/Container';
-import Nav from 'react-bootstrap/Nav';
-import Navbar from 'react-bootstrap/Navbar';
-import Offcanvas from 'react-bootstrap/Offcanvas';
-import Dropdown from 'react-bootstrap/Dropdown';
-import '../../Style/header.css';
-import logo from '../../assest/rasutrip.png';
-import Login from '../Login/Login';
+import React, { useState } from "react";
+import Container from "react-bootstrap/Container";
+import Nav from "react-bootstrap/Nav";
+import Navbar from "react-bootstrap/Navbar";
+import Offcanvas from "react-bootstrap/Offcanvas";
+import Dropdown from "react-bootstrap/Dropdown";
+import Button from "react-bootstrap/Button";
+import Modal from "react-bootstrap/Modal";
+import "../../Style/header.css";
+import logo from "../../assest/rasutrip.png";
+import Login from "../Login/Login";
+import EnquiryForm from "../EnquiryForm/EnquiryForm"; // ✅ enquiry form import
 
 const Header = () => {
     const [showLogin, setShowLogin] = useState(false);
+    const [showEnquiry, setShowEnquiry] = useState(false); // ✅ enquiry modal state
 
     return (
         <>
@@ -55,12 +59,11 @@ const Header = () => {
                     >
                         <Offcanvas.Header closeButton>
                             <Offcanvas.Title id="offcanvasNavbarLabel">
-                                <img src={logo} alt="Logo" style={{ width: '120px' }} />
+                                <img src={logo} alt="Logo" style={{ width: "120px" }} />
                             </Offcanvas.Title>
                         </Offcanvas.Header>
                         <Offcanvas.Body>
                             <Nav className="header-nav mx-auto">
-                                {/* Main Navigation */}
                                 <Nav.Link href="/" className="nav-item-link">
                                     <i className="fas fa-home"></i> Home
                                 </Nav.Link>
@@ -70,9 +73,15 @@ const Header = () => {
                                         <i className="fas fa-plane"></i> Flights
                                     </Dropdown.Toggle>
                                     <Dropdown.Menu>
-                                        <Dropdown.Item href="/flights/domestic">Domestic Flights</Dropdown.Item>
-                                        <Dropdown.Item href="/flights/international">International Flights</Dropdown.Item>
-                                        <Dropdown.Item href="/flights/multi-city">Multi-City</Dropdown.Item>
+                                        <Dropdown.Item href="/flights/domestic">
+                                            Domestic Flights
+                                        </Dropdown.Item>
+                                        <Dropdown.Item href="/flights/international">
+                                            International Flights
+                                        </Dropdown.Item>
+                                        <Dropdown.Item href="/flights/multi-city">
+                                            Multi-City
+                                        </Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
 
@@ -82,8 +91,12 @@ const Header = () => {
                                     </Dropdown.Toggle>
                                     <Dropdown.Menu>
                                         <Dropdown.Item href="/hotels">Search Hotels</Dropdown.Item>
-                                        <Dropdown.Item href="/hotels/deals">Hotel Deals</Dropdown.Item>
-                                        <Dropdown.Item href="/hotels/luxury">Luxury Hotels</Dropdown.Item>
+                                        <Dropdown.Item href="/hotels/deals">
+                                            Hotel Deals
+                                        </Dropdown.Item>
+                                        <Dropdown.Item href="/hotels/luxury">
+                                            Luxury Hotels
+                                        </Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
 
@@ -98,7 +111,9 @@ const Header = () => {
                                     <Dropdown.Menu>
                                         <Dropdown.Item href="/cabs">Cabs</Dropdown.Item>
                                         <Dropdown.Item href="/trains">Trains</Dropdown.Item>
-                                        <Dropdown.Item href="/holidays">Holiday Packages</Dropdown.Item>
+                                        <Dropdown.Item href="/holidays">
+                                            Holiday Packages
+                                        </Dropdown.Item>
                                         <Dropdown.Item href="/activities">Activities</Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
@@ -111,11 +126,25 @@ const Header = () => {
                     </Navbar.Offcanvas>
 
                     {/* Desktop Right Side */}
-                    <div className="header-right d-none d-lg-flex align-items-center">
+                    <div className="header-right d-none d-lg-flex align-items-center gap-2">
+                        <Button
+                            variant="outline-danger"
+                            size="md"
+                            onClick={() => setShowEnquiry(true)} // ✅ open enquiry modal
+                        >
+                            <i className="fas fa-question-circle"></i> Enquiry
+                        </Button>
                         <Login />
                     </div>
                 </Container>
             </Navbar>
+
+            {/* Enquiry Modal */}
+            <Modal show={showEnquiry} onHide={() => setShowEnquiry(false)} size="lg" centered>
+                <Modal.Body closeButton>
+                    <EnquiryForm />
+                </Modal.Body>
+            </Modal>
 
             {/* Login Modal */}
             {showLogin && <Login onClose={() => setShowLogin(false)} />}

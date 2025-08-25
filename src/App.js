@@ -144,7 +144,6 @@ import Bookingconfirm from './Components/Bus/Bookingconfirm/Bookingconfirm';
 import AgentLogin from './Components/Login/AgentLogin';
 import CustomerLogin from './Components/Login/CustomerLogin';
 import SetResetMPIN from './Components/Login/SetResetMPIN';
-
 import TermsandConditions from './Pages/LegalPages/TermsandConditions';
 import PrivacyPolicy from './Pages/LegalPages/PrivacyPolicy';
 import Declaration from './Pages/LegalPages/Declaration';

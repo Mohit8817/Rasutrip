@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
-
-// API configuration
-const API_BASE_URL = "https://api.rasutrip.com/api/v1";
+import { toast } from 'react-toastify';
+import {
+    fetchUpcomingHotelBookings,
+    fetchAllHotelBookings,
+    getHotelUserType,
+    isHotelUserAuthenticated,
+    fetchHotelRealTimeStatus,
+    fetchMultipleHotelRealTimeStatus
+} from "../../services/bookingApi"; // Update this path according to your project structure
 
 const HotelBookingHistory = () => {
     const [bookingType, setBookingType] = useState('all');
@@ -10,116 +16,99 @@ const HotelBookingHistory = () => {
     const [upcomingBookings, setUpcomingBookings] = useState([]);
     const [allBookings, setAllBookings] = useState([]);
     const [debugInfo, setDebugInfo] = useState(null);
+    const [userRole, setUserRole] = useState('customer');
+    const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest first, 'asc' for oldest first
 
-    // Enhanced authentication headers function
-    const getAuthHeaders = () => {
-        // Check multiple possible token storage keys
-        const tokenKeys = [
-            'authToken',
-            'token',
-            'accessToken',
-            'jwt',
-            'userToken',
-            'Bearer',
-            'auth_token',
-            'access_token'
-        ];
+    // Real-time status states
+    const [realTimeStatuses, setRealTimeStatuses] = useState({});
+    const [loadingStatuses, setLoadingStatuses] = useState(new Set());
+    const [initialStatusLoaded, setInitialStatusLoaded] = useState(false);
 
-        let token = null;
-        let tokenKey = null;
+    // Get user role on component mount
+    useEffect(() => {
+        const role = getHotelUserType();
+        setUserRole(role || 'customer');
+    }, []);
 
-        for (const key of tokenKeys) {
-            // Use memory-based storage for artifacts (in real app, use localStorage/sessionStorage)
-            const value = window.localStorage?.getItem(key) || window.sessionStorage?.getItem(key);
-            if (value) {
-                token = value;
-                tokenKey = key;
-                break;
-            }
+    // Handle real-time status check for single hotel booking
+    const handleRealTimeCheck = async (booking) => {
+        const bookingId = booking.bookingId;
+
+        if (!bookingId) {
+            toast.error('No booking ID available for real-time check');
+            return;
         }
 
-        console.log('🔐 Token found with key:', tokenKey);
-        console.log('🔐 Token preview:', token ? `${token.substring(0, 15)}...` : 'None');
+        setLoadingStatuses(prev => new Set(prev.add(bookingId)));
 
-        if (!token) {
-            console.error('❌ No authentication token found');
-        }
-
-        return {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        };
-    };
-
-    // Enhanced API call with better error handling and debugging
-    const makeAuthenticatedRequest = async (url, method = 'GET', data = null) => {
         try {
-            console.log(`🚀 Making ${method} request to:`, url);
+            const result = await fetchHotelRealTimeStatus(booking, userRole);
 
-            const headers = getAuthHeaders();
-            console.log('📤 Request headers:', headers);
+            setRealTimeStatuses(prev => ({
+                ...prev,
+                [bookingId]: result
+            }));
 
-            const config = {
-                method,
-                headers,
-                ...(data && { body: JSON.stringify(data) })
-            };
-
-            const response = await fetch(url, config);
-            console.log('✅ API Response status:', response.status);
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                console.error('❌ API Error response:', errorData);
-
-                switch (response.status) {
-                    case 401:
-                        throw new Error('Authentication failed. Please login again.');
-                    case 403:
-                        throw new Error('Access denied. You don\'t have permission to view this data.');
-                    case 404:
-                        throw new Error('Hotel booking service endpoint not found.');
-                    case 422:
-                        throw new Error('Invalid request data.');
-                    case 500:
-                        throw new Error('Server error. Please try again later.');
-                    default:
-                        throw new Error(`Request failed with status ${response.status}`);
-                }
+            if (result.success) {
+                toast.success('Real-time status updated!');
+            } else {
+                toast.error(`Failed to update status: ${result.error}`);
             }
-
-            const responseData = await response.json();
-            console.log('✅ API Response data:', responseData);
-            return responseData;
 
         } catch (error) {
-            console.error('❌ API Request failed:', error);
-
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                throw new Error('Network error. Please check your internet connection.');
-            } else {
-                throw error;
-            }
+            console.error('Error in real-time status check:', error);
+            toast.error('Failed to fetch real-time status');
+        } finally {
+            setLoadingStatuses(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(bookingId);
+                return newSet;
+            });
         }
     };
 
-    // Fetch upcoming hotel bookings
-    const fetchUpcomingHotelBookings = async () => {
-        console.log('🚀 Fetching upcoming hotel bookings...');
-        const response = await makeAuthenticatedRequest(`${API_BASE_URL}/hotelservice/up-comming-bookings`);
-        return response;
+    // Auto-fetch real-time status for all current hotel bookings
+    const autoFetchRealTimeStatus = async (bookings = null) => {
+        const currentBookings = bookings || getCurrentBookings();
+
+        // Only fetch for confirmed/active hotel bookings
+        const activeBookings = currentBookings.filter(booking =>
+            booking.bookingStatus?.toLowerCase() === 'confirmed' ||
+            booking.bookingStatus?.toLowerCase() === 'booked'
+        );
+
+        if (activeBookings.length === 0) {
+            console.log('No active hotel bookings found for real-time status check');
+            setInitialStatusLoaded(true);
+            return;
+        }
+
+        console.log(`Auto-fetching real-time status for ${activeBookings.length} active hotel bookings`);
+
+        // Add all booking IDs to loading state
+        const bookingIds = activeBookings.map(b => b.bookingId);
+        setLoadingStatuses(prev => new Set([...prev, ...bookingIds]));
+
+        try {
+            const results = await fetchMultipleHotelRealTimeStatus(activeBookings, userRole);
+            setRealTimeStatuses(prev => ({
+                ...prev,
+                ...results
+            }));
+            setInitialStatusLoaded(true);
+        } catch (error) {
+            console.error('Error in auto-fetch hotel real-time status:', error);
+        } finally {
+            // Remove all booking IDs from loading state
+            setLoadingStatuses(prev => {
+                const newSet = new Set(prev);
+                bookingIds.forEach(id => newSet.delete(id));
+                return newSet;
+            });
+        }
     };
 
-    // Fetch all hotel bookings
-    const fetchAllHotelBookings = async () => {
-        console.log('🚀 Fetching all hotel bookings...');
-        const response = await makeAuthenticatedRequest(`${API_BASE_URL}/hotelservice/my-bookings`);
-        return response;
-    };
-
-    // Enhanced data formatting with comprehensive field mapping for HOTEL bookings
+    // Format hotel booking data with enhanced confirmation number mapping
     const formatHotelBookingData = (apiResponse, isUpcoming = false) => {
         console.log('📊 Raw API response for formatting:', apiResponse);
 
@@ -137,10 +126,9 @@ const HotelBookingHistory = () => {
         } else if (apiResponse?.response && Array.isArray(apiResponse.response)) {
             bookingsArray = apiResponse.response;
         } else if (typeof apiResponse === 'object' && apiResponse !== null) {
-            // If it's an object, check if it might contain booking data
             const possibleArrays = Object.values(apiResponse).filter(Array.isArray);
             if (possibleArrays.length > 0) {
-                bookingsArray = possibleArrays[0]; // Use the first array found
+                bookingsArray = possibleArrays[0];
                 console.log('📋 Found array in object:', possibleArrays[0]);
             } else {
                 console.warn('⚠️ No array found in response object:', apiResponse);
@@ -152,16 +140,14 @@ const HotelBookingHistory = () => {
         }
 
         console.log('📋 Hotel bookings array extracted:', bookingsArray);
-        console.log('📋 Array length:', bookingsArray.length);
 
         const formattedBookings = bookingsArray.map((bookingWrapper, index) => {
             console.log(`🏨 Processing hotel booking ${index + 1}:`, bookingWrapper);
 
-            // Extract the actual booking data - it might be nested in "Result" field
             const booking = bookingWrapper.Result || bookingWrapper;
             console.log(`🏨 Actual hotel booking data for ${index + 1}:`, booking);
 
-            // Use the outer bookingId if available, otherwise try to find it in the Result
+            // Enhanced booking ID mapping
             const bookingId = bookingWrapper.bookingId ||
                 bookingWrapper.BookingId ||
                 bookingWrapper.BookingID ||
@@ -173,10 +159,51 @@ const HotelBookingHistory = () => {
                 booking.referenceId ||
                 booking.confirmationId ||
                 booking.HotelBookingId ||
-                booking.ConfirmationNo ||
+                booking.userId ||
                 `HTL${Date.now()}${index}`;
 
-            // Extract hotel information
+            // Enhanced confirmation number mapping
+            const confirmationNo =
+                // First priority: Direct confirmation fields
+                booking.ConfirmationNo ||
+                booking.confirmationNumber ||
+                booking.confirmation_no ||
+                booking.confirmationNo ||
+                booking.ConfirmationNumber ||
+
+                // Second priority: Reference/PNR fields
+                booking.referenceNumber ||
+                booking.ReferenceNumber ||
+                booking.reference_number ||
+                booking.PNR ||
+                booking.pnr ||
+                booking.Pnr ||
+
+                // Third priority: Booking reference fields
+                booking.BookingReference ||
+                booking.bookingReference ||
+                booking.booking_reference ||
+                booking.BookingRef ||
+                booking.bookingRef ||
+
+                // Fourth priority: Hotel-specific confirmation fields
+                booking.HotelConfirmationNo ||
+                booking.hotelConfirmationNo ||
+                booking.hotel_confirmation_no ||
+                booking.HotelReference ||
+                booking.hotelReference ||
+
+                // Fifth priority: Use booking ID if no confirmation found
+                bookingWrapper.bookingId ||
+                booking.BookingId ||
+                booking.bookingId ||
+
+                // Final fallback
+                'PENDING';
+
+            console.log(`🔍 Confirmation number mapping for booking ${index + 1}: ${confirmationNo}`);
+
+            // Hotel information mapping
             const hotelName = booking.HotelName ||
                 booking.hotelName ||
                 booking.hotel_name ||
@@ -191,7 +218,6 @@ const HotelBookingHistory = () => {
                 booking.propertyCode ||
                 'N/A';
 
-            // Extract location information
             const city = booking.City ||
                 booking.city ||
                 booking.location ||
@@ -199,13 +225,6 @@ const HotelBookingHistory = () => {
                 booking.CityName ||
                 'N/A';
 
-            const address = booking.Address ||
-                booking.address ||
-                booking.HotelAddress ||
-                booking.location ||
-                'N/A';
-
-            // Extract check-in and check-out dates
             const checkInDate = booking.CheckIn ||
                 booking.checkInDate ||
                 booking.check_in_date ||
@@ -222,30 +241,32 @@ const HotelBookingHistory = () => {
                 booking.toDate ||
                 'N/A';
 
-            // Extract room information
-            const roomType = booking.RoomType ||
-                booking.roomType ||
-                booking.room_type ||
-                booking.RoomTypeName ||
-                booking.roomName ||
-                'N/A';
+            // Room type and guest count logic
+            let roomType = 'N/A';
+            let numberOfRooms = '1';
+            let numberOfGuests = 'N/A';
 
-            const numberOfRooms = booking.NoOfRooms ||
-                booking.numberOfRooms ||
-                booking.rooms ||
-                booking.room_count ||
-                booking.RoomCount ||
-                '1';
+            if (booking.HotelRoomsDetails && Array.isArray(booking.HotelRoomsDetails) && booking.HotelRoomsDetails.length > 0) {
+                const firstRoom = booking.HotelRoomsDetails[0];
 
-            const numberOfGuests = booking.NoOfGuests ||
-                booking.numberOfGuests ||
-                booking.guests ||
-                booking.guest_count ||
-                booking.GuestCount ||
-                booking.totalGuests ||
-                'N/A';
+                roomType = firstRoom.RoomTypeName ||
+                    firstRoom.RoomType ||
+                    firstRoom.roomTypeName ||
+                    firstRoom.roomType ||
+                    booking.RoomType ||
+                    'Standard Room';
 
-            // Extract booking status
+                numberOfRooms = booking.HotelRoomsDetails.length.toString();
+
+                let totalGuests = 0;
+                booking.HotelRoomsDetails.forEach(room => {
+                    if (room.HotelPassenger && Array.isArray(room.HotelPassenger)) {
+                        totalGuests += room.HotelPassenger.length;
+                    }
+                });
+                numberOfGuests = totalGuests > 0 ? totalGuests.toString() : 'N/A';
+            }
+
             const bookingStatus = booking.Status ||
                 booking.status ||
                 booking.bookingStatus ||
@@ -253,16 +274,6 @@ const HotelBookingHistory = () => {
                 booking.confirmationStatus ||
                 'Confirmed';
 
-            // Extract confirmation number
-            const confirmationNo = booking.ConfirmationNo ||
-                booking.confirmationNumber ||
-                booking.confirmation_no ||
-                booking.referenceNumber ||
-                booking.PNR ||
-                booking.pnr ||
-                'N/A';
-
-            // Extract amount information
             const totalAmount = bookingWrapper.RasuTripInvoiceAmount ||
                 booking.InvoiceAmount ||
                 booking.TotalAmount ||
@@ -270,17 +281,13 @@ const HotelBookingHistory = () => {
                 booking.amount ||
                 booking.fare ||
                 booking.price ||
-                booking.Price?.PublishedPrice ||
-                booking.Price?.OfferedPrice ||
-                booking.TotalFare ||
                 '0';
 
-            // Extract guest information (lead passenger)
+            // Lead guest information
             let leadGuestName = 'N/A';
             let contactNumber = 'N/A';
             let email = 'N/A';
 
-            // Check for HotelRoomsDetails structure
             if (booking.HotelRoomsDetails && Array.isArray(booking.HotelRoomsDetails) && booking.HotelRoomsDetails.length > 0) {
                 const firstRoom = booking.HotelRoomsDetails[0];
                 if (firstRoom.HotelPassenger && Array.isArray(firstRoom.HotelPassenger) && firstRoom.HotelPassenger.length > 0) {
@@ -290,45 +297,18 @@ const HotelBookingHistory = () => {
                     email = leadGuest.Email || leadGuest.email || 'N/A';
                 }
             }
-            // Fallback to direct guest fields
-            else {
-                leadGuestName = booking.GuestName ||
-                    booking.guestName ||
-                    booking.leadPassengerName ||
-                    booking.primaryGuestName ||
-                    `${booking.FirstName || ''} ${booking.LastName || ''}`.trim() ||
-                    'N/A';
 
-                contactNumber = booking.ContactNumber ||
-                    booking.contactNumber ||
-                    booking.mobile ||
-                    booking.phone ||
-                    booking.Phoneno ||
-                    'N/A';
-
-                email = booking.Email ||
-                    booking.email ||
-                    booking.guestEmail ||
-                    'N/A';
-            }
-
-            // Extract payment status
             const paymentStatus = booking.PaymentStatus ||
                 booking.paymentStatus ||
-                booking.payment_status ||
                 (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
 
-            // Extract booking created date
             const createdAt = bookingWrapper.createdAt ||
                 booking.BookingDate ||
                 booking.bookingDate ||
                 booking.InvoiceCreatedOn ||
                 booking.createdAt ||
-                booking.created_at ||
-                booking.bookingTime ||
                 new Date().toISOString();
 
-            // Format created date
             const formatCreatedDate = (dateString) => {
                 try {
                     const date = new Date(dateString);
@@ -346,7 +326,6 @@ const HotelBookingHistory = () => {
                 }
             };
 
-            // Calculate number of nights
             const calculateNights = (checkIn, checkOut) => {
                 try {
                     const checkInDate = new Date(checkIn);
@@ -361,12 +340,18 @@ const HotelBookingHistory = () => {
 
             const nights = calculateNights(checkInDate, checkOutDate);
 
+            // Extract SearchTokenId for hotel voucher/confirmation download
+            const searchTokenId = bookingWrapper.SearchTokenId ||
+                booking.SearchTokenId ||
+                booking.searchTokenId ||
+                booking.token_id ||
+                null;
+
             const formattedBooking = {
                 bookingId: String(bookingId),
                 hotelName: String(hotelName),
                 hotelCode: String(hotelCode),
                 city: String(city),
-                address: String(address),
                 checkInDate: String(checkInDate),
                 checkOutDate: String(checkOutDate),
                 roomType: String(roomType),
@@ -376,44 +361,61 @@ const HotelBookingHistory = () => {
                 confirmationNo: String(confirmationNo),
                 bookingStatus: String(bookingStatus),
                 totalAmount: String(totalAmount),
-                status: String(bookingStatus), // For compatibility
                 leadGuestName: String(leadGuestName),
                 contactNumber: String(contactNumber),
                 email: String(email),
                 paymentStatus: String(paymentStatus),
                 createdAt: formatCreatedDate(createdAt),
-                bookingDate: formatCreatedDate(createdAt), // For compatibility
-                rawData: bookingWrapper // Keep original data for debugging
+                rawCreatedDate: new Date(createdAt),
+                // Agent/customer fields
+                bookedByRole: booking.bookedByRole || userRole || 'customer',
+                isAgentBooking: booking.isAgentBooking || userRole === 'agent',
+                bookingSource: booking.bookingSource || (userRole === 'agent' ? 'AGENT_PORTAL' : 'CUSTOMER_PORTAL'),
+                searchTokenId: searchTokenId, // Add for voucher download
+                rawData: bookingWrapper
             };
 
-            console.log(`✅ Formatted hotel booking ${index + 1}:`, formattedBooking);
+            console.log(`Hotel booking ${index + 1} formatted with confirmation: ${confirmationNo}`, formattedBooking);
             return formattedBooking;
         });
 
-        console.log('📊 All formatted hotel bookings:', formattedBookings);
         return formattedBookings;
     };
 
-    // Main function to load hotel bookings
+    // Sort bookings by date function
+    const sortBookingsByDate = (bookings, order = 'desc') => {
+        console.log(`Sorting ${bookings.length} hotel bookings by date (${order})`);
+
+        const sortedBookings = [...bookings].sort((a, b) => {
+            const dateA = a.rawCreatedDate || new Date(a.createdAt || 0);
+            const dateB = b.rawCreatedDate || new Date(b.createdAt || 0);
+
+            if (order === 'desc') {
+                return dateB - dateA; // Newest first
+            } else {
+                return dateA - dateB; // Oldest first
+            }
+        });
+
+        return sortedBookings;
+    };
+
+    // Main function to load hotel bookings using the service
     const loadHotelBookings = async () => {
         setLoading(true);
         setError(null);
         setDebugInfo(null);
+        setInitialStatusLoaded(false); // Reset status loading flag
 
         // Check authentication
-        const tokenKeys = ['authToken', 'token', 'accessToken', 'jwt', 'userToken'];
-        const hasToken = tokenKeys.some(key =>
-            window.localStorage?.getItem(key) || window.sessionStorage?.getItem(key)
-        );
-
-        if (!hasToken) {
+        if (!isHotelUserAuthenticated()) {
             setError('Please login to view your hotel booking history.');
             setLoading(false);
             return;
         }
 
         try {
-            console.log('🚀 Starting to load hotel bookings...');
+            console.log('Starting to load hotel bookings using service...');
 
             let upcomingData = [];
             let allData = [];
@@ -425,50 +427,67 @@ const HotelBookingHistory = () => {
 
             // Try to fetch upcoming bookings
             try {
-                console.log('📅 Fetching upcoming hotel bookings...');
-                const upcomingResponse = await fetchUpcomingHotelBookings();
-                upcomingData = formatHotelBookingData(upcomingResponse, true);
-                debugData.upcomingSuccess = true;
-                debugData.upcomingResponse = upcomingResponse;
-                console.log('✅ Upcoming hotel bookings loaded:', upcomingData.length, 'bookings');
+                console.log('Fetching upcoming hotel bookings...');
+                const upcomingResponse = await fetchUpcomingHotelBookings(userRole);
+
+                if (upcomingResponse.success) {
+                    upcomingData = formatHotelBookingData(upcomingResponse.data, true);
+                    upcomingData = sortBookingsByDate(upcomingData, sortOrder);
+                    debugData.upcomingSuccess = true;
+                    debugData.upcomingResponse = upcomingResponse.data;
+                    console.log('Upcoming hotel bookings loaded:', upcomingData.length, 'bookings');
+                }
             } catch (err) {
-                console.warn('⚠️ Failed to fetch upcoming hotel bookings:', err.message);
-                debugData.errors.push(`Upcoming: ${err.message}`);
+                console.warn('Failed to fetch upcoming hotel bookings:', err.message);
+                debugData.errors.push(`Upcoming: ${err.message || 'Unknown error'}`);
             }
 
             // Try to fetch all bookings
             try {
-                console.log('📋 Fetching all hotel bookings...');
-                const allResponse = await fetchAllHotelBookings();
-                allData = formatHotelBookingData(allResponse, false);
-                debugData.allBookingsSuccess = true;
-                debugData.allResponse = allResponse;
-                console.log('✅ All hotel bookings loaded:', allData.length, 'bookings');
+                console.log('Fetching all hotel bookings...');
+                const allResponse = await fetchAllHotelBookings(userRole);
+
+                if (allResponse.success) {
+                    allData = formatHotelBookingData(allResponse.data, false);
+                    allData = sortBookingsByDate(allData, sortOrder);
+                    debugData.allBookingsSuccess = true;
+                    debugData.allResponse = allResponse.data;
+                    console.log('All hotel bookings loaded:', allData.length, 'bookings');
+                }
             } catch (err) {
-                console.warn('⚠️ Failed to fetch all hotel bookings:', err.message);
-                debugData.errors.push(`All bookings: ${err.message}`);
+                console.warn('Failed to fetch all hotel bookings:', err.message);
+                debugData.errors.push(`All bookings: ${err.message || 'Unknown error'}`);
             }
 
             // Update state with loaded data
-            console.log('🔄 Updating state with hotel booking data...');
-            console.log('📅 Upcoming bookings to set:', upcomingData.length, upcomingData);
-            console.log('📋 All bookings to set:', allData.length, allData);
-
-            setUpcomingBookings([...upcomingData]); // Force new array
-            setAllBookings([...allData]); // Force new array
+            console.log('Updating state with hotel booking data...');
+            setUpcomingBookings([...upcomingData]);
+            setAllBookings([...allData]);
             setDebugInfo(debugData);
+
+            // Immediately fetch real-time status for the loaded bookings
+            const allLoadedBookings = [...upcomingData, ...allData];
+            if (allLoadedBookings.length > 0) {
+                console.log('Immediately fetching real-time status for loaded hotel bookings...');
+                setTimeout(() => {
+                    autoFetchRealTimeStatus(allLoadedBookings);
+                }, 500); // Small delay to ensure state is updated
+            } else {
+                setInitialStatusLoaded(true);
+            }
 
             // Show success or partial success message
             if (upcomingData.length > 0 || allData.length > 0) {
-                console.log('✅ Successfully loaded hotel booking data - Upcoming:', upcomingData.length, 'All:', allData.length);
+                console.log('Successfully loaded hotel booking data - Upcoming:', upcomingData.length, 'All:', allData.length);
             } else if (debugData.errors.length === 0) {
-                console.log('ℹ️ No hotel bookings found in API response');
+                console.log('No hotel bookings found in API response');
             }
 
         } catch (error) {
-            console.error('❌ Error loading hotel bookings:', error);
+            console.error('Error loading hotel bookings:', error);
             setError(error.message || 'Failed to load hotel booking history. Please try again.');
             setDebugInfo({ error: error.message, fullError: error });
+            setInitialStatusLoaded(true);
         } finally {
             setLoading(false);
         }
@@ -479,22 +498,38 @@ const HotelBookingHistory = () => {
         loadHotelBookings();
     }, []);
 
+    // Re-sort when sort order changes
+    useEffect(() => {
+        if (upcomingBookings.length > 0) {
+            setUpcomingBookings(prev => sortBookingsByDate(prev, sortOrder));
+        }
+        if (allBookings.length > 0) {
+            setAllBookings(prev => sortBookingsByDate(prev, sortOrder));
+        }
+    }, [sortOrder]);
+
+    // Auto-refresh real-time status every 5 minutes (only after initial load)
+    useEffect(() => {
+        if (!initialStatusLoaded) return;
+
+        const interval = setInterval(() => {
+            console.log('Auto-refreshing hotel real-time status...');
+            autoFetchRealTimeStatus();
+        }, 300000); // 5 minutes for hotels
+
+        return () => clearInterval(interval);
+    }, [allBookings, upcomingBookings, initialStatusLoaded]);
+
     // Get current bookings based on selected type
     const getCurrentBookings = () => {
-        console.log('🎯 Getting current hotel bookings for type:', bookingType);
-        console.log('📅 Upcoming bookings available:', upcomingBookings.length, upcomingBookings);
-        console.log('📋 All bookings available:', allBookings.length, allBookings);
-
+        console.log('Getting current hotel bookings for type:', bookingType);
         if (bookingType === 'upcoming') {
-            console.log('🎯 Returning upcoming hotel bookings:', upcomingBookings);
             return upcomingBookings;
         }
-        console.log('🎯 Returning all hotel bookings:', allBookings);
         return allBookings;
     };
 
     const currentBookings = getCurrentBookings();
-    console.log('🎯 Current hotel bookings for display:', currentBookings.length, currentBookings);
 
     // Format date for display
     const formatDate = (dateString) => {
@@ -519,6 +554,137 @@ const HotelBookingHistory = () => {
         return `₹${amount}`;
     };
 
+    // Handle sort order toggle
+    const toggleSortOrder = () => {
+        setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+    };
+
+    // Get status badge color
+    const getStatusColor = (status) => {
+        const statusLower = String(status).toLowerCase();
+
+        switch (statusLower) {
+            case 'confirmed':
+            case 'booked':
+            case 'active':
+                return 'bg-green-100 text-green-700';
+            case 'checked-in':
+            case 'in-stay':
+                return 'bg-blue-100 text-blue-700';
+            case 'completed':
+            case 'checked-out':
+                return 'bg-purple-100 text-purple-700';
+            case 'cancelled':
+            case 'failed':
+                return 'bg-red-100 text-red-700';
+            case 'no-show':
+            case 'waiting':
+                return 'bg-yellow-100 text-yellow-700';
+            case 'pending':
+            case 'processing':
+                return 'bg-orange-100 text-orange-700';
+            case 'error':
+                return 'bg-red-100 text-red-700';
+            case 'unknown':
+            default:
+                return 'bg-gray-100 text-gray-700';
+        }
+    };
+
+    // Render real-time status for hotel bookings
+    const renderRealTimeStatus = (booking) => {
+        const bookingId = booking.bookingId;
+        const isLoading = loadingStatuses.has(bookingId);
+        const statusData = realTimeStatuses[bookingId];
+
+        // Show loading initially if we haven't loaded statuses yet
+        if (!initialStatusLoaded && !statusData &&
+            (booking.bookingStatus?.toLowerCase() === 'confirmed' ||
+                booking.bookingStatus?.toLowerCase() === 'booked')) {
+            return (
+                <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                    <span className="text-xs text-gray-500">Loading...</span>
+                </div>
+            );
+        }
+
+        // Show manual loading when button is clicked
+        if (isLoading) {
+            return (
+                <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                    <span className="text-xs text-gray-500">Checking...</span>
+                </div>
+            );
+        }
+
+        if (statusData?.error) {
+            return (
+                <div className="flex flex-col items-start">
+                    <span className="text-xs text-red-500">Error: {statusData.error}</span>
+                    <button
+                        onClick={() => handleRealTimeCheck(booking)}
+                        className="mt-1 text-xs text-blue-500 hover:text-blue-700"
+                        title="Retry"
+                    >
+                        Retry
+                    </button>
+                </div>
+            );
+        }
+
+        if (statusData?.status && statusData.success) {
+            return (
+                <div className="flex flex-col items-start">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(statusData.status)}`}>
+                        {statusData.status}
+                    </span>
+                    <div className="flex items-center mt-1">
+                        <span className="text-xs text-gray-400">
+                            {statusData.lastUpdated.toLocaleTimeString('en-IN', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}
+                        </span>
+                        <button
+                            onClick={() => handleRealTimeCheck(booking)}
+                            className="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                            title="Refresh Status"
+                        >
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // For non-confirmed bookings or when no status available
+        const isConfirmed = booking.bookingStatus?.toLowerCase() === 'confirmed' ||
+            booking.bookingStatus?.toLowerCase() === 'booked';
+
+        if (!isConfirmed) {
+            return (
+                <div className="flex items-center">
+                    <span className="text-xs text-gray-400">Not applicable</span>
+                </div>
+            );
+        }
+
+        return (
+            <div className="flex items-center">
+                <span className="text-xs text-gray-400">No live data</span>
+                <button
+                    onClick={() => handleRealTimeCheck(booking)}
+                    className="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                    title="Check Status"
+                >
+                    Check
+                </button>
+            </div>
+        );
+    };
+
     // Render loading state
     if (loading) {
         return (
@@ -535,14 +701,10 @@ const HotelBookingHistory = () => {
     return (
         <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">My Hotel Bookings</h2>
-                <button
-                    onClick={loadHotelBookings}
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {loading ? 'Refreshing...' : 'Refresh'}
-                </button>
+                <div>
+                    <h5 className="text-2xl font-bold text-gray-800">My Hotel Bookings</h5>
+                </div>
+
             </div>
 
             {/* Error Display */}
@@ -624,15 +786,20 @@ const HotelBookingHistory = () => {
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Amount</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payment Status</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Booked On</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200"
+                                    onClick={toggleSortOrder}
+                                    title="Click to change sort order">
+                                    Booked On {sortOrder === 'desc' ? '↓' : '↑'}
+                                </th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-Time Status</th>
                             </tr>
                         </thead>
                         <tbody className="bg-gray-50">
-                            {console.log('🎨 Rendering table rows for:', currentBookings.length, 'hotel bookings')}
+                            {console.log('Rendering table rows for:', currentBookings.length, 'hotel bookings')}
                             {currentBookings.length === 0 ? (
                                 <tr>
-                                    <td colSpan="15" className="px-4 py-12 text-center">
+                                    <td colSpan="16" className="px-4 py-12 text-center">
                                         <div className="flex flex-col items-center">
                                             <span className="text-4xl mb-4">🏨</span>
                                             <span className="text-lg font-medium text-gray-600">No hotel bookings found</span>
@@ -644,6 +811,8 @@ const HotelBookingHistory = () => {
                                             </span>
                                             <div className="mt-2 text-xs text-gray-500">
                                                 Debug: Upcoming={upcomingBookings.length}, All={allBookings.length}, Current={currentBookings.length}
+                                                <br />
+                                                Sort Order: {sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
                                             </div>
                                             <button
                                                 onClick={loadHotelBookings}
@@ -656,9 +825,9 @@ const HotelBookingHistory = () => {
                                 </tr>
                             ) : (
                                 currentBookings.map((booking, index) => {
-                                    console.log(`🎨 Rendering row ${index + 1}:`, booking);
+                                    console.log(`Rendering row ${index + 1}:`, booking);
                                     return (
-                                        <tr key={booking.bookingId || index} className="border-b border-gray-200 hover:bg-gray-100">
+                                        <tr key={`${booking.bookingId}-${index}`} className="border-b border-gray-200 hover:bg-gray-100">
                                             <td className="px-4 py-3 text-sm text-gray-900 font-mono">
                                                 {booking.bookingId}
                                             </td>
@@ -697,12 +866,7 @@ const HotelBookingHistory = () => {
                                                 {booking.confirmationNo}
                                             </td>
                                             <td className="px-4 py-3 text-sm">
-                                                <span className={`font-medium ${
-                                                    booking.bookingStatus?.toLowerCase() === 'confirmed' ? 'text-green-600' :
-                                                    booking.bookingStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
-                                                    booking.bookingStatus?.toLowerCase() === 'cancelled' ? 'text-red-600' :
-                                                    'text-blue-600'
-                                                }`}>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.bookingStatus)}`}>
                                                     {booking.bookingStatus}
                                                 </span>
                                             </td>
@@ -710,28 +874,36 @@ const HotelBookingHistory = () => {
                                                 {formatAmount(booking.totalAmount)}
                                             </td>
                                             <td className="px-4 py-3 text-sm">
-                                                <span className={`font-medium ${
-                                                    booking.paymentStatus?.toLowerCase() === 'completed' ? 'text-green-600' :
+                                                <span className={`font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' ? 'text-green-600' :
                                                     booking.paymentStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
-                                                    booking.paymentStatus?.toLowerCase() === 'failed' ? 'text-red-600' :
-                                                    'text-blue-600'
-                                                }`}>
+                                                        booking.paymentStatus?.toLowerCase() === 'failed' ? 'text-red-600' :
+                                                            'text-blue-600'
+                                                    }`}>
                                                     {booking.paymentStatus}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600">
-                                                {booking.createdAt}
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">{booking.createdAt}</span>
+                                                    <span className="text-xs text-gray-400">
+                                                        {sortOrder === 'desc' ? 'Latest First' : 'Oldest First'}
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm">
                                                 <button
                                                     onClick={() => {
                                                         console.log('View hotel booking details:', booking);
+                                                        // You can add your view details logic here
                                                     }}
                                                     className="text-blue-500 hover:text-blue-700 font-medium flex items-center"
                                                 >
                                                     <span className="mr-1">👁️</span>
                                                     View
                                                 </button>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm">
+                                                {renderRealTimeStatus(booking)}
                                             </td>
                                         </tr>
                                     );
@@ -742,87 +914,7 @@ const HotelBookingHistory = () => {
                 </div>
             </div>
 
-            {/* Pagination info */}
-            {currentBookings.length > 0 && (
-                <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
-                    <span>
-                        Page 1 of 1, total {currentBookings.length} record{currentBookings.length !== 1 ? 's' : ''} found
-                    </span>
-                    {currentBookings.length > 0 && (
-                        <div className="flex items-center space-x-2">
-                            <span className="bg-gray-700 text-white px-2 py-1 rounded text-xs">1</span>
-                        </div>
-                    )}
-                </div>
-            )}
 
-            {/* Summary Cards */}
-            {(upcomingBookings.length > 0 || allBookings.length > 0) && (
-                <div className="mt-6 grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">{upcomingBookings.length}</div>
-                        <div className="text-sm text-blue-800">Upcoming Stays</div>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">{allBookings.length}</div>
-                        <div className="text-sm text-green-800">Total Hotel Bookings</div>
-                    </div>
-                </div>
-            )}
-
-            {/* Guest Information Display - Show for first booking if available */}
-            {currentBookings.length > 0 && currentBookings[0].leadGuestName !== 'N/A' && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Latest Booking Guest Info</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                            <span className="font-medium text-gray-600">Guest Name:</span>
-                            <div className="text-gray-900">{currentBookings[0].leadGuestName}</div>
-                        </div>
-                        <div>
-                            <span className="font-medium text-gray-600">Contact:</span>
-                            <div className="text-gray-900">{currentBookings[0].contactNumber}</div>
-                        </div>
-                        <div>
-                            <span className="font-medium text-gray-600">Email:</span>
-                            <div className="text-gray-900">{currentBookings[0].email}</div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Hotel Booking Statistics */}
-            {currentBookings.length > 0 && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Booking Statistics</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-600">
-                                {currentBookings.reduce((total, booking) => total + parseInt(booking.numberOfRooms || 1), 0)}
-                            </div>
-                            <div className="text-gray-600">Total Rooms</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-green-600">
-                                {currentBookings.reduce((total, booking) => total + (booking.nights || 1), 0)}
-                            </div>
-                            <div className="text-gray-600">Total Nights</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-purple-600">
-                                {currentBookings.filter(booking => booking.bookingStatus?.toLowerCase() === 'confirmed').length}
-                            </div>
-                            <div className="text-gray-600">Confirmed</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-orange-600">
-                                ₹{currentBookings.reduce((total, booking) => total + parseInt(booking.totalAmount || 0), 0)}
-                            </div>
-                            <div className="text-gray-600">Total Value</div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

@@ -8,7 +8,7 @@ import { fetchFareConfirmation } from '../APIS/FlightApi/FlightApi';
 import FlightLoader from '../FlightLoader/FlightLoader';
 import { toast } from 'react-toastify';
 
-const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare }) => {
+const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare ,Selected }) => {
     const [loading, setLoading] = useState(false);
     const [show, setShow] = useState(false);
     const [fareConfirm, setFareConfirm] = useState([]);
@@ -16,7 +16,7 @@ const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare }) => {
 
     const navigate = useNavigate();
 
-    console.log('SelectedFare', SelectedFare, 'FareDatakk', FareData);
+    console.log('SelectedFarekk', SelectedFare, 'FareDatakk', FareData);
 
     // Get roundtrip flight segments
     const getFlightSegments = () => {
@@ -31,6 +31,10 @@ const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare }) => {
         if (SelectedFare?.return) {
             segments.push({ type: 'return', data: SelectedFare.return });
         }
+        else{
+            segments.push({ type: 'onward', data: FareData });
+
+        }
         
         return segments;
     };
@@ -38,10 +42,15 @@ const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare }) => {
     const flightSegments = getFlightSegments();
 
     console.log('flightSegments', flightSegments);
+    console.log('selected', Selected);
+
+    const resData = localStorage.getItem('fareSummery');
+
+    let selectedFlight = JSON.parse(resData);
 
    const farePayloadOnward = useMemo(() => ({
                 UserIp: localStorage.getItem("UserIp") || "",
-                ResultIndex: SelectedFare?.onward?.FareList?.[0]?.FareId || "",
+                ResultIndex: SelectedFare?.onward?.FareList?.[0]?.FareId || Selected.FareId,
                 PublishedPrice: SelectedFare?.onward?.PublishedPrice || SelectedFare?.onward?.FareList?.[0]?.PublishedPrice,
                 SearchTokenId: localStorage.getItem("searchToken") || ""
             }), [SelectedFare]);
@@ -49,7 +58,7 @@ const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare }) => {
 
             const farePayloadReturn = useMemo(() => ({
                 UserIp: localStorage.getItem("UserIp") || "",
-                ResultIndex: SelectedFare?.return?.FareList?.[0]?.FareId || "",
+                ResultIndex: SelectedFare?.return?.FareList?.[0]?.FareId || Selected.FareId,
                 PublishedPrice: SelectedFare?.onward?.PublishedPrice || SelectedFare?.onward?.FareList?.[0]?.PublishedPrice,
                 SearchTokenId: localStorage.getItem("searchToken") || ""
             }), [SelectedFare]);
@@ -74,7 +83,7 @@ const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare }) => {
 
                 const [resFarePayloadOnward, resFarePayloadReturn] = await Promise.all([
                     fetchFareConfirmation(farePayloadOnward),
-                    fetchFareConfirmation(farePayloadReturn)
+                    // fetchFareConfirmation(farePayloadReturn)
                     ]);
 
                     const confirmedFare = {
