@@ -11,7 +11,7 @@ const HotelServices = {
   createOrder: `${baseURL}/hotelservice/create-order`,
   validate: `${baseURL}/hotelservice/validate`,
   book: `${baseURL}/hotelservice/book`,
-  downloadInvoice: `${baseURL}/hotelservice/invoice`,
+  sendInvoice: `${baseURL}/hotelservice/invoice`,
 };
 
 
@@ -32,7 +32,6 @@ const createAuthHeaders = () => {
     'Content-Type': 'application/json',
   };
 };
-
 
 
 
@@ -163,39 +162,33 @@ export const bookHotel = async (bookingPayload) => {
 };
 
 
-export const sendHotelInvoiceEmail = async (invoiceData) => {
+
+
+// ✅ NEW: Send invoice to customer email after successful booking
+export const sendHotelInvoice = async (invoicePayload) => {
   try {
-    if (!invoiceData?.SearchTokenId || !invoiceData?.BookingId) {
-      throw new Error('SearchTokenId and BookingId are required');
-    }
+    console.log('📧 Sending invoice with payload:', invoicePayload);
 
-    const payload = {
-      ...invoiceData,
-      UserIp: invoiceData.UserIp || "122.161.64.143",
-      BookingId: String(invoiceData.BookingId).trim(),
-      receiverEmail: invoiceData.receiverEmail || "",
-      emailOnly: true
-    };
+    const headers = createAuthHeaders();
 
-    console.log('📧 Sending invoice email...', payload);
+    const response = await axios.post(HotelServices.sendInvoice, invoicePayload, { headers });
 
-    const response = await axios.post(HotelServices.downloadInvoice, payload, {
-      headers: {
-        ...createAuthHeaders(),
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      timeout: 30000
-    });
-
+    console.log('📧 Invoice sent successfully:', response.data);
     return {
       success: true,
-      emailSent: true,
-      message: 'Invoice email sent successfully',
-      data: response.data
+      data: response.data,
+      message: response.data?.message || 'Invoice sent successfully'
     };
 
   } catch (error) {
-    throw new Error(error.response?.data?.message || error.message || 'Failed to send invoice email');
+    console.error('❌ Error sending invoice:', error.response?.data || error.message);
+
+    // Return error details for handling
+    return {
+      success: false,
+      error: error.response?.data || error.message,
+      message: error.response?.data?.message || 'Failed to send invoice'
+    };
   }
 };
+

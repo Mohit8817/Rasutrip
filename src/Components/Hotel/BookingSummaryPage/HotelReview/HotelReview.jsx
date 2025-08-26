@@ -20,10 +20,10 @@ const HotelReview = () => {
                     <HotelStep activeIndex={2} />
                 </Row>
                 <Row>
-                    <Col lg={9}>
+                    <Col lg={9} className='p-0 m-0'>
                         <HotelReviewInfo />
                     </Col>
-                    <Col lg={3}>
+                    <Col lg={3} className='mt-4'>
                         <FareSummaryCard priceDetails={priceDetails} />
                         <HotelPromoCodeCard />
                     </Col>

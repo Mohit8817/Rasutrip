@@ -18,7 +18,7 @@ const GuestDetails = () => {
                     <HotelStep activeIndex={1} />
                 </Row>
                 <Row>
-                    <Col lg={9}>
+                    <Col lg={9} className='p-0 m-0'>
                         <GuestDetailsInfo />
                     </Col>
                     <Col lg={3} className='mt-4'>

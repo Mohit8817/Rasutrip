@@ -1,7 +1,7 @@
-import React from "react";
+import { StarFill } from "react-bootstrap-icons";
 import { Card, Row, Col, Button, Form } from "react-bootstrap";
 import {
-    FaMapMarkerAlt,
+    FaStar,
     FaCalendarAlt,
     FaBed,
     FaMoon,
@@ -258,20 +258,29 @@ const HotelReviewInfo = () => {
             {/* Hotel Details */}
             <Card className="shadow-sm border-0 mb-4">
                 <Card.Body>
+
+
                     <Row className="align-items-center mb-3">
-                        <Col>
-                            <h5 className="fw-bold mb-2">{hotel?.HotelName || hotel?.name}</h5>
-                            <p className="text-muted d-flex align-items-center mb-0">
-                                <FaMapMarkerAlt className="me-2 text-danger" />
+                        {/* ✅ Left Side - Hotel Name & Location */}
+                        <Col xs={12} md>
+                            <h5 className="fw-bold mb-1 fs-6 fs-md-5">
+                                {hotel?.HotelName || hotel?.name}
+                            </h5>
+                            <p className="text-muted d-flex align-items-center mb-0 fs-6 fs-md-6">
                                 {hotel?.location || hotel?.Address || "Location not specified"}
                             </p>
                         </Col>
-                        <Col xs="auto">
-                            <div className="text-warning fs-5">
-                                {"⭐".repeat(Math.max(1, Math.min(5, hotel?.rating || 3)))}
+
+                        {/* ✅ Right Side - Rating Stars */}
+                        <Col xs={12} md="auto" className="mt-2 mt-md-0 text-center text-md-end">
+                            <div className="text-warning fs-6 fs-md-5 d-flex">
+                                {Array.from({ length: Math.max(1, Math.min(5, hotel?.rating || 3)) }).map((_, index) => (
+                                    <FaStar key={index} />
+                                ))}
                             </div>
                         </Col>
                     </Row>
+
 
                     <hr />
 
@@ -289,10 +298,10 @@ const HotelReviewInfo = () => {
                         </Col>
 
                         <Col md={9}>
-                            <Row>
-                                <Col md={3} className="mb-3">
+                            <Row className="pt-3">
+                                {/* ✅ Check-in */}
+                                <Col xs={6} md={3} className="mb-3">
                                     <div className="d-flex align-items-center mb-1">
-                                        <FaCalendarAlt className="me-2 text-danger" />
                                         <strong>Check-in</strong>
                                     </div>
                                     <div className="text-dark fw-semibold">
@@ -300,17 +309,17 @@ const HotelReviewInfo = () => {
                                     </div>
                                 </Col>
 
-                                <Col md={3} className="mb-3">
+                                {/* ✅ Nights */}
+                                <Col xs={6} md={3} className="mb-3">
                                     <div className="d-flex align-items-center mb-1">
-                                        <FaMoon className="me-2 text-danger" />
                                         <strong>Nights</strong>
                                     </div>
                                     <div className="fw-semibold">{hotel?.nights || 1}</div>
                                 </Col>
 
-                                <Col md={3} className="mb-3">
+                                {/* ✅ Check-out */}
+                                <Col xs={6} md={3} className="mb-3">
                                     <div className="d-flex align-items-center mb-1">
-                                        <FaCalendarAlt className="me-2 text-danger" />
                                         <strong>Check-out</strong>
                                     </div>
                                     <div className="text-dark fw-semibold">
@@ -318,9 +327,9 @@ const HotelReviewInfo = () => {
                                     </div>
                                 </Col>
 
-                                <Col md={3} className="mb-3">
+                                {/* ✅ Rooms & Guests */}
+                                <Col xs={6} md={3} className="mb-3">
                                     <div className="d-flex align-items-center mb-1">
-                                        <FaBed className="me-2 text-danger" />
                                         <strong>Rooms & Guests</strong>
                                     </div>
                                     <div className="fw-semibold">
@@ -344,7 +353,7 @@ const HotelReviewInfo = () => {
                                 </Col>
                                 <Col md={4}>
                                     <span className="text-muted">Cancellation Policy</span>
-                                    <div className="fw-bold text-success">
+                                    <div className="fw-bold">
                                         {room?.CancellationPolicy || "Refundable"}
                                     </div>
                                 </Col>
@@ -405,7 +414,6 @@ const HotelReviewInfo = () => {
                                                             Age: {guest.age} | PAN: {guest.panNumber || "Not provided"}
                                                         </div>
                                                     </div>
-                                                    <span className="badge bg-success">Adult</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -420,7 +428,6 @@ const HotelReviewInfo = () => {
                                                             Age: {guest.age}
                                                         </div>
                                                     </div>
-                                                    <span className="badge bg-warning">Child</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -497,11 +504,10 @@ const HotelReviewInfo = () => {
             <div className="text-end">
                 <Button
                     variant="danger"
-                    size="lg"
                     className="btn-red px-5"
                     onClick={handleContinue}
                 >
-                    Continue to Payment →
+                    Continue to Payment
                 </Button>
             </div>
         </div>

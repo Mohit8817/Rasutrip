@@ -444,7 +444,7 @@ const GuestDetailsInfo = () => {
     const isAllValid = panStats.totalAdults > 0 && panStats.validPANs === panStats.totalAdults && panStats.duplicates === 0;
 
     return (
-      <div className={`alert ${isAllValid ? 'alert-success' : 'alert-warning'} mb-4`}>
+      <div className={`alert ${isAllValid ? 'alert-success' : 'alert-danger'} mb-4`}>
         <h6 className="fw-bold mb-2">
           <FaShieldAlt className="me-2" />
           PAN Validation Status
@@ -476,7 +476,7 @@ const GuestDetailsInfo = () => {
           </div>
         )}
 
-        <div className={`mt-2 alert ${isAllValid ? 'alert-success' : 'alert-warning'} mb-0`}>
+        <div className={`mt-2 alert ${isAllValid ? 'alert-success' : 'alert-danger'} mb-0`}>
           {isAllValid ?
             '✅ All PAN requirements satisfied. Ready to proceed!' :
             '⚠️ Please resolve PAN issues before continuing to payment.'
@@ -634,9 +634,8 @@ const GuestDetailsInfo = () => {
             <p className="text-muted small mb-4">Please enter names as per Government ID. All fields are mandatory.</p>
 
             {roomDetails.map((room, roomIndex) => (
-              <div key={roomIndex} className="border rounded p-3 mb-4">
+              <div key={roomIndex} className="border rounded p-2 mb-4">
                 <div className="mb-3 fw-bold text-danger d-flex align-items-center">
-                  <FaEnvelope className="me-2" />
                   <span>
                     Room {roomIndex + 1} - {room.adults} Adult(s)
                     {room.children > 0 && `, ${room.children} Child(ren)`}
@@ -645,42 +644,52 @@ const GuestDetailsInfo = () => {
 
                 {/* Adults */}
                 {guestInputs[roomIndex]?.adults?.map((guest, i) => (
-                  <div key={`adult-${roomIndex}-${i}`} className="mb-4 p-3 bg-light rounded">
-                    <Row className="align-items-center mb-3">
-                      <Col lg={2} className="fw-bold">
+                  <div
+                    key={`adult-${roomIndex}-${i}`}
+                    className="mb-2 p-2 rounded"
+                  >
+                    {/* First Row */}
+                    <Row className="align-items-center mb-3 gy-3">
+                      <Col xs={12} lg={2} className="fw-bold">
                         Adult {i + 1}
-                        {/* {roomIndex === 0 && i === 0 && (
-                          <span className="badge bg-danger ms-2 small">Lead Guest</span>
-                        )} */}
                       </Col>
-                      <Col lg={2}>
+
+                      <Col xs={12} lg={2}>
                         <Form.Select
                           value={guest.title}
-                          onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'title', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(roomIndex, "adults", i, "title", e.target.value)
+                          }
                         >
                           <option value="Mr">Mr</option>
                           <option value="Ms">Ms</option>
                           <option value="Mrs">Mrs</option>
                         </Form.Select>
                       </Col>
-                      <Col lg={4}>
+
+                      <Col xs={12} lg={4}>
                         <Form.Control
                           type="text"
                           placeholder="First Name *"
                           value={guest.firstName}
-                          onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'firstName', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(roomIndex, "adults", i, "firstName", e.target.value)
+                          }
                           isInvalid={!!errors[`adult-${roomIndex}-${i}-first`]}
                         />
                         <Form.Control.Feedback type="invalid">
                           {errors[`adult-${roomIndex}-${i}-first`]}
                         </Form.Control.Feedback>
                       </Col>
-                      <Col lg={4}>
+
+                      <Col xs={12} lg={4}>
                         <Form.Control
                           type="text"
                           placeholder="Last Name *"
                           value={guest.lastName}
-                          onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'lastName', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(roomIndex, "adults", i, "lastName", e.target.value)
+                          }
                           isInvalid={!!errors[`adult-${roomIndex}-${i}-last`]}
                         />
                         <Form.Control.Feedback type="invalid">
@@ -688,13 +697,23 @@ const GuestDetailsInfo = () => {
                         </Form.Control.Feedback>
                       </Col>
                     </Row>
-                    <Row>
-                      <Col md={6}>
+
+                    {/* Second Row */}
+                    <Row className="gy-3">
+                      <Col xs={12} md={6}>
                         <Form.Control
                           type="text"
                           placeholder="PAN Number (ABCDE1234F) *"
                           value={guest.panNumber}
-                          onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'panNumber', e.target.value.toUpperCase())}
+                          onChange={(e) =>
+                            handleInputChange(
+                              roomIndex,
+                              "adults",
+                              i,
+                              "panNumber",
+                              e.target.value.toUpperCase()
+                            )
+                          }
                           isInvalid={!!errors[`adult-${roomIndex}-${i}-pan`]}
                           maxLength={10}
                         />
@@ -702,12 +721,15 @@ const GuestDetailsInfo = () => {
                           {errors[`adult-${roomIndex}-${i}-pan`]}
                         </Form.Control.Feedback>
                       </Col>
-                      <Col md={6}>
+
+                      <Col xs={12} md={6}>
                         <Form.Control
                           type="number"
                           placeholder="Age (18+) *"
                           value={guest.age}
-                          onChange={(e) => handleInputChange(roomIndex, 'adults', i, 'age', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(roomIndex, "adults", i, "age", e.target.value)
+                          }
                           isInvalid={!!errors[`adult-${roomIndex}-${i}-age`]}
                           min="18"
                           max="99"
@@ -720,40 +742,66 @@ const GuestDetailsInfo = () => {
                   </div>
                 ))}
 
+
                 {/* Children */}
                 {guestInputs[roomIndex]?.children?.map((guest, i) => (
-                  <div key={`child-${roomIndex}-${i}`} className="mb-4 p-3 bg-warning bg-opacity-10 rounded">
-                    <Row className="align-items-center mb-3">
-                      <Col lg={2} className="fw-bold">
+                  <div
+                    key={`child-${roomIndex}-${i}`}
+                    className="mb-4 p-3 bg-opacity-10 rounded"
+                  >
+                    {/* First Row */}
+                    <Row className="align-items-center mb-3 gy-3">
+                      <Col xs={12} lg={2} className="fw-bold">
                         Child {i + 1}
                       </Col>
-                      <Col lg={2}>
+
+                      <Col xs={12} lg={2}>
                         <Form.Select
                           value={guest.title}
-                          onChange={(e) => handleInputChange(roomIndex, 'children', i, 'title', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(roomIndex, "children", i, "title", e.target.value)
+                          }
                         >
                           <option value="Master">Master</option>
                           <option value="Miss">Miss</option>
                         </Form.Select>
                       </Col>
-                      <Col lg={4}>
+
+                      <Col xs={12} lg={4}>
                         <Form.Control
                           type="text"
                           placeholder="First Name *"
                           value={guest.firstName}
-                          onChange={(e) => handleInputChange(roomIndex, 'children', i, 'firstName', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(
+                              roomIndex,
+                              "children",
+                              i,
+                              "firstName",
+                              e.target.value
+                            )
+                          }
                           isInvalid={!!errors[`child-${roomIndex}-${i}-first`]}
                         />
                         <Form.Control.Feedback type="invalid">
                           {errors[`child-${roomIndex}-${i}-first`]}
                         </Form.Control.Feedback>
                       </Col>
-                      <Col lg={4}>
+
+                      <Col xs={12} lg={4}>
                         <Form.Control
                           type="text"
                           placeholder="Last Name *"
                           value={guest.lastName}
-                          onChange={(e) => handleInputChange(roomIndex, 'children', i, 'lastName', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(
+                              roomIndex,
+                              "children",
+                              i,
+                              "lastName",
+                              e.target.value
+                            )
+                          }
                           isInvalid={!!errors[`child-${roomIndex}-${i}-last`]}
                         />
                         <Form.Control.Feedback type="invalid">
@@ -761,13 +809,17 @@ const GuestDetailsInfo = () => {
                         </Form.Control.Feedback>
                       </Col>
                     </Row>
-                    <Row>
-                      <Col md={6}>
+
+                    {/* Second Row */}
+                    <Row className="gy-3">
+                      <Col xs={12} md={6}>
                         <Form.Control
                           type="number"
                           placeholder="Child Age (1-17) *"
                           value={guest.age}
-                          onChange={(e) => handleInputChange(roomIndex, 'children', i, 'age', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(roomIndex, "children", i, "age", e.target.value)
+                          }
                           isInvalid={!!errors[`child-${roomIndex}-${i}-age`]}
                           min="1"
                           max="17"
@@ -779,6 +831,7 @@ const GuestDetailsInfo = () => {
                     </Row>
                   </div>
                 ))}
+
               </div>
             ))}
 
@@ -790,17 +843,17 @@ const GuestDetailsInfo = () => {
       <Card className="mb-4 shadow-sm border-0">
         <Card.Body>
           <h6 className="fw-bold mb-3 d-flex align-items-center">
-            <FaEnvelope className="me-2 text-danger" />
             Contact Information - Booking confirmation will be sent here
           </h6>
 
-          <Row>
-            <Col lg={3}>
+          <Row className="gy-3">
+            <Col xs={12} lg={3}>
               <Form.Select disabled>
                 <option>India (+91)</option>
               </Form.Select>
             </Col>
-            <Col lg={4}>
+
+            <Col xs={12} lg={4}>
               <Form.Control
                 type="text"
                 placeholder="Mobile Number (10 digits) *"
@@ -809,9 +862,12 @@ const GuestDetailsInfo = () => {
                 isInvalid={!!errors.mobile}
                 maxLength={10}
               />
-              <Form.Control.Feedback type="invalid">{errors.mobile}</Form.Control.Feedback>
+              <Form.Control.Feedback type="invalid">
+                {errors.mobile}
+              </Form.Control.Feedback>
             </Col>
-            <Col lg={5}>
+
+            <Col xs={12} lg={5}>
               <Form.Control
                 type="email"
                 placeholder="Email Address *"
@@ -819,11 +875,14 @@ const GuestDetailsInfo = () => {
                 onChange={(e) => handleEmailChange(e.target.value)}
                 isInvalid={!!errors.email}
               />
-              <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
+              <Form.Control.Feedback type="invalid">
+                {errors.email}
+              </Form.Control.Feedback>
             </Col>
           </Row>
         </Card.Body>
       </Card>
+
 
       {/* GST Information */}
       <Card className="mb-4 shadow-sm border-0">
@@ -845,10 +904,7 @@ const GuestDetailsInfo = () => {
           </Row>
 
           {showGstinForm && (
-            <div className="mt-4 p-3 border rounded bg-light">
-              <div className="alert alert-info small mb-3">
-                <strong>Note:</strong> GST details will only be applied to the lead passenger (first adult in room 1) for billing purposes.
-              </div>
+            <div className="mt-4 p-3 border rounded">
               <Row className="g-3">
                 <Col md={6}>
                   <Form.Control
@@ -911,11 +967,10 @@ const GuestDetailsInfo = () => {
       <div className="text-end">
         <Button
           variant="danger"
-          size="lg"
           className="btn-red px-5"
           onClick={handleContinue}
         >
-          Continue to Review →
+          Continue to Review
         </Button>
       </div>
     </div>
