@@ -71,7 +71,7 @@ const Location = () => {
   return (
     <Container>
       <div className="city-wrapper">
-        <h6 className="fw-bold mb-3 text-start">Book Bus Ticket</h6>
+        <h6 className="fw-bold  text-start">Book Bus Ticket</h6>
         <Row className="g-2">
           {/* FROM City */}
           <Col md={6}>

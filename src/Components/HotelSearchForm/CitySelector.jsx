@@ -19,7 +19,7 @@ const CitySelector = () => {
             if (query.length > 1) {
                 getCities(query);
             } else {
-                setCitySuggestions([]);
+                setCitySuggestions([]); 
                 setShowSuggestions(false);
             }
         }, 300);
@@ -58,7 +58,7 @@ const CitySelector = () => {
 
     return (
         <div className="container">
-            <div className="rounded-3">
+            <div className="rounded-3 w-100">
                 <div className="city_box position-relative" ref={wrapperRef}>
                     <label className="City_label">CITY</label>
                     <input

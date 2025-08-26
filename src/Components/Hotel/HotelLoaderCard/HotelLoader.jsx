@@ -5,7 +5,7 @@ import houseIcon from '../../../assest/hotel.gif'; // make sure this path is cor
 const HotelLoader = ({ city, checkIn, checkOut, guests, rooms }) => {
     return (
         <Container fluid className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-            <div className="bg-white p-5 rounded-4 shadow text-center" style={{ width: '100%', maxWidth: '450px' }}>
+            <div className="shadow-sm p-5 rounded-4  text-center" style={{ width: '100%', maxWidth: '450px' }}>
                 {/* Centered GIF with better styling */}
                 <div className="d-flex justify-content-center align-items-center mb-4">
                     <img

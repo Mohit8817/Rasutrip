@@ -196,8 +196,8 @@ const RoomCard = ({
                 {/* Enhanced PAN mandatory warning */}
                 {panMandatory && (
                   <div className="alert alert-warning p-2 mb-2 small">
-                    <strong>⚠️ PAN MANDATORY ROOM</strong><br />
-                  
+                    <strong>PAN MANDATORY ROOM</strong><br />
+
                   </div>
                 )}
 

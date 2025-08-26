@@ -50,11 +50,11 @@ const Home = () => {
 
             {/* <Header /> */}
             <Slider />
-            <DealsSection />
+            {/* <DealsSection /> */}
             <TravelBenefits />
             <FlightRoutes />
             <section>
-                <AboutRasu />
+                {/* <AboutRasu /> */}
                 <img src={road} />
 
                 <motion.section

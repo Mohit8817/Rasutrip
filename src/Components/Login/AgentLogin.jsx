@@ -400,31 +400,7 @@ const AgentLogin = () => {
                       onClick={() => setShowResetForm(true)}
                     >
                       Forgot Password?
-                    </Button>
-
-                    {/* DEBUG BUTTON for development */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <Button
-                        variant="link"
-                        className="p-0 text-light mb-3"
-                        onClick={() => {
-                          console.log('🔧 Current agent token status:');
-                          debugTokenStorage();
-                          const currentToken = getToken('agent');
-                          console.log('🔍 Current agent token detection:', currentToken);
-                          
-                          // Show localStorage state
-                          console.log('📋 Current localStorage auth state:');
-                          Object.keys(localStorage).forEach(key => {
-                            if (key.includes('token') || key.includes('user') || key.includes('agent') || key.includes('Type')) {
-                              console.log(`  ${key}:`, localStorage.getItem(key)?.substring(0, 30));
-                            }
-                          });
-                        }}
-                      >
-                        Debug Agent Token
-                      </Button>
-                    )}
+                    </Button>                  
                   </div>
 
                   <Button className="w-100 login-btn mb-2" onClick={handleLogin}>

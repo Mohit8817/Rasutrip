@@ -207,18 +207,18 @@ const BusResultPage = () => {
     }
 
     return (
-        <Container>
-            <Row>
-                <Col lg={12}>
+        <div className="container">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                {/* Top section */}
+                <div className="col-span-12">
                     <BusSearchSummary />
-                </Col>
-            </Row>
+                </div>
 
-            <Row>
-                <Col lg={3} className="mt-3">
+                {/* Sidebar filter (only show on lg and above) */}
+                <div className="hidden lg:block lg:col-span-3 mt-3">
                     <BusSidebarFilter
                         priceRange={priceRange}
-                        onPriceChange={setPriceRange} // Changed from setPriceRange to onPriceChange
+                        onPriceChange={setPriceRange}
                         actualPriceRange={actualPriceRange}
                         selectedOperators={selectedOperators}
                         setSelectedOperators={setSelectedOperators}
@@ -227,17 +227,20 @@ const BusResultPage = () => {
                         availableOperators={availableOperators}
                         availableBusTypes={availableBusTypes}
                     />
-                </Col>
-                <Col lg={9}>
+                </div>
+
+                {/* Bus details list */}
+                <div className="col-span-12 lg:col-span-9 p-0 m-0">
                     <BusDetailsList
                         masterBusList={masterBusList}
                         priceRange={priceRange}
                         selectedOperators={selectedOperators}
                         selectedBusTypes={selectedBusTypes}
                     />
-                </Col>
-            </Row>
-        </Container>
+                </div>
+            </div>
+        </div>
+
     );
 };
 

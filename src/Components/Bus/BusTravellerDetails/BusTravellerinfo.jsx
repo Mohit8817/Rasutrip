@@ -390,7 +390,7 @@ const BusTravellerinfo = () => {
                                 </Col>
                             </Row>
 
-                            <Row className='mt-2'>
+                            <Row className='g-3 mt-1'>
                                 <Col md={2}>
                                     <Form.Group>
                                         <Form.Control
@@ -495,7 +495,7 @@ const BusTravellerinfo = () => {
                 <Card.Header className="bg-light">
                     <Row className="align-items-center">
                         <Col md={9}>
-                            <h5 className="mb-0">Use GSTIN for this booking (Optional)</h5>
+                            <h6 className="mb-0">Use GSTIN for this booking (Optional)</h6>
                             <small className="text-muted">Claim credit of GST charges. Your taxes may get updated post submitting your GST details.</small>
                         </Col>
                         <Col md={3} className="text-end">
@@ -574,7 +574,7 @@ const BusTravellerinfo = () => {
                     style={{ fontSize: '1.1rem' }}
                     type="button"
                 >
-                    Continue to Review →
+                    Continue to Review
                 </Button>
             </div>
 

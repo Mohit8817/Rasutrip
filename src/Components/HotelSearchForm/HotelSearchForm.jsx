@@ -18,16 +18,16 @@ const HotelSearchForm = () => {
                     </Col>
                 </Row>
                 <Row className='mt-2'>
-                    <Col lg={3}>
+                    <Col lg={3} className='p-0 m-0 mb-1'>
                         <CitySelector />
                     </Col>
-                    <Col lg={3}>
+                    <Col lg={3} className='mb-1'>
                         <DateSelector />
                     </Col>
-                    <Col lg={3}>
+                    <Col lg={3} className='mb-1'>
                         <GuestRoomSelector />
                     </Col>
-                    <Col lg={2}>
+                    <Col lg={2} className='mb-1'>
                         <CountrySelector />
                     </Col>
                     <Col lg={1}>

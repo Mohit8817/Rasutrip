@@ -8,7 +8,7 @@ import { fetchFareConfirmation } from '../APIS/FlightApi/FlightApi';
 import FlightLoader from '../FlightLoader/FlightLoader';
 import { toast } from 'react-toastify';
 
-const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare ,Selected }) => {
+const RoundFlightInfo = ({ Faresummary, FareData, fareRules, SelectedFare, Selected }) => {
     const [loading, setLoading] = useState(false);
     const [show, setShow] = useState(false);
     const [fareConfirm, setFareConfirm] = useState([]);
@@ -21,21 +21,21 @@ const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare ,Select
     // Get roundtrip flight segments
     const getFlightSegments = () => {
         const segments = [];
-        
+
         // Add onward flight
         if (SelectedFare?.onward) {
             segments.push({ type: 'onward', data: SelectedFare.onward });
         }
-        
+
         // Add return flight
         if (SelectedFare?.return) {
             segments.push({ type: 'return', data: SelectedFare.return });
         }
-        else{
+        else {
             segments.push({ type: 'onward', data: FareData });
 
         }
-        
+
         return segments;
     };
 
@@ -48,52 +48,49 @@ const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare ,Select
 
     let selectedFlight = JSON.parse(resData);
 
-   const farePayloadOnward = useMemo(() => ({
-                UserIp: localStorage.getItem("UserIp") || "",
-                ResultIndex: SelectedFare?.onward?.FareList?.[0]?.FareId || Selected.FareId,
-                PublishedPrice: SelectedFare?.onward?.PublishedPrice || SelectedFare?.onward?.FareList?.[0]?.PublishedPrice,
-                SearchTokenId: localStorage.getItem("searchToken") || ""
-            }), [SelectedFare]);
+    const farePayloadOnward = useMemo(() => ({
+        UserIp: localStorage.getItem("UserIp") || "",
+        ResultIndex: SelectedFare?.onward?.FareList?.[0]?.FareId || Selected.FareId,
+        PublishedPrice: SelectedFare?.onward?.PublishedPrice || SelectedFare?.onward?.FareList?.[0]?.PublishedPrice,
+        SearchTokenId: localStorage.getItem("searchToken") || ""
+    }), [SelectedFare]);
 
 
-            const farePayloadReturn = useMemo(() => ({
-                UserIp: localStorage.getItem("UserIp") || "",
-                ResultIndex: SelectedFare?.return?.FareList?.[0]?.FareId || Selected.FareId,
-                PublishedPrice: SelectedFare?.onward?.PublishedPrice || SelectedFare?.onward?.FareList?.[0]?.PublishedPrice,
-                SearchTokenId: localStorage.getItem("searchToken") || ""
-            }), [SelectedFare]);
+    const farePayloadReturn = useMemo(() => ({
+        UserIp: localStorage.getItem("UserIp") || "",
+        ResultIndex: SelectedFare?.return?.FareList?.[0]?.FareId || Selected.FareId,
+        PublishedPrice: SelectedFare?.onward?.PublishedPrice || SelectedFare?.onward?.FareList?.[0]?.PublishedPrice,
+        SearchTokenId: localStorage.getItem("searchToken") || ""
+    }), [SelectedFare]);
 
-                // If no flight data is available, show loading state
-                if (!SelectedFare || flightSegments.length === 0) {
-                    return (
-                        <div className="container">
-                            <Card className="mb-3 shadow-sm">
-                                <Card.Body className="text-center">
-                                    <p>Loading roundtrip flight data...</p>
-                                </Card.Body>
-                            </Card>
-                        </div>
-                    );
-                }
+    // If no flight data is available, show loading state
+    if (!SelectedFare || flightSegments.length === 0) {
+        return (
+            <div className="container">
+                <Card className="mb-3 shadow-sm">
+                    <Card.Body className="text-center">
+                        <p>Loading roundtrip flight data...</p>
+                    </Card.Body>
+                </Card>
+            </div>
+        );
+    }
 
     const handleContinue = async () => {
         setLoading(true);
         try {
-             
-
-                const [resFarePayloadOnward, resFarePayloadReturn] = await Promise.all([
-                    fetchFareConfirmation(farePayloadOnward),
-                    // fetchFareConfirmation(farePayloadReturn)
-                    ]);
-
-                    const confirmedFare = {
-                    onward: resFarePayloadOnward?.Result,
-                    return: resFarePayloadReturn?.Result
-                    };
-                    console.log('confirmedFare',confirmedFare)
+            const [resFarePayloadOnward, resFarePayloadReturn] = await Promise.all([
+                fetchFareConfirmation(farePayloadOnward),
+                fetchFareConfirmation(farePayloadReturn)
+            ]);
+            const confirmedFare = {
+                onward: resFarePayloadOnward?.Result,
+                return: resFarePayloadReturn?.Result
+            };
+            console.log('confirmedFare', confirmedFare)
             setFareConfirm(confirmedFare);
             navigate('/traveller-details', {
-                state: { SelectedFare, fareConfirmData: confirmedFare,Faresummary },
+                state: { SelectedFare, fareConfirmData: confirmedFare, Faresummary },
             });
         } catch (error) {
             setError(error);
@@ -234,7 +231,7 @@ const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare ,Select
     // Calculate total price for roundtrip
     const getTotalPrice = () => {
         const onwardPrice = SelectedFare?.onward?.FareList?.[0]?.PublishedPrice;
-        const returnPrice = SelectedFare?.return?.FareList?.[0]?.PublishedPrice ;
+        const returnPrice = SelectedFare?.return?.FareList?.[0]?.PublishedPrice;
         return onwardPrice + returnPrice;
     };
 
@@ -251,7 +248,7 @@ const RoundFlightInfo = ({ Faresummary,FareData, fareRules, SelectedFare ,Select
                         <Card.Body className="d-flex justify-content-between align-items-center">
                             <h5 className="mb-0 fw-bold">Review Your Roundtrip Flight Details</h5>
                             <div className="d-flex align-items-center gap-3">
-                              
+
                                 <Button onClick={navigateBack} variant="" size="sm">Back To Search</Button>
                             </div>
                         </Card.Body>

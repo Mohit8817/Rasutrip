@@ -19,7 +19,7 @@ const headers = {
 
 // Location Search API
 export const fetchLocationData = async (query) => {
-  const response = await axios.get(`${Services.fetchLocation}?name=${query}`, { headers });
+  const response = await axios.get(`${Services.fetchLocation}?city_name=${query}`, { headers });
   return response.data;
 };
 

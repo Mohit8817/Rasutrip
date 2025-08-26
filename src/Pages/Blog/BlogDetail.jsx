@@ -161,15 +161,12 @@ const BlogDetail = () => {
                     {/* Meta Information */}
                     <div className="flex flex-wrap items-center gap-6 text-gray-500 mb-8">
                         <div className="flex items-center">
-                            <span className="mr-2">👤</span>
                             <span>{blog.author?.name || blog.author === "67f3a54abb43170178d6094d" ? "Admin" : (typeof blog.author === 'string' ? blog.author : 'Anonymous')}</span>
                         </div>
                         <div className="flex items-center">
-                            <span className="mr-2">📅</span>
                             <span>{formatDate(blog.uploadDate || blog.createdAt)}</span>
                         </div>
                         <div className="flex items-center">
-                            <span className="mr-2">⏱️</span>
                             <span>{getReadingTime(blog.content)}</span>
                         </div>
                         {blog.status && (
@@ -190,7 +187,7 @@ const BlogDetail = () => {
                             <img
                                 src={blog.featuredImage.url}
                                 alt={blog.title || 'Blog featured image'}
-                                className="w-full h-96 object-cover rounded-2xl shadow-lg"
+                                className="w-full h-96 object-cover rounded-2xl  shadow-sm"
                                 onError={(e) => {
                                     e.target.src = 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=400&fit=crop';
                                 }}
@@ -200,7 +197,7 @@ const BlogDetail = () => {
                 </header>
 
                 {/* Blog Content */}
-                <article className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                <article className="bg-white rounded-2xl  shadow-sm p-8 mb-8">
                     <div
                         className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-p:leading-relaxed prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700"
                         dangerouslySetInnerHTML={{
@@ -211,7 +208,7 @@ const BlogDetail = () => {
 
                 {/* Tags */}
                 {blog.tags && blog.tags.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                    <div className="bg-white rounded-2xl  shadow-sm p-6 mb-8">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Tags</h3>
                         <div className="flex flex-wrap gap-2">
                             {blog.tags.map((tag, index) => (
@@ -228,7 +225,7 @@ const BlogDetail = () => {
 
                 {/* Keywords */}
                 {blog.keywords && blog.keywords.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                    <div className="bg-white rounded-2xl  shadow-sm p-6 mb-8">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Keywords</h3>
                         <div className="flex flex-wrap gap-2">
                             {blog.keywords.map((keyword, index) => (
@@ -245,7 +242,7 @@ const BlogDetail = () => {
 
                 {/* Additional Blog Meta */}
                 {(blog.slug || blog.metaKeywords) && (
-                    <div className="bg-white rounded-2xl shadow-lg p-6">
+                    <div className="bg-white rounded-2xl  shadow-sm p-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Blog Information</h3>
                         <div className="space-y-2 text-sm text-gray-600">
                             {blog.slug && (

@@ -3,7 +3,7 @@ import React from 'react';
 const Busloader = ({ from, to, departDate }) => {
     return (
         <div className="d-flex justify-content-center align-items-center mt-0 pt-0">
-            <div className="text-center bg-white p-4 shadow rounded-4">
+            <div className="text-center bg-white p-4  rounded-4">
                 {/* Bus Animation */}
                 <div className="loader-wrapper mb-4">
                     <div className="truck-wrapper">
@@ -34,9 +34,9 @@ const Busloader = ({ from, to, departDate }) => {
                 {/* Route & Date Info - Only show if data is available */}
                 {from && to && (
                     <div className="fw-bold mb-1">
-                        <span className="text-primary">{from}</span> 
+                        <span className="text-dark">{from}</span> 
                         <span className="text-muted mx-2">→</span> 
-                        <span className="text-success">{to}</span>
+                        <span className="text-dark">{to}</span>
                     </div>
                 )}
                 

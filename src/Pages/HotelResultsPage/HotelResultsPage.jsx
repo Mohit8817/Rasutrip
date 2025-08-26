@@ -14,7 +14,7 @@ const HotelResultsPage = () => {
   const [starRatings, setStarRatings] = useState([]);
   const [searchName, setSearchName] = useState('');
   const [hotelNames, setHotelNames] = useState([]); // This holds all hotel names for dropdown
-  
+
   // Hotel data state (similar to bus page)
   const [masterHotelList, setMasterHotelList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -239,7 +239,7 @@ const HotelResultsPage = () => {
 
       <Row className='mt-4'>
         {/* Sidebar */}
-        <Col lg={3}>
+        <Col lg={3} className="hidden lg:block">
           <FilterSidebar
             priceRange={priceRange}
             actualPriceRange={actualPriceRange}
@@ -263,6 +263,7 @@ const HotelResultsPage = () => {
         </Col>
       </Row>
     </Container>
+
   );
 };
 
