@@ -8,6 +8,7 @@ const HotelServices = {
   hotelInfo: `${baseURL}/hotelservice/gethotelinfo`,
   roomInfo: `${baseURL}/hotelservice/getroominfo`,
   blockRoom: `${baseURL}/hotelservice/blockroom`,
+  applyCoupon: `${baseURL}/airservice/apply-coupon`,
   createOrder: `${baseURL}/hotelservice/create-order`,
   validate: `${baseURL}/hotelservice/validate`,
   book: `${baseURL}/hotelservice/book`,
@@ -80,6 +81,37 @@ export const fetchRoomInfo = async (payload) => {
     return null;
   }
 };
+
+
+
+
+// ✅ Apply coupon code for hotel booking
+export const applyCouponCode = async (couponCode) => {
+  try {
+    const payload = {
+      code: couponCode
+    };
+
+    const res = await axios.post(HotelServices.applyCoupon, payload);
+
+    // Return success response with coupon details
+    return {
+      success: true,
+      data: res.data,
+      message: res.data?.message || "Coupon applied successfully!"
+    };
+  } catch (err) {
+    console.error("❌ Failed to apply coupon:", err.response?.data || err.message);
+
+    // Return error response
+    return {
+      success: false,
+      data: null,
+      message: err.response?.data?.message || "Invalid coupon code or coupon has expired"
+    };
+  }
+};
+
 
 
 export const blockRoom = async (payload) => {
