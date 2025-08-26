@@ -265,6 +265,9 @@ const ReviewInfo = () => {
           return (
             <Card key={`${flightType}-passenger-${i}`} className="mb-3 bg-light border">
               <Card.Body>
+                  <Row>
+                    
+                  <Col md={4}>
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
                     <p className="fw-bold mb-2">
@@ -280,9 +283,9 @@ const ReviewInfo = () => {
                     <p className="mb-3"><strong>Type:</strong> {passenger.type}</p>
                   </div>
                 </div>
-
-                <Row>
-                  <Col md={4}>
+</Col>
+              
+                  <Col md={2}>
                     {selection.meal && (
                       <div className="text-muted small mb-2">
                         🍱 <strong>Meal:</strong><br />
@@ -291,7 +294,7 @@ const ReviewInfo = () => {
                       </div>
                     )}
                   </Col>
-                  <Col md={4}>
+                  <Col md={3}>
                     {selection.baggage && (
                       <div className="text-muted small mb-2">
                         🧳 <strong>Baggage:</strong><br />
@@ -300,7 +303,7 @@ const ReviewInfo = () => {
                       </div>
                     )}
                   </Col>
-                  <Col md={4}>
+                  <Col md={3}>
                     {selection.seat && (
                       <div className="text-muted small mb-2">
                         💺 <strong>Seat:</strong><br />
@@ -357,15 +360,15 @@ const ReviewInfo = () => {
                 <Nav.Item>
                   <Nav.Link eventKey="onward" className={activeTab === 'onward' ? 'fw-bold' : ''}>
                     <FaPlane className="me-2" />
-                    Onward Flight
+                     Flight
                   </Nav.Link>
                 </Nav.Item>
-                <Nav.Item>
+                {/* <Nav.Item>
                   <Nav.Link eventKey="return" className={activeTab === 'return' ? 'fw-bold' : ''}>
                     <FaPlane className="me-2" style={{ transform: 'scaleX(-1)' }} />
                     Return Flight
                   </Nav.Link>
-                </Nav.Item>
+                </Nav.Item> */}
               </Nav>
             </Card.Body>
           </Card>
@@ -378,13 +381,13 @@ const ReviewInfo = () => {
               title="Onward Flight"
             />
           )}
-          {activeTab === 'return' && returnSegments && (
+          {/* {activeTab === 'return' && returnSegments && (
             <FlightCard
               segments={returnSegments}
               flightType="return"
               title="Return Flight"
             />
-          )}
+          )} */}
         </>
       ) : (
         // One-way flight

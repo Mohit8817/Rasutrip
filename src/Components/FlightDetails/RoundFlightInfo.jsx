@@ -51,7 +51,7 @@ const RoundFlightInfo = ({ Faresummary, FareData, fareRules, SelectedFare, Selec
     const farePayloadOnward = useMemo(() => ({
         UserIp: localStorage.getItem("UserIp") || "",
         ResultIndex: SelectedFare?.onward?.FareList?.[0]?.FareId || Selected.FareId,
-        PublishedPrice: SelectedFare?.onward?.PublishedPrice || SelectedFare?.onward?.FareList?.[0]?.PublishedPrice,
+        // PublishedPrice: SelectedFare?.onward?.PublishedPrice || SelectedFare?.onward?.FareList?.[0]?.PublishedPrice,
         SearchTokenId: localStorage.getItem("searchToken") || ""
     }), [SelectedFare]);
 
@@ -59,7 +59,7 @@ const RoundFlightInfo = ({ Faresummary, FareData, fareRules, SelectedFare, Selec
     const farePayloadReturn = useMemo(() => ({
         UserIp: localStorage.getItem("UserIp") || "",
         ResultIndex: SelectedFare?.return?.FareList?.[0]?.FareId || Selected.FareId,
-        PublishedPrice: SelectedFare?.onward?.PublishedPrice || SelectedFare?.onward?.FareList?.[0]?.PublishedPrice,
+        // PublishedPrice: SelectedFare?.onward?.PublishedPrice || SelectedFare?.onward?.FareList?.[0]?.PublishedPrice,
         SearchTokenId: localStorage.getItem("searchToken") || ""
     }), [SelectedFare]);
 
@@ -79,10 +79,11 @@ const RoundFlightInfo = ({ Faresummary, FareData, fareRules, SelectedFare, Selec
     const handleContinue = async () => {
         setLoading(true);
         try {
-            const [resFarePayloadOnward, resFarePayloadReturn] = await Promise.all([
-                fetchFareConfirmation(farePayloadOnward),
-                fetchFareConfirmation(farePayloadReturn)
-            ]);
+                const resFarePayloadOnward = await fetchFareConfirmation(farePayloadOnward);
+                let resFarePayloadReturn = null;
+                if (flightSegments?.length === 2) {
+                    resFarePayloadReturn = await fetchFareConfirmation(farePayloadReturn);
+                }
             const confirmedFare = {
                 onward: resFarePayloadOnward?.Result,
                 return: resFarePayloadReturn?.Result
@@ -239,7 +240,7 @@ const RoundFlightInfo = ({ Faresummary, FareData, fareRules, SelectedFare, Selec
         <div className="container">
             {loading ? (
                 <>
-                    {loading && <p className="text-center text-primary mt-4"><FlightLoader message="Searching For Fare Confirmation" /></p>}
+                    {loading && <div className="text-center text-primary mt-4"><FlightLoader message="Searching For Fare Confirmation" /></div>}
                     {error && <p className="text-center text-danger mt-4">Error fetching fare confirmation.</p>}
                 </>
             ) : (

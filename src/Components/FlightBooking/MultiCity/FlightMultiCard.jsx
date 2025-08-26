@@ -149,11 +149,11 @@ const FlightMultiCard = ({ flight }) => {
                     {/* Flight Segments */}
 
                     <Row >
-                        <Col md={8}>
+                        <Col md={10}>
                             {flightSegments.map((flightInfo, index) => (
                                 <div key={index} className={index > 0 ? "border-top pt-3 mt-3" : ""}>
                                     <Row className="align-items-center text-center">
-                                        <Col md={2} >
+                                        <Col col={2} >
                                             <img
                                                 src={flightInfo.airline.airlineLogo}
                                                 alt="Airline Logo"
@@ -168,7 +168,7 @@ const FlightMultiCard = ({ flight }) => {
                                             </div>
                                         </Col>
 
-                                        <Col md={3}>
+                                        <Col col={3}>
                                             <div className="text-uppercase text-muted small">
                                                 <i className="fa fa-plane-departure me-1"></i>
                                                 {flightInfo.from.CityCode}
@@ -177,7 +177,7 @@ const FlightMultiCard = ({ flight }) => {
                                             <div className="text-muted small">{formatDate(flightInfo.from.DepartTime)}</div>
                                         </Col>
 
-                                        <Col md={3}>
+                                        <Col col={3}>
                                             <div className="text-muted small">
                                                 {flightInfo.stops > 0 ? `${flightInfo.stops} Stop(s)` : 'Non Stop(s)'}
                                             </div>
@@ -187,7 +187,7 @@ const FlightMultiCard = ({ flight }) => {
                                             <div className="fw-medium">{formatDuration(flightInfo.totalDuration)}</div>
                                         </Col>
 
-                                        <Col md={2}>
+                                        <Col col={4}>
                                             <div className="text-uppercase text-muted small">
                                                 <i className="fa fa-plane-arrival me-1"></i>
                                                 {flightInfo.to.CityCode}
@@ -202,11 +202,11 @@ const FlightMultiCard = ({ flight }) => {
                                 </div>
                             ))}
                         </Col>
-                        <Col md={2}>
+                        {/* <Col md={2}> */}
 
                             <>
-                                <Col md={12}>
-                                    <div className="fare-options">
+                                {/* <Col md={12}> */}
+                                    {/* <div className="fare-options">
                                         {flight.FareList.map((fare, fareIndex) => (
                                             <div
                                                 key={fareIndex}
@@ -231,14 +231,14 @@ const FlightMultiCard = ({ flight }) => {
                                                 </label>
                                             </div>
                                         ))}
-                                    </div>
-                                </Col>
+                                    </div> */}
+                                {/* </Col> */}
 
 
                             </>
 
 
-                        </Col>
+                        {/* </Col> */}
 
                         <Col md={2}>
                             <Button

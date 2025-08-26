@@ -42,77 +42,78 @@ const FlightBooking = () => {
     useEffect(() => {
         const resKey = localStorage.getItem('locationData');
         const CheckData = JSON.parse(resKey);
-        
+
         if (CheckData) {
-          if (CheckData[0]?.from === "") {
-            setSegments([
-              { id: 0, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
-              { id: 1, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
-            ]);
-          } else {
-            setSegments(CheckData);
-          }
+            if (CheckData[0]?.from === "") {
+                setSegments([
+                    { id: 0, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
+                    { id: 1, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
+                ]);
+            } else {
+                setSegments(CheckData);
+            }
         } else {
-          setSegments([
-            { id: 0, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
-            { id: 1, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
-          ]);
-        }
-      }, []);
- 
-        useEffect(() => {
-        }, [segments]);
-        const handleDateChange = (id, date) => {
-            const formattedDate = moment(date).format("YYYY-MM-DD") + "T00:00:00";
-            setSegments((prev) =>
-                prev.map((seg) =>
-                    seg.id === id ? { ...seg, PreferredTime: formattedDate } : seg
-                )
-            );
-        };
-
-        const handleCityChange = (id, city) => {
-            setSegments((prev) =>
-                prev.map((seg) => {
-                    if (seg.id === id) {
-                        if (city.type === "from") {
-                            return {
-                                ...seg,
-                                from: city.cityObj.city,
-                                Origin: city.cityObj.code
-                            };
-                        } else if (city.type === "to") {
-                            return {
-                                ...seg,
-                                to: city.cityObj.city,
-                                Destination: city.cityObj.code
-                            };
-                        }
-                    }
-                    return seg;
-                })
-            );
-        };
-
-
-        // Add another row
-        const addSegment = () => {
-            setSegments((prev) => [
-                ...prev,
-                { id: Date.now(), from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() }
+            setSegments([
+                { id: 0, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
+                { id: 1, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
             ]);
-        };
-
-        // Remove row
-        const removeSegment = (id) => {
-            setSegments((prev) => prev.filter((seg) => seg.id !== id));
-        };
-
-        // setLocationData(segments)
-        if(tripType=='multicity'){
-            localStorage.setItem('locationData', JSON.stringify(segments))
-
         }
+    }, []);
+
+    useEffect(() => {
+    }, [segments]);
+    const handleDateChange = (id, date) => {
+        const formattedDate = moment(date).format("YYYY-MM-DD") + "T00:00:00";
+        setSegments((prev) =>
+            prev.map((seg) =>
+                seg.id === id ? { ...seg, PreferredTime: formattedDate } : seg
+            )
+        );
+    };
+
+    const handleCityChange = (id, city) => {
+        setSegments((prev) =>
+            prev.map((seg) => {
+                if (seg.id === id) {
+                    if (city.type === "from") {
+                        return {
+                            ...seg,
+                            from: city.cityObj.city,
+                            Origin: city.cityObj.code
+                        };
+                    } else if (city.type === "to") {
+                        return {
+                            ...seg,
+                            to: city.cityObj.city,
+                            Destination: city.cityObj.code
+                        };
+                    }
+                }
+                return seg;
+            })
+        );
+    };
+
+
+    // Add another row
+    const addSegment = () => {
+        const newId = segments.length > 0 ? Math.max(...segments.map(s => s.id)) + 1 : 0;
+        setSegments((prev) => [
+            ...prev,
+            { id: newId, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() }
+        ]);
+    };
+
+    // Remove row
+    const removeSegment = (id) => {
+        setSegments((prev) => prev.filter((seg) => seg.id !== id));
+    };
+
+    // setLocationData(segments)
+    if (tripType == 'multicity') {
+        localStorage.setItem('locationData', JSON.stringify(segments))
+
+    }
     // }
     // }
     return (
@@ -152,9 +153,6 @@ const FlightBooking = () => {
                     </Row>
 
                 )}
-
-                {/* Multicity Component show  */}
-                {/* this Row only show when i click multi city tab */}
                 {tripType === 'multicity' && (
                     <Container className='p-0 m-0'>
 
@@ -168,12 +166,11 @@ const FlightBooking = () => {
                                 </Col>
 
                                 <Col xs={12} sm={6} md={3} lg={3} className="mb-2">
-                                    <DateSelect
+                                    <DateSelect index={index}
                                         onDateChange={(date) => handleDateChange(seg.id, date)}
                                     />
                                 </Col>
 
-                                {/* First row me Passenger aur Search button dikhana */}
                                 {index === 0 && (
                                     <>
                                         <Col xs={12} sm={6} md={3} lg={3} className="mb-2">
@@ -189,7 +186,7 @@ const FlightBooking = () => {
                                 {index > 0 && (
                                     <Col xs={6} sm={6} md={2} lg={1} className="mb-2">
                                         <button
-                                            className="btn btn-secondary w-100"
+                                            className="btn btn-danger w-100"
                                             onClick={() => removeSegment(seg.id)}
                                         >
                                             X
@@ -202,7 +199,7 @@ const FlightBooking = () => {
                         {/* Add more city button */}
                         <Row className="mt-2">
                             <Col xs={12}>
-                                <button className="btn btn-primary" onClick={addSegment}>
+                                <button className="btn btn-danger" onClick={addSegment}>
                                     + Add City
                                 </button>
                             </Col>

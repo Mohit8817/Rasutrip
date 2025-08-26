@@ -140,32 +140,28 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary }) => {
         });
 
     const isContinueDisabled = !areAllRequiredFieldsFilled() || loading;
-
-    // SSR payload
     const raw = localStorage.getItem('fareSummery');
     const summaryData = raw ? JSON.parse(raw) : null;
-
     const SSRPayload = useMemo(
         () => ({
             UserIp: localStorage.getItem('UserIp') || '',
-            ResultIndex: summaryData?.FareId || '',
-            PublishedPrice: summaryData?.PublishedPrice || '',
+            ResultIndex: summaryData?.onward ? summaryData?.onward?.FareId : summaryData?.FareId || '',
             SearchTokenId: localStorage.getItem('searchToken') || ''
         }),
         [summaryData]
     );
+    const setLoaderTest = () => {
 
-
-    const setLoaderTest = ()=>{
-      
-        setOpen(open?false:true)
+        setOpen(open ? false : true)
     }
 
-    
+
 
     const handleContinue = async () => {
         setLoading(true);
         try {
+    console.log('SSRPayload',SSRPayload);
+
             const res = await fetchSSR(SSRPayload);
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
             navigate('/addons', {
@@ -537,54 +533,54 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary }) => {
                                             fontWeight: 700
                                         }}
                                     >
-                                        {open ? '×':'+'}
+                                        {open ? '×' : '+'}
                                     </div>
                                 </div>
-                                {open==true && (
+                                {open == true && (
                                     <>
-                                     <p className="text-muted small mt-3">
-                                    Claim credit of GST charges. Your taxes may get updated post submitting your GST details.
-                                </p>
-                                <Row className="g-3">
-                                    <Col md={4}>
-                                        <Form.Control
-                                            placeholder="GST Number"
-                                            value={passengersData[0]?.GSTNumber || ''}
-                                            onChange={(e) => setField('ADT', 0, 'GSTNumber', e.target.value)}
-                                        />
-                                    </Col>
-                                    <Col md={4}>
-                                        <Form.Control
-                                            placeholder="Registered Company Name"
-                                            value={passengersData?.GSTCompanyName || ''}
-                                            onChange={(e) => setField('ADT', 0, 'GSTCompanyName', e.target.value)}
-                                        />
-                                    </Col>
-                                    <Col md={4}>
-                                        <Form.Control
-                                            placeholder="Registered Contact No"
-                                            value={passengersData?.GSTCompanyContactNumber || ''}
-                                            onChange={(e) => setField('ADT', 0, 'GSTCompanyContactNumber', e.target.value)}
-                                        />
-                                    </Col>
-                                    <Col md={6}>
-                                        <Form.Control
-                                            placeholder="Registered Email"
-                                            value={passengersData?.GSTCompanyEmail || ''}
-                                            onChange={(e) => setField('ADT', 0, 'GSTCompanyEmail', e.target.value)}
-                                        />
-                                    </Col>
-                                    <Col md={6}>
-                                        <Form.Control
-                                            placeholder="Registered Address"
-                                            value={passengersData?.GSTCompanyAddress || ''}
-                                            onChange={(e) => setField('ADT', 0, 'GSTCompanyAddress', e.target.value)}
-                                        />
-                                    </Col>
-                                </Row>
+                                        <p className="text-muted small mt-3">
+                                            Claim credit of GST charges. Your taxes may get updated post submitting your GST details.
+                                        </p>
+                                        <Row className="g-3">
+                                            <Col md={4}>
+                                                <Form.Control
+                                                    placeholder="GST Number"
+                                                    value={passengersData[0]?.GSTNumber || ''}
+                                                    onChange={(e) => setField('ADT', 0, 'GSTNumber', e.target.value)}
+                                                />
+                                            </Col>
+                                            <Col md={4}>
+                                                <Form.Control
+                                                    placeholder="Registered Company Name"
+                                                    value={passengersData?.GSTCompanyName || ''}
+                                                    onChange={(e) => setField('ADT', 0, 'GSTCompanyName', e.target.value)}
+                                                />
+                                            </Col>
+                                            <Col md={4}>
+                                                <Form.Control
+                                                    placeholder="Registered Contact No"
+                                                    value={passengersData?.GSTCompanyContactNumber || ''}
+                                                    onChange={(e) => setField('ADT', 0, 'GSTCompanyContactNumber', e.target.value)}
+                                                />
+                                            </Col>
+                                            <Col md={6}>
+                                                <Form.Control
+                                                    placeholder="Registered Email"
+                                                    value={passengersData?.GSTCompanyEmail || ''}
+                                                    onChange={(e) => setField('ADT', 0, 'GSTCompanyEmail', e.target.value)}
+                                                />
+                                            </Col>
+                                            <Col md={6}>
+                                                <Form.Control
+                                                    placeholder="Registered Address"
+                                                    value={passengersData?.GSTCompanyAddress || ''}
+                                                    onChange={(e) => setField('ADT', 0, 'GSTCompanyAddress', e.target.value)}
+                                                />
+                                            </Col>
+                                        </Row>
                                     </>
                                 )}
-                               
+
                             </Card.Body>
                         </Card>
                     )}

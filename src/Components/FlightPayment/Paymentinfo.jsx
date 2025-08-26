@@ -78,6 +78,9 @@ const RazorpayPayment = () => {
         return new Date(dateStr).toISOString().split('.')[0]; // Removes milliseconds
       }
 
+      let data;
+      let responseReturn;
+
       passengersData = mergedPassengers.map(passenger => ({
         ...passenger,
         DateOfBirth: formatDateToISOString(passenger.DateOfBirth),
@@ -113,7 +116,16 @@ const RazorpayPayment = () => {
           Passengers: passengersData
         };
 
-        const response = await post(payload, '/airservice/book');
+        responseReturn = await post(payload, '/airservice/book');
+        data = {
+          onward: response,
+          return: responseReturn
+        };
+      }
+      else {
+        data = {
+          onward: response
+        };
       }
 
 
@@ -129,10 +141,11 @@ const RazorpayPayment = () => {
       // }
 
 
+
       if (response?.Error?.ErrorCode === 0) {
         setModalShow(false);
         toast.success("Flight booked successfully ");
-        navigate('/booking/success', { state: { bookingId: response.bookingId, result: response } });
+        navigate('/booking/success', { state: { bookingId: response.bookingId, result: data } });
       } else {
         console.error("❌ Booking Failed:", response?.Error?.ErrorMessage || "Unknown error");
         toast.error(response?.Error?.ErrorMessage || "Booking failed");

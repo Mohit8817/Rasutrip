@@ -1,56 +1,14 @@
 'use client'
 import React, { useState } from 'react';
 import { Container, Row, Col, Table, Card, Badge, Form, Button } from 'react-bootstrap';
+import { useLocation } from 'react-router-dom';
 
 const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
   // Sample data for demonstration
-  const sampleFlightData = {
-    invoiceId: 'INV-FL-001',
-    invoiceDate: '2025-07-27',
-    bookingId: 'BK-FL-12345',
-    PNR: 'ABC123',
-    source: 'Delhi',
-    destination: 'Mumbai',
-    invoiceTotal: 15000,
-    supplierDetails: {
-      name: 'RasuTrip Pvt Ltd',
-      mobile: '+91-9876543210',
-      email: 'contact@rasutrip.com',
-      pan: 'ABCDE1234F',
-      state: 'Delhi'
-    },
-    receiverDetails: {
-      name: 'John Doe',
-      phone: '+91-9876543210'
-    },
-    passenger: [
-      {
-        TicketNumber: 'TKT001',
-        Title: 'Mr',
-        FirstName: 'John',
-        LastName: 'Doe',
-        Type: 1,
-        Fare: {
-          BaseFare: 8000,
-          Tax: 2000,
-          YQTax: 1000,
-          ServiceCharges: 500,
-          MealCharges: 300,
-          BaggageCharges: 200,
-          SeatCharges: 150
-        }
-      }
-    ],
-    fareDetails: {
-      baseFare: 8000,
-      taxes: 2000,
-      serviceCharges: 500,
-      mealCharges: 300,
-      baggageCharges: 200,
-      seatCharges: 150,
-      couponDiscount: 100
-    }
-  };
+  const location = useLocation();
+  const { Jtype, invoice } = location.state || {};
+  console.log('invoice', invoice)
+  const sampleFlightData = invoice
 
   const sampleHotelData = {
     invoiceNumber: 'INV-HTL-001',
@@ -180,14 +138,14 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
   };
 
   const [selectedType, setSelectedType] = useState(type);
-  
+
   // Use sample data if no invoice data provided
-  const currentData = invoiceData && Object.keys(invoiceData).length > 0 
-    ? invoiceData 
-    : selectedType === 'flight' 
-      ? sampleFlightData 
-      : selectedType === 'hotel' 
-        ? sampleHotelData 
+  const currentData = invoiceData && Object.keys(invoiceData).length > 0
+    ? invoiceData
+    : selectedType === 'flight'
+      ? sampleFlightData
+      : selectedType === 'hotel'
+        ? sampleHotelData
         : sampleBusData;
 
   const getPassengerType = (type) => {
@@ -204,7 +162,7 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
       <Card>
         <Card.Body style={{ fontFamily: 'Arial, sans-serif' }}>
           <h2 className="text-center mb-4">Tax Invoice</h2>
-          
+
           <Row className="mb-4">
             <Col md={6}>
               <div style={{ fontSize: '14px' }}>
@@ -234,14 +192,21 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
                 <td><strong>Booking Date:</strong> {currentData.invoiceDate}</td>
               </tr>
               <tr>
-                <td><strong>Trip Type:</strong> OneWay</td>
+                <td>
+                  <strong>Trip Type: </strong>{currentData.JourneyType == 1
+                    ? 'One Way'
+                    : currentData.JourneyType == 2
+                      ? 'Round Trip'
+                      : 'Multi City'}
+                </td>
                 <td><strong>GDS/Airline PNR:</strong> {currentData.PNR}</td>
               </tr>
             </tbody>
           </Table>
 
           <h3>PASSENGER DETAILS</h3>
-          <Table bordered size="sm" className="mb-4" style={{ fontSize: '14px' }}>
+          <div className=' overflow-x-auto '>
+          <Table bordered  size="sm" className="mb-4 striped bordered hover" style={{ fontSize: '14px' }}>
             <thead>
               <tr>
                 <th>Ticket No</th>
@@ -263,7 +228,7 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
                   <td>{p.TicketNumber}</td>
                   <td>{currentData.source} - {currentData.destination}</td>
                   <td>{p.Title} {p.FirstName} {p.LastName}</td>
-                  <td>{getPassengerType(p.Type)}</td>
+                  <td>{getPassengerType(p.PaxType)}</td>
                   <td>₹ {p.Fare.BaseFare}</td>
                   <td>₹ {p.Fare.Tax}</td>
                   <td>₹ {p.Fare.YQTax}</td>
@@ -275,6 +240,7 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
               ))}
             </tbody>
           </Table>
+          </div>
 
           <h3 className="mt-4">PAYMENT DETAILS</h3>
           <p style={{ fontSize: '14px', marginBottom: '10px' }}>
@@ -313,7 +279,7 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
       <Card>
         <Card.Body style={{ fontFamily: 'Arial, sans-serif' }}>
           <h2 className="text-center mb-4">Tax Invoice (Hotel Booking)</h2>
-          
+
           <Row className="mb-4">
             <Col md={6}>
               <div style={{ fontSize: '14px' }}>
@@ -443,7 +409,7 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
       <Card>
         <Card.Body style={{ fontFamily: 'Arial, sans-serif' }}>
           <h2 className="text-center mb-4">Tax Invoice (Bus Booking)</h2>
-          
+
           <Row className="mb-4">
             <Col md={6}>
               <div style={{ fontSize: '14px' }}>
@@ -566,15 +532,15 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
   return (
     <div>
       {/* Demo Controls */}
-      <Container className="my-3">
+      <Container className="my-3 hidden">
         <Row>
           <Col>
             <Form>
               <Form.Group>
                 <Form.Label>Select Invoice Type:</Form.Label>
                 <Form.Select value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
-                  <option value="flight">Flight</option>
                   <option value="hotel">Hotel</option>
+                  <option value={Jtype}>Flight</option>
                   <option value="bus">Bus</option>
                 </Form.Select>
               </Form.Group>
