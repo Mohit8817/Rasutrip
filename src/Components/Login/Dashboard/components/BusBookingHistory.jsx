@@ -27,6 +27,99 @@ const BusBookingHistory = () => {
     const [realTimeStatuses, setRealTimeStatuses] = useState({});
     const [loadingStatuses, setLoadingStatuses] = useState(new Set());
 
+    // Status popup states
+    const [statusPopup, setStatusPopup] = useState({
+        isOpen: false,
+        booking: null,
+        loading: false,
+        data: null,
+        error: null
+    });
+
+    // Function to fetch detailed booking status for popup
+    const fetchDetailedBookingStatus = async (booking) => {
+        setStatusPopup(prev => ({ ...prev, loading: true, error: null }));
+
+        try {
+            // You can call your existing real-time status API or create a new detailed one
+            const result = await fetchRealTimeStatus(booking, userType);
+
+            // Create detailed status data
+            const detailedData = {
+                bookingInfo: {
+                    bookingId: booking.bookingId,
+                    pnr: booking.pnr,
+                    ticketNo: booking.ticketNo,
+                    route: `${booking.from} → ${booking.to}`,
+                    travelDate: booking.travelDate,
+                    busType: booking.busType,
+                    seatNumber: booking.seatNumber,
+                    passengerName: booking.passengerName,
+                    contactNumber: booking.contactNumber,
+                    totalAmount: booking.totalAmount,
+                    bookingStatus: booking.bookingStatus,
+                    paymentStatus: booking.paymentStatus,
+                    bookingDate: booking.bookingDate
+                },
+                realTimeStatus: result.success ? {
+                    currentStatus: result.status,
+                    lastUpdated: result.lastUpdated || new Date(),
+                    busLocation: result.location || 'Not available',
+                    estimatedArrival: result.estimatedArrival || 'Not available',
+                    delay: result.delay || 'On time',
+                    nextStop: result.nextStop || 'Not available'
+                } : null,
+                error: result.success ? null : result.error
+            };
+
+            setStatusPopup(prev => ({
+                ...prev,
+                data: detailedData,
+                loading: false
+            }));
+
+            if (result.success) {
+                toast.success('Status details updated!');
+            } else {
+                toast.warn('Some status information may not be available');
+            }
+
+        } catch (error) {
+            console.error('Error fetching detailed status:', error);
+            setStatusPopup(prev => ({
+                ...prev,
+                error: error.message || 'Failed to fetch detailed status',
+                loading: false
+            }));
+            toast.error('Failed to fetch detailed status');
+        }
+    };
+
+    // Open status popup
+    const openStatusPopup = (booking) => {
+        setStatusPopup({
+            isOpen: true,
+            booking: booking,
+            loading: false,
+            data: null,
+            error: null
+        });
+
+        // Fetch detailed data
+        fetchDetailedBookingStatus(booking);
+    };
+
+    // Close status popup
+    const closeStatusPopup = () => {
+        setStatusPopup({
+            isOpen: false,
+            booking: null,
+            loading: false,
+            data: null,
+            error: null
+        });
+    };
+
     // Handle real-time status check for single booking
     const handleRealTimeCheck = async (booking) => {
         const bookingId = booking.bookingId;
@@ -256,6 +349,9 @@ const BusBookingHistory = () => {
         console.log('All formatted bookings:', formattedBookings.length, 'items');
         return formattedBookings;
     };
+
+
+
 
     // Main function to load bookings using services
     const loadBookings = async () => {
@@ -544,13 +640,22 @@ const BusBookingHistory = () => {
             return (
                 <div className="flex flex-col items-start">
                     <span className="text-xs text-red-500">Error: {statusData.error}</span>
-                    <button
-                        onClick={() => handleRealTimeCheck(booking)}
-                        className="mt-1 text-xs text-blue-500 hover:text-blue-700"
-                        title="Retry"
-                    >
-                        Retry
-                    </button>
+                    <div className="flex gap-2 mt-1">
+                        <button
+                            onClick={() => handleRealTimeCheck(booking)}
+                            className="text-xs text-blue-500 hover:text-blue-700"
+                            title="Retry"
+                        >
+                            Retry
+                        </button>
+                        <button
+                            onClick={() => openStatusPopup(booking)}
+                            className="text-xs text-green-500 hover:text-green-700"
+                            title="View Details"
+                        >
+                            Status
+                        </button>
+                    </div>
                 </div>
             );
         }
@@ -558,22 +663,13 @@ const BusBookingHistory = () => {
         if (statusData?.status && statusData.success) {
             return (
                 <div className="flex flex-col items-start">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(statusData.status)}`}>
-                        {statusData.status}
-                    </span>
-                    <div className="flex items-center mt-1">
-                        <span className="text-xs text-gray-400">
-                            {statusData.lastUpdated.toLocaleTimeString('en-IN', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}
-                        </span>
+                    <div className="flex items-center mt-1 gap-2">
                         <button
-                            onClick={() => handleRealTimeCheck(booking)}
-                            className="ml-2 text-xs text-blue-500 hover:text-blue-700"
-                            title="Refresh Status"
+                            onClick={() => openStatusPopup(booking)}
+                            className="text-xs text-green-500 hover:text-green-700 font-medium"
+                            title="View Details"
                         >
-                            Refresh
+                            Status
                         </button>
                     </div>
                 </div>
@@ -581,15 +677,207 @@ const BusBookingHistory = () => {
         }
 
         return (
-            <div className="flex items-center">
-                <span className="text-xs text-gray-400">No data</span>
+            <div className="flex items-center gap-2">
                 <button
-                    onClick={() => handleRealTimeCheck(booking)}
-                    className="ml-2 text-xs text-blue-500 hover:text-blue-700"
-                    title="Check Status"
+                    onClick={() => openStatusPopup(booking)}
+                    className="text-xs text-green-500 hover:text-green-700 font-medium"
+                    title="View Details"
                 >
-                    Check
+                    Status
                 </button>
+            </div>
+        );
+    };
+
+    // Status Popup Component
+    const StatusPopup = () => {
+        if (!statusPopup.isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    {/* Header */}
+                    <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                        <h3 className="text-xl font-bold text-gray-800">
+                            Booking Status Details
+                        </h3>
+                        <button
+                            onClick={closeStatusPopup}
+                            className="text-gray-400 hover:text-gray-600 text-2xl"
+                        >
+                            ×
+                        </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6">
+                        {statusPopup.loading ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                                <p className="text-gray-600">Loading booking details...</p>
+                            </div>
+                        ) : statusPopup.error ? (
+                            <div className="text-center py-12">
+                                <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                                <h4 className="text-lg font-medium text-red-600 mb-2">Error Loading Details</h4>
+                                <p className="text-gray-600 mb-4">{statusPopup.error}</p>
+                                <button
+                                    onClick={() => fetchDetailedBookingStatus(statusPopup.booking)}
+                                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                >
+                                    Try Again
+                                </button>
+                            </div>
+                        ) : statusPopup.data ? (
+                            <div className="space-y-6">
+                                {/* Booking Information */}
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <h4 className="text-lg font-semibold text-gray-800 mb-4">Booking Information</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">Bus Type</label>
+                                            <p className="text-sm text-gray-800">{statusPopup.data.bookingInfo.busType}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">Seat Number(s)</label>
+                                            <p className="text-sm text-gray-800">{statusPopup.data.bookingInfo.seatNumber}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">Passenger Name</label>
+                                            <p className="text-sm text-gray-800">{statusPopup.data.bookingInfo.passengerName}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">Contact Number</label>
+                                            <p className="text-sm text-gray-800">{statusPopup.data.bookingInfo.contactNumber}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">Total Amount</label>
+                                            <p className="text-sm font-bold text-green-600">{formatAmount(statusPopup.data.bookingInfo.totalAmount)}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">Booking Status</label>
+                                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(statusPopup.data.bookingInfo.bookingStatus)}`}>
+                                                {statusPopup.data.bookingInfo.bookingStatus}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">Payment Status</label>
+                                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusPopup.data.bookingInfo.paymentStatus === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {statusPopup.data.bookingInfo.paymentStatus}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600">Booking Date</label>
+                                            <p className="text-sm text-gray-800">{statusPopup.data.bookingInfo.bookingDate}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Real-Time Status */}
+                                <div className="bg-blue-50 rounded-lg p-4">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h4 className="text-lg font-semibold text-gray-800">Real-Time Status</h4>
+                                        <button
+                                            onClick={() => fetchDetailedBookingStatus(statusPopup.booking)}
+                                            className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                                            disabled={statusPopup.loading}
+                                        >
+                                            {statusPopup.loading ? 'Refreshing...' : 'Refresh Status'}
+                                        </button>
+                                    </div>
+
+                                    {statusPopup.data.realTimeStatus ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-600">Current Status</label>
+                                                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(statusPopup.data.realTimeStatus.currentStatus)}`}>
+                                                    {statusPopup.data.realTimeStatus.currentStatus}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-600">Last Updated</label>
+                                                <p className="text-sm text-gray-800">
+                                                    {new Date(statusPopup.data.realTimeStatus.lastUpdated).toLocaleString('en-IN')}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-600">Bus Location</label>
+                                                <p className="text-sm text-gray-800">{statusPopup.data.realTimeStatus.busLocation}</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-600">Estimated Arrival</label>
+                                                <p className="text-sm text-gray-800">{statusPopup.data.realTimeStatus.estimatedArrival}</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-600">Delay Status</label>
+                                                <p className="text-sm text-gray-800">{statusPopup.data.realTimeStatus.delay}</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-600">Next Stop</label>
+                                                <p className="text-sm text-gray-800">{statusPopup.data.realTimeStatus.nextStop}</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8">
+                                            <div className="text-gray-400 text-4xl mb-2">📍</div>
+                                            <p className="text-gray-500">Real-time status not available</p>
+                                            <p className="text-sm text-gray-400 mt-1">
+                                                {statusPopup.data.error || 'Status tracking may not be supported for this booking'}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Additional Information */}
+                                <div className="bg-yellow-50 rounded-lg p-4">
+                                    <h4 className="text-lg font-semibold text-gray-800 mb-4">Important Information</h4>
+                                    <div className="space-y-3">
+                                        <div className="flex items-start">
+                                            <div className="text-yellow-500 mr-3 mt-1">ℹ️</div>
+                                            <div>
+                                                <p className="text-sm text-gray-700">
+                                                    <strong>Real-time tracking:</strong> Status updates are fetched from the bus operator's system and may have delays.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start">
+                                            <div className="text-blue-500 mr-3 mt-1">📱</div>
+                                            <div>
+                                                <p className="text-sm text-gray-700">
+                                                    <strong>Contact Support:</strong> For immediate assistance, please contact our support team with your booking ID.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start">
+                                            <div className="text-green-500 mr-3 mt-1">🎫</div>
+                                            <div>
+                                                <p className="text-sm text-gray-700">
+                                                    <strong>E-ticket:</strong> Please carry a valid ID along with your e-ticket during travel.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-12">
+                                <div className="text-gray-400 text-6xl mb-4">📄</div>
+                                <p className="text-gray-600">No booking details available</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+                        <button
+                            onClick={closeStatusPopup}
+                            className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+                        >
+                            Close
+                        </button>
+
+                    </div>
+                </div>
             </div>
         );
     };
@@ -614,7 +902,6 @@ const BusBookingHistory = () => {
                 <div>
                     <h5 className="text-2xl font-bold text-gray-800">My Bus Bookings</h5>
                 </div>
-
             </div>
 
             {/* Error Display */}
@@ -644,33 +931,42 @@ const BusBookingHistory = () => {
             )}
 
             {/* Booking Type Tabs */}
-            <div className="flex w-full mb-6 gap-2">
+            <div className="flex w-full mb-6 bg-gray-50 p-2 shadow-sm">
                 <button
-                    className={`flex-1 text-center px-4 py-2 rounded transition-all duration-200 font-medium
-                        ${bookingType === 'upcoming'
-                            ? 'bg-green-500 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
-                    `}
+                    className={`flex-1 text-center rounded-lg transition-all duration-300 font-semibold text-sm
+            ${bookingType === 'upcoming'
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
+        `}
                     onClick={() => setBookingType('upcoming')}
                 >
                     Upcoming Trips
                     {upcomingBookings.length > 0 && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-white text-green-500 rounded-full">
+                        <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
+                ${bookingType === 'upcoming'
+                                ? 'bg-white text-red-500'
+                                : 'bg-red-100 text-red-600'}
+            `}>
                             {upcomingBookings.length}
                         </span>
                     )}
                 </button>
+
                 <button
-                    className={`flex-1 text-center px-4 py-2 rounded transition-all duration-200 font-medium
-                        ${bookingType === 'all'
-                            ? 'bg-green-500 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
-                    `}
+                    className={`flex-1 text-center px-6 py-2 rounded-lg transition-all duration-300 font-semibold text-sm
+            ${bookingType === 'all'
+                            ? 'bg-red-500 text-white shadow-md'
+                            : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
+        `}
                     onClick={() => setBookingType('all')}
                 >
                     All Bookings
                     {allBookings.length > 0 && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-white text-green-500 rounded-full">
+                        <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
+                ${bookingType === 'all'
+                                ? 'bg-white text-red-500'
+                                : 'bg-red-100 text-red-600'}
+            `}>
                             {allBookings.length}
                         </span>
                     )}
@@ -754,10 +1050,10 @@ const BusBookingHistory = () => {
                                                 disabled={downloadingInvoices.has(booking.bookingId)}
                                                 className={`px-3 py-1 rounded text-white text-xs ${downloadingInvoices.has(booking.bookingId)
                                                     ? "bg-gray-400 cursor-not-allowed"
-                                                    : "bg-blue-500 hover:bg-blue-600"
+                                                    : "bg-red-500 hover:bg-red-600"
                                                     }`}
                                             >
-                                                {downloadingInvoices.has(booking.bookingId) ? "Downloading..." : "Download Invoice"}
+                                                {downloadingInvoices.has(booking.bookingId) ? "Downloading..." : "Invoice"}
                                             </button>
                                         </td>
                                         <td className="px-4 py-3 text-sm">
@@ -771,36 +1067,8 @@ const BusBookingHistory = () => {
                 </div>
             </div>
 
-            {/* Footer with user context info */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-                <div className="flex justify-between items-center text-xs text-gray-500">
-                    <span>
-                        Logged in as: {getUserTypeDisplay()}
-                        {user?.mobile && ` (${user.mobile})`}
-                        {user?.name && ` - ${user.name}`}
-                    </span>
-                    <span>
-                        Last updated: {new Date().toLocaleTimeString('en-IN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true
-                        })}
-                    </span>
-                </div>
-
-                {/* Real-time status summary */}
-                {Object.keys(realTimeStatuses).length > 0 && (
-                    <div className="mt-2 text-xs text-gray-500">
-                        <span className="font-medium">Real-time Status Updates:</span>
-                        <span className="ml-2">
-                            {Object.keys(realTimeStatuses).length} booking(s) with live status
-                        </span>
-                        <span className="ml-2 text-blue-500">
-                            Auto-refresh every 3 minutes for confirmed bookings
-                        </span>
-                    </div>
-                )}
-            </div>
+            {/* Status Popup */}
+            <StatusPopup />
         </div>
     );
 };

@@ -34,12 +34,8 @@ const Profile = () => {
         return isAgent ? 'Agent Dashboard' : 'Your Profile';
     };
 
-    // Get appropriate gradient based on user type
-    const getGradientStyle = () => {
-        return isAgent
-            ? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)'  // Purple gradient for agents
-            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; // Blue gradient for users
-    };
+
+
 
     if (!user) {
         return (
@@ -77,12 +73,12 @@ const Profile = () => {
                         {/* Profile Header - Col 4 */}
                         <Col lg={4} className="text-center mb-4 mb-lg-0 pt-5">
                             <div
-                                className="mx-auto rounded-circle d-flex align-items-center justify-content-center text-white text-3xl font-bold mb-3 shadow-lg"
+                                className="mx-auto rounded-circle d-flex align-items-center justify-content-center text-white text-3xl font-bold mb-3 shadow-lg bg-red-500"
                                 style={{
                                     width: '120px',
                                     height: '120px',
                                     fontSize: '2.2rem',
-                                    background: getGradientStyle()
+
                                 }}
                             >
                                 {getUserInitials()}

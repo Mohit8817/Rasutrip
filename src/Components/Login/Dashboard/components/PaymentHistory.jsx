@@ -10,6 +10,10 @@ const PaymentHistory = () => {
     const [activeFilter, setActiveFilter] = useState('ALL');
     const [userType, setUserType] = useState(null);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
+
     const filterOptions = [
         { value: 'ALL', label: 'All Payments' },
         { value: 'FLIGHT', label: 'Flight' },
@@ -70,6 +74,7 @@ const PaymentHistory = () => {
                 // Sort by date (newest first)
                 const sortedPayments = result.data.sort((a, b) => new Date(b.date) - new Date(a.date));
                 setPayments(sortedPayments);
+                setCurrentPage(1); // Reset to first page when filter changes
             } else {
                 setPayments([]);
                 setError(result.message || 'Failed to fetch payment history');
@@ -93,23 +98,40 @@ const PaymentHistory = () => {
         fetchPaymentHistory(filterType === 'ALL' ? null : filterType);
     };
 
+    // Pagination calculations
+    const totalPages = Math.ceil(payments.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentPayments = payments.slice(startIndex, endIndex);
+
+    const goToPage = (page) => {
+        setCurrentPage(page);
+        // Scroll to top when page changes
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     const getStatusBadge = (status) => {
         const statusStyles = {
             SUCCESS: 'bg-green-100 text-green-800',
             FAILED: 'bg-red-100 text-red-800',
             PENDING: 'bg-yellow-100 text-yellow-800',
-            REFUNDED: 'bg-blue-100 text-blue-800'
+            REFUNDED: 'bg-blue-100 text-blue-800',
+            COMPLETED: 'bg-green-100 text-green-800',
+            CANCELLED: 'bg-red-100 text-red-800'
         };
 
         return (
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[status] || 'bg-gray-100 text-gray-800'}`}>
-                {status}
+                {status || 'UNKNOWN'}
             </span>
         );
     };
 
     const formatDate = (dateString) => {
+        if (!dateString) return 'Date not available';
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Invalid date';
+
         return date.toLocaleDateString('en-IN', {
             day: '2-digit',
             month: 'short',
@@ -120,6 +142,7 @@ const PaymentHistory = () => {
     };
 
     const formatAmount = (amount) => {
+        if (!amount && amount !== 0) return '₹0';
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: 'INR',
@@ -128,41 +151,144 @@ const PaymentHistory = () => {
     };
 
     const getServiceDetails = (payment) => {
+        // Helper function to get safe value
+        const getSafeValue = (value, fallback = 'Not specified') => {
+            return value && value !== 'N/A' && value.toString().trim() ? value : fallback;
+        };
+
         switch (payment.type) {
             case 'FLIGHT':
+                const flightFrom = payment.serviceDetails?.from || payment.origin || payment.departure || '';
+                const flightTo = payment.serviceDetails?.to || payment.destination || payment.arrival || '';
+                const flightRoute = flightFrom && flightTo ? `${flightFrom} → ${flightTo}` :
+                    payment.route || 'Route not specified';
+
                 return {
-                    title: payment.flightDetails || payment.serviceName || 'Flight Booking',
-                    subtitle: payment.route || `${payment.serviceDetails?.from || ''} → ${payment.serviceDetails?.to || ''}` || 'N/A',
-                    additionalInfo: payment.serviceDetails?.passengers ? `${payment.serviceDetails.passengers} Passengers` : null,
+                    title: getSafeValue(payment.flightDetails || payment.serviceName || payment.airline, 'Flight Booking'),
+                    subtitle: getSafeValue(flightRoute, 'Route not specified'),
+                    additionalInfo: payment.serviceDetails?.passengers ?
+                        `${payment.serviceDetails.passengers} Passenger${payment.serviceDetails.passengers > 1 ? 's' : ''}` :
+                        payment.passengers ? `${payment.passengers} Passenger${payment.passengers > 1 ? 's' : ''}` : null,
                     icon: '✈️'
                 };
+
             case 'HOTEL':
+                const hotelLocation = payment.serviceDetails?.hotelLocation || payment.city || payment.location || '';
                 return {
-                    title: payment.hotelName || payment.serviceDetails?.hotelName || payment.serviceName || 'Hotel Booking',
-                    subtitle: payment.city || payment.serviceDetails?.hotelLocation || 'N/A',
-                    additionalInfo: payment.serviceDetails?.rooms ? `${payment.serviceDetails.rooms} Rooms` : null,
+                    title: getSafeValue(payment.hotelName || payment.serviceDetails?.hotelName || payment.serviceName, 'Hotel Booking'),
+                    subtitle: getSafeValue(hotelLocation, 'Location not specified'),
+                    additionalInfo: payment.serviceDetails?.rooms ?
+                        `${payment.serviceDetails.rooms} Room${payment.serviceDetails.rooms > 1 ? 's' : ''}` :
+                        payment.rooms ? `${payment.rooms} Room${payment.rooms > 1 ? 's' : ''}` : null,
                     icon: '🏨'
                 };
+
             case 'BUS':
+                const busRoute = payment.route || payment.serviceDetails?.route ||
+                    (payment.serviceDetails?.from && payment.serviceDetails?.to ?
+                        `${payment.serviceDetails.from} → ${payment.serviceDetails.to}` : '');
+
                 return {
-                    title: payment.busOperator || payment.serviceDetails?.busName || payment.serviceName || 'Bus Booking',
-                    subtitle: payment.route || payment.serviceDetails?.route || 'N/A',
-                    additionalInfo: payment.serviceDetails?.seats ? `Seats: ${payment.serviceDetails.seats}` : null,
-                    icon: ' '
+                    title: getSafeValue(payment.busOperator || payment.serviceDetails?.busName || payment.serviceName, 'Bus Booking'),
+                    subtitle: getSafeValue(busRoute, 'Route not specified'),
+                    additionalInfo: payment.serviceDetails?.seats ?
+                        `${payment.serviceDetails.seats} Seat${payment.serviceDetails.seats > 1 ? 's' : ''}` :
+                        payment.seats ? `${payment.seats} Seat${payment.seats > 1 ? 's' : ''}` : null,
+                    icon: '🚌'
                 };
+
             default:
                 return {
-                    title: payment.serviceName || 'Booking',
-                    subtitle: 'N/A',
+                    title: getSafeValue(payment.serviceName || payment.description, 'Booking'),
+                    subtitle: getSafeValue(payment.serviceType, 'Service not specified'),
                     additionalInfo: null,
                     icon: '📋'
                 };
         }
     };
 
+    // Pagination component
+    const Pagination = () => {
+        if (totalPages <= 1) return null;
+
+        const getPageNumbers = () => {
+            const pages = [];
+            const maxVisiblePages = 5;
+
+            if (totalPages <= maxVisiblePages) {
+                for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                }
+            } else {
+                if (currentPage <= 3) {
+                    pages.push(1, 2, 3, 4, '...', totalPages);
+                } else if (currentPage >= totalPages - 2) {
+                    pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                } else {
+                    pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+                }
+            }
+
+            return pages;
+        };
+
+        return (
+            <div className=" rounded-sm card p-4">
+                <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                        Showing {startIndex + 1} to {Math.min(endIndex, payments.length)} of {payments.length} payments
+                    </div>
+
+                    <div className="flex items-center space-x-1">
+                        {/* Previous button */}
+                        <button
+                            onClick={() => goToPage(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === 1
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                                }`}
+                        >
+                            Previous
+                        </button>
+
+                        {/* Page numbers */}
+                        {getPageNumbers().map((page, index) => (
+                            <button
+                                key={index}
+                                onClick={() => typeof page === 'number' ? goToPage(page) : null}
+                                disabled={page === '...'}
+                                className={`px-3 py-2 rounded-md text-sm font-medium ${page === currentPage
+                                        ? 'bg-red-500 text-white'
+                                        : page === '...'
+                                            ? 'bg-white text-gray-400 cursor-default'
+                                            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                                    }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+
+                        {/* Next button */}
+                        <button
+                            onClick={() => goToPage(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === totalPages
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                                }`}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     if (loading) {
         return (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-sm shadow p-6">
                 <div className="animate-pulse">
                     <div className="h-6 bg-gray-300 rounded mb-4 w-1/3"></div>
                     <div className="space-y-3">
@@ -177,20 +303,18 @@ const PaymentHistory = () => {
 
     return (
         <div className="space-y-6">
-
             {/* Filter Tabs */}
-            <div className="bg-white rounded-lg shadow p-4">
+            <div className="">
                 <div className="flex flex-wrap gap-2">
                     {filterOptions.map((filter) => (
                         <button
                             key={filter.value}
                             onClick={() => handleFilterChange(filter.value)}
-                            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 ${activeFilter === filter.value
-                                ? 'bg-red-500 text-white shadow-lg transform scale-105'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-102'
+                            className={`flex items-center px-4 py-2 font-medium transition-all duration-200 ${activeFilter === filter.value
+                                ? 'bg-red-500 text-white transform scale-105'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-200 hover:scale-102'
                                 }`}
                         >
-                            <span className="mr-2">{filter.icon}</span>
                             {filter.label}
                         </button>
                     ))}
@@ -200,7 +324,7 @@ const PaymentHistory = () => {
             {/* Payment Cards */}
             <div className="space-y-4">
                 {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="bg-red-50 border border-red-200 rounded-sm p-4">
                         <div className="flex items-center">
                             <span className="text-red-500 mr-2">⚠️</span>
                             <p className="text-red-700">{error}</p>
@@ -209,8 +333,7 @@ const PaymentHistory = () => {
                 )}
 
                 {payments.length === 0 && !loading ? (
-                    <div className="bg-white rounded-lg shadow p-8 text-center">
-                        <div className="text-gray-400 text-6xl mb-4">💳</div>
+                    <div className="bg-white rounded-lg  p-8 text-center">
                         <h3 className="text-xl font-medium text-gray-900 mb-2">No Payment History</h3>
                         <p className="text-gray-600">
                             {activeFilter === 'ALL'
@@ -226,55 +349,60 @@ const PaymentHistory = () => {
                         </button>
                     </div>
                 ) : (
-                    payments.map((payment) => {
-                        const serviceDetails = getServiceDetails(payment);
-                        return (
-                            <div key={payment._id || payment.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-200">
-                                <div className="p-6">
-                                    <div className="flex items-start justify-between">
-                                        {/* Left Section */}
-                                        <div className="flex items-start space-x-4 flex-1">
+                    <>
+                        {/* Current page payments */}
+                        {currentPayments.map((payment) => {
+                            const serviceDetails = getServiceDetails(payment);
+                            return (
+                                <div key={payment._id || payment.id} className=" rounded-lg card duration-200">
+                                    <div className="p-6">
+                                        <div className="flex items-start justify-between">
+                                            {/* Left Section */}
+                                            <div className="flex items-start space-x-4 flex-1">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center space-x-3 mb-1">
+                                                        <h5 className="text-lg font-semibold text-gray-900 truncate">
+                                                            {serviceDetails.title}
+                                                        </h5>
+                                                        {getStatusBadge(payment.status)}
+                                                    </div>
 
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center space-x-3 mb-1">
-                                                    <h5 className="text-lg font-semibold text-gray-900 truncate">
-                                                        {serviceDetails.title}
-                                                    </h5>
-                                                    {getStatusBadge(payment.status)}
-                                                </div>
+                                                    <p className="text-gray-600 mb-1">{serviceDetails.subtitle}</p>
 
-                                                <p className="text-gray-600 mb-1">{serviceDetails.subtitle}</p>
+                                                    {serviceDetails.additionalInfo && (
+                                                        <p className="text-sm text-gray-500 mb-1">{serviceDetails.additionalInfo}</p>
+                                                    )}
 
-                                                {serviceDetails.additionalInfo && (
-                                                    <p className="text-sm text-gray-500 mb-1">{serviceDetails.additionalInfo}</p>
-                                                )}
+                                                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                                        <span>Booking ID: {payment.bookingId || payment.id || payment._id || 'Not available'}</span>
+                                                        <span>•</span>
+                                                        <span>{payment.paymentMethod || payment.paymentMode || payment.gateway || 'Online Payment'}</span>
+                                                    </div>
 
-                                                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                                    <span>Booking ID: {payment.bookingId || payment.id || 'N/A'}</span>
-                                                    <span>•</span>
-                                                    <span>{payment.paymentMethod || payment.paymentMode || 'Online Payment'}</span>
-                                                </div>
-
-                                                <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                                                    <span>Transaction ID: {payment.transactionId || 'N/A'}</span>
+                                                    <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
+                                                        <span>Transaction ID: {payment.transactionId || payment.txnId || payment.paymentId || 'Not available'}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Right Section */}
-                                        <div className="flex-shrink-0 text-right ml-4">
-                                            <div className="text-xl font-bold text-gray-900 mb-1">
-                                                {formatAmount(payment.amount)}
-                                            </div>
-                                            <div className="text-sm text-gray-500">
-                                                {formatDate(payment.createdAt || payment.date)}
+                                            {/* Right Section */}
+                                            <div className="flex-shrink-0 text-right ml-4">
+                                                <div className="text-xl font-bold text-gray-900 mb-1">
+                                                    {formatAmount(payment.amount || payment.totalAmount || payment.price)}
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    {formatDate(payment.createdAt || payment.date || payment.paymentDate || payment.timestamp)}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })
+                            );
+                        })}
+
+                        {/* Pagination */}
+                        <Pagination />
+                    </>
                 )}
             </div>
         </div>
