@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, Button, Alert, Modal } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-// import { createHotelOrder, validateHotelPayment, bookHotel } from '../../../APIS/HotelApi/HotelAPi';
 import { createHotelOrder, validateHotelPayment, bookHotel, sendHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
 
 const HotelPaymentInfo = () => {
@@ -13,6 +12,10 @@ const HotelPaymentInfo = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+
+  // ✅ CRITICAL: Prevent duplicate bookings
+  const bookingAttemptRef = useRef(null);
+  const [bookingProcessed, setBookingProcessed] = useState(false);
 
   const {
     payload = {},
@@ -45,8 +48,7 @@ const HotelPaymentInfo = () => {
       <Modal.Body className="text-center py-5">
         <div className="mb-4">
           {/* Custom CSS Animation */}
-          <div
-          >
+          <div className="spinner-border text-danger" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
@@ -109,6 +111,13 @@ const HotelPaymentInfo = () => {
   const getLeadPassengerEmail = (formattedBookingData) => {
     const leadPassenger = getLeadPassenger(formattedBookingData);
     return leadPassenger?.Email || "mohitverma8817@gmail.com";
+  };
+
+  // ✅ ENHANCED: Generate unique ClientReferenceNo to prevent duplicates
+  const generateUniqueClientReference = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    return `CLT_${timestamp}_${random}`;
   };
 
   // ✅ CORRECTED: Lead passenger logic - Only ONE lead passenger across ALL rooms
@@ -287,6 +296,9 @@ const HotelPaymentInfo = () => {
       throw new Error(`❌ Duplicate PAN numbers found: ${duplicatePANs.join(', ')}. Each passenger must have a unique PAN number.`);
     }
 
+    // ✅ CRITICAL: Generate unique ClientReferenceNo to prevent duplicate bookings
+    const uniqueClientRef = generateUniqueClientReference();
+
     // Build final payload
     const finalPayload = {
       ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`),
@@ -294,7 +306,7 @@ const HotelPaymentInfo = () => {
       HotelName: String(bookingDetails.HotelName || "ALILA DIWA"),
       GuestNationality: "IN",
       NoOfRooms: String(processedRooms.length),
-      ClientReferenceNo: bookingDetails.ClientReferenceNo || 0,
+      ClientReferenceNo: uniqueClientRef, // ✅ CRITICAL: Unique reference
       vendorCommission: bookingDetails.vendorCommission || 10,
       CouponDiscount: bookingDetails.CouponDiscount || 5,
       IsVoucherBooking: "true",
@@ -303,7 +315,7 @@ const HotelPaymentInfo = () => {
       SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed")
     };
 
-    console.log('✅ Final booking payload (SINGLE lead passenger):', JSON.stringify(finalPayload, null, 2));
+    console.log('✅ Final booking payload (SINGLE lead passenger + Unique ClientRef):', JSON.stringify(finalPayload, null, 2));
 
     return finalPayload;
   };
@@ -316,19 +328,35 @@ const HotelPaymentInfo = () => {
       const status = error.response.status;
       const data = error.response.data;
 
+      // ✅ NEW: Handle duplicate booking error specifically
+      if (data?.error?.ErrorCode === 2502 || data?.Error?.ErrorCode === 2502) {
+        errorMessage = `❌ DUPLICATE BOOKING ERROR (Code: 2502): This booking has already been processed.
+
+Original Booking ID: ${data?.result?.BookingID || 'Unknown'}
+Invoice Number: ${data?.result?.InvoiceNumber || 'Unknown'}
+
+This usually happens when:
+• The same booking request was submitted multiple times
+• Payment was successful but page was refreshed
+• Previous booking attempt wasn't properly cleared
+
+Please check your bookings or try with a fresh search.`;
+        return { message: errorMessage, isDuplicateBooking: true };
+      }
+
       if (data?.error?.ErrorCode === 1163 || data?.Error?.ErrorCode === 1163) {
         errorMessage = `❌ PAN MANDATORY ERROR (Code: 1163): ${data?.error?.ErrorMessage || data?.Error?.ErrorMessage || 'Mandatory PAN information not available.'}
 
-  This error occurs when:
-  • Multiple passengers have LeadPassenger: "true" 
-  • Duplicate PAN numbers are used
-  • PAN format is incorrect (must be ABCDE1234F)
-  • Required PAN data is missing for adults
+This error occurs when:
+• Multiple passengers have LeadPassenger: "true" 
+• Duplicate PAN numbers are used
+• PAN format is incorrect (must be ABCDE1234F)
+• Required PAN data is missing for adults
 
-  Please ensure:
-  ✅ Only ONE passenger is marked as lead passenger
-  ✅ All adult passengers have unique, valid PAN numbers
-  ✅ PAN format: 5 letters + 4 digits + 1 letter`;
+Please ensure:
+✅ Only ONE passenger is marked as lead passenger
+✅ All adult passengers have unique, valid PAN numbers
+✅ PAN format: 5 letters + 4 digits + 1 letter`;
         return { message: errorMessage, isPANError: true };
       }
 
@@ -379,132 +407,44 @@ const HotelPaymentInfo = () => {
     });
   };
 
-  // ✅ FIXED: Payment success handler without invoice email functionality
-  //   const handlePaymentSuccess = async (response, formattedBookingData, validation) => {
-  //     try {
-  //       setBookingStage('Confirming your hotel reservation...');
-  //       console.log('🚀 Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
-
-  //       const bookingResponse = await bookHotel(formattedBookingData);
-  //       console.log('📨 Booking API response:', JSON.stringify(bookingResponse, null, 2));
-
-  //       // Check for PAN mandatory errors first
-  //       if (
-  //         bookingResponse?.error?.ErrorCode === 1163 ||
-  //         bookingResponse?.Error?.ErrorCode === 1163 ||
-  //         (bookingResponse?.error?.ErrorMessage?.toLowerCase().includes('mandatory pan'))
-  //       ) {
-  //         const panErrorMsg = `❌ HOTEL API ERROR: PAN MANDATORY (Code: 1163)
-
-  // API Error: ${bookingResponse?.error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage || 'Mandatory PAN info unavailable.'}
-
-  // This usually indicates:
-  // • Multiple passengers marked as LeadPassenger: "true"
-  // • Duplicate PAN numbers in the request
-  // • Invalid PAN format or missing PAN data
-  // • API-side validation failure
-
-  // Please check your booking data and contact support if the issue persists.`;
-
-  //         setError(panErrorMsg);
-  //         showErrorToast('❌ Hotel API PAN Error', panErrorMsg);
-  //         setBookingInProgress(false);
-  //         setLoading(false);
-  //         return;
-  //       }
-
-  //       // Check booking success
-  //       const isBookingSuccessful =
-  //         (bookingResponse?.message && /successfully|confirmed|processed/i.test(bookingResponse.message)) ||
-  //         bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
-  //         bookingResponse?.Status?.toLowerCase() === 'success' ||
-  //         bookingResponse?.success === true;
-
-  //       const hasRequiredBookingData =
-  //         bookingResponse?.userId &&
-  //         bookingResponse?.SearchTokenId &&
-  //         bookingResponse?.UserIp;
-
-  //       if (isBookingSuccessful && hasRequiredBookingData) {
-  //         setBookingStage('Booking confirmed! Preparing confirmation details...');
-  //         showSuccessToast('🎉 Hotel booking confirmed successfully!');
-
-  //         // Navigate to confirmation page
-  //         setBookingStage('Redirecting to confirmation page...');
-
-  //         setTimeout(() => {
-  //           setBookingInProgress(false);
-  //           navigate('/hotel/confirmation', {
-  //             state: {
-  //               booking: bookingResponse,
-  //               amount: roundedTotal,
-  //               reviewData,
-  //               hotelDetails: {
-  //                 name: formattedBookingData?.HotelName,
-  //                 code: formattedBookingData?.HotelCode,
-  //               },
-  //               paymentDetails: {
-  //                 orderId: response.razorpay_order_id,
-  //                 paymentId: response.razorpay_payment_id,
-  //               },
-  //               confirmationDetails: {
-  //                 userId: bookingResponse.userId,
-  //                 searchTokenId: bookingResponse.SearchTokenId,
-  //                 bookingId: bookingResponse.BookingID,
-  //                 userIp: bookingResponse.UserIp,
-  //                 message: bookingResponse.message,
-  //                 bookingTime: new Date().toISOString(),
-  //               },
-  //               isBooked: true,
-  //               bookingDetails: {
-  //                 contactData: getLeadPassenger(formattedBookingData),
-  //                 searchTokenId: bookingResponse.SearchTokenId,
-  //               },
-  //               bookingResult: bookingResponse
-  //             },
-  //           });
-  //         }, 1500);
-
-  //       } else {
-  //         let errMsg = 'Booking failed. Please contact support with your payment details.';
-  //         if (bookingResponse?.Error?.ErrorMessage) errMsg = bookingResponse.Error.ErrorMessage;
-  //         else if (bookingResponse?.error?.message) errMsg = bookingResponse.error.message;
-  //         else if (bookingResponse?.message && !/successfully/i.test(bookingResponse.message))
-  //           errMsg = `Booking Issue: ${bookingResponse.message}`;
-  //         else if (!hasRequiredBookingData)
-  //           errMsg = 'Booking response missing required confirmation data. Please contact support.';
-  //         else if (!isBookingSuccessful) errMsg = 'Booking status could not be confirmed. Please contact support.';
-
-  //         setError(`Booking Failed: ${errMsg}`);
-  //         showErrorToast('❌ Booking Failed', errMsg);
-  //         setBookingInProgress(false);
-  //       }
-  //     } catch (bookingError) {
-  //       console.error('❌ Booking API Error:', bookingError);
-  //       const { message: errMsg, isPANError } = handleApiError(bookingError, 'Hotel Booking');
-  //       if (isPANError) {
-  //         setError(errMsg);
-  //         showErrorToast('❌ PAN Mandatory Error', errMsg);
-  //       } else {
-  //         setError(`Booking Error: ${errMsg}`);
-  //         showErrorToast('❌ Booking API Error', errMsg);
-  //       }
-  //       setBookingInProgress(false);
-  //     }
-  //   };
-
-
-
-  // ✅ UPDATED: Payment success handler WITH invoice email functionality
+  // ✅ UPDATED: Payment success handler WITH duplicate booking check
   const handlePaymentSuccess = async (response, formattedBookingData, validation) => {
+    // ✅ CRITICAL: Prevent multiple booking calls
+    if (bookingProcessed) {
+      console.log('⚠️ Booking already processed, skipping duplicate call');
+      return;
+    }
+
     try {
+      setBookingProcessed(true);
       setBookingStage('Confirming your hotel reservation...');
       console.log('🚀 Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
 
       const bookingResponse = await bookHotel(formattedBookingData);
       console.log('📨 Booking API response:', JSON.stringify(bookingResponse, null, 2));
 
-      // Check for PAN mandatory errors first
+      // ✅ NEW: Handle duplicate booking error specifically
+      if (
+        bookingResponse?.error?.ErrorCode === 2502 ||
+        bookingResponse?.Error?.ErrorCode === 2502
+      ) {
+        const duplicateMsg = `❌ DUPLICATE BOOKING DETECTED (Code: 2502)
+
+This booking has already been processed:
+• Original Booking ID: ${bookingResponse?.result?.BookingID || 'Unknown'}
+• Invoice Number: ${bookingResponse?.result?.InvoiceNumber || 'Unknown'}
+• Amount: ₹${bookingResponse?.result?.InvoiceAmount || 'Unknown'}
+
+Your payment was successful, but the booking was already created. Please check your email for confirmation or contact support with the above details.`;
+
+        setError(duplicateMsg);
+        showErrorToast('❌ Duplicate Booking', duplicateMsg);
+        setBookingInProgress(false);
+        setLoading(false);
+        return;
+      }
+
+      // Check for PAN mandatory errors
       if (
         bookingResponse?.error?.ErrorCode === 1163 ||
         bookingResponse?.Error?.ErrorCode === 1163 ||
@@ -541,14 +481,14 @@ Please check your booking data and contact support if the issue persists.`;
         bookingResponse?.SearchTokenId &&
         bookingResponse?.UserIp;
 
-      // ✅ NEW: Check if we have BookingId for invoice
+      // ✅ Check if we have BookingId for invoice
       const hasBookingId = bookingResponse?.BookingID || bookingResponse?.bookingId || bookingResponse?.id;
 
       if (isBookingSuccessful && hasRequiredBookingData) {
         setBookingStage('Booking confirmed! Preparing confirmation details...');
         showSuccessToast('🎉 Hotel booking confirmed successfully!');
 
-        // ✅ NEW: Send invoice email after successful booking
+        // ✅ Send invoice email after successful booking
         if (hasBookingId) {
           try {
             setBookingStage('Sending invoice to your email...');
@@ -638,8 +578,12 @@ Please check your booking data and contact support if the issue persists.`;
       }
     } catch (bookingError) {
       console.error('❌ Booking API Error:', bookingError);
-      const { message: errMsg, isPANError } = handleApiError(bookingError, 'Hotel Booking');
-      if (isPANError) {
+      const { message: errMsg, isPANError, isDuplicateBooking } = handleApiError(bookingError, 'Hotel Booking');
+
+      if (isDuplicateBooking) {
+        setError(errMsg);
+        showErrorToast('❌ Duplicate Booking Error', errMsg);
+      } else if (isPANError) {
         setError(errMsg);
         showErrorToast('❌ PAN Mandatory Error', errMsg);
       } else {
@@ -650,11 +594,25 @@ Please check your booking data and contact support if the issue persists.`;
     }
   };
 
-
-  // Main payment handler
+  // ✅ ENHANCED: Main payment handler with duplicate prevention
   const handlePayment = async () => {
+    // ✅ CRITICAL: Prevent multiple simultaneous payment attempts
+    if (loading || bookingInProgress || bookingProcessed) {
+      console.log('⚠️ Payment already in progress or completed');
+      return;
+    }
+
+    // ✅ CRITICAL: Check if this payment attempt is already being processed
+    const currentAttemptId = Date.now();
+    if (bookingAttemptRef.current && (currentAttemptId - bookingAttemptRef.current) < 30000) {
+      showErrorToast('⚠️ Payment In Progress', 'Please wait for the current payment to complete');
+      return;
+    }
+
+    bookingAttemptRef.current = currentAttemptId;
     setLoading(true);
     setError('');
+    setBookingProcessed(false);
 
     try {
       console.log('🔍 Starting payment process...');
@@ -670,6 +628,7 @@ Please check your booking data and contact support if the issue persists.`;
         setError(formatError.message);
         showErrorToast('❌ Booking Data Error', formatError.message);
         setLoading(false);
+        bookingAttemptRef.current = null;
         return;
       }
 
@@ -680,6 +639,7 @@ Please check your booking data and contact support if the issue persists.`;
         setError(errMsg);
         showErrorToast('❌ Payment System Error', errMsg);
         setLoading(false);
+        bookingAttemptRef.current = null;
         return;
       }
 
@@ -729,6 +689,7 @@ Please check your booking data and contact support if the issue persists.`;
             setBookingInProgress(false);
           } finally {
             setLoading(false);
+            bookingAttemptRef.current = null;
           }
         },
         prefill: {
@@ -745,6 +706,7 @@ Please check your booking data and contact support if the issue persists.`;
           ondismiss: () => {
             setLoading(false);
             setBookingInProgress(false);
+            bookingAttemptRef.current = null;
             showErrorToast('⚠️ Payment Cancelled', 'Payment was cancelled by user');
           },
         },
@@ -757,6 +719,7 @@ Please check your booking data and contact support if the issue persists.`;
         showErrorToast('❌ Payment Failed', failureMessage);
         setLoading(false);
         setBookingInProgress(false);
+        bookingAttemptRef.current = null;
       });
       rzp.open();
 
@@ -767,6 +730,7 @@ Please check your booking data and contact support if the issue persists.`;
       showErrorToast('❌ Payment Initialization Failed', errMsg);
       setLoading(false);
       setBookingInProgress(false);
+      bookingAttemptRef.current = null;
     }
   };
 
@@ -885,11 +849,27 @@ Please check your booking data and contact support if the issue persists.`;
       <div className="container my-4">
         <div className="row justify-content-center">
           <div className="col">
+            {/* ✅ NEW: Duplicate booking warning */}
+            {bookingProcessed && (
+              <Alert variant="warning" className="mb-4">
+                <FaExclamationTriangle className="me-2" />
+                <strong>Booking Already Processed:</strong> This booking has been processed. Please wait for confirmation or refresh to start a new booking.
+              </Alert>
+            )}
+
             {/* Payment Summary */}
             <Card className="shadow-sm rounded mb-4">
               <Card.Header className="">
                 <div className="d-flex align-items-center">
                   <h5 className="mb-0 fw-bold">Secure Payment</h5>
+                  {/* ✅ NEW: Show processing status */}
+                  {(loading || bookingInProgress) && (
+                    <div className="ms-auto">
+                      <div className="spinner-border spinner-border-sm text-danger" role="status">
+                        <span className="visually-hidden">Processing...</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card.Header>
               <Card.Body>
@@ -949,9 +929,18 @@ Please check your booking data and contact support if the issue persists.`;
                     variant="danger"
                     className="px-5"
                     onClick={handlePayment}
-                    disabled={roundedTotal <= 0 || loading || bookingInProgress}
+                    disabled={roundedTotal <= 0 || loading || bookingInProgress || bookingProcessed}
                   >
-                    {`Pay ₹ ${roundedTotal}`}
+                    {loading || bookingInProgress ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                        {bookingInProgress ? 'Processing Booking...' : 'Loading Payment...'}
+                      </>
+                    ) : bookingProcessed ? (
+                      'Booking Processed'
+                    ) : (
+                      `Pay ₹ ${roundedTotal}`
+                    )}
                   </Button>
                 </div>
               </Card.Footer>
