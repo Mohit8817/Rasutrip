@@ -100,7 +100,7 @@ const RoomCard = ({
   const calculateTotalPrice = (roomIndexes) => {
     let totalPrice = 0;
     let totalTax = 0;
-    
+
     roomIndexes.forEach(index => {
       const room = getRoomByIndex(index);
       if (room) {
@@ -132,8 +132,8 @@ const RoomCard = ({
 
     // ✅ Find room combination based on selected room
     const selectedRoomIndexes = findRoomCombination(
-      room.RoomIndex, 
-      roomCombinations, 
+      room.RoomIndex,
+      roomCombinations,
       requiredRooms
     );
 
@@ -327,7 +327,7 @@ const RoomCard = ({
                 <div className="small text-muted mb-2">
                   {displayGuests} Guest{displayGuests > 1 ? 's' : ''} ({displayAdults} Adult{displayAdults > 1 ? 's' : ''}, {displayChildren} Child{displayChildren !== 1 ? 'ren' : ''}) • {displayRooms} Room{displayRooms > 1 ? 's' : ''}
                 </div>
-                
+
                 {/* ✅ Price display with room count consideration */}
                 <div className="fw-bold text-dark mb-2">
                   ₹{displayPrice.toLocaleString()}
