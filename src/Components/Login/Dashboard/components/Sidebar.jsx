@@ -1,7 +1,8 @@
-// components/Sidebar.js - Updated with Bank Details for Agents
+// components/Sidebar.js - Updated with clean design and proper user/agent logic
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../Context/AuthContext';
+import { User, Calendar, CreditCard, Building, LogOut } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
   const {
@@ -37,18 +38,18 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     return user.role === 'agent' || user.userType === 'agent' || user.type === 'agent' || userType === 'agent';
   };
 
-  // If no user is logged in, show login prompt with modern design
+  // If no user is logged in, show login prompt with clean design
   if (!user) {
     return (
-      <div className="h-screen w-64 bg-gradient-to-b from-grey-400 via-grey-500 to-grey-600 flex flex-col justify-center items-center px-8">
-        <div className="text-center text-grey">
-          <div className="w-20 h-20 mx-auto rounded-full bg-grey-600 bg-opacity-50 flex items-center justify-center text-grey-100 text-2xl font-bold mb-6">
+      <div className="h-screen w-64 bg-white border-r border-gray-200 flex flex-col justify-center items-center px-8">
+        <div className="text-center text-gray-600">
+          <div className="w-20 h-20 mx-auto rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-2xl font-bold mb-6">
             ?
           </div>
-          <h3 className="text-lg font-medium text-grey-50 mb-6">Please Login</h3>
+          <h3 className="text-lg font-medium text-gray-700 mb-6">Please Login</h3>
           <button
             onClick={() => navigate('/')}
-            className="w-full bg-grey-600 hover:bg-grey-700 text-grey py-3 px-6 rounded-lg transition-colors"
+            className="w-full bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-lg transition-colors"
           >
             Go to Login
           </button>
@@ -59,14 +60,14 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
   // Base menu items for all users
   const baseMenuItems = [
-    { id: 'profile', label: 'Profile' },
-    { id: 'bookings', label: 'Booking' },
-    { id: 'payment-history', label: 'Payment History' },
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'bookings', label: 'Booking', icon: Calendar },
+    { id: 'payment-history', label: 'Payment History', icon: CreditCard },
   ];
 
   // Agent-specific menu items
   const agentMenuItems = [
-    { id: 'bank-details', label: 'Bank Details' },
+    { id: 'bank-details', label: 'Bank Details', icon: Building },
   ];
 
   // Combine menu items based on user type
@@ -75,40 +76,33 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     : baseMenuItems;
 
   return (
-    <div className="card shadow h-screen w-64 bg-gradient-to-b from-grey-400 via-grey-500 to-grey-600 text-grey flex flex-col">
+    <div className=" bg-white border-r border-gray-200 flex flex-col">
       {/* User Profile Section */}
-      <div className="px-2 py-2 border-b border-grey-600 border-opacity-30">
+      <div className="px-6 py-6 border-b border-gray-200">
         <div className="text-center">
-          <div
-            className="profile-avatar w-20 h-20 mx-auto rounded-full flex items-center justify-center text-grey text-2xl font-bold mb-4 shadow-lg"
-            style={{
-              background: isAgent()
-                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
-            }}
-          >
+          <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4 bg-red-500">
             {getUserInitials()}
           </div>
 
           {/* Enhanced Name Display */}
-          <h3 className="text-xl font-semibold text-grey mb-2">
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">
             {getUserDisplayName()}
           </h3>
 
           {/* User Type Badge */}
           {isAgent() && (
-            <div className="inline-block px-3 py-1 bg-blue-600 bg-opacity-20 text-blue-200 text-xs font-medium rounded-full mb-2">
+            <div className="inline-block px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full mb-2">
               Agent
             </div>
           )}
 
           {/* Additional User Info */}
-          <div className="text-sm text-grey-100 opacity-90">
+          <div className="text-sm text-gray-600">
             {formatMobile(user?.mobile)}
           </div>
 
           {user?.email && (
-            <div className="text-sm text-grey-100 opacity-90 mt-1 truncate">
+            <div className="text-sm text-gray-600 mt-1 truncate">
               {user.email}
             </div>
           )}
@@ -116,40 +110,37 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 px-6 py-8 space-y-3">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center px-6 py-4 text-left rounded-lg transition-all duration-200 font-medium text-lg ${activeTab === item.id
-              ? 'bg-grey-600 bg-opacity-40 text-grey shadow-lg transform scale-105'
-              : 'text-grey-50 hover:bg-grey-600 hover:bg-opacity-30 hover:text-grey hover:transform hover:scale-102'
-              }`}
-          >
-            <span className="flex items-center">
-              {/* Add icons for better visual distinction */}
-              {item.id === 'profile'}
-              {item.id === 'bookings'}
-              {item.id === 'payment-history'}
-              {item.id === 'bank-details'}
-              {item.label}
-            </span>
-            {activeTab === item.id && (
-              <span className="ml-auto text-grey-100 text-2xl">•</span>
-            )}
-          </button>
-        ))}
+      <nav className="flex-1 py-4">
+        {menuItems.map((item) => {
+          const IconComponent = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center px-6 py-3 text-left transition-colors duration-200 ${activeTab === item.id
+                ? 'bg-red-500 text-white'
+                : 'text-gray-600 hover:bg-gray-50'
+                }`}
+            >
+              <IconComponent className="w-5 h-5 mr-3" />
+              <span className="font-medium">{item.label}</span>
+              {activeTab === item.id && (
+                <span className="ml-auto text-white text-lg">•</span>
+              )}
+            </button>
+          );
+        })}
       </nav>
 
-      {/* Bottom Section with Footer Info and Logout */}
-      <div className="border-t border-purple-700">
-        {/* Logout Button */}
+      {/* Bottom Section with Logout */}
+      <div className="border-t border-gray-200">
         <div className="p-4">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-4 py-3 text-left rounded-lg text-purple-200 hover:bg-grey-600 hover:bg-opacity-20 hover:text-grey-300 transition-all duration-200 hover:transform hover:scale-102"
+            className="w-full flex items-center px-4 py-3 text-left rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200"
           >
-            <span className="font-medium text-dark">Logout</span>
+            <LogOut className="w-5 h-5 mr-3" />
+            <span className="font-medium">Logout</span>
           </button>
         </div>
       </div>

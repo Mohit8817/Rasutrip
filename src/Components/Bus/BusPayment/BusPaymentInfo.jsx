@@ -1,11 +1,11 @@
-// src/components/Bus/BusPaymentInfo.js - UPDATED VERSION with Loading States
+// src/components/Bus/BusPaymentInfo.js - ENHANCED VERSION with Invoice Email
 
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Alert, Modal } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { createBusPaymentOrder, validateBusPayment, bookBus } from '../../APIS/BusApi/BusApis';
+import { createBusPaymentOrder, validateBusPayment, bookBus, downloadBusInvoice } from '../../APIS/BusApi/BusApis';
 
 const BusPaymentInfo = () => {
     const { state } = useLocation();
@@ -162,6 +162,65 @@ const BusPaymentInfo = () => {
 
         console.error('❌ NO VALID BOOKING ID FOUND IN RESPONSE');
         return null;
+    };
+
+    // ✅ NEW: Send Invoice Email Function
+    const sendInvoiceEmail = async (bookingId, searchTokenId, userEmail) => {
+        try {
+            console.log('📧 Sending invoice email...');
+            setLoadingStep('Sending invoice to your email...');
+
+            if (!bookingId || !isValidBookingId(bookingId)) {
+                console.error('❌ Invalid booking ID for invoice:', bookingId);
+                // Don't throw error, just log warning as invoice is optional
+                console.warn('⚠️ Skipping invoice email due to invalid booking ID');
+                return false;
+            }
+
+            if (!userEmail || !userEmail.includes('@')) {
+                console.error('❌ Invalid email for invoice:', userEmail);
+                console.warn('⚠️ Skipping invoice email due to invalid email address');
+                return false;
+            }
+
+            const invoiceData = {
+                UserIp: "122.161.64.143", // Your actual IP
+                SearchTokenId: searchTokenId || "",
+                BookingId: String(bookingId), // Ensure it's a string
+                receiverEmail: userEmail
+            };
+
+            console.log('📤 Invoice email payload:', invoiceData);
+
+            const invoiceResult = await downloadBusInvoice(invoiceData);
+            console.log('✅ Invoice email sent successfully:', invoiceResult);
+
+            // Show success toast for invoice
+            toast.success('📧 Invoice sent to your email!', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+
+            return true;
+        } catch (error) {
+            console.error('❌ Invoice email failed:', error);
+
+            // Don't throw error for invoice failure, just show warning
+            toast.warn('⚠️ Invoice email failed. You can contact support for invoice.', {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+            });
+
+            return false;
+        }
     };
 
     // ✅ Load Razorpay script dynamically
@@ -530,7 +589,7 @@ const BusPaymentInfo = () => {
         },
     });
 
-    // ✅ ENHANCED: Payment handler with comprehensive booking flow and loading states
+    // ✅ ENHANCED: Payment handler with invoice email integration
     const handlePayment = async () => {
         setError(null);
         setLoading(true);
@@ -601,7 +660,7 @@ const BusPaymentInfo = () => {
             console.log('✅ Payment order created:', { orderId, orderAmount });
             setLoadingStep('Opening payment gateway...');
 
-            // ✅ ENHANCED: Success handler with comprehensive booking flow and loading states
+            // ✅ ENHANCED: Success handler with invoice email integration
             const handleSuccess = async (response) => {
                 try {
                     console.log('✅ Payment successful, validating...', response);
@@ -644,6 +703,21 @@ const BusPaymentInfo = () => {
 
                         console.log('🎯 EXTRACTED BOOKING ID:', extractedBookingId);
 
+                        // ✅ NEW: Send invoice email after successful booking
+                        const userEmail = contactData?.email;
+                        const currentSearchTokenId = searchTokenId || bookingData.SearchTokenId;
+
+                        if (extractedBookingId && userEmail && currentSearchTokenId) {
+                            console.log('📧 Attempting to send invoice email...');
+                            await sendInvoiceEmail(extractedBookingId, currentSearchTokenId, userEmail);
+                        } else {
+                            console.warn('⚠️ Missing data for invoice email:', {
+                                bookingId: extractedBookingId,
+                                email: userEmail,
+                                searchTokenId: currentSearchTokenId
+                            });
+                        }
+
                         // ✅ Show success message
                         setLoadingStep('Booking confirmed successfully!');
                         showSuccessToast('🎉 Bus booking confirmed successfully!');
@@ -662,14 +736,7 @@ const BusPaymentInfo = () => {
                                 isValidated: true,
                                 isBooked: true,
                                 bookingType: 'bus',
-                                // ✅ Pass necessary data for invoice generation on confirmation page
-                                invoiceData: extractedBookingId ? {
-                                    UserIp: "122.161.64.143",
-                                    SearchTokenId: bookingData.SearchTokenId,
-                                    BookingId: String(extractedBookingId),
-                                    receiverEmail: contactData?.email || passengerData[0]?.email || "ay942115@gmail.com"
-                                } : null,
-                                extractedBookingId: extractedBookingId // Pass the booking ID separately for easy access
+                                extractedBookingId: extractedBookingId // Pass the booking ID for reference
                             },
                         });
 
@@ -749,7 +816,7 @@ const BusPaymentInfo = () => {
 
     return (
         <Container className="py-4">
-            {/* ✅ NEW: Loading Overlay Modal */}
+            {/* ✅ Loading Overlay Modal */}
             <Modal
                 show={loading}
                 backdrop="static"
@@ -853,6 +920,9 @@ const BusPaymentInfo = () => {
                             <strong>Please note:</strong> By placing this order, you agree to our{' '}
                             <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Terms Of Use</a> and{' '}
                             <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Privacy Policy</a>
+                        </p>
+                        <p className="text-success small mb-0 mt-2">
+                            📧 <strong>Invoice will be sent to:</strong> {contactData?.email || 'N/A'}
                         </p>
                     </div>
 

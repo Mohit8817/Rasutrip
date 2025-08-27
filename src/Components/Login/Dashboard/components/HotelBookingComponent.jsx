@@ -7,7 +7,10 @@ import {
     isHotelUserAuthenticated,
     fetchHotelRealTimeStatus,
     fetchMultipleHotelRealTimeStatus
-} from "../../services/bookingApi"; // Update this path according to your project structure
+} from "../../services/bookingApi";
+
+// Invoice download service - adjust the import path as needed
+import { sendHotelInvoice } from "../../../APIS/HotelApi/HotelAPi";
 
 const HotelBookingHistory = () => {
     const [bookingType, setBookingType] = useState('all');
@@ -17,12 +20,15 @@ const HotelBookingHistory = () => {
     const [allBookings, setAllBookings] = useState([]);
     const [debugInfo, setDebugInfo] = useState(null);
     const [userRole, setUserRole] = useState('customer');
-    const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest first, 'asc' for oldest first
+    const [sortOrder, setSortOrder] = useState('desc');
 
     // Real-time status states
     const [realTimeStatuses, setRealTimeStatuses] = useState({});
     const [loadingStatuses, setLoadingStatuses] = useState(new Set());
     const [initialStatusLoaded, setInitialStatusLoaded] = useState(false);
+
+    // Invoice download states
+    const [downloadingInvoices, setDownloadingInvoices] = useState(new Set());
 
     // Get user role on component mount
     useEffect(() => {
@@ -71,7 +77,6 @@ const HotelBookingHistory = () => {
     const autoFetchRealTimeStatus = async (bookings = null) => {
         const currentBookings = bookings || getCurrentBookings();
 
-        // Only fetch for confirmed/active hotel bookings
         const activeBookings = currentBookings.filter(booking =>
             booking.bookingStatus?.toLowerCase() === 'confirmed' ||
             booking.bookingStatus?.toLowerCase() === 'booked'
@@ -85,7 +90,6 @@ const HotelBookingHistory = () => {
 
         console.log(`Auto-fetching real-time status for ${activeBookings.length} active hotel bookings`);
 
-        // Add all booking IDs to loading state
         const bookingIds = activeBookings.map(b => b.bookingId);
         setLoadingStatuses(prev => new Set([...prev, ...bookingIds]));
 
@@ -99,10 +103,47 @@ const HotelBookingHistory = () => {
         } catch (error) {
             console.error('Error in auto-fetch hotel real-time status:', error);
         } finally {
-            // Remove all booking IDs from loading state
             setLoadingStatuses(prev => {
                 const newSet = new Set(prev);
                 bookingIds.forEach(id => newSet.delete(id));
+                return newSet;
+            });
+        }
+    };
+
+    // Handle invoice download
+    const handleInvoiceDownload = async (booking) => {
+        const bookingId = booking.bookingId;
+
+        if (!booking.searchTokenId) {
+            toast.error('Invoice download not available - Missing search token');
+            return;
+        }
+
+        setDownloadingInvoices(prev => new Set(prev.add(bookingId)));
+
+        try {
+            const invoicePayload = {
+                UserIp: booking.rawData?.UserIp || "49.36.217.215",
+                BookingId: bookingId,
+                SearchTokenId: booking.searchTokenId,
+                receiverEmail: booking.email
+            };
+
+            const result = await sendHotelInvoice(invoicePayload);
+
+            if (result.success) {
+                toast.success('Invoice sent to your email successfully!');
+            } else {
+                toast.error(`Failed to send invoice: ${result.message || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error downloading invoice:', error);
+            toast.error('Failed to download invoice. Please try again.');
+        } finally {
+            setDownloadingInvoices(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(bookingId);
                 return newSet;
             });
         }
@@ -112,7 +153,6 @@ const HotelBookingHistory = () => {
     const formatHotelBookingData = (apiResponse, isUpcoming = false) => {
         console.log('📊 Raw API response for formatting:', apiResponse);
 
-        // Handle different response structures
         let bookingsArray = [];
 
         if (Array.isArray(apiResponse)) {
@@ -147,7 +187,6 @@ const HotelBookingHistory = () => {
             const booking = bookingWrapper.Result || bookingWrapper;
             console.log(`🏨 Actual hotel booking data for ${index + 1}:`, booking);
 
-            // Enhanced booking ID mapping
             const bookingId = bookingWrapper.bookingId ||
                 bookingWrapper.BookingId ||
                 bookingWrapper.BookingID ||
@@ -162,68 +201,58 @@ const HotelBookingHistory = () => {
                 booking.userId ||
                 `HTL${Date.now()}${index}`;
 
-            // Enhanced confirmation number mapping
             const confirmationNo =
-                // First priority: Direct confirmation fields
                 booking.ConfirmationNo ||
                 booking.confirmationNumber ||
                 booking.confirmation_no ||
                 booking.confirmationNo ||
                 booking.ConfirmationNumber ||
-
-                // Second priority: Reference/PNR fields
                 booking.referenceNumber ||
                 booking.ReferenceNumber ||
                 booking.reference_number ||
                 booking.PNR ||
                 booking.pnr ||
                 booking.Pnr ||
-
-                // Third priority: Booking reference fields
                 booking.BookingReference ||
                 booking.bookingReference ||
                 booking.booking_reference ||
                 booking.BookingRef ||
                 booking.bookingRef ||
-
-                // Fourth priority: Hotel-specific confirmation fields
                 booking.HotelConfirmationNo ||
                 booking.hotelConfirmationNo ||
                 booking.hotel_confirmation_no ||
                 booking.HotelReference ||
                 booking.hotelReference ||
-
-                // Fifth priority: Use booking ID if no confirmation found
                 bookingWrapper.bookingId ||
                 booking.BookingId ||
                 booking.bookingId ||
-
-                // Final fallback
                 'PENDING';
 
-            console.log(`🔍 Confirmation number mapping for booking ${index + 1}: ${confirmationNo}`);
-
-            // Hotel information mapping
+            // Hotel information mapping with fallback handling
             const hotelName = booking.HotelName ||
                 booking.hotelName ||
                 booking.hotel_name ||
                 booking.name ||
                 booking.propertyName ||
-                'N/A';
+                booking.hotel ||
+                booking.Hotel ||
+                'Hotel Name Not Available';
 
             const hotelCode = booking.HotelCode ||
                 booking.hotelCode ||
                 booking.hotel_code ||
                 booking.code ||
                 booking.propertyCode ||
-                'N/A';
+                booking.Code ||
+                'Not Available';
 
             const city = booking.City ||
                 booking.city ||
                 booking.location ||
                 booking.destination ||
                 booking.CityName ||
-                'N/A';
+                booking.cityName ||
+                'Not Available';
 
             const checkInDate = booking.CheckIn ||
                 booking.checkInDate ||
@@ -241,8 +270,7 @@ const HotelBookingHistory = () => {
                 booking.toDate ||
                 'N/A';
 
-            // Room type and guest count logic
-            let roomType = 'N/A';
+            let roomType = 'Standard Room';
             let numberOfRooms = '1';
             let numberOfGuests = 'N/A';
 
@@ -254,6 +282,7 @@ const HotelBookingHistory = () => {
                     firstRoom.roomTypeName ||
                     firstRoom.roomType ||
                     booking.RoomType ||
+                    booking.roomType ||
                     'Standard Room';
 
                 numberOfRooms = booking.HotelRoomsDetails.length.toString();
@@ -265,14 +294,18 @@ const HotelBookingHistory = () => {
                     }
                 });
                 numberOfGuests = totalGuests > 0 ? totalGuests.toString() : 'N/A';
+            } else if (booking.roomType || booking.RoomType) {
+                roomType = booking.roomType || booking.RoomType;
             }
 
+            // Fixed booking status mapping
             const bookingStatus = booking.Status ||
                 booking.status ||
                 booking.bookingStatus ||
                 booking.BookingStatus ||
                 booking.confirmationStatus ||
-                'Confirmed';
+                booking.booking_status ||
+                (booking.IsConfirmed === true || booking.isConfirmed === true ? 'Confirmed' : 'Pending');
 
             const totalAmount = bookingWrapper.RasuTripInvoiceAmount ||
                 booking.InvoiceAmount ||
@@ -281,9 +314,9 @@ const HotelBookingHistory = () => {
                 booking.amount ||
                 booking.fare ||
                 booking.price ||
+                booking.Amount ||
                 '0';
 
-            // Lead guest information
             let leadGuestName = 'N/A';
             let contactNumber = 'N/A';
             let email = 'N/A';
@@ -298,15 +331,20 @@ const HotelBookingHistory = () => {
                 }
             }
 
+            // Fixed payment status mapping
             const paymentStatus = booking.PaymentStatus ||
                 booking.paymentStatus ||
-                (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
+                booking.payment_status ||
+                (bookingStatus === 'Confirmed' ? 'Completed' :
+                    bookingStatus === 'Cancelled' ? 'Refunded' :
+                        bookingStatus === 'Pending' ? 'Processing' : 'Pending');
 
             const createdAt = bookingWrapper.createdAt ||
                 booking.BookingDate ||
                 booking.bookingDate ||
                 booking.InvoiceCreatedOn ||
                 booking.createdAt ||
+                booking.created_at ||
                 new Date().toISOString();
 
             const formatCreatedDate = (dateString) => {
@@ -340,7 +378,6 @@ const HotelBookingHistory = () => {
 
             const nights = calculateNights(checkInDate, checkOutDate);
 
-            // Extract SearchTokenId for hotel voucher/confirmation download
             const searchTokenId = bookingWrapper.SearchTokenId ||
                 booking.SearchTokenId ||
                 booking.searchTokenId ||
@@ -367,11 +404,10 @@ const HotelBookingHistory = () => {
                 paymentStatus: String(paymentStatus),
                 createdAt: formatCreatedDate(createdAt),
                 rawCreatedDate: new Date(createdAt),
-                // Agent/customer fields
                 bookedByRole: booking.bookedByRole || userRole || 'customer',
                 isAgentBooking: booking.isAgentBooking || userRole === 'agent',
                 bookingSource: booking.bookingSource || (userRole === 'agent' ? 'AGENT_PORTAL' : 'CUSTOMER_PORTAL'),
-                searchTokenId: searchTokenId, // Add for voucher download
+                searchTokenId: searchTokenId,
                 rawData: bookingWrapper
             };
 
@@ -391,9 +427,9 @@ const HotelBookingHistory = () => {
             const dateB = b.rawCreatedDate || new Date(b.createdAt || 0);
 
             if (order === 'desc') {
-                return dateB - dateA; // Newest first
+                return dateB - dateA;
             } else {
-                return dateA - dateB; // Oldest first
+                return dateA - dateB;
             }
         });
 
@@ -405,9 +441,8 @@ const HotelBookingHistory = () => {
         setLoading(true);
         setError(null);
         setDebugInfo(null);
-        setInitialStatusLoaded(false); // Reset status loading flag
+        setInitialStatusLoaded(false);
 
-        // Check authentication
         if (!isHotelUserAuthenticated()) {
             setError('Please login to view your hotel booking history.');
             setLoading(false);
@@ -425,7 +460,6 @@ const HotelBookingHistory = () => {
                 errors: []
             };
 
-            // Try to fetch upcoming bookings
             try {
                 console.log('Fetching upcoming hotel bookings...');
                 const upcomingResponse = await fetchUpcomingHotelBookings(userRole);
@@ -442,7 +476,6 @@ const HotelBookingHistory = () => {
                 debugData.errors.push(`Upcoming: ${err.message || 'Unknown error'}`);
             }
 
-            // Try to fetch all bookings
             try {
                 console.log('Fetching all hotel bookings...');
                 const allResponse = await fetchAllHotelBookings(userRole);
@@ -459,24 +492,21 @@ const HotelBookingHistory = () => {
                 debugData.errors.push(`All bookings: ${err.message || 'Unknown error'}`);
             }
 
-            // Update state with loaded data
             console.log('Updating state with hotel booking data...');
             setUpcomingBookings([...upcomingData]);
             setAllBookings([...allData]);
             setDebugInfo(debugData);
 
-            // Immediately fetch real-time status for the loaded bookings
             const allLoadedBookings = [...upcomingData, ...allData];
             if (allLoadedBookings.length > 0) {
                 console.log('Immediately fetching real-time status for loaded hotel bookings...');
                 setTimeout(() => {
                     autoFetchRealTimeStatus(allLoadedBookings);
-                }, 500); // Small delay to ensure state is updated
+                }, 500);
             } else {
                 setInitialStatusLoaded(true);
             }
 
-            // Show success or partial success message
             if (upcomingData.length > 0 || allData.length > 0) {
                 console.log('Successfully loaded hotel booking data - Upcoming:', upcomingData.length, 'All:', allData.length);
             } else if (debugData.errors.length === 0) {
@@ -493,12 +523,10 @@ const HotelBookingHistory = () => {
         }
     };
 
-    // Load bookings when component mounts
     useEffect(() => {
         loadHotelBookings();
     }, []);
 
-    // Re-sort when sort order changes
     useEffect(() => {
         if (upcomingBookings.length > 0) {
             setUpcomingBookings(prev => sortBookingsByDate(prev, sortOrder));
@@ -508,19 +536,17 @@ const HotelBookingHistory = () => {
         }
     }, [sortOrder]);
 
-    // Auto-refresh real-time status every 5 minutes (only after initial load)
     useEffect(() => {
         if (!initialStatusLoaded) return;
 
         const interval = setInterval(() => {
             console.log('Auto-refreshing hotel real-time status...');
             autoFetchRealTimeStatus();
-        }, 300000); // 5 minutes for hotels
+        }, 300000);
 
         return () => clearInterval(interval);
     }, [allBookings, upcomingBookings, initialStatusLoaded]);
 
-    // Get current bookings based on selected type
     const getCurrentBookings = () => {
         console.log('Getting current hotel bookings for type:', bookingType);
         if (bookingType === 'upcoming') {
@@ -531,7 +557,6 @@ const HotelBookingHistory = () => {
 
     const currentBookings = getCurrentBookings();
 
-    // Format date for display
     const formatDate = (dateString) => {
         if (!dateString || dateString === 'N/A') return 'N/A';
         try {
@@ -547,19 +572,16 @@ const HotelBookingHistory = () => {
         }
     };
 
-    // Format amount for display
     const formatAmount = (amount) => {
         if (!amount || amount === '0') return '₹0';
         if (typeof amount === 'string' && amount.startsWith('₹')) return amount;
         return `₹${amount}`;
     };
 
-    // Handle sort order toggle
     const toggleSortOrder = () => {
         setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
     };
 
-    // Get status badge color
     const getStatusColor = (status) => {
         const statusLower = String(status).toLowerCase();
 
@@ -591,13 +613,32 @@ const HotelBookingHistory = () => {
         }
     };
 
-    // Render real-time status for hotel bookings
+    const getPaymentStatusColor = (status) => {
+        const statusLower = String(status).toLowerCase();
+
+        switch (statusLower) {
+            case 'completed':
+            case 'paid':
+            case 'success':
+                return 'text-green-600';
+            case 'processing':
+            case 'pending':
+                return 'text-orange-600';
+            case 'failed':
+            case 'cancelled':
+                return 'text-red-600';
+            case 'refunded':
+                return 'text-purple-600';
+            default:
+                return 'text-blue-600';
+        }
+    };
+
     const renderRealTimeStatus = (booking) => {
         const bookingId = booking.bookingId;
         const isLoading = loadingStatuses.has(bookingId);
         const statusData = realTimeStatuses[bookingId];
 
-        // Show loading initially if we haven't loaded statuses yet
         if (!initialStatusLoaded && !statusData &&
             (booking.bookingStatus?.toLowerCase() === 'confirmed' ||
                 booking.bookingStatus?.toLowerCase() === 'booked')) {
@@ -609,7 +650,6 @@ const HotelBookingHistory = () => {
             );
         }
 
-        // Show manual loading when button is clicked
         if (isLoading) {
             return (
                 <div className="flex items-center">
@@ -659,7 +699,6 @@ const HotelBookingHistory = () => {
             );
         }
 
-        // For non-confirmed bookings or when no status available
         const isConfirmed = booking.bookingStatus?.toLowerCase() === 'confirmed' ||
             booking.bookingStatus?.toLowerCase() === 'booked';
 
@@ -685,7 +724,6 @@ const HotelBookingHistory = () => {
         );
     };
 
-    // Render loading state
     if (loading) {
         return (
             <div className="bg-white rounded-lg shadow p-6">
@@ -704,14 +742,11 @@ const HotelBookingHistory = () => {
                 <div>
                     <h5 className="text-2xl font-bold text-gray-800">My Hotel Bookings</h5>
                 </div>
-
             </div>
 
-            {/* Error Display */}
             {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <div className="flex items-center">
-                        <span className="text-red-500 text-xl mr-2">⚠️</span>
                         <div>
                             <h3 className="text-red-800 font-medium">Error Loading Hotel Bookings</h3>
                             <p className="text-red-600 mt-1">{error}</p>
@@ -726,7 +761,6 @@ const HotelBookingHistory = () => {
                 </div>
             )}
 
-            {/* Debug Info */}
             {debugInfo && debugInfo.errors && debugInfo.errors.length > 0 && (
                 <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
                     <strong>Debug Info:</strong> {debugInfo.errors.join(', ')}
@@ -734,33 +768,42 @@ const HotelBookingHistory = () => {
             )}
 
             {/* Booking Type Tabs */}
-            <div className="flex w-full mb-6 gap-2">
+            <div className="flex w-full mb-6 bg-gray-50 p-2 shadow-sm">
                 <button
-                    className={`flex-1 text-center px-4 py-2 rounded transition-all duration-200 font-medium
-                        ${bookingType === 'upcoming'
-                            ? 'bg-green-500 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
-                    `}
+                    className={`flex-1 text-center rounded-lg transition-all duration-300 font-semibold text-sm px-6 py-2
+            ${bookingType === 'upcoming'
+                            ? 'bg-red-500 text-white shadow-sm'
+                            : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
+        `}
                     onClick={() => setBookingType('upcoming')}
                 >
                     Upcoming Bookings
                     {upcomingBookings.length > 0 && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-white text-green-500 rounded-full">
+                        <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
+                ${bookingType === 'upcoming'
+                                ? 'bg-white text-red-500'
+                                : 'bg-red-100 text-red-600'}
+            `}>
                             {upcomingBookings.length}
                         </span>
                     )}
                 </button>
+
                 <button
-                    className={`flex-1 text-center px-4 py-2 rounded transition-all duration-200 font-medium
-                        ${bookingType === 'all'
-                            ? 'bg-green-500 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
-                    `}
+                    className={`flex-1 text-center px-6 py-2 rounded-lg transition-all duration-300 font-semibold text-sm
+            ${bookingType === 'all'
+                            ? 'bg-red-500 text-white shadow-md'
+                            : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
+        `}
                     onClick={() => setBookingType('all')}
                 >
                     All Bookings
                     {allBookings.length > 0 && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-white text-green-500 rounded-full">
+                        <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
+                ${bookingType === 'all'
+                                ? 'bg-white text-red-500'
+                                : 'bg-red-100 text-red-600'}
+            `}>
                             {allBookings.length}
                         </span>
                     )}
@@ -774,16 +817,14 @@ const HotelBookingHistory = () => {
                         <thead className="bg-gray-100">
                             <tr className="border-b border-gray-200">
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Booking ID</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Hotel Name</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">City</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Hotel Details</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Check-in</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Check-out</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Nights</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Rooms</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Guests</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Room Type</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Rooms/Guests</th>
+                                <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 w-20">Room Type</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Confirmation No.</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Booking Status</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Amount</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payment Status</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200"
@@ -791,7 +832,7 @@ const HotelBookingHistory = () => {
                                     title="Click to change sort order">
                                     Booked On {sortOrder === 'desc' ? '↓' : '↑'}
                                 </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-Time Status</th>
                             </tr>
                         </thead>
@@ -799,7 +840,7 @@ const HotelBookingHistory = () => {
                             {console.log('Rendering table rows for:', currentBookings.length, 'hotel bookings')}
                             {currentBookings.length === 0 ? (
                                 <tr>
-                                    <td colSpan="16" className="px-4 py-12 text-center">
+                                    <td colSpan="14" className="px-4 py-12 text-center">
                                         <div className="flex flex-col items-center">
                                             <span className="text-4xl mb-4">🏨</span>
                                             <span className="text-lg font-medium text-gray-600">No hotel bookings found</span>
@@ -826,21 +867,23 @@ const HotelBookingHistory = () => {
                             ) : (
                                 currentBookings.map((booking, index) => {
                                     console.log(`Rendering row ${index + 1}:`, booking);
+                                    const isDownloadingInvoice = downloadingInvoices.has(booking.bookingId);
+
                                     return (
                                         <tr key={`${booking.bookingId}-${index}`} className="border-b border-gray-200 hover:bg-gray-100">
                                             <td className="px-4 py-3 text-sm text-gray-900 font-mono">
                                                 {booking.bookingId}
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                                                <div className="max-w-xs truncate" title={booking.hotelName}>
-                                                    {booking.hotelName}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    Code: {booking.hotelCode}
-                                                </div>
-                                            </td>
                                             <td className="px-4 py-3 text-sm text-gray-900">
-                                                {booking.city}
+                                                <div className="font-medium max-w-xs">
+                                                    <div className="truncate" title={booking.hotelName}>
+                                                        {booking.hotelName}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                        <div>Code: {booking.hotelCode}</div>
+                                                        <div>City: {booking.city}</div>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-900">
                                                 {formatDate(booking.checkInDate)}
@@ -852,13 +895,13 @@ const HotelBookingHistory = () => {
                                                 {booking.nights} {booking.nights === 1 ? 'night' : 'nights'}
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-900">
-                                                {booking.numberOfRooms}
+                                                <div>
+                                                    <div>{booking.numberOfRooms} room{booking.numberOfRooms !== '1' ? 's' : ''}</div>
+                                                    <div className="text-xs text-gray-500">{booking.numberOfGuests} guest{booking.numberOfGuests !== '1' ? 's' : ''}</div>
+                                                </div>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900">
-                                                {booking.numberOfGuests}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-600">
-                                                <div className="max-w-xs truncate" title={booking.roomType}>
+                                            <td className="px-3 py-3 text-sm text-gray-600 w-20">
+                                                <div className="truncate text-xs" title={booking.roomType}>
                                                     {booking.roomType}
                                                 </div>
                                             </td>
@@ -874,33 +917,34 @@ const HotelBookingHistory = () => {
                                                 {formatAmount(booking.totalAmount)}
                                             </td>
                                             <td className="px-4 py-3 text-sm">
-                                                <span className={`font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' ? 'text-green-600' :
-                                                    booking.paymentStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
-                                                        booking.paymentStatus?.toLowerCase() === 'failed' ? 'text-red-600' :
-                                                            'text-blue-600'
-                                                    }`}>
+                                                <span className={`font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
                                                     {booking.paymentStatus}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600">
                                                 <div className="flex flex-col">
                                                     <span className="font-medium">{booking.createdAt}</span>
-                                                    <span className="text-xs text-gray-400">
-                                                        {sortOrder === 'desc' ? 'Latest First' : 'Oldest First'}
-                                                    </span>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm">
-                                                <button
-                                                    onClick={() => {
-                                                        console.log('View hotel booking details:', booking);
-                                                        // You can add your view details logic here
-                                                    }}
-                                                    className="text-blue-500 hover:text-blue-700 font-medium flex items-center"
-                                                >
-                                                    <span className="mr-1">👁️</span>
-                                                    View
-                                                </button>
+                                                <div className="flex flex-col space-y-1">
+
+                                                    {/* Download Invoice Button */}
+                                                    <button
+                                                        onClick={() => handleInvoiceDownload(booking)}
+                                                        disabled={isDownloadingInvoice || !booking.searchTokenId}
+                                                        className={`px-3 py-1 rounded text-white text-xs ${!booking.searchTokenId
+                                                            ? "bg-gray-400 cursor-not-allowed"
+                                                            : isDownloadingInvoice
+                                                                ? "bg-orange-500 cursor-wait"
+                                                                : "bg-red-500 hover:bg-red-600"
+                                                            }`}
+                                                        title={!booking.searchTokenId ? "Invoice not available" : "Download Invoice"}
+                                                    >
+                                                        {isDownloadingInvoice ? "Downloading..." : "Invoice"}
+                                                    </button>
+
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm">
                                                 {renderRealTimeStatus(booking)}
@@ -913,8 +957,6 @@ const HotelBookingHistory = () => {
                     </table>
                 </div>
             </div>
-
-
         </div>
     );
 };

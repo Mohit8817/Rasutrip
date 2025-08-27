@@ -4,7 +4,7 @@ import { CheckCircle } from "react-bootstrap-icons";
 import { blockRoom } from "../../APIS/HotelApi/HotelAPi";
 
 // Loading Popup Component
-const LoadingPopup = ({ isVisible, roomName }) => {
+const LoadingPopup = ({ isVisible, roomName, roomCount }) => {
   if (!isVisible) return null;
 
   return (
@@ -22,11 +22,11 @@ const LoadingPopup = ({ isVisible, roomName }) => {
       >
         {/* Main Message */}
         <h5 className="fw-bold text-dark mb-2">
-           Blocking Your Room...
+          Blocking Your Room{roomCount > 1 ? 's' : ''}...
         </h5>
 
         <p className="text-muted mb-3">
-          Please wait while we secure <strong>"{roomName}"</strong> for you
+          Please wait while we secure <strong>"{roomName}"</strong> {roomCount > 1 ? `(${roomCount} rooms)` : ''} for you
         </p>
 
         {/* Warning Message */}
@@ -73,23 +73,46 @@ const RoomCard = ({
     );
   };
 
-  const isValidPANFormat = (pan) => {
-    if (!pan || typeof pan !== "string") return false;
-    const cleanPAN = pan.trim().toUpperCase();
-
-    if (
-      cleanPAN === "" ||
-      cleanPAN === "NULL" ||
-      cleanPAN === "UNDEFINED" ||
-      cleanPAN.replace(/\s/g, "") === ""
-    ) {
-      return false;
+  // ✅ NEW: Function to find room combinations based on selected room
+  const findRoomCombination = (selectedRoomIndex, roomCombinations, requiredRooms = 1) => {
+    if (!roomCombinations?.RoomCombination || requiredRooms === 1) {
+      return [selectedRoomIndex];
     }
 
-    return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPAN);
+    // Find combination that includes the selected room index
+    for (const combination of roomCombinations.RoomCombination) {
+      if (combination.RoomIndex && combination.RoomIndex.includes(selectedRoomIndex)) {
+        // Return only the number of rooms needed
+        return combination.RoomIndex.slice(0, requiredRooms);
+      }
+    }
+
+    // Fallback: return just the selected room if no combination found
+    return [selectedRoomIndex];
   };
 
-  const handleBookNow = async (room) => {
+  // ✅ NEW: Function to get room details by index
+  const getRoomByIndex = (roomIndex) => {
+    return roomData.find(room => room.RoomIndex === roomIndex);
+  };
+
+  // ✅ NEW: Function to calculate total price for multiple rooms
+  const calculateTotalPrice = (roomIndexes) => {
+    let totalPrice = 0;
+    let totalTax = 0;
+    
+    roomIndexes.forEach(index => {
+      const room = getRoomByIndex(index);
+      if (room) {
+        totalPrice += Number(room?.Price?.OfferedPrice || 0);
+        totalTax += Number(room?.Price?.Tax || 0);
+      }
+    });
+
+    return { totalPrice, totalTax };
+  };
+
+  const handleBookNow = async (room, roomCombinations = null) => {
     if (room.AvailabilityType !== "Confirm") {
       alert("⚠️ This room is not available. Please choose another.");
       return;
@@ -97,6 +120,7 @@ const RoomCard = ({
 
     // ✅ Calculate total adults properly
     let totalAdults = hotel?.adult || 1;
+    const requiredRooms = hotel?.rooms || 1;
 
     // Try to get from roomDetails if available
     if (hotel?.searchDetails?.roomDetails && Array.isArray(hotel.searchDetails.roomDetails)) {
@@ -104,24 +128,35 @@ const RoomCard = ({
     }
 
     console.log("👥 Total Adults for PAN check:", totalAdults);
+    console.log("🏨 Required Rooms:", requiredRooms);
+
+    // ✅ Find room combination based on selected room
+    const selectedRoomIndexes = findRoomCombination(
+      room.RoomIndex, 
+      roomCombinations, 
+      requiredRooms
+    );
+
+    console.log("🔗 Selected Room Combination:", selectedRoomIndexes);
 
     // Show loading popup
     setLoadingRoomId(room.RoomId);
     setLoadingRoomName(room.RoomTypeName || "Selected Room");
 
-    // ✅ Enhanced block payload with better error handling
+    // ✅ Build HotelRoomsDetails array for multiple rooms
+    const hotelRoomsDetails = selectedRoomIndexes.map(roomIndex => ({
+      RoomIndex: roomIndex,
+    }));
+
+    // ✅ Enhanced block payload with multiple rooms support
     const blockPayload = {
       UserIp: payload.UserIp || "49.36.217.215",
       HotelCode: payload.HotelCode,
       ResultIndex: payload.ResultIndex,
       SearchTokenId: payload.SearchTokenId,
       HotelName: hotel?.HotelName,
-      NoOfRooms: hotel?.rooms || 1,
-      HotelRoomsDetails: [
-        {
-          RoomIndex: room.RoomIndex || 1,
-        },
-      ],
+      NoOfRooms: requiredRooms,
+      HotelRoomsDetails: hotelRoomsDetails,
     };
 
     console.log("📤 Block Room Payload:", blockPayload);
@@ -132,17 +167,25 @@ const RoomCard = ({
       console.log("📥 Block Room Response:", blockRes);
 
       if (blockRes?.Error?.ErrorCode === 0) {
-        const baseFare = Number(room?.Price?.OfferedPrice || 0);
-        const tax = Number(room?.Price?.Tax || 0);
+        // ✅ Calculate total price for all selected rooms
+        const { totalPrice, totalTax } = calculateTotalPrice(selectedRoomIndexes);
+
+        // ✅ Get all room details for the combination
+        const selectedRooms = selectedRoomIndexes.map(index => getRoomByIndex(index)).filter(Boolean);
+
+        // ✅ Check if any room requires PAN
+        const anyPANMandatory = selectedRooms.some(r => isPANMandatory(r));
 
         onRoomSelect?.({
-          baseFare,
-          tax,
+          baseFare: totalPrice,
+          tax: totalTax,
           serviceCharges: 0,
           gst: 0,
-          room,
+          room: selectedRooms[0], // Primary room for display
+          rooms: selectedRooms, // All selected rooms
           hotel,
-          isPANMandatory: isPANMandatory(room),
+          isPANMandatory: anyPANMandatory,
+          roomCombination: selectedRoomIndexes,
         });
 
         onBlockStatusChange?.("success");
@@ -154,10 +197,12 @@ const RoomCard = ({
               ...hotel,
               totalAdults, // ✅ Pass calculated total adults
             },
-            room,
+            room: selectedRooms[0], // Primary room
+            rooms: selectedRooms, // All selected rooms
+            roomCombination: selectedRoomIndexes,
             priceDetails: {
-              baseFare,
-              tax,
+              baseFare: totalPrice,
+              tax: totalTax,
               serviceCharges: 0,
               gst: 0,
             },
@@ -165,7 +210,7 @@ const RoomCard = ({
             guestDetails: {
               adult: totalAdults,
               child: hotel?.child || 0,
-              rooms: hotel?.rooms || 1,
+              rooms: requiredRooms,
               nights: hotel?.nights || 1,
               city: hotel?.city || '',
               checkInDate: hotel?.checkInDate || '',
@@ -175,7 +220,7 @@ const RoomCard = ({
             searchDetails: hotel?.searchDetails || {
               adult: totalAdults,
               child: hotel?.child || 0,
-              rooms: hotel?.rooms || 1,
+              rooms: requiredRooms,
               nights: hotel?.nights || 1,
               guests: hotel?.guests || totalAdults,
               city: hotel?.city || '',
@@ -184,7 +229,7 @@ const RoomCard = ({
             },
             payload: blockPayload,
             blockedRoomData: blockRes?.Result,
-            isPANMandatory: isPANMandatory(room),
+            isPANMandatory: anyPANMandatory,
           },
         });
       } else if (blockRes?.Error?.ErrorCode === 5) {
@@ -215,23 +260,49 @@ const RoomCard = ({
   const displayRooms = hotel?.rooms || 1;
   const displayNights = hotel?.nights || 1;
 
+  // ✅ Get room combinations from the latest room data response
+  const roomCombinations = roomData?.[0]?.RoomCombinations || null;
+
   return (
     <div>
       {/* Loading Popup */}
       <LoadingPopup
         isVisible={loadingRoomId !== null}
         roomName={loadingRoomName}
+        roomCount={displayRooms}
       />
 
       <h5 className="fw-bold mb-3 mt-3">
         Rooms ({availableRooms.length} available)
+        {displayRooms > 1 && (
+          <small className="text-muted ms-2">
+            (Booking {displayRooms} rooms)
+          </small>
+        )}
       </h5>
+
+      {/* ✅ Room combination info */}
+      {displayRooms > 1 && roomCombinations && (
+        <div className="alert alert-info mb-3">
+          <small>
+            <strong>Multi-Room Booking:</strong> When you select a room, we'll automatically book {displayRooms} rooms based on available combinations.
+          </small>
+        </div>
+      )}
 
       {availableRooms.length > 0 ? (
         availableRooms.map((room, idx) => {
           const offeredPrice = Number(room?.Price?.OfferedPrice || 0);
           const panMandatory = isPANMandatory(room);
           const isCurrentRoomLoading = loadingRoomId === room.RoomId;
+
+          // ✅ Calculate combination price for display
+          let displayPrice = offeredPrice;
+          if (displayRooms > 1 && roomCombinations) {
+            const combination = findRoomCombination(room.RoomIndex, roomCombinations, displayRooms);
+            const { totalPrice } = calculateTotalPrice(combination);
+            displayPrice = totalPrice;
+          }
 
           return (
             <div
@@ -240,12 +311,15 @@ const RoomCard = ({
             >
               <div>
                 <div className="fw-bold">{room.RoomTypeName || "Room"}
-                  {/* Enhanced PAN mandatory warning */}
                   {panMandatory && (
-                    <span className="">
-                      *
+                    <span className="">*</span>
+                  )}
+                  {displayRooms > 1 && (
+                    <span className="badge bg-primary ms-2 small">
+                      {displayRooms} Rooms
                     </span>
-                  )}</div>
+                  )}
+                </div>
 
                 <div className="small text-muted mb-1">
                   {hotel.checkInDate} → {hotel.checkOutDate} • {displayNights} Night{displayNights > 1 ? 's' : ''}
@@ -253,14 +327,21 @@ const RoomCard = ({
                 <div className="small text-muted mb-2">
                   {displayGuests} Guest{displayGuests > 1 ? 's' : ''} ({displayAdults} Adult{displayAdults > 1 ? 's' : ''}, {displayChildren} Child{displayChildren !== 1 ? 'ren' : ''}) • {displayRooms} Room{displayRooms > 1 ? 's' : ''}
                 </div>
+                
+                {/* ✅ Price display with room count consideration */}
                 <div className="fw-bold text-dark mb-2">
-                  ₹{offeredPrice.toLocaleString()}
+                  ₹{displayPrice.toLocaleString()}
+                  {displayRooms > 1 && (
+                    <small className="text-muted ms-2">
+                      (₹{offeredPrice.toLocaleString()} per room)
+                    </small>
+                  )}
                 </div>
 
                 {/* ✅ Show room amenities if available */}
-                {room.RoomAmenities && room.RoomAmenities.length > 0 && (
+                {room.Amenities && room.Amenities.length > 0 && (
                   <div className="small text-muted">
-                    <strong>Amenities:</strong> {room.RoomAmenities.map(a => a.Name).join(', ')}
+                    <strong>Amenities:</strong> {room.Amenities.join(', ')}
                   </div>
                 )}
               </div>
@@ -283,9 +364,9 @@ const RoomCard = ({
                   </div>
                   <button
                     className="btn btn-danger btn-sm px-3 ms-2"
-                    onClick={() => handleBookNow(room)}
+                    onClick={() => handleBookNow(room, roomCombinations)}
                     disabled={isCurrentRoomLoading}
-                    title={panMandatory ? "Ensure all adults have valid PAN numbers" : "Book this room"}
+                    title={panMandatory ? "Ensure all adults have valid PAN numbers" : `Book this room${displayRooms > 1 ? 's' : ''}`}
                   >
                     {isCurrentRoomLoading ? (
                       <>
@@ -293,7 +374,7 @@ const RoomCard = ({
                         Booking...
                       </>
                     ) : (
-                      "Book Now"
+                      `Book ${displayRooms > 1 ? displayRooms + ' Rooms' : 'Now'}`
                     )}
                   </button>
                 </div>
@@ -301,9 +382,9 @@ const RoomCard = ({
                 {/* Desktop view - original layout */}
                 <button
                   className="btn btn-danger btn-sm px-4 d-none d-md-block"
-                  onClick={() => handleBookNow(room)}
+                  onClick={() => handleBookNow(room, roomCombinations)}
                   disabled={isCurrentRoomLoading}
-                  title={panMandatory ? "Ensure all adults have valid PAN numbers" : "Book this room"}
+                  title={panMandatory ? "Ensure all adults have valid PAN numbers" : `Book this room${displayRooms > 1 ? 's' : ''}`}
                 >
                   {isCurrentRoomLoading ? (
                     <>
@@ -311,7 +392,7 @@ const RoomCard = ({
                       Booking...
                     </>
                   ) : (
-                    "Book Now"
+                    `Book ${displayRooms > 1 ? displayRooms + ' Rooms' : 'Now'}`
                   )}
                 </button>
               </div>
