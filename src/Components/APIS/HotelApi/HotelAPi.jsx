@@ -9,6 +9,7 @@ const HotelServices = {
   roomInfo: `${baseURL}/hotelservice/getroominfo`,
   blockRoom: `${baseURL}/hotelservice/blockroom`,
   applyCoupon: `${baseURL}/airservice/apply-coupon`,
+  specialOffers: `${baseURL}/user/special-offer`,
   createOrder: `${baseURL}/hotelservice/create-order`,
   validate: `${baseURL}/hotelservice/validate`,
   book: `${baseURL}/hotelservice/book`,
@@ -88,32 +89,50 @@ export const fetchRoomInfo = async (payload) => {
 // ✅ Apply coupon code for hotel booking
 export const applyCouponCode = async (couponCode) => {
   try {
-    const payload = {
-      code: couponCode
-    };
+    const payload = { code: couponCode };
 
     const res = await axios.post(HotelServices.applyCoupon, payload);
 
-    // Return success response with coupon details
     return {
       success: true,
       data: res.data,
-      message: res.data?.message || "Coupon applied successfully!"
+      message: res.data?.message || "Coupon applied successfully!",
     };
   } catch (err) {
     console.error("❌ Failed to apply coupon:", err.response?.data || err.message);
-
-    // Return error response
     return {
       success: false,
       data: null,
-      message: err.response?.data?.message || "Invalid coupon code or coupon has expired"
+      message:
+        err.response?.data?.message ||
+        "Invalid coupon code or coupon has expired",
     };
   }
 };
 
+// ✅ Fetch Special Offers
+export const fetchSpecialOffers = async () => {
+  try {
+    const res = await axios.get(HotelServices.specialOffers);
+
+    return {
+      success: true,
+      data: res.data || [],
+    };
+  } catch (err) {
+    console.error("❌ Failed to fetch offers:", err.response?.data || err.message);
+    return {
+      success: false,
+      data: [],
+      message: "Failed to load special offers",
+    };
+  }
+};
+
+export default HotelServices;
 
 
+// ✅ Block room before final booking
 export const blockRoom = async (payload) => {
   try {
     const res = await axios.post(`${baseURL}/hotelservice/blockroom`, payload);

@@ -7,6 +7,8 @@ const BusServices = {
   searchResults: `${baseURL}/busservice/search`,
   seatLayout: `${baseURL}/busservice/seatlayout`,
   boardingDroppingPoints: `${baseURL}/busservice/boardingpoint`,
+  specialOffers: `${baseURL}/user/special-offer`,
+  applyCoupon: `${baseURL}/airservice/apply-coupon`,
   blockSeat: `${baseURL}/busservice/blockseat`,
   createOrder: `${baseURL}/busservice/create-order`,
   validatePayment: `${baseURL}/busservice/validate`,
@@ -169,6 +171,48 @@ export const blockSeats = async ({
     throw error;
   }
 };
+
+
+
+
+
+
+// ───────────────────────────────────────────────
+// 📍 Get special offers (coupon list)
+// ───────────────────────────────────────────────
+export const fetchSpecialOffers = async () => {
+  try {
+    const response = await axios.get(BusServices.specialOffers, {
+      headers: createAuthHeaders(),
+    });
+    return response.data;
+  } catch (err) {
+    console.error("❌ Error fetching special offers:", err.response?.data || err.message);
+    return [];
+  }
+};
+
+// ───────────────────────────────────────────────
+// 🎟 Apply coupon
+// ───────────────────────────────────────────────
+export const applyBusCoupon = async (couponCode, totalAmount) => {
+  try {
+    const response = await axios.post(
+      BusServices.applyCoupon,
+      {
+        coupon_code: couponCode,   // 👈 must be snake_case
+        amount: totalAmount,       // 👈 try "amount" ya "total_amount"
+      },
+      { headers: createAuthHeaders() }
+    );
+    return response.data;
+  } catch (err) {
+    console.error("❌ Error applying coupon:", err.response?.data || err.message);
+    throw err;
+  }
+};
+
+
 
 // _____________________________________________________
 // ✅ FIXED: Create bus Razorpay order
