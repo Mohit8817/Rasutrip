@@ -10,25 +10,25 @@ const FareSummary = ({ passengerSelections = [] }) => {
   const rasocommision = parseFloat(localStorage.getItem('rasocommision')) || 0;
 
   useEffect(() => {
-  const res = localStorage.getItem('fareSummery');
-  const parsedFare = res ? JSON.parse(res) : null;
+    const res = localStorage.getItem('fareSummery');
+    const parsedFare = res ? JSON.parse(res) : null;
 
-  if (!parsedFare) return;
+    if (!parsedFare) return;
 
-  if (Array.isArray(parsedFare)) {
-    // Format 1: Array
-    setFareOnward(parsedFare[0] || null);
-    setFareReturn(parsedFare[1] || null);
-  } else if (parsedFare?.onward || parsedFare?.return) {
-    // Format 2: Object with onward and return
-    setFareOnward(parsedFare?.onward || null);
-    setFareReturn(parsedFare?.return || null);
-  } else {
-    // Fallback: treat as single object (one-way)
-    setFareOnward(parsedFare);
-    setFareReturn(null);
-  }
-}, [journeyType]);
+    if (Array.isArray(parsedFare)) {
+      // Format 1: Array
+      setFareOnward(parsedFare[0] || null);
+      setFareReturn(parsedFare[1] || null);
+    } else if (parsedFare?.onward || parsedFare?.return) {
+      // Format 2: Object with onward and return
+      setFareOnward(parsedFare?.onward || null);
+      setFareReturn(parsedFare?.return || null);
+    } else {
+      // Fallback: treat as single object (one-way)
+      setFareOnward(parsedFare);
+      setFareReturn(null);
+    }
+  }, [journeyType]);
 
 
   const getServiceCharge = (price) => (price * rasocommision) / 100;
@@ -76,12 +76,7 @@ const FareSummary = ({ passengerSelections = [] }) => {
             ₹ {(fareData?.Fare?.OtherCharges ?? 0).toFixed(2)}
           </Col>
         </Row>
-        <Row className="fare-row py-1">
-          <Col>Convenience Fee</Col>
-          <Col className="text-end">
-            ₹ {getServiceCharge(fareData?.PublishedPrice || 0).toFixed(2)}
-          </Col>
-        </Row>
+
       </>
     );
   };
@@ -111,6 +106,10 @@ const FareSummary = ({ passengerSelections = [] }) => {
         </Row>
       </Card.Body>
 
+      <Row className="fare-row py-1" style={{ borderTop: '1px solid #e9e9e9' }}>
+        <Col className='ml-4'>Convenience Fee</Col>
+        <Col className="text-end">₹ {serviceCharge.toFixed(2)}</Col>
+      </Row>
       <Card.Footer className="bg-light fw-bold d-flex justify-content-between">
         <span>Total Payable</span>
         <span>₹ {totalPay}</span>

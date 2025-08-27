@@ -1,6 +1,8 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+ import { Container, Row, Col } from 'react-bootstrap';
+
 
 const RoundTripBookingBar = () => {
   const navigate = useNavigate();
@@ -49,48 +51,62 @@ const RoundTripBookingBar = () => {
     return timeString.slice(11, 16); // Extracts HH:MM from ISO string
   };
 
-  return (
-    <div
-      className="position-fixed left-0 bottom-0 w-100 bg-danger text-white py-1 px-4 d-flex flex-column flex-md-row justify-content-between align-items-center shadow"
-      style={{ zIndex: 1050 }}
-    >
-      {/* Onward Flight Info */}
-      <div className="d-flex flex-column flex-sm-row align-items-center gap-3 mb-3 mb-md-0">
-        <div className="me-3">
-          <p className="mb-0 small">{onwardSeg?.Airline?.AirlineName || 'Onward Flight'}</p>
-          <p className="mb-0 fw-semibold">
-            {onwardSeg?.Origin?.AirportCode} {formatTime(onwardSeg?.Origin?.DepartTime)} ➝{' '}
-            {onwardSeg?.Destination?.AirportCode} {formatTime(onwardSeg?.Destination?.ArrivalTime)}
-          </p>
-        </div>
-        <div className="fw-bold fs-6">₹ {onwardFare.toLocaleString()}</div>
-      </div>
 
-      {/* Return Flight Info */}
-      <div className="d-flex   flex-sm-row align-items-center gap-3 mb-3 mb-md-0">
-        <div className="me-3">
-          <p className="mb-0 small">{returnSeg?.Airline?.AirlineName || 'Return Flight'}</p>
-          <p className="mb-0 fw-semibold">
-            {returnSeg?.Origin?.AirportCode} {formatTime(returnSeg?.Origin?.DepartTime)} ➝{' '}
-            {returnSeg?.Destination?.AirportCode} {formatTime(returnSeg?.Destination?.ArrivalTime)}
-          </p>
-        </div>
-        <div className="fw-bold fs-6">₹ {returnFare.toLocaleString()}</div>
-      </div>
+return (
+  <div
+    className="position-fixed left-0 bottom-0 w-100 bg-danger text-white py-2 shadow"
+    style={{ zIndex: 1050 }}
+  >
+    <Container fluid>
+      <Row className="align-items-center">
+        {/* Onward Flight Info - Col-3 */}
+        <Col col={2} className="mb-2 mb-md-0">
+          <div className="text-center text-md-start">
+            <p className="mb-0 small">{onwardSeg?.Airline?.AirlineName || 'Onward Flight'}</p>
+            <p className="mb-0 fw-semibold small">
+              {onwardSeg?.Origin?.AirportCode} {formatTime(onwardSeg?.Origin?.DepartTime)} ➝{' '}
+              {onwardSeg?.Destination?.AirportCode} {formatTime(onwardSeg?.Destination?.ArrivalTime)}
+            </p>
+            <div className="fw-bold">₹ {onwardFare.toLocaleString()}</div>
+          </div>
+        </Col>
 
-      {/* Total Fare and Book Button */}
-      <div className="text-center">
-        <p className="mb-1 fw-bold fs-5">₹ {totalFare.toLocaleString()}</p>
-        <button
-          onClick={handleBook}
-          className="btn btn-light w-fitcontent fw-semibold px-4 py-2 rounded-pill"
-          disabled={!selectedOnward || !selectedReturn}
-        >
-          BOOK NOW
-        </button>
-      </div>
-    </div>
-  );
+        {/* Return Flight Info - Col-3 */}
+        <Col col={3} className="mb-2 mb-md-0">
+          <div className="text-center text-md-start">
+            <p className="mb-0 small">{returnSeg?.Airline?.AirlineName || 'Return Flight'}</p>
+            <p className="mb-0 fw-semibold small">
+              {returnSeg?.Origin?.AirportCode} {formatTime(returnSeg?.Origin?.DepartTime)} ➝{' '}
+              {returnSeg?.Destination?.AirportCode} {formatTime(returnSeg?.Destination?.ArrivalTime)}
+            </p>
+            <div className="fw-bold">₹ {returnFare.toLocaleString()}</div>
+          </div>
+        </Col>
+
+        {/* Total Fare - Col-3 */}
+        <Col col={3} className="mb-2 mb-md-0">
+          <div className="text-center">
+            <p className="mb-0 small">Total Fare</p>
+            <p className="mb-0 fw-bold fs-4">₹ {totalFare.toLocaleString()}</p>
+          </div>
+        </Col>
+
+        {/* Book Button - Col-3 */}
+        <Col col={3}>
+          <div className="text-center">
+            <button
+              onClick={handleBook}
+              className="btn btn-light fw-semibold px-4 py-2 rounded-pill w-100"
+              disabled={!selectedOnward || !selectedReturn}
+            >
+              BOOK NOW
+            </button>
+          </div>
+        </Col>
+      </Row>
+    </Container>
+  </div>
+);
 };
 
 export default RoundTripBookingBar;

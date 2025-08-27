@@ -1,22 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import './MultiCity.css'; // Your custom styles
 
-const DateSelect = ({onDateChange}) => {
+const DateSelect = ({ onDateChange, index }) => {
 
     const [travelDate, setTravelDate] = useState(new Date());
     const [showCalendar, setShowCalendar] = useState(false);
 
 
     const handleSelect = (date) => {
-        setTravelDate(date);
+        // setTravelDate(date);
         setShowCalendar(false);
-    
-        onDateChange(date)
-        
-      };
+        // onDateChange(date)
+    };
+    useEffect(() => {
+        const today = new Date();
+        const dateToSet = new Date();
+        dateToSet.setDate(today.getDate() + index);
+        setTravelDate(dateToSet);
+        onDateChange(dateToSet);
+    }, []);
 
     const formatDate = (date) =>
         date?.toLocaleDateString("en-GB", {
@@ -24,6 +29,10 @@ const DateSelect = ({onDateChange}) => {
             month: "short",
             year: "numeric",
         });
+
+    const disabledDays = {
+        before: new Date()
+    };
 
     return (
         <div>
@@ -43,6 +52,9 @@ const DateSelect = ({onDateChange}) => {
                                 mode="single"
                                 selected={travelDate}
                                 onSelect={handleSelect}
+                                disabled={disabledDays}
+                                showOutsideDays
+                                fixedWeeks
                             />
                         </div>
                     )}
