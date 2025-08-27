@@ -5,17 +5,31 @@ import '../../Style/Pagescss/FlightResultsPage.css';
 import { parse } from 'postcss';
 
 const getSidebarFilters = (allFlights) => {
+    console.log('allFlights',allFlights)
     const prices = [];
     const airlineSet = new Set();
     let maxStops = 0;
+   const  journeyType =localStorage.getItem('tripType')
+    if(allFlights){
 
+        if(journeyType=='oneway' || journeyType=='multicity'){
+            allFlights=allFlights
+
+        }
+        else{
+            allFlights=allFlights[0]
+
+        }
+        
+    }
+    
     allFlights?.forEach((flight) => {
         // Price
         prices.push(flight.MinPublishedPrice);
 
         // Airlines
-        flight.Segments.forEach((segmentGroup) => {
-            segmentGroup.forEach((segment) => {
+        flight?.Segments?.forEach((segmentGroup) => {
+            segmentGroup?.forEach((segment) => {
                 airlineSet.add(segment.Airline.AirlineName);
             });
 
@@ -37,10 +51,11 @@ const getSidebarFilters = (allFlights) => {
 
 
 
-const FlightSidebar = ({ filters, setFilters }) => {
+const FlightSidebar = ({ filters=[], setFilters=[]}) => {
 
     const res = localStorage.getItem('SearchedFlights')
     const allFlight = JSON.parse(res)
+
     const filters1 = getSidebarFilters(allFlight);
     const [price, setPrice] = useState(filters1?.minPrice || 1000);
     useEffect(() => {
@@ -126,9 +141,9 @@ const FlightSidebar = ({ filters, setFilters }) => {
 
     return (
         <Card className="p-3 filter-sidebar" style={{
-            "position": "sticky",
-            "top": "104px",
-            "overflow-y": "hidden"
+            // "position": "sticky",
+            // "top": "104px",
+            // "overflow-y": "hidden"
         }}>
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <div className="fw-bold"><i className="bi bi-funnel-fill me-2" /> Filter Results</div>

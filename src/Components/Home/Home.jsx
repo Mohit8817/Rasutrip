@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 // import Header from '../header/Header'
 // import Footer from '../Footer/Footer';
 import Slider from '../hero/Slider'
@@ -13,8 +13,20 @@ import { motion } from "framer-motion";
 import road from "../../Assests/newHomeImgs/Background.png"
 import GoogleReviews from './GoogleReviews'
 import AboutRasu from './AboutRasu'
+import { getUserIP } from '../APIS/FlightApi/FlightApi'
 
 const Home = () => {
+
+
+       const GetUserIP = async () => {
+    const ip = await getUserIP();
+    localStorage.setItem('UserIp', ip);
+  };
+
+  useEffect(() => {
+    GetUserIP();
+  }, []); 
+
       const images = [
         {
             id: 1,

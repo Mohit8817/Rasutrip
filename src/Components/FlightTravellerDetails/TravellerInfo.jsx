@@ -1,41 +1,63 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
-import { FaEnvelope } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPassengers, updatePassenger } from '../../redux/Slices/PassengersSlice';
-import { toast } from 'react-toastify';
-
-import { LocationContext } from '../Context/LocationContext';
+import countries from './countries.json';
 import { fetchSSR } from '../APIS/FlightApi/FlightApi';
 import moment from 'moment';
+import FlightLoader from '../FlightLoader/FlightLoader';
 
-const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
-    const { locationData } = useContext(LocationContext);
-    const dispatch = useDispatch();
+const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary }) => {
+    // Resolve current fareConfirm for oneway/roundtrip
+    const tripType = localStorage.getItem('tripType') || 'oneway';
+    let fareConfirm = fareConfirmData;
+    if (tripType === 'roundtrip' && fareConfirm?.onward) {
+        fareConfirm = fareConfirm.onward;
+    }
+
     const navigate = useNavigate();
-    const res = localStorage.getItem('SearchedFlights')
-    const SearchData = JSON.parse(res)
-    const PassagerOrigin = SearchData[0].Segments[0]?.[0].Origin
-    const [loading, setLoading] = useState(false);
-    const passengersData = useSelector((state) => state.passengersData || []);
-    const [contactDetails, setContactDetails] = useState({
-        countryCode: '91',
-        mobile: '',
-        email: ''
-    });
+    const dispatch = useDispatch();
 
-    // Initialize passengers based on fare breakdown
+    // Read origin from selected flight
+    let PassagerOrigin = null;
+    try {
+        if (tripType === 'oneway' || tripType === 'multicity') {
+            const res = localStorage.getItem('selectedFlight');
+            const SearchData = res ? JSON.parse(res) : null;
+            PassagerOrigin = SearchData?.Segments?.[0]?.Origin || null;
+        } else if (tripType === 'roundtrip') {
+            const resOn = localStorage.getItem('selectedOnwardFlight');
+            const fallback = resOn || localStorage.getItem('selectedFlight');
+            const SearchData = fallback ? JSON.parse(fallback) : null;
+            PassagerOrigin = SearchData?.Segments?.Origin || null;
+        }
+    } catch (e) {
+        PassagerOrigin = null;
+    }
+
+    const passengersData = useSelector((s) => s.passengersData || []);
+    const [loading, setLoading] = useState(false);
+    const [open, setOpen] = useState(false);
+
+    const flags = {
+        passport: !!fareConfirm?.IsPassportRequiredAtBook,
+        pan: !!fareConfirm?.IsPanRequiredAtBook,
+        gstAllowed: !!fareConfirm?.GSTAllowed,
+        gstMandatory: !!fareConfirm?.IsGSTMandatory
+    };
+
     useEffect(() => {
         if (!fareConfirm) return;
+
         const createEmptyPassenger = (type, index) => ({
             type,
-            Title: 'Mr',
+            Title: '',
             FirstName: '',
             LastName: '',
             PaxType: type === 'ADT' ? 1 : type === 'CHD' ? 2 : 3,
             DateOfBirth: '',
-            Gender: '',
+            Gender: '',               // now required for all
             PassportNo: '',
             PassportExpiry: '',
             Nationality: '',
@@ -44,533 +66,561 @@ const TravellerInfo = ({ fareConfirm, SelectedFare }) => {
             AddressLine1: '',
             AddressLine2: '',
             City: '',
-            CountryCode: PassagerOrigin.CountryCode,
-            CountryName: PassagerOrigin.CountryName,
+            CountryCode: PassagerOrigin?.CountryCode || 'IN',
+            CountryName: PassagerOrigin?.CountryName || 'India',
             ContactNo: '',
             Email: '',
             IsLeadPax: index === 0 && type === 'ADT',
-            FFAirline: '',
-            FFNumber: '',
-            documentId: '',
-            Baggage: [],
-            Meal: [],
-            Seat: [],
             GSTCompanyName: '',
             GSTCompanyAddress: '',
             GSTCompanyContactNumber: '',
             GSTNumber: '',
-            GSTCompanyEmail: ''
+            GSTCompanyEmail: '',
+            Baggage: [],
+            Meal: [],
+            Seat: []
         });
 
-        const passengers = [];
+        const p = [];
+        const adt = fareConfirm?.FareBreakdown?.ADT?.PassengerCount || 0;
+        const chd = fareConfirm?.FareBreakdown?.CHD?.PassengerCount || 0;
+        const inf = fareConfirm?.FareBreakdown?.INF?.PassengerCount || 0;
 
-        // Add Adults
-        const adultCount = fareConfirm?.FareBreakdown?.ADT?.PassengerCount || 0;
-        for (let i = 0; i < adultCount; i++) {
-            passengers.push(createEmptyPassenger('ADT', i));
-        }
+        for (let i = 0; i < adt; i++) p.push(createEmptyPassenger('ADT', i));
+        for (let i = 0; i < chd; i++) p.push(createEmptyPassenger('CHD', i));
+        for (let i = 0; i < inf; i++) p.push(createEmptyPassenger('INF', i));
 
-        // Add Children
-        const childCount = fareConfirm?.FareBreakdown?.CHD?.PassengerCount || 0;
-        for (let i = 0; i < childCount; i++) {
-            passengers.push(createEmptyPassenger('CHD', i));
-        }
+        dispatch(setPassengers(p));
+    }, [fareConfirm, dispatch]);
 
-        // Add Infants
-        const infantCount = fareConfirm?.FareBreakdown?.INF?.PassengerCount || 0;
-        for (let i = 0; i < infantCount; i++) {
-            passengers.push(createEmptyPassenger('INF', i));
-        }
+    const setField = (type, index, field, value) =>
+        dispatch(updatePassenger({ type, index, field, value }));
 
-        dispatch(setPassengers(passengers));
-    }, [dispatch, fareConfirm, SelectedFare]);
-
-    const handlePassengerChange = (type, passengerIndex, field, value) => {
-        dispatch(updatePassenger({ type, index: passengerIndex, field, value }));
+    // Auto-gender mapper based on Title
+    const inferGenderFromTitle = (title) => {
+        if (!title) return '';
+        const t = title.toLowerCase();
+        if (t === 'mr' || t === 'mstr' || t === 'master') return '1';   // Male
+        if (t === 'mrs' || t === 'ms' || t === 'miss' || t === 'kumari') return '2'; // Female
+        return '';
     };
 
-
-    const handleContactChange = (field, value) => {
-        setContactDetails(prev => ({
-            ...prev,
-            [field]: value
-        }));
+    const handleTitleChange = (type, index, title) => {
+        setField(type, index, 'Title', title);
+        const autoGender = inferGenderFromTitle(title);
+        if (autoGender) {
+            setField(type, index, 'Gender', autoGender);
+        }
     };
 
-    const SSRPayload = useMemo(() => ({
-        UserIp: localStorage.getItem("UserIp") || "",
-        ResultIndex: SelectedFare?.FareId || "",
-        PublishedPrice: SelectedFare?.PublishedPrice,
-        SearchTokenId: localStorage.getItem("searchToken") || ""
-    }), [SelectedFare]);
+    // ALL-PAX required validation for DOB + Gender. Lead-only for address/contact.
+    const areAllRequiredFieldsFilled = () =>
+        passengersData.every((p) => {
+            const basic = p.Title?.trim() && p.FirstName?.trim() && p.LastName?.trim();
+            const genderOk = !!p.Gender;            // required for all
+            const dobOk = !!p.DateOfBirth;          // required for all
+
+            const leadOk = p.IsLeadPax
+                ? (p.AddressLine1?.trim() &&
+                    p.City?.trim() &&
+                    p.ContactNo?.trim() &&
+                    p.Email?.trim())
+                : true;
+
+            const passportOk =
+                !flags.passport || (p.PassportNo && p.PassportExpiry && p.Nationality);
+            const panOk = !flags.pan || !!p.PAN;
+
+            const gstOk =
+                !flags.gstMandatory || !p.IsLeadPax
+                    ? true
+                    : !!(p.GSTNumber && p.GSTCompanyName && p.GSTCompanyAddress && p.GSTCompanyContactNumber);
+
+            return basic && genderOk && dobOk && leadOk && passportOk && panOk && gstOk;
+        });
+
+    const isContinueDisabled = !areAllRequiredFieldsFilled() || loading;
+    const raw = localStorage.getItem('fareSummery');
+    const summaryData = raw ? JSON.parse(raw) : null;
+    const SSRPayload = useMemo(
+        () => ({
+            UserIp: localStorage.getItem('UserIp') || '',
+            ResultIndex: summaryData?.onward ? summaryData?.onward?.FareId : summaryData?.FareId || '',
+            SearchTokenId: localStorage.getItem('searchToken') || ''
+        }),
+        [summaryData]
+    );
+    const setLoaderTest = () => {
+
+        setOpen(open ? false : true)
+    }
+
+
+
     const handleContinue = async () => {
         setLoading(true);
         try {
+    console.log('SSRPayload',SSRPayload);
+
             const res = await fetchSSR(SSRPayload);
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
-            navigate('/addons', { state: { SSR: res?.Result || [], SelectedFare, passengersData } });
-        } catch (error) {
-            console.error("API call failed:", error);
-            const errMsg =
-                error?.response?.data?.error?.Error?.ErrorMessage || // if server sends a message
-                error?.message || // general axios error
-                "Something went wrong. Please try again.";
-            toast.error(errMsg);
+            navigate('/addons', {
+                state: {
+                    SSR: res?.Result || [],
+                    SelectedFare,
+                    passengersData,
+                    Faresummary
+                }
+            });
+        } catch (e) {
+            localStorage.setItem('passengersData', JSON.stringify(passengersData));
+            navigate('/addons', {
+                state: { SSR: [], SelectedFare, passengersData, Faresummary }
+            });
         } finally {
             setLoading(false);
         }
     };
 
+    const ErrorText = ({ show, text }) =>
+        show ? <div className="text-danger small mt-1">{text}</div> : null;
 
+    const blockHeader = (label) => (
+        <div className="px-3 py-2 mb-3" style={{ background: '#f3f5f7', borderRadius: 8 }}>
+            <h6 className="m-0 fw-bold">{label}</h6>
+        </div>
+    );
 
-    const areAllRequiredFieldsFilled = () => {
-        return passengersData.every(passenger => {
-            // Basic required fields for all passengers
-            const basicFieldsFilled =
-                passenger.Title?.trim() &&
-                passenger.FirstName?.trim() &&
-                passenger.LastName?.trim() &&
-                passenger.Gender?.trim() &&
-                passenger.ContactNo?.trim() &&
-                passenger.Email?.trim();
-
-            // Check DOB if required
-            const dobRequired =
-                (passenger.PaxType === 1 && (fareConfirm?.IsADTDOBRequired || fareConfirm?.IsAdultDOBMandatory)) ||
-                (passenger.PaxType === 2 && fareConfirm?.IsCHDDOBRequired) ||
-                (passenger.PaxType === 3 && fareConfirm?.IsINFTDOBRequired);
-
-            const dobFilled = !dobRequired || passenger.DateOfBirth;
-
-            // Check passport if required
-            const passportRequired = fareConfirm?.IsPassportRequiredAtBook;
-            const passportFilled = !passportRequired ||
-                (passenger.PassportNo && passenger.PassportExpiry && passenger.Nationality);
-
-            // Check PAN if required
-            const panRequired = fareConfirm?.IsPanRequiredAtBook;
-            const panFilled = !panRequired || passenger.PAN;
-
-            // Check GST if required (only for lead passenger)
-            const gstRequired = fareConfirm?.IsGSTMandatory && passenger.IsLeadPax;
-            const gstFilled = !gstRequired ||
-                (passenger.GSTNumber &&
-                    passenger.GSTCompanyName &&
-                    passenger.GSTCompanyAddress &&
-                    passenger.GSTCompanyContactNumber);
-
-            return basicFieldsFilled && dobFilled && passportFilled && panFilled && gstFilled;
-        });
+    const paxCounts = {
+        ADT: fareConfirm?.FareBreakdown?.ADT?.PassengerCount || 0,
+        CHD: fareConfirm?.FareBreakdown?.CHD?.PassengerCount || 0,
+        INF: fareConfirm?.FareBreakdown?.INF?.PassengerCount || 0
     };
 
-    // Check contact details
-    // const areContactDetailsFilled =
-    //     contactDetails.mobile &&
-    //     contactDetails.email;
-
-
-    // Combine all checks
-    const isContinueDisabled =
-        !areAllRequiredFieldsFilled() ||
-        // !areContactDetailsFilled() ||
-        loading;
-
-
-
-    const renderPassengerFields = (passenger, index, type) => {
+    const renderPassengerFields = (p, index, type) => {
+        const isLead = !!p.IsLeadPax;
         const isAdult = type === 'ADT';
         const isChild = type === 'CHD';
         const isInfant = type === 'INF';
+        const showDOB = true;
+        const showGender = true;
+        const showLeadContact = isLead;
+        const showLeadAddress = isLead;
 
-        // Determine required fields based on fareConfirm
-        const requireDOB = (isAdult && (fareConfirm?.IsADTDOBRequired || fareConfirm?.IsAdultDOBMandatory)) ||
-            (isChild && fareConfirm?.IsCHDDOBRequired) ||
-            (isInfant && fareConfirm?.IsINFTDOBRequired);
-
-        const requirePassport = fareConfirm?.IsPassportRequiredAtBook;
-        const requirePAN = fareConfirm?.IsPanRequiredAtBook;
-        const requireGST = fareConfirm?.IsGSTMandatory && passenger.IsLeadPax;
-
-        // Helper component for required field label
-        const RequiredLabel = ({ children }) => (
-            <span className="d-flex align-items-center">
-                {children} <span className="text-danger ms-1">*</span>
-            </span>
-        );
+        const blockTitle =
+            isAdult ? `Adult X ${paxCounts.ADT}` : isChild ? `Child X ${paxCounts.CHD}` : `Infant X ${paxCounts.INF}`;
+        const rowTitle = isAdult ? `Adult${index + 1}` : isChild ? `Child${index + 1}` : `Infant${index + 1}`;
 
         return (
-            <div key={passenger.Id} className="mb-4 border-bottom pb-3">
-                <h6 className="fw-bold">
-                    {isAdult ? 'Adult' : isChild ? 'Child' : 'Infant'} {index + 1}
-                    {passenger.IsLeadPax && " (Lead Passenger)"}
-                </h6>
 
-                <Row className="g-3 mt-2">
-                    {/* Personal Information */}
-                    <Col md={2}>
-                        <Form.Group>
-                            <Form.Label><RequiredLabel>Title</RequiredLabel></Form.Label>
-                            <Form.Select
-                                value={passenger.Title || ''}
-                                onChange={(e) => handlePassengerChange(type, index, 'Title', e.target.value)}
-                                required
-                            >
-                                {passenger.PaxType === 1 ? (
-                                    <>
-                                        <option value="Mr">Mr</option>
-                                        <option value="Ms">Ms</option>
-                                        <option value="Mrs">Mrs</option>
-                                    </>
-                                ) : (
-                                    <>
-                                        <option value="Ms">Ms</option>
-                                        <option value="Mstr">Mstr</option>
-                                    </>
-                                )}
+            <div key={`${type}-${index}`} className="mb-4">
+                {index === 0 && blockHeader(blockTitle)}
+                <div className="px-3">
+                    <h6 className="fw-bold mb-3">{rowTitle}</h6>
 
-
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label><RequiredLabel>First Name</RequiredLabel></Form.Label>
-                            <Form.Control
-                                placeholder="First Name"
-                                value={passenger.FirstName || ''}
-                                onChange={(e) => handlePassengerChange(type, index, 'FirstName', e.target.value)}
-                                required
-                            />
-                        </Form.Group>
-                    </Col>
-
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label><RequiredLabel>Last Name</RequiredLabel></Form.Label>
-                            <Form.Control
-                                placeholder="Last Name"
-                                value={passenger.LastName || ''}
-                                onChange={(e) => handlePassengerChange(type, index, 'LastName', e.target.value)}
-                                required
-                            />
-                        </Form.Group>
-                    </Col>
-
-                    {/* Date of Birth - Conditional */}
-                    {/* {requireDOB && ( */}
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label><RequiredLabel>Date of Birth</RequiredLabel></Form.Label>
-                            <Form.Control
-                                type="date"
-                                value={passenger.DateOfBirth || ''}
-                                min={
-                                    passenger.PaxType === 1 // Adult
-                                        ? moment().subtract(100, 'years').format('YYYY-MM-DD') // Max age 100
-                                        : passenger.PaxType === 2 // Child
-                                            ? moment().subtract(12, 'years').format('YYYY-MM-DD') // Min age for child
-                                            : moment().subtract(2, 'years').format('YYYY-MM-DD') // Infant min age
-                                }
-                                max={
-                                    passenger.PaxType === 1 // Adult
-                                        ? moment().subtract(12, 'years').format('YYYY-MM-DD') // Must be 12+
-                                        : passenger.PaxType === 2 // Child
-                                            ? moment().subtract(2, 'years').format('YYYY-MM-DD') // Max age for child
-                                            : moment().format('YYYY-MM-DD') // Infant must be < 2 years old
-                                }
-                                onChange={(e) => handlePassengerChange(type, index, 'DateOfBirth', e.target.value)}
-                                required
-                            />
-                        </Form.Group>
-                    </Col>
-                    {/* )} */}
-
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label><RequiredLabel>Gender</RequiredLabel></Form.Label>
-                            <Form.Select
-                                value={passenger.Gender || ''}
-                                onChange={(e) => handlePassengerChange(type, index, 'Gender', e.target.value)}
-                                required
-                            >
-                                <option value="">Select</option>
-                                <option value="1">Male</option>
-                                <option value="2">Female</option>
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-
-                    {/* Document Information */}
-                    {requirePassport && (
-                        <>
-                            <Col md={3}>
-                                <Form.Group>
-                                    <Form.Label><RequiredLabel>Passport Number</RequiredLabel></Form.Label>
-                                    <Form.Control
-                                        value={passenger.PassportNo || ''}
-                                        onChange={(e) => handlePassengerChange(type, index, 'PassportNo', e.target.value)}
-                                        required
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col md={3}>
-                                <Form.Group>
-                                    <Form.Label><RequiredLabel>Passport Expiry</RequiredLabel></Form.Label>
-                                    <Form.Control
-                                        type="date"
-                                        value={passenger.PassportExpiry || ''}
-                                        onChange={(e) => handlePassengerChange(type, index, 'PassportExpiry', e.target.value)}
-                                        required
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col md={3}>
-                                <Form.Group>
-                                    <Form.Label><RequiredLabel>Nationality</RequiredLabel></Form.Label>
-                                    <Form.Control
-                                        value={passenger.Nationality || ''}
-                                        onChange={(e) => handlePassengerChange(type, index, 'Nationality', e.target.value)}
-                                        required
-                                    />
-                                </Form.Group>
-                            </Col>
-                        </>
-                    )}
-
-
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label><RequiredLabel>City</RequiredLabel></Form.Label>
-                            <Form.Control
-                                value={passenger.City || ''}
-                                onChange={(e) => handlePassengerChange(type, index, 'City', e.target.value)}
-                                required
-                            />
-                        </Form.Group>
-                    </Col>
-
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label><RequiredLabel>AddressLine1</RequiredLabel></Form.Label>
-                            <Form.Control
-                                value={passenger.AddressLine1 || ''}
-                                onChange={(e) => handlePassengerChange(type, index, 'AddressLine1', e.target.value)}
-                                required
-                                maxLength={28} />
-                        </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label>AddressLine2</Form.Label>
-                            <Form.Control
-                                value={passenger.AddressLine2 || ''}
-                                onChange={(e) => handlePassengerChange(type, index, 'AddressLine2', e.target.value)}
-
-                                maxLength={28} />
-                        </Form.Group>
-                    </Col>
-
-                    {requirePAN && (
+                    <Row className="g-3">
+                        {/* Title */}
                         <Col md={3}>
                             <Form.Group>
-                                <Form.Label><RequiredLabel>PAN Number</RequiredLabel></Form.Label>
-                                <Form.Control
-                                    value={passenger.PAN || ''}
-                                    onChange={(e) => handlePassengerChange(type, index, 'PAN', e.target.value)}
-                                    required
-                                />
+                                <Form.Label>Title</Form.Label>
+                                <Form.Select
+                                    value={p.Title || ''}
+                                    onChange={(e) => handleTitleChange(type, index, e.target.value)}
+                                    style={{ borderColor: p.Title ? '#ced4da' : '#dc3545' }}
+                                >
+                                    <option value="">Title</option>
+                                    {p.PaxType === 1 ? (
+                                        <>
+                                            <option value="Mr">Mr</option>
+                                            <option value="Ms">Ms</option>
+                                            <option value="Mrs">Mrs</option>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <option value="Ms">Ms</option>
+                                            <option value="Mstr">Mstr</option>
+                                        </>
+                                    )}
+                                </Form.Select>
+                                <ErrorText show={!p.Title} text="Please select title" />
                             </Form.Group>
                         </Col>
-                    )}
 
-                    {/* Contact Information */}
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label>
-                                {isAdult ? <RequiredLabel>Contact Number</RequiredLabel> : 'Contact Number'}
-                            </Form.Label>
-                            <Form.Control
-                                type="tel"
-                                value={passenger.ContactNo || ''}
-                                onChange={(e) => handlePassengerChange(type, index, 'ContactNo', e.target.value)}
-                                required={isAdult}
-                            />
-                        </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                        <Form.Group>
-                            <Form.Label>
-                                {isAdult ? <RequiredLabel>Email</RequiredLabel> : 'Email'}
-                            </Form.Label>
-                            <Form.Control
-                                type="email"
-                                value={passenger.Email || ''}
-                                onChange={(e) => handlePassengerChange(type, index, 'Email', e.target.value)}
-                                required={isAdult}
-                            />
-                        </Form.Group>
-                    </Col>
+                        {/* First Name */}
+                        <Col md={3}>
+                            <Form.Group>
+                                <Form.Label>First Name</Form.Label>
+                                <Form.Control
+                                    placeholder="First Name"
+                                    value={p.FirstName || ''}
+                                    onChange={(e) => setField(type, index, 'FirstName', e.target.value)}
+                                    style={{ borderColor: p.FirstName ? '#ced4da' : '#dc3545' }}
+                                />
+                                <ErrorText show={!p.FirstName} text="Please enter first name" />
+                            </Form.Group>
+                        </Col>
 
-                    {/* GST Information - Only for lead passenger */}
-                    {fareConfirm?.GSTAllowed && passenger.IsLeadPax && (
-                        <>
+                        {/* Last Name */}
+                        <Col md={3}>
+                            <Form.Group>
+                                <Form.Label>Last Name</Form.Label>
+                                <Form.Control
+                                    placeholder="Last Name"
+                                    value={p.LastName || ''}
+                                    onChange={(e) => setField(type, index, 'LastName', e.target.value)}
+                                    style={{ borderColor: p.LastName ? '#ced4da' : '#dc3545' }}
+                                />
+                                <ErrorText show={!p.LastName} text="Please enter last name" />
+                            </Form.Group>
+                        </Col>
+
+                        {/* DOB (now for all pax) */}
+                        {showDOB && (
                             <Col md={3}>
                                 <Form.Group>
-                                    <Form.Label> <RequiredLabel>GST Number</RequiredLabel> </Form.Label>
+                                    <Form.Label>DOB</Form.Label>
                                     <Form.Control
-                                        value={passenger.GSTNumber || ''}
-                                        onChange={(e) => handlePassengerChange(type, index, 'GSTNumber', e.target.value)}
-                                        required={requireGST}
+                                        type="date"
+                                        value={p.DateOfBirth || ''}
+                                        onChange={(e) => setField(type, index, 'DateOfBirth', e.target.value)}
+                                        style={{ borderColor: p.DateOfBirth ? '#ced4da' : '#dc3545', background: '#f3f5f7' }}
+                                        min={
+                                            p.PaxType === 1
+                                                ? moment().subtract(100, 'years').format('YYYY-MM-DD')
+                                                : p.PaxType === 2
+                                                    ? moment().subtract(12, 'years').format('YYYY-MM-DD')
+                                                    : moment().subtract(2, 'years').format('YYYY-MM-DD')
+                                        }
+                                        max={
+                                            p.PaxType === 1
+                                                ? moment().subtract(12, 'years').format('YYYY-MM-DD')
+                                                : p.PaxType === 2
+                                                    ? moment().subtract(2, 'years').format('YYYY-MM-DD')
+                                                    : moment().format('YYYY-MM-DD')
+                                        }
                                     />
+                                    <ErrorText show={!p.DateOfBirth} text="Please enter dob" />
                                 </Form.Group>
                             </Col>
-                            <Col md={3}>
-                                <Form.Group>
-                                    <Form.Label><RequiredLabel>Company Name</RequiredLabel></Form.Label>
-                                    <Form.Control
-                                        value={passenger.GSTCompanyName || ''}
-                                        onChange={(e) => handlePassengerChange(type, index, 'GSTCompanyName', e.target.value)}
-                                        required={requireGST}
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col md={6}>
-                                <Form.Group>
-                                    <Form.Label><RequiredLabel>GST Company Email</RequiredLabel></Form.Label>
-                                    <Form.Control
-                                        value={passenger.GSTCompanyEmail || ''}
-                                        onChange={(e) => handlePassengerChange(type, index, 'GSTCompanyEmail', e.target.value)}
-                                        required={requireGST}
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col md={6}>
-                                <Form.Group>
-                                    <Form.Label><RequiredLabel>Company Address</RequiredLabel></Form.Label>
-                                    <Form.Control
-                                        value={passenger.GSTCompanyAddress || ''}
-                                        onChange={(e) => handlePassengerChange(type, index, 'GSTCompanyAddress', e.target.value)}
-                                        required={requireGST}
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col md={3}>
-                                <Form.Group>
-                                    <Form.Label> <RequiredLabel>Company Contact</RequiredLabel> </Form.Label>
-                                    <Form.Control
-                                        value={passenger.GSTCompanyContactNumber || ''}
-                                        onChange={(e) => handlePassengerChange(type, index, 'GSTCompanyContactNumber', e.target.value)}
-                                        required={requireGST}
-                                    />
-                                </Form.Group>
-                            </Col>
+                        )}
 
-                        </>
-                    )
-                    }
-                </Row>
+                        {/* Gender (now for all pax) */}
+                        {showGender && (
+                            <Col md={3} >
+                                <Form.Group>
+                                    <Form.Label>Gender</Form.Label>
+                                    <Form.Select
+                                        value={p.Gender || ''}
+                                        onChange={(e) => setField(type, index, 'Gender', e.target.value)}
+                                        style={{ borderColor: p.Gender ? '#ced4da' : '#dc3545' }}
+                                    >
+                                        <option value="">Select</option>
+                                        <option value="1">Male</option>
+                                        <option value="2">Female</option>
+                                    </Form.Select>
+                                    <ErrorText show={!p.Gender} text="Please select gender" />
+                                </Form.Group>
+                            </Col>
+                        )}
+
+                        {/* Lead-only Address */}
+                        {showLeadAddress && (
+                            <>
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label>City</Form.Label>
+                                        <Form.Control
+                                            value={p.City || ''}
+                                            onChange={(e) => setField(type, index, 'City', e.target.value)}
+                                            style={{ borderColor: p.City ? '#ced4da' : '#dc3545' }}
+                                        />
+                                        <ErrorText show={!p.City} text="Please enter city" />
+                                    </Form.Group>
+                                </Col>
+
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label>AddressLine1</Form.Label>
+                                        <Form.Control
+                                            value={p.AddressLine1 || ''}
+                                            onChange={(e) => setField(type, index, 'AddressLine1', e.target.value)}
+                                            maxLength={28}
+                                            style={{ borderColor: p.AddressLine1 ? '#ced4da' : '#dc3545' }}
+                                        />
+                                        <ErrorText show={!p.AddressLine1} text="Please enter address" />
+                                    </Form.Group>
+                                </Col>
+                            </>
+                        )}
+
+                        {/* Lead-only Contact */}
+                        {showLeadContact && (
+                            <>
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label>Contact Number</Form.Label>
+                                        <Form.Control
+                                            type="tel"
+                                            value={p.ContactNo || ''}
+                                            onChange={(e) => setField(type, index, 'ContactNo', e.target.value)}
+                                            style={{ borderColor: p.ContactNo ? '#ced4da' : '#dc3545' }}
+                                        />
+                                        <ErrorText show={!p.ContactNo} text="Please enter contact number" />
+                                    </Form.Group>
+                                </Col>
+
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label>Email</Form.Label>
+                                        <Form.Control
+                                            type="email"
+                                            value={p.Email || ''}
+                                            onChange={(e) => setField(type, index, 'Email', e.target.value)}
+                                            style={{ borderColor: p.Email ? '#ced4da' : '#dc3545' }}
+                                        />
+                                        <ErrorText show={!p.Email} text="Please enter email" />
+                                    </Form.Group>
+                                </Col>
+                            </>
+                        )}
+
+                        {/* Optional global PAN/PASSPORT */}
+                        {flags.pan && (
+                            <Col md={3}>
+                                <Form.Group>
+                                    <Form.Label>PAN Number</Form.Label>
+                                    <Form.Control
+                                        value={p.PAN || ''}
+                                        onChange={(e) => setField(type, index, 'PAN', e.target.value)}
+                                        style={{ borderColor: p.PAN ? '#ced4da' : '#dc3545' }}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        )}
+
+                        {flags.passport && (
+                            <>
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label>Passport Number</Form.Label>
+                                        <Form.Control
+                                            value={p.PassportNo || ''}
+                                            onChange={(e) => setField(type, index, 'PassportNo', e.target.value)}
+                                            style={{ borderColor: p.PassportNo ? '#ced4da' : '#dc3545' }}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label>Passport Issue</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            value={p.PassportIssue || ''}
+                                            onChange={(e) => setField(type, index, 'PassportIssue', e.target.value)}
+                                            style={{ borderColor: p.PassportIssue ? '#ced4da' : '#dc3545' }}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label>Passport Expiry</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            value={p.PassportExpiry || ''}
+                                            onChange={(e) => setField(type, index, 'PassportExpiry', e.target.value)}
+                                            style={{ borderColor: p.PassportExpiry ? '#ced4da' : '#dc3545' }}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label>Nationality</Form.Label>
+                                        <Form.Select
+                                            value={p.Nationality || ''}
+                                            onChange={(e) => setField(type, index, 'Nationality', e.target.value)}
+                                            style={{ borderColor: p.Nationality ? '#ced4da' : '#dc3545' }}
+                                        >
+                                            <option value="">Select Nationality</option>
+                                            {countries.map((c) => (
+                                                <option key={c.CountryCode} value={c.CountryCode}>
+                                                    {c.CountryName}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                            </>
+                        )}
+                    </Row>
+                </div>
             </div>
         );
     };
 
-    const renderPassengerSections = () => {
-        const adults = passengersData.filter(p => p.PaxType === 1);
-        const children = passengersData.filter(p => p.PaxType === 2);
-        const infants = passengersData.filter(p => p.PaxType === 3);
+    const adults = passengersData.filter((p) => p.PaxType === 1);
+    const children = passengersData.filter((p) => p.PaxType === 2);
+    const infants = passengersData.filter((p) => p.PaxType === 3);
 
-        return [
-            ...adults.map((passenger, index) => renderPassengerFields(passenger, index, 'ADT')),
-            ...children.map((passenger, index) => renderPassengerFields(passenger, index, 'CHD')),
-            ...infants.map((passenger, index) => renderPassengerFields(passenger, index, 'INF'))
-        ];
-    };
+    const renderAllPassengers = () => (
+        <>
+            {adults.map((p, i) => renderPassengerFields(p, i, 'ADT'))}
+            {children.map((p, i) => renderPassengerFields(p, i, 'CHD'))}
+            {infants.map((p, i) => renderPassengerFields(p, i, 'INF'))}
+        </>
+    );
 
     return (
         <div className="container my-4">
-            <Card className="mb-4 shadow-sm border-0">
-                <Card.Body>
-                    <h5 className="fw-bold mb-2">Traveller Details</h5>
-                    <p className="text-muted small mb-4">
-                        Please enter names as per the Government-issued photo ID.
-                    </p>
+            {/* Traveller Details */}
+            {loading ? (
 
-                    {renderPassengerSections()}
-                </Card.Body>
-            </Card>
+                <FlightLoader />
+            ) : (
 
-            <Card className="mb-4 shadow-sm border-0">
-                <Card.Body>
-                    <h6 className="fw-bold mb-2 text-danger">
-                        <FaEnvelope className="me-2 text-danger" />
-                        Your ticket and flight details will be shared here
-                    </h6>
-                    <hr />
-                    <Row className="g-3">
-                        <Col md={3}>
-                            <Form.Select
-                                value={contactDetails.countryCode}
-                                onChange={(e) => handleContactChange('countryCode', e.target.value)}
-                            >
-                                <option value="91">India (+91)</option>
-                                <option value="1">USA (+1)</option>
-                                <option value="44">UK (+44)</option>
-                            </Form.Select>
-                        </Col>
-                        <Col md={4}>
-                            <Form.Control
-                                type="tel"
-                                placeholder="Mobile Number"
-                                value={contactDetails.mobile}
-                                onChange={(e) => handleContactChange('mobile', e.target.value)}
-                                required
-                            />
-                        </Col>
-                        <Col md={5}>
-                            <Form.Control
-                                type="email"
-                                placeholder="Email"
-                                value={contactDetails.email}
-                                onChange={(e) => handleContactChange('email', e.target.value)}
-                                required
-                            />
-                        </Col>
-                    </Row>
-                </Card.Body>
-            </Card>
+                <>
+                    <Card className="mb-4 shadow-sm border-0">
+                        <Card.Body>
+                            <h5 className="fw-bold mb-2">Traveller Details</h5>
+                            <p className="text-muted small mb-4">
+                                Please make sure you enter the Name as per your Government photo id.
+                            </p>
+                            {renderAllPassengers()}
+                        </Card.Body>
+                    </Card>
 
-            <div className="text-start mt-4">
-                <Button
-                    variant="primary"
-                    size="lg"
-                    disabled={isContinueDisabled}
-                    onClick={handleContinue}
-                    className={isContinueDisabled ? "btn-danger" : ""}
-                    style={{
-                        transition: 'all 0.3s ease',
-                        ...(isContinueDisabled && {
-                            backgroundColor: '#dc3545',
-                            borderColor: '#dc3545',
-                            cursor: 'not-allowed'
-                        })
-                    }}
-                >
-                    {loading ? (
-                        <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            Processing...
-                        </>
-                    ) : (
-                        'Continue Booking'
+                    {/* Contact Details (informative UI) */}
+                    <Card className="mb-4 shadow-sm border-0">
+                        <Card.Body>
+                            <h5 className="fw-bold mb-2">Contact Details</h5>
+                            <p className="text-muted small mb-4">
+                                Your ticket and flight details will be shared here
+                            </p>
+                            <Row className="g-3">
+                                <Col md={3}>
+                                    <Form.Select defaultValue="91">
+                                        <option value="91">India ( 91)</option>
+                                        <option value="1">USA ( 1)</option>
+                                        <option value="44">UK ( 44)</option>
+                                    </Form.Select>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Control placeholder="Mobile Number" />
+                                    {/* <div className="text-danger small mt-1">Please enter mobile number</div> */}
+                                </Col>
+                                <Col md={5}>
+                                    <Form.Control placeholder="Email" />
+                                    {/* <div className="text-danger small mt-1">Please enter email</div> */}
+                                </Col>
+                            </Row>
+                        </Card.Body>
+                    </Card>
+
+                    {/* GST Card (Optional) */}
+                    {flags.gstAllowed && (
+                        <Card className="mb-4 shadow-sm border-0">
+                            <Card.Body>
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <h5 className="fw-bold mb-0">Use GSTIN for this booking(Optional)</h5>
+                                    <div
+                                        className="d-flex align-items-center justify-content-center"
+                                        onClick={setLoaderTest}
+                                        style={{
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 6,
+                                            background: '#ca0f2e',
+                                            color: 'white',
+                                            fontWeight: 700
+                                        }}
+                                    >
+                                        {open ? '×' : '+'}
+                                    </div>
+                                </div>
+                                {open == true && (
+                                    <>
+                                        <p className="text-muted small mt-3">
+                                            Claim credit of GST charges. Your taxes may get updated post submitting your GST details.
+                                        </p>
+                                        <Row className="g-3">
+                                            <Col md={4}>
+                                                <Form.Control
+                                                    placeholder="GST Number"
+                                                    value={passengersData[0]?.GSTNumber || ''}
+                                                    onChange={(e) => setField('ADT', 0, 'GSTNumber', e.target.value)}
+                                                />
+                                            </Col>
+                                            <Col md={4}>
+                                                <Form.Control
+                                                    placeholder="Registered Company Name"
+                                                    value={passengersData?.GSTCompanyName || ''}
+                                                    onChange={(e) => setField('ADT', 0, 'GSTCompanyName', e.target.value)}
+                                                />
+                                            </Col>
+                                            <Col md={4}>
+                                                <Form.Control
+                                                    placeholder="Registered Contact No"
+                                                    value={passengersData?.GSTCompanyContactNumber || ''}
+                                                    onChange={(e) => setField('ADT', 0, 'GSTCompanyContactNumber', e.target.value)}
+                                                />
+                                            </Col>
+                                            <Col md={6}>
+                                                <Form.Control
+                                                    placeholder="Registered Email"
+                                                    value={passengersData?.GSTCompanyEmail || ''}
+                                                    onChange={(e) => setField('ADT', 0, 'GSTCompanyEmail', e.target.value)}
+                                                />
+                                            </Col>
+                                            <Col md={6}>
+                                                <Form.Control
+                                                    placeholder="Registered Address"
+                                                    value={passengersData?.GSTCompanyAddress || ''}
+                                                    onChange={(e) => setField('ADT', 0, 'GSTCompanyAddress', e.target.value)}
+                                                />
+                                            </Col>
+                                        </Row>
+                                    </>
+                                )}
+
+                            </Card.Body>
+                        </Card>
                     )}
-                </Button>
 
-                {isContinueDisabled && (
-                    <div className="text-danger mt-2">
-                        Please fill all required fields marked with * to continue
+                    {/* Continue */}
+                    <div className="text-start mt-3">
+                        <Button
+                            variant="primary"
+                            size="lg"
+                            disabled={isContinueDisabled}
+                            onClick={handleContinue}
+                            className={isContinueDisabled ? 'btn-danger' : ''}
+                            style={{
+                                transition: 'all .3s',
+                                ...(isContinueDisabled && {
+                                    backgroundColor: '#dc3545',
+                                    borderColor: '#dc3545',
+                                    cursor: 'not-allowed'
+                                })
+                            }}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-2" />
+                                    Processing...
+                                </>
+                            ) : (
+                                'Continue Booking'
+                            )}
+                        </Button>
+                        {isContinueDisabled && (
+                            <div className="text-danger mt-2">
+                                Please fill all required fields marked with * to continue
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
+                </>
+            )}
+
+
         </div>
     );
 };

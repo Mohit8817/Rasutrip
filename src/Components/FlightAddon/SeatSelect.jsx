@@ -167,7 +167,8 @@ const SeatSelect = ({ rawSeatData = [], passengersData = [], onAssignSeat }) => 
 
               {/* Passenger list - Add additional null check */}
               <div className="passenger-list">
-                {PassengersData && PassengersData.map((passenger, index) => {
+                {PassengersData && PassengersData.filter((passenger) => passenger.type?.toLowerCase() !== "inf")
+                .map((passenger, index) => {
                   const hasThisSeat = passenger.Seat && passenger.Seat[0]?.Code === clickedSeat?.Code;
                   const hasDifferentSeat = passenger.Seat && passenger.Seat[0]?.Code !== clickedSeat?.Code;
                   

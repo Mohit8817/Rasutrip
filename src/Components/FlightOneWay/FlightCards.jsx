@@ -67,7 +67,6 @@ const FlightCard = ({ flight }) => {
 
 
     const segment = flight?.Segments[0][0];
-    console.log('gggg', flight)
 
     const getStartAndEnd = (segmentsGroup) => {
         if (!segmentsGroup?.length) return null;
@@ -89,7 +88,6 @@ const FlightCard = ({ flight }) => {
     };
 
     const tripSummary = getStartAndEnd(flight.Segments);
-    console.log('tripSummary', tripSummary)
     const formatTime = (dateTimeStr) => {
         const options = { hour: '2-digit', minute: '2-digit' };
         return new Date(dateTimeStr).toLocaleTimeString([], options);
@@ -129,7 +127,7 @@ const FlightCard = ({ flight }) => {
             <Card className="flight-card mb-3 w-full">
                 <Card.Body>
                     <Row className="align-items-center text-center">
-                        <Col md={2}>
+                        <Col col={2}>
                             <img src={segment.Airline.airlineLogo} alt="Airline Logo" />
 
                             <div className="fw-semibold">{segment.Airline.AirlineName}</div>
@@ -140,7 +138,7 @@ const FlightCard = ({ flight }) => {
                             </div>
                         </Col>
 
-                        <Col md={2}>
+                        <Col col={2}>
 
                             <div className="text-uppercase text-muted mt-1">
                                 <i class="fa fa-plane-departure"></i> {tripSummary[0].fromCity}</div>
@@ -148,7 +146,7 @@ const FlightCard = ({ flight }) => {
                             <div className="text-muted small">{formatDate(tripSummary[0].fromTime)}</div>
                         </Col>
 
-                        <Col md={2}>
+                        <Col col={2}>
                             <div className="text-muted small " > {flightStop > 1 ? flightStop - 1 + ' Stop(s)' : 'Non Stop(s)'} </div>
                             <div style={containerStyle}>
                                 <span style={beforeStyle}></span>
@@ -157,7 +155,7 @@ const FlightCard = ({ flight }) => {
                             <div className="fw-medium">{Math.floor(segment.TotalDuration / 60)}h {segment.TotalDuration % 60}m</div>
                         </Col>
 
-                        <Col md={2}>
+                        <Col col={2}>
                             <div className="text-uppercase text-muted mt-1">
                                 <i className="fa fa-plane-arrival"></i> {tripSummary[0].toCity}
                             </div>
@@ -170,7 +168,7 @@ const FlightCard = ({ flight }) => {
                         </Col>
 
 
-                        <Col md={2}>
+                        <Col col={2}>
                             <div className="fw-bold text-dark">₹ {flight.MinPublishedPrice}</div>
                             {flight.tag && (
                                 <span className="badge bg-light text-dark">{flight.tag}</span>
@@ -180,7 +178,7 @@ const FlightCard = ({ flight }) => {
                             </div>
                         </Col>
 
-                        <Col md={2}>
+                        <Col col={2}>
                             <Button
                                 variant="danger"
                                 className="w-100 card-button"

@@ -26,7 +26,6 @@ import Bookingconfirm from './Components/Bus/Bookingconfirm/Bookingconfirm';
 import AgentLogin from './Components/Login/AgentLogin';
 import CustomerLogin from './Components/Login/CustomerLogin';
 import SetResetMPIN from './Components/Login/SetResetMPIN';
-
 import TermsandConditions from './Pages/LegalPages/TermsandConditions';
 import PrivacyPolicy from './Pages/LegalPages/PrivacyPolicy';
 import Declaration from './Pages/LegalPages/Declaration';
@@ -114,14 +113,15 @@ function App() {
       <Footer />
 
       {/* Fixed WhatsApp Icon */}
-      <a
-        href="https://wa.me/919266424809" // yaha apna WhatsApp number daalo
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-5 right-5 bg-green-800 text-white p-3 rounded-full shadow-lg hover:bg-green-600 transition duration-400 z-50"
-      >
-        <FaWhatsapp size={30} />
-      </a>
+    <a
+  href="https://wa.me/919266424809"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="fixed bottom-20 md:bottom-5 right-5 bg-green-800 text-white p-3 rounded-full shadow-lg hover:bg-green-600 transition duration-400 z-50"
+>
+  <FaWhatsapp size={30} />
+</a>
+
       {/* </Router> */}
       <ToastContainer position="top-right" autoClose={3000} />
     </>

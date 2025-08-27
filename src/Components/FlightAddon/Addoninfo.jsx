@@ -20,11 +20,12 @@ const Addoninfo = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [passengersData, setPassengersData] = useState([]);
-  const { SelectedFare, SSR } = location?.state || {};
+  const { SelectedFare, SSR ,Faresummary } = location?.state || {};
   // const passengersData = useSelector((state) => state.passengersData || []);
   //  const passengersData = JSON.parse(localStorage.getItem('passengersData'));
   // const mealOptions = SSR?.Meal?.[0] || [];
-  const mealOptions = Array.isArray(SSR?.Meal?.[0]) ? SSR?.Meal?.[0] : [];
+  const mealOptions = Array.isArray(SSR?.Meal?.[0]) ? SSR?.Meal?.[0] : SSR?.Meal;
+  console.log('mealOptions',SSR.Meal)
   const [selectedSeat, setSelectedSeat] = React.useState(null);
   const [Passengers, setPassengers] = React.useState(null);
   const baggageOptions = SSR?.Baggage?.[0] || [];
@@ -35,7 +36,7 @@ const Addoninfo = () => {
       ? Object.values(rawSeatData).flat()
       : [];
 
-  const { Origin, Destination } = mealOptions;
+  const { Origin, Destination } = mealOptions || [];
   // Initialize state with passenger data or empty selections
   const [passengerSelections, setPassengerSelections] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -265,12 +266,14 @@ const Addoninfo = () => {
                   );
                 })}
 
+{rawSeatData&&(
                 <SeatSelect
                   rawSeatData={rawSeatData}
                   passengersData={passengersData || []} // Fallback value
                   onSeatSelect={handleSeatSelect}
                   onAssignSeat={onAssignSeat}
                 />
+                )}
                 <div className="text-start mt-4 mb-4">
                   <Button
                     variant="primary"
@@ -287,7 +290,7 @@ const Addoninfo = () => {
           </Col>
           <Col lg={3}>
             <div>
-              <FareSummary SelectedFare={SelectedFare} passengerSelections={passengerSelections} />
+              <FareSummary  Faresummary={Faresummary} passengerSelections={passengerSelections} />
               <PromoCodeBox />
 
             </div>

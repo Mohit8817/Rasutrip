@@ -102,6 +102,7 @@ const FlightList = ({ filters }) => {
 
   // Restore flights from localStorage on initial mount
   useEffect(() => {
+   
     const savedFlights = localStorage.getItem('SearchedFlights');
     if (savedFlights && flightsData.length === 0) {
       const parsedFlights = JSON.parse(savedFlights);
@@ -178,13 +179,15 @@ const FlightList = ({ filters }) => {
                   ? departDate.PreferredTime
                   : departDate
               ).format("YYYY-MM-DD")}T00:00:00`,
-            },
+            }
           ],
           Sources: null,
         };
         
         const response = await fetchFlightData(requestPayload);
         const result = response?.Result?.[0] || [];
+        localStorage.setItem('isLoading',false)
+
         localStorage.setItem("searchToken", response?.SearchTokenId);
         localStorage.setItem("rasocommision", response?.rasutripCommissionPercentage);
 

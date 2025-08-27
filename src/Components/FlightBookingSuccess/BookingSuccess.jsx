@@ -20,7 +20,7 @@ import {
 const BookingSuccess = () => {
 
   const location = useLocation();
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const { bookingId, result } = location.state || {};
   const [showAlert, setShowAlert] = useState(true);
   const [invoice, setInvoice] = useState(null);
@@ -28,7 +28,7 @@ const BookingSuccess = () => {
   const [progress, setProgress] = useState(0);
 
   // Sample data from the provided JSON
-  const bookingData = result
+  const bookingData = result.onward
 
 
   useEffect(() => {
@@ -48,18 +48,26 @@ const BookingSuccess = () => {
 
 
   const sendInvoiceRequest = async () => {
-    console.log('result', result)
+    let RetrunResponse = null;
     try {
-
-
       const data = {
-        UserIp: result.UserIp,
-        SearchTokenId: result.SearchTokenId,
-        BookingId: result.bookingId,
-        receiverEmail: result?.result?.Passenger[0]?.Email,
+        UserIp: result.onward.UserIp,
+        SearchTokenId: result?.onward?.SearchTokenId,
+        BookingId: result?.onward?.bookingId,
+        receiverEmail: result?.onward?.result?.Passenger[0]?.Email,
       }
-      console.log('data', data)
       const response = await post(data, "/airservice/invoice");
+
+      if (result?.return) {
+        const data = {
+          UserIp: result.return.UserIp,
+          SearchTokenId: result?.return?.SearchTokenId,
+          BookingId: result?.return?.bookingId,
+          receiverEmail: result?.onward?.result?.Passenger[0]?.Email,
+        }
+        RetrunResponse = await post(data, "/airservice/invoice");
+
+      }
       setInvoice(response)
     } catch (error) {
       console.error("Invoice API error:", error);
@@ -68,29 +76,26 @@ const BookingSuccess = () => {
 
 
 
- const sendInvoice = async () => {
-  try {
-    const data = {
-      UserIp: result.UserIp,
-      SearchTokenId: result.SearchTokenId,
-      BookingId: result.bookingId,
-      receiverEmail: result?.result?.Passenger[0]?.Email,
-    };
+  const sendInvoice = async () => {
+    try {
+      const data = {
+        UserIp: result?.onward?.UserIp,
+        SearchTokenId: result?.onward?.SearchTokenId,
+        BookingId: result?.onward?.bookingId,
+        receiverEmail: result?.onward?.result?.Passenger[0]?.Email,
+      };
+      let finalInvoice = invoice;
+      if (!invoice) {
+        const response = await post(data, "/airservice/invoice");
+        setInvoice(response);
+        finalInvoice = response;
+      }
 
-    let finalInvoice = invoice;
-
-    if (!invoice) {
-      const response = await post(data, "/airservice/invoice");
-      setInvoice(response);
-      finalInvoice = response;
-      console.log("Invoice API response:", response.data);
+      navigate("/booking/invoice", { state: { Jtype: 'flight', invoice: finalInvoice } });
+    } catch (error) {
+      console.error("Invoice API error:", error);
     }
-
-    navigate("/booking/invoice", { state: { invoice: finalInvoice } });
-  } catch (error) {
-    console.error("Invoice API error:", error);
-  }
-};
+  };
 
 
 
@@ -99,7 +104,7 @@ const BookingSuccess = () => {
     if (result && !invoice) {
       sendInvoiceRequest();
     }
-  }, [result,invoice]);
+  }, [result, invoice]);
 
   if (result.lenght < 0) {
     return <div className="text-center text-red-500 mt-10">Invalid booking data</div>;
@@ -130,7 +135,7 @@ const BookingSuccess = () => {
 
   const segment = bookingData.result?.Segments[0][0];
   const passenger = bookingData.result?.Passenger[0];
-  console.log('bookingData.result?.Passenger', bookingData.result?.Passenger)
+
 
   return (
     <div style={{
@@ -243,7 +248,7 @@ const BookingSuccess = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-                  
+
                 </Row>
               </Card.Body>
             </Card>
@@ -296,43 +301,6 @@ const BookingSuccess = () => {
               </Card.Body>
             </Card>
           </Col>
-
-          {/* <Col md={6}>
-            <Card className="border-0 shadow-lg h-100">
-              <Card.Header className="bg-success text-white">
-                <h5 className="mb-0">
-                  <i className="fas fa-credit-card me-2"></i>
-                  Price Breakdown
-                </h5>
-              </Card.Header>
-              <Card.Body>
-                <Table borderless className="mb-0">
-                  <tbody>
-                    <tr>
-                      <td>Base Fare</td>
-                      <td className="text-end fw-bold">₹{bookingData?.result?.Fare?.BaseFare}</td>
-                    </tr>
-                    <tr>
-                      <td>Taxes & Fees</td>
-                      <td className="text-end fw-bold">₹{bookingData?.result?.Fare?.Tax}</td>
-                    </tr>
-                    <tr>
-                      <td>Other Charges</td>
-                      <td className="text-end fw-bold">₹{bookingData?.result?.Fare?.OtherCharges}</td>
-                    </tr>
-                    <tr>
-                      <td>Seat Selection</td>
-                      <td className="text-end fw-bold">₹{bookingData?.result?.Fare?.TotalSeatCharges}</td>
-                    </tr>
-                    <tr className="border-top">
-                      <td className="fw-bold fs-5">Total Amount</td>
-                      <td className="text-end fw-bold fs-5 text-success">₹{bookingData?.result?.InvoiceAmount}</td>
-                    </tr>
-                  </tbody>
-                </Table>
-              </Card.Body>
-            </Card>
-          </Col> */}
         </Row>
 
         {/* Important Information */}

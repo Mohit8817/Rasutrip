@@ -10,7 +10,6 @@ const DatePicker = ({ tripType, setTripType }) => {
     const [returnDate, setReturnDate] = useState(new Date());
     const [activeCalendar, setActiveCalendar] = useState(null);
     const { setLocationData } = useContext(LocationContext);
-
     const departRef = useRef(null);
     const returnRef = useRef(null);
 
@@ -51,6 +50,7 @@ const DatePicker = ({ tripType, setTripType }) => {
     };
 
     // Save dates to context on update
+    // Depart date change -> auto update returnDate if needed
     useEffect(() => {
         if (departDate) {
             const formatted = formatToPreferredTime(departDate);
@@ -58,9 +58,25 @@ const DatePicker = ({ tripType, setTripType }) => {
                 ...prev,
                 departDate: formatted,
             }));
-        }
-    }, [departDate]);
 
+            // Agar tripType roundtrip hai aur returnDate <= departDate hai to +1 day set karo
+            if (tripType !== "oneway") {
+                if (!returnDate || returnDate <= departDate) {
+                    const nextDay = new Date(departDate);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    setReturnDate(nextDay);
+
+                    const formattedReturn = formatToPreferredTime(nextDay);
+                    setLocationData((prev) => ({
+                        ...prev,
+                        returnDate: formattedReturn,
+                    }));
+                }
+            }
+        }
+    }, [departDate, tripType]);
+
+    // Return date change -> save to context
     useEffect(() => {
         if ((tripType === "roundtrip" || tripType === "multicity") && returnDate) {
             const formatted = formatToPreferredTime(returnDate);
@@ -70,6 +86,7 @@ const DatePicker = ({ tripType, setTripType }) => {
             }));
         }
     }, [returnDate, tripType]);
+
 
     return (
         <div className="d-flex flex align-items-start custom-date-picker">
@@ -98,6 +115,10 @@ const DatePicker = ({ tripType, setTripType }) => {
                                     setDepartDate(date);
                                     setActiveCalendar(null);
                                 }
+                            }}
+                             disabled={{
+                                before: new Date(),
+                                // after: new Date(new Date().setMonth(new Date().getMonth() + 3)) 
                             }}
                         />
                     </div>
@@ -146,6 +167,10 @@ const DatePicker = ({ tripType, setTripType }) => {
                                         setActiveCalendar(null);
                                     }
                                 }}
+                               disabled={{
+                                before: new Date(),
+                                // after: new Date(new Date().setMonth(new Date().getMonth() + 3)) 
+                            }} 
                             />
                         </div>
                     )}

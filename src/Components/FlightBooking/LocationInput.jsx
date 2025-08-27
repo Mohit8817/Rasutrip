@@ -20,6 +20,10 @@ const LocationInput = () => {
   const fromRef = useRef(null);
   const toRef = useRef(null);
 
+
+
+
+
   // ✅ Force default for flight page
   useEffect(() => {
     setLocationData((prev) => ({
@@ -33,8 +37,10 @@ const LocationInput = () => {
 
   const fetchAirports = async (query) => {
     try {
+
       setLoading(true);
       const response = await fetchLocationData(query);
+
       setCityList(response?.results || []);
     } catch (error) {
       console.error('Error fetching airport data:', error);
@@ -60,34 +66,33 @@ const LocationInput = () => {
   useEffect(() => {
     const fetchDefaultAirports = async () => {
       try {
-        const fromRes = await fetchLocationData(locationData.fromCity);
-        if (fromRes?.results?.length) {
-          const airport = fromRes.results[0];
-          setFromAirportData(airport);
-          setLocationData((prev) => ({
-            ...prev,
-            fromAirport: airport.name,
-            fromCode: airport.code,
-          }));
+        if (locationData.fromCity && !locationData.fromAirport) {
+          const fromRes = await fetchLocationData(locationData.fromCity);
+          if (fromRes && fromRes.length > 0) {
+            setLocationData((prev) => ({
+              ...prev,
+              fromAirport: fromRes[0] 
+            }));
+          }
         }
 
-        const toRes = await fetchLocationData(locationData.toCity);
-        if (toRes?.results?.length) {
-          const airport = toRes.results[0];
-          setToAirportData(airport);
-          setLocationData((prev) => ({
-            ...prev,
-            toAirport: airport.name,
-            toCode: airport.code,
-          }));
+        if (locationData.toCity && !locationData.toAirport) {
+          const toRes = await fetchLocationData(locationData.toCity);
+          if (toRes && toRes.length > 0) {
+            setLocationData((prev) => ({
+              ...prev,
+              toAirport: toRes[0]
+            }));
+          }
         }
       } catch (error) {
-        console.error('Error fetching default airport data:', error);
+        console.error("Error fetching default airport data:", error);
       }
     };
-
+  
     fetchDefaultAirports();
-  }, [locationData.fromCity, locationData.toCity, setLocationData]);
+  }, [locationData.fromCity, locationData.toCity]);
+  
 
   const handleSwitch = () => {
     setLocationData((prev) => ({
@@ -110,15 +115,15 @@ const LocationInput = () => {
       ...prev,
       ...(type === 'from'
         ? {
-            fromCity: formattedValue,
-            fromAirport: cityObj.name,
-            fromCode: cityObj.code,
-          }
+          fromCity: formattedValue,
+          fromAirport: cityObj.name,
+          fromCode: cityObj.code,
+        }
         : {
-            toCity: formattedValue,
-            toAirport: cityObj.name,
-            toCode: cityObj.code,
-          }),
+          toCity: formattedValue,
+          toAirport: cityObj.name,
+          toCode: cityObj.code,
+        }),
     }));
 
     if (type === 'from') {
