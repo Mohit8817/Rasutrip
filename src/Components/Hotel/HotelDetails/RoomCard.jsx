@@ -281,14 +281,7 @@ const RoomCard = ({
         )}
       </h5>
 
-      {/* ✅ Room combination info */}
-      {displayRooms > 1 && roomCombinations && (
-        <div className="alert alert-info mb-3">
-          <small>
-            <strong>Multi-Room Booking:</strong> When you select a room, we'll automatically book {displayRooms} rooms based on available combinations.
-          </small>
-        </div>
-      )}
+
 
       {availableRooms.length > 0 ? (
         availableRooms.map((room, idx) => {
@@ -314,11 +307,7 @@ const RoomCard = ({
                   {panMandatory && (
                     <span className="">*</span>
                   )}
-                  {displayRooms > 1 && (
-                    <span className="badge bg-primary ms-2 small">
-                      {displayRooms} Rooms
-                    </span>
-                  )}
+
                 </div>
 
                 <div className="small text-muted mb-1">
