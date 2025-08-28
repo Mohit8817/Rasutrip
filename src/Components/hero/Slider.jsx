@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Carousel from 'react-bootstrap/Carousel';
 import slidimg1 from '../../assest/img (1).png';
 import slidimg2 from '../../assest/img (2).png';
@@ -8,14 +8,50 @@ import FlightBooking from '../FlightBooking/FlightBooking';
 import TravelTabs from './TravelTabs';
 import HotelSearchForm from '../HotelSearchForm/HotelSearchForm';
 import BusBooking from '../Busbooking/BusBooking';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-const Slider = ({type='home'}) => {
+const Slider = ({ type = 'home' }) => {
   const [index, setIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState('flight'); // Add activeTab state
+  const [activeTab, setActiveTab] = useState('flight');
   const location = useLocation();
+  const navigate = useNavigate();
+
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
+  };
+
+  // Handle URL parameters and custom events
+  useEffect(() => {
+    // Check for tab parameter in URL
+    const urlParams = new URLSearchParams(location.search);
+    const tabFromUrl = urlParams.get('tab');
+
+    if (tabFromUrl && ['flight', 'hotel', 'bus'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+      // Remove the parameter from URL after setting the tab
+      const newParams = new URLSearchParams(location.search);
+      newParams.delete('tab');
+      const newSearch = newParams.toString();
+      const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+      navigate(newUrl, { replace: true });
+    }
+
+    // Listen for custom events from header
+    const handleSetActiveTab = (event) => {
+      setActiveTab(event.detail.tabType);
+    };
+
+    window.addEventListener('setActiveTab', handleSetActiveTab);
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('setActiveTab', handleSetActiveTab);
+    };
+  }, [location, navigate]);
+
+  // Update activeTab and update URL
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
   };
 
   // Function to render tab content
@@ -26,21 +62,23 @@ const Slider = ({type='home'}) => {
       case 'hotel':
         return <HotelSearchForm />;
       case 'bus':
-        // return <div>Bus Booking Component Coming Soon</div>;
-        return <div> <BusBooking /> </div>;
+        return <BusBooking />;
       default:
-        return null;
+        return <FlightBooking />;
     }
   };
 
   return (
     <div className="slider-container">
       {/* White box for your components */}
-      {/* Three tabs */}
       <div className={type === "home" ? "overlay-box" : ""}>
         {location.pathname === '/' && (
           <div className="travel-tabs">
-            <TravelTabs activeTab={activeTab} setActiveTab={setActiveTab} className="" />
+            <TravelTabs
+              activeTab={activeTab}
+              setActiveTab={handleTabChange}
+              className=""
+            />
           </div>
         )}
         {/* Conditionally show active component */}
