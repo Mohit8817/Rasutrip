@@ -44,7 +44,7 @@ const Header = () => {
                         </Nav.Link>
 
                         {/* Flights Dropdown */}
-                        <Dropdown as={Nav.Item} className="nav-dropdown">
+                        {/* <Dropdown as={Nav.Item} className="nav-dropdown">
                             <Dropdown.Toggle as={Nav.Link} className="nav-item-link">
                                 Flights
                             </Dropdown.Toggle>
@@ -59,10 +59,10 @@ const Header = () => {
                                     Multi-City
                                 </Dropdown.Item>
                             </Dropdown.Menu>
-                        </Dropdown>
+                        </Dropdown> */}
 
                         {/* Hotels Dropdown */}
-                        <Dropdown as={Nav.Item} className="nav-dropdown">
+                        {/* <Dropdown as={Nav.Item} className="nav-dropdown">
                             <Dropdown.Toggle as={Nav.Link} className="nav-item-link">
                                 Hotels
                             </Dropdown.Toggle>
@@ -77,7 +77,15 @@ const Header = () => {
                                     Luxury Hotels
                                 </Dropdown.Item>
                             </Dropdown.Menu>
-                        </Dropdown>
+                        </Dropdown> */}
+
+                        <Nav.Link href="/bus" className="nav-item-link">
+                            Flight
+                        </Nav.Link>
+
+                        <Nav.Link href="/bus" className="nav-item-link">
+                            Hotel
+                        </Nav.Link>
 
                         <Nav.Link href="/bus" className="nav-item-link">
                             Bus
@@ -113,7 +121,7 @@ const Header = () => {
                         </Nav.Link>
 
                         <Nav.Link href="/Blogs" className="nav-item-link">
-                            Blog
+                            Blogs
                         </Nav.Link>
 
                         <Nav.Link
@@ -122,6 +130,10 @@ const Header = () => {
                             className="nav-item-link"
                             style={{ cursor: "pointer" }}>
                             Enquiry
+                        </Nav.Link>
+
+                        <Nav.Link href="https://www.rasutechnologies.com/" className="nav-item-link">
+                            RasuTech
                         </Nav.Link>
                     </Nav>
 
@@ -149,7 +161,7 @@ const Header = () => {
                     <Navbar.Brand href="/" className="brand-container">
                         <img src={logo} alt="RasuTrip Logo" className="Header_logo" />
                     </Navbar.Brand>
-                    
+
                     <div className="d-flex align-items-center gap-3">
                         <Login />
                         <Navbar.Toggle
@@ -170,31 +182,31 @@ const Header = () => {
                             <span>Home</span>
                         </a>
                     </div>
-                    
+
                     <div className="bottom-nav-item">
                         <a href="/flights/domestic" className="bottom-nav-link">
                             <i className="fas fa-plane"></i>
                             <span>Flights</span>
                         </a>
                     </div>
-                    
+
                     <div className="bottom-nav-item">
                         <a href="/hotels" className="bottom-nav-link">
                             <i className="fas fa-bed"></i>
                             <span>Hotels</span>
                         </a>
                     </div>
-                    
+
                     <div className="bottom-nav-item">
                         <a href="/bus" className="bottom-nav-link">
                             <i className="fas fa-bus"></i>
                             <span>Bus</span>
                         </a>
                     </div>
-                    
+
                     <div className="bottom-nav-item">
-                        <span 
-                            className="bottom-nav-link" 
+                        <span
+                            className="bottom-nav-link"
                             onClick={() => setShowOffcanvas(true)}
                             style={{ cursor: "pointer" }}
                         >
