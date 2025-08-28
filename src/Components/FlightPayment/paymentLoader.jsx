@@ -12,7 +12,7 @@ const MyVerticallyCenteredModal = (props) => {
         >
             <Modal.Body style={{height:"40vh"}} >
                 <div >
-                    <FlightLoader message="Do not refresh ,Please wait for booking confermation" color="red" />
+                    <FlightLoader message="Please wait, booking confirmation underway." color="red" />
                 </div>
             </Modal.Body>
 

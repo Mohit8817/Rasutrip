@@ -70,6 +70,7 @@ const SearchButton = ({ type, }) => {
         // Helper function to handle navigation
         const goToResults = () => {
           navigate('/flight-results', { state });
+            window.location.reload();
         };
     
         if (location.pathname === '/flight-results') {
