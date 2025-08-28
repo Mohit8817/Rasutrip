@@ -33,8 +33,37 @@ const HotelPaymentInfo = () => {
     vendorCommission = 0,
   } = priceDetails;
 
-  const totalPayable = baseFare + cgst + sgst - discount;
+  // ✅ VENDOR COMMISSION CALCULATION
+  // Formula: Customer Amount - Vendor Amount = Our Commission (Convenience Fee)
+  const calculateConvenienceFee = (baseFare, vendorCommission) => {
+    // If vendor commission is percentage, convert to amount
+    let commissionAmount = vendorCommission;
+
+    // If vendorCommission is less than 100, treat as percentage
+    if (vendorCommission > 0 && vendorCommission <= 100) {
+      commissionAmount = (baseFare * vendorCommission) / 100;
+    }
+
+    // Our convenience fee is the commission amount
+    return parseFloat(commissionAmount.toFixed(2));
+  };
+
+  const convenienceFee = calculateConvenienceFee(baseFare, vendorCommission);
+
+  // ✅ UPDATED: Total calculation with convenience fee
+  const subtotal = baseFare + convenienceFee; // Base fare + our convenience fee
+  const taxableAmount = subtotal; // Apply taxes on total including convenience fee
+  const totalTax = ((taxableAmount * (cgst + sgst)) / 100);
+  const totalPayable = subtotal + totalTax - discount;
   const roundedTotal = parseFloat(totalPayable.toFixed(2));
+
+  // For vendor payment (what we actually pay to hotel)
+  const vendorPayableAmount = baseFare; // Only base fare to vendor
+  const vendorTax = ((baseFare * (cgst + sgst)) / 100);
+  const totalVendorPayment = vendorPayableAmount + vendorTax - discount;
+
+  // Our profit = Customer payment - Vendor payment
+  const ourProfit = roundedTotal - totalVendorPayment;
 
   // Custom Loading Popup Component
   const BookingLoadingModal = () => (
@@ -47,7 +76,6 @@ const HotelPaymentInfo = () => {
     >
       <Modal.Body className="text-center py-5">
         <div className="mb-4">
-          {/* Custom CSS Animation */}
           <div className="spinner-border text-danger" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
@@ -72,7 +100,6 @@ const HotelPaymentInfo = () => {
           </p>
         </div>
 
-        {/* Progress indicators */}
         <div className="mt-4">
           <div className="d-flex justify-content-center align-items-center">
             <div className="progress w-75" style={{ height: '6px' }}>
@@ -307,7 +334,7 @@ const HotelPaymentInfo = () => {
       GuestNationality: "IN",
       NoOfRooms: String(processedRooms.length),
       ClientReferenceNo: uniqueClientRef, // ✅ CRITICAL: Unique reference
-      vendorCommission: bookingDetails.vendorCommission || 10,
+      vendorCommission: convenienceFee, // ✅ FIXED: Use calculated convenience fee
       CouponDiscount: bookingDetails.CouponDiscount || 5,
       IsVoucherBooking: "true",
       HotelRoomsDetails: processedRooms,
@@ -315,7 +342,11 @@ const HotelPaymentInfo = () => {
       SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed")
     };
 
-    console.log('✅ Final booking payload (SINGLE lead passenger + Unique ClientRef):', JSON.stringify(finalPayload, null, 2));
+    console.log('✅ Final booking payload (with Convenience Fee):', JSON.stringify(finalPayload, null, 2));
+    console.log(`💰 Convenience Fee: ₹${convenienceFee}`);
+    console.log(`💰 Customer Pays: ₹${roundedTotal}`);
+    console.log(`💰 Vendor Gets: ₹${totalVendorPayment.toFixed(2)}`);
+    console.log(`💰 Our Profit: ₹${ourProfit.toFixed(2)}`);
 
     return finalPayload;
   };
@@ -679,13 +710,13 @@ Please check your booking data and contact support if the issue persists.`;
             } else {
               const validationError = validation?.message || 'Payment validation failed.';
               setError(validationError);
-              showErrorToast('❌ Payment Validation Failed', validationError);
+              showErrorToast('Payment Validation Failed', validationError);
               setBookingInProgress(false);
             }
           } catch (err) {
             const { message: errMsg } = handleApiError(err, 'Payment Processing');
             setError(errMsg);
-            showErrorToast('❌ Payment Processing Error', errMsg);
+            showErrorToast('Payment Processing Error', errMsg);
             setBookingInProgress(false);
           } finally {
             setLoading(false);
@@ -707,7 +738,7 @@ Please check your booking data and contact support if the issue persists.`;
             setLoading(false);
             setBookingInProgress(false);
             bookingAttemptRef.current = null;
-            showErrorToast('⚠️ Payment Cancelled', 'Payment was cancelled by user');
+            showErrorToast('Payment Cancelled', 'Payment was cancelled by user');
           },
         },
       };
@@ -716,7 +747,7 @@ Please check your booking data and contact support if the issue persists.`;
       rzp.on('payment.failed', (response) => {
         const failureMessage = `Payment failed: ${response.error.description || 'Unknown error'}`;
         setError(failureMessage);
-        showErrorToast('❌ Payment Failed', failureMessage);
+        showErrorToast('Payment Failed', failureMessage);
         setLoading(false);
         setBookingInProgress(false);
         bookingAttemptRef.current = null;
@@ -724,10 +755,10 @@ Please check your booking data and contact support if the issue persists.`;
       rzp.open();
 
     } catch (err) {
-      console.error('❌ Payment initialization error:', err);
+      console.error('Payment initialization error:', err);
       const { message: errMsg } = handleApiError(err, 'Payment Initialization');
       setError(errMsg);
-      showErrorToast('❌ Payment Initialization Failed', errMsg);
+      showErrorToast('Payment Initialization Failed', errMsg);
       setLoading(false);
       setBookingInProgress(false);
       bookingAttemptRef.current = null;
@@ -849,7 +880,7 @@ Please check your booking data and contact support if the issue persists.`;
       <div className="container my-4">
         <div className="row justify-content-center">
           <div className="col">
-            {/* ✅ NEW: Duplicate booking warning */}
+            {/* Duplicate booking warning */}
             {bookingProcessed && (
               <Alert variant="warning" className="mb-4">
                 <FaExclamationTriangle className="me-2" />
@@ -862,7 +893,7 @@ Please check your booking data and contact support if the issue persists.`;
               <Card.Header className="">
                 <div className="d-flex align-items-center">
                   <h5 className="mb-0 fw-bold">Secure Payment</h5>
-                  {/* ✅ NEW: Show processing status */}
+                  {/* Show processing status */}
                   {(loading || bookingInProgress) && (
                     <div className="ms-auto">
                       <div className="spinner-border spinner-border-sm text-danger" role="status">
@@ -887,6 +918,53 @@ Please check your booking data and contact support if the issue persists.`;
                       <div className="fs-4 fw-bold text-danger">₹ {roundedTotal}</div>
                     </div>
                   </div>
+                </div>
+
+                {/* Price Breakdown */}
+                <div className="mb-4 p-3 border rounded">
+                  <h6 className="fw-bold mb-3">Price Breakdown</h6>
+                  <div className="row mb-2">
+                    <div className="col">Base Fare</div>
+                    <div className="col text-end">₹ {baseFare.toFixed(2)}</div>
+                  </div>
+                  {convenienceFee > 0 && (
+                    <div className="row mb-2">
+                      <div className="col">
+                        <span>Convenience Fee</span>
+                        <small className="text-muted d-block">Service charges</small>
+                      </div>
+                      <div className="col text-end text-success fw-bold">₹ {convenienceFee.toFixed(2)}</div>
+                    </div>
+                  )}
+                  {totalTax > 0 && (
+                    <div className="row mb-2">
+                      <div className="col">
+                        <span>Taxes (GST)</span>
+                        <small className="text-muted d-block">CGST + SGST</small>
+                      </div>
+                      <div className="col text-end">₹ {totalTax.toFixed(2)}</div>
+                    </div>
+                  )}
+                  {discount > 0 && (
+                    <div className="row mb-2 text-success">
+                      <div className="col">Discount</div>
+                      <div className="col text-end">- ₹ {discount.toFixed(2)}</div>
+                    </div>
+                  )}
+                  <hr />
+                  <div className="row fw-bold">
+                    <div className="col">Total Amount</div>
+                    <div className="col text-end text-danger fs-5">₹ {roundedTotal}</div>
+                  </div>
+
+                  {/* Revenue Model Info */}
+                  {ourProfit > 0 && (
+                    <div className="mt-3 p-2 bg-success bg-opacity-10 rounded">
+                      <small className="text-success fw-bold">
+                        Revenue Model: Customer pays ₹{roundedTotal} | Vendor gets ₹{totalVendorPayment.toFixed(2)} | Our profit: ₹{ourProfit.toFixed(2)}
+                      </small>
+                    </div>
+                  )}
                 </div>
 
                 {/* Lead guest info */}
@@ -939,7 +1017,7 @@ Please check your booking data and contact support if the issue persists.`;
                     ) : bookingProcessed ? (
                       'Booking Processed'
                     ) : (
-                      `Pay ₹ ${roundedTotal}`
+                      `Pay ₹ {roundedTotal}`
                     )}
                   </Button>
                 </div>
