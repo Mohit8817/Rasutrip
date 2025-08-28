@@ -222,26 +222,7 @@ const HotelDetailsPage = () => {
             priceDetails={selectedPrice}
           />
 
-          {/* ✅ Room combination info card */}
-          {guestDetails.rooms > 1 && roomCombinations && (
-            <div className="card mt-3 border-info">
-              <div className="card-body">
-                <h6 className="card-title text-info">
-                  <i className="fas fa-info-circle me-2"></i>
-                  Multi-Room Booking
-                </h6>
-                <p className="card-text small">
-                  You're booking <strong>{guestDetails.rooms} rooms</strong>.
-                  We'll automatically select the best room combination based on availability.
-                </p>
-                {selectedPrice?.roomCombination && (
-                  <div className="small text-muted">
-                    <strong>Selected Combination:</strong> Rooms {selectedPrice.roomCombination.join(', ')}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+         
 
           <div className="map-placeholder mt-3">
             <iframe

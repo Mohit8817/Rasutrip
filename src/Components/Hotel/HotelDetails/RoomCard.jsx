@@ -100,7 +100,7 @@ const RoomCard = ({
   const calculateTotalPrice = (roomIndexes) => {
     let totalPrice = 0;
     let totalTax = 0;
-    
+
     roomIndexes.forEach(index => {
       const room = getRoomByIndex(index);
       if (room) {
@@ -132,8 +132,8 @@ const RoomCard = ({
 
     // ✅ Find room combination based on selected room
     const selectedRoomIndexes = findRoomCombination(
-      room.RoomIndex, 
-      roomCombinations, 
+      room.RoomIndex,
+      roomCombinations,
       requiredRooms
     );
 
@@ -281,14 +281,7 @@ const RoomCard = ({
         )}
       </h5>
 
-      {/* ✅ Room combination info */}
-      {displayRooms > 1 && roomCombinations && (
-        <div className="alert alert-info mb-3">
-          <small>
-            <strong>Multi-Room Booking:</strong> When you select a room, we'll automatically book {displayRooms} rooms based on available combinations.
-          </small>
-        </div>
-      )}
+
 
       {availableRooms.length > 0 ? (
         availableRooms.map((room, idx) => {
@@ -314,11 +307,7 @@ const RoomCard = ({
                   {panMandatory && (
                     <span className="">*</span>
                   )}
-                  {displayRooms > 1 && (
-                    <span className="badge bg-primary ms-2 small">
-                      {displayRooms} Rooms
-                    </span>
-                  )}
+
                 </div>
 
                 <div className="small text-muted mb-1">
@@ -327,7 +316,7 @@ const RoomCard = ({
                 <div className="small text-muted mb-2">
                   {displayGuests} Guest{displayGuests > 1 ? 's' : ''} ({displayAdults} Adult{displayAdults > 1 ? 's' : ''}, {displayChildren} Child{displayChildren !== 1 ? 'ren' : ''}) • {displayRooms} Room{displayRooms > 1 ? 's' : ''}
                 </div>
-                
+
                 {/* ✅ Price display with room count consideration */}
                 <div className="fw-bold text-dark mb-2">
                   ₹{displayPrice.toLocaleString()}

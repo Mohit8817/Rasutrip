@@ -9,8 +9,8 @@ import { useLocation } from 'react-router-dom';
 
 const BusDetail = () => {
 
-      const location = useLocation();
-  const { totalPrice } = location.state || {};
+    const location = useLocation();
+    const { totalPrice } = location.state || {};
 
     return (
         <div>
@@ -28,7 +28,8 @@ const BusDetail = () => {
                     </Col>
                     <Col lg={3}>
                         <BusFareSummary totalPrice={totalPrice} />
-                        <BusPromoCode />
+                        <BusPromoCode totalPrice={totalPrice} />
+
 
                     </Col>
                 </Row>
