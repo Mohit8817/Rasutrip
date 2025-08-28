@@ -11,9 +11,20 @@ import '../../Style/Pagescss/FlightResultsPage.css';
 
 
 const FlightPayment = () => {
-  const location = useLocation();
+    const location = useLocation();
 
-  const { passengerSelections = [], SSR, SelectedFare } = location.state || {};
+    const {
+        passengerSelections = [],
+        onwardPassengerSelections = [],
+        returnPassengerSelections = [],
+        SSR,
+        ReturnSSR,
+        SelectedFare,
+        isRoundtrip = false,
+        isRoundTrip = false, // Sometimes it comes as different names
+        passengersData = [],
+        ReturnData
+    } = location.state || {};
 
     return (
         <div>
@@ -27,16 +38,22 @@ const FlightPayment = () => {
                     </Row>
                     <Row>
                         <Col lg={9}>
-                            <div >  
+                            <div >
 
-                            <Paymentinfo  />
+                                <Paymentinfo />
 
                             </div>
 
                         </Col>
                         <Col lg={3}>
                             <div>
-                                <FareSummary  passengerSelections={passengerSelections} SelectedFare={SelectedFare}/>
+                                <FareSummary
+                                    Faresummary={"Faresummary"}
+                                    passengerSelections={passengerSelections}
+                                    onwardPassengerSelections={passengerSelections.onward || passengerSelections}
+                                    returnPassengerSelections={returnPassengerSelections}
+                                    isRoundtrip={isRoundTrip}
+                                />
                                 <PromoCodeBox />
 
                             </div>

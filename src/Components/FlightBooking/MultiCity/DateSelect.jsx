@@ -11,17 +11,17 @@ const DateSelect = ({ onDateChange, index }) => {
 
 
     const handleSelect = (date) => {
-        // setTravelDate(date);
+        setTravelDate(date);
         setShowCalendar(false);
-        // onDateChange(date)
+        onDateChange(date)
     };
-    useEffect(() => {
-        const today = new Date();
-        const dateToSet = new Date();
-        dateToSet.setDate(today.getDate() + index);
-        setTravelDate(dateToSet);
-        onDateChange(dateToSet);
-    }, []);
+    // useEffect(() => {
+    //     const today = new Date();
+    //     const dateToSet = new Date();
+    //     dateToSet.setDate(today.getDate() + index);
+    //     setTravelDate(dateToSet);
+    //     onDateChange(dateToSet);
+    // }, []);
 
     const formatDate = (date) =>
         date?.toLocaleDateString("en-GB", {

@@ -89,9 +89,10 @@ const RoundFlightInfo = ({ Faresummary, FareData, fareRules, SelectedFare, Selec
                 return: resFarePayloadReturn?.Result
             };
             console.log('confirmedFare', confirmedFare)
+             const IsPriceChange = resFarePayloadOnward?.IsPriceChanged && resFarePayloadReturn.IsPriceChanged
             setFareConfirm(confirmedFare);
             navigate('/traveller-details', {
-                state: { SelectedFare, fareConfirmData: confirmedFare, Faresummary },
+                state: { SelectedFare, fareConfirmData: confirmedFare, Faresummary,IsPriceChange },
             });
         } catch (error) {
             setError(error);

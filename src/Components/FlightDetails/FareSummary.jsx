@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, Row, Col } from 'react-bootstrap';
 import '../../Style/Pagescss/FlightResultsPage.css';
 
-const FareSummary = ({ passengerSelections = [] }) => {
+const FareSummary = ({ 
+  passengerSelections = [], 
+  returnPassengerSelections = [], 
+  onwardPassengerSelections = [],
+  isRoundtrip = false 
+}) => {
   const [fareOnward, setFareOnward] = useState(null);
   const [fareReturn, setFareReturn] = useState(null);
 
@@ -30,7 +35,6 @@ const FareSummary = ({ passengerSelections = [] }) => {
     }
   }, [journeyType]);
 
-
   const getServiceCharge = (price) => (price * rasocommision) / 100;
 
   const baseFare =
@@ -40,18 +44,41 @@ const FareSummary = ({ passengerSelections = [] }) => {
     getServiceCharge(fareOnward?.PublishedPrice || 0) +
     getServiceCharge(fareReturn?.PublishedPrice || 0);
 
-  const totalMeal = passengerSelections.reduce(
+  // Onward selections calculations
+  const onwardSelections = onwardPassengerSelections.length > 0 ? onwardPassengerSelections : passengerSelections;
+  const onwardTotalMeal = onwardSelections.reduce(
     (acc, p) => acc + (p?.meal?.Price || 0),
     0
   );
-  const totalBaggage = passengerSelections.reduce(
+  const onwardTotalBaggage = onwardSelections.reduce(
     (acc, p) => acc + (p?.baggage?.Price || 0),
     0
   );
-  const totalSeat = passengerSelections.reduce(
+  const onwardTotalSeat = onwardSelections.reduce(
     (acc, p) => acc + (p?.seat?.Price || 0),
     0
   );
+
+  // Return selections calculations (only if return data exists)
+  const returnTotalMeal = Array.isArray(returnPassengerSelections) ? returnPassengerSelections.reduce(
+    (acc, p) => acc + (p?.meal?.Price || 0),
+    0
+  ) : 0;
+  
+  const returnTotalBaggage = Array.isArray(returnPassengerSelections) ? returnPassengerSelections.reduce(
+    (acc, p) => acc + (p?.baggage?.Price || 0),
+    0
+  ) : 0;
+  
+  const returnTotalSeat = Array.isArray(returnPassengerSelections) ? returnPassengerSelections.reduce(
+    (acc, p) => acc + (p?.seat?.Price || 0),
+    0
+  ) : 0;
+
+  // Total calculations
+  const totalMeal = onwardTotalMeal + returnTotalMeal;
+  const totalBaggage = onwardTotalBaggage + returnTotalBaggage;
+  const totalSeat = onwardTotalSeat + returnTotalSeat;
 
   const totalPay = (
     baseFare + serviceCharge + totalMeal + totalBaggage + totalSeat
@@ -76,14 +103,93 @@ const FareSummary = ({ passengerSelections = [] }) => {
             ₹ {(fareData?.Fare?.OtherCharges ?? 0).toFixed(2)}
           </Col>
         </Row>
+      </>
+    );
+  };
 
+  // Render addon section with breakdown
+  const renderAddonSection = () => {
+    const hasReturn = isRoundtrip && Array.isArray(returnPassengerSelections) && returnPassengerSelections.length > 0;
+
+    if (!hasReturn) {
+      // One-way or no return data - show simple totals
+      return (
+        <>
+          <Row className="fare-row py-1">
+            <Col>Meal (+)</Col>
+            <Col className="text-end">₹ {onwardTotalMeal.toFixed(2)}</Col>
+          </Row>
+          <Row className="fare-row py-1">
+            <Col>Baggage (+)</Col>
+            <Col className="text-end">₹ {onwardTotalBaggage.toFixed(2)}</Col>
+          </Row>
+          <Row className="fare-row py-1">
+            <Col>Seat (+)</Col>
+            <Col className="text-end">₹ {onwardTotalSeat.toFixed(2)}</Col>
+          </Row>
+        </>
+      );
+    }
+
+    // Round-trip with return data - show detailed breakdown
+    return (
+      <>
+        {/* Onward Addons */}
+        <h6 className="text-success fw-bold mt-3 mb-1">Onward Add-ons</h6>
+        <Row className="fare-row py-1">
+          <Col>Meal (+)</Col>
+          <Col className="text-end">₹ {onwardTotalMeal.toFixed(2)}</Col>
+        </Row>
+        <Row className="fare-row py-1">
+          <Col>Baggage (+)</Col>
+          <Col className="text-end">₹ {onwardTotalBaggage.toFixed(2)}</Col>
+        </Row>
+        <Row className="fare-row py-1">
+          <Col>Seat (+)</Col>
+          <Col className="text-end">₹ {onwardTotalSeat.toFixed(2)}</Col>
+        </Row>
+
+        {/* Return Addons */}
+        <h6 className="text-warning fw-bold mt-3 mb-1">Return Add-ons</h6>
+        <Row className="fare-row py-1">
+          <Col>Meal (+)</Col>
+          <Col className="text-end">₹ {returnTotalMeal.toFixed(2)}</Col>
+        </Row>
+        <Row className="fare-row py-1">
+          <Col>Baggage (+)</Col>
+          <Col className="text-end">₹ {returnTotalBaggage.toFixed(2)}</Col>
+        </Row>
+        <Row className="fare-row py-1">
+          <Col>Seat (+)</Col>
+          <Col className="text-end">₹ {returnTotalSeat.toFixed(2)}</Col>
+        </Row>
+
+        {/* Total Addons Summary */}
+        <h6 className="text-dark fw-bold mt-3 mb-1">Total Add-ons</h6>
+        <Row className="fare-row py-1 bg-light">
+          <Col>Total Meal</Col>
+          <Col className="text-end">₹ {totalMeal.toFixed(2)}</Col>
+        </Row>
+        <Row className="fare-row py-1 bg-light">
+          <Col>Total Baggage</Col>
+          <Col className="text-end">₹ {totalBaggage.toFixed(2)}</Col>
+        </Row>
+        <Row className="fare-row py-1 bg-light">
+          <Col>Total Seat</Col>
+          <Col className="text-end">₹ {totalSeat.toFixed(2)}</Col>
+        </Row>
       </>
     );
   };
 
   return (
     <Card className="fare-summary-card mb-3">
-      <Card.Header className="bg-light fw-bold">Fare Summary</Card.Header>
+      <Card.Header className="bg-light fw-bold">
+        Fare Summary
+        {isRoundtrip && (
+          <span className="badge bg-primary ms-2 small">Round Trip</span>
+        )}
+      </Card.Header>
       <Card.Body className="px-3 py-2">
         {renderFareSection(fareOnward, 'Onward')}
         {fareReturn && renderFareSection(fareReturn, 'Return')}
@@ -92,18 +198,9 @@ const FareSummary = ({ passengerSelections = [] }) => {
           <Col>GST (+)</Col>
           <Col className="text-end">₹ 0</Col>
         </Row>
-        <Row className="fare-row py-1">
-          <Col>Meal (+)</Col>
-          <Col className="text-end">₹ {totalMeal.toFixed(2)}</Col>
-        </Row>
-        <Row className="fare-row py-1">
-          <Col>Baggage (+)</Col>
-          <Col className="text-end">₹ {totalBaggage.toFixed(2)}</Col>
-        </Row>
-        <Row className="fare-row py-1">
-          <Col>Seat (+)</Col>
-          <Col className="text-end">₹ {totalSeat.toFixed(2)}</Col>
-        </Row>
+
+        {/* Render addon section with conditional breakdown */}
+        {renderAddonSection()}
       </Card.Body>
 
       <Row className="fare-row py-1" style={{ borderTop: '1px solid #e9e9e9' }}>

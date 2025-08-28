@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Card, Button, Row, Col, Form, Badge, Nav } from "react-bootstrap";
 import { FaArrowRight, FaPen, FaInfoCircle, FaPlane } from "react-icons/fa";
 import moment from "moment";
+import FareSummary from "../FlightDetails/FareSummary";
 
 const ReviewInfo = () => {
   const navigate = useNavigate();
@@ -12,24 +13,28 @@ const ReviewInfo = () => {
 
   const {
     passengerSelections = {},
+    returnPassengerSelections, // यह नया prop आएगा addons से
     SSR,
     SelectedFare,
     passengersData,
-
+    ReturnSSR, // यह भी check करेंगे
+    isRoundtrip, // यह भी addons से आएगा
   } = location.state || {};
 
   // Get flight data from localStorage
   const [onwardSegments, setOnwardSegments] = useState(null);
   const [returnSegments, setReturnSegments] = useState(null);
 
-  const tripType = localStorage.getItem('tripType')
-  const isRoundTrip = tripType == 'roundtrip' ? true : false
-
+  const tripType = localStorage.getItem('tripType');
+  // Enhanced roundtrip check - multiple conditions
+  const isRoundTrip = tripType === 'roundtrip' || !!ReturnSSR || !!returnPassengerSelections || !!isRoundtrip;
+let ReturnData;
   useEffect(() => {
     // Check if it's round-trip or one-way
     if (isRoundTrip) {
       const onwardData = localStorage.getItem('selectedOnwardFlight');
       const returnData = localStorage.getItem('selectedReturnFlight');
+
       if (onwardData) {
         if (JSON.parse(onwardData).Segments.length > 1) {
           setOnwardSegments(JSON.parse(onwardData));
@@ -49,12 +54,21 @@ const ReviewInfo = () => {
       }
     }
   }, [isRoundTrip]);
+
+  // Enhanced passenger data merging with better return data handling
   const mergedPassengersData = passengersData?.map((passenger, index) => {
     const onwardSelection = passengerSelections.onward?.[index] || passengerSelections[index] || {};
-    const returnSelection = passengerSelections.return?.[index] || {};
+    const returnSelection = isRoundTrip ? (
+      returnPassengerSelections?.[index] ||
+      passengerSelections.return?.[index] || {}
+    ) : {};
 
+    ReturnData=returnSelection
+
+  
     return {
       ...passenger,
+      // Add return data only if it's actually a roundtrip
       ...(isRoundTrip && {
         ReturnMeal: returnSelection.meal ? [returnSelection.meal] : [],
         ReturnSeat: returnSelection.seat ? [returnSelection.seat] : [],
@@ -68,6 +82,7 @@ const ReviewInfo = () => {
     };
   }) || [];
 
+
   // Update localStorage with merged data
   useEffect(() => {
     if (mergedPassengersData.length > 0) {
@@ -76,7 +91,7 @@ const ReviewInfo = () => {
     }
   }, [mergedPassengersData]);
 
-  // Flight Card Component
+  // Flight Card Component - same as before
   const FlightCard = ({ segments, flightType, title }) => {
     if (!segments || !segments.Segments?.[0]?.[0]) {
       return <div>Flight data not available</div>;
@@ -145,7 +160,7 @@ const ReviewInfo = () => {
 
           <hr />
 
-          {/* Individual Segments */}
+          {/* Individual Segments - same as before */}
           {currentSegments.map((segment, index) => {
             const airline = segment.Airline || {};
             const origin = segment.Origin || {};
@@ -248,13 +263,18 @@ const ReviewInfo = () => {
     );
   };
 
-  // Passenger Add-ons Component
+  // Enhanced Passenger Add-ons Component
   const PassengerAddons = ({ flightType }) => {
-    const selections = flightType === 'onward'
-      ? (passengerSelections.onward || passengerSelections)
-      : passengerSelections.return;
+    let selections;
 
-    if (!selections) return null;
+    if (flightType === 'onward') {
+      selections = passengerSelections.onward || passengerSelections;
+    } else {
+      // Return selections - check multiple sources
+      selections = returnPassengerSelections || passengerSelections.return;
+    }
+
+    if (!selections || !Array.isArray(selections)) return null;
 
     return (
       <>
@@ -265,26 +285,25 @@ const ReviewInfo = () => {
           return (
             <Card key={`${flightType}-passenger-${i}`} className="mb-3 bg-light border">
               <Card.Body>
-                  <Row>
-                    
+                <Row>
                   <Col md={4}>
-                <div className="d-flex justify-content-between align-items-start">
-                  <div>
-                    <p className="fw-bold mb-2">
-                      Passenger {i + 1}
-                      {isRoundTrip && (
-                        <Badge bg={flightType === 'onward' ? 'primary' : 'success'} className="ms-2">
-                          {flightType === 'onward' ? 'Onward' : 'Return'}
-                        </Badge>
-                      )}
-                    </p>
-                    <p className="m-0"><strong>Name:</strong> {passenger.Title}&nbsp;{passenger.FirstName} {passenger.LastName}</p>
-                    <p className="m-0"><strong>Gender:</strong> {passenger.Gender == 1 ? 'Male' : passenger.Gender == 2 ? 'Female' : 'Other'}</p>
-                    <p className="mb-3"><strong>Type:</strong> {passenger.type}</p>
-                  </div>
-                </div>
-</Col>
-              
+                    <div className="d-flex justify-content-between align-items-start">
+                      <div>
+                        <p className="fw-bold mb-2">
+                          Passenger {i + 1}
+                          {isRoundTrip && (
+                            <Badge bg={flightType === 'onward' ? 'primary' : 'success'} className="ms-2">
+                              {flightType === 'onward' ? 'Onward' : 'Return'}
+                            </Badge>
+                          )}
+                        </p>
+                        <p className="m-0"><strong>Name:</strong> {passenger.Title}&nbsp;{passenger.FirstName} {passenger.LastName}</p>
+                        <p className="m-0"><strong>Gender:</strong> {passenger.Gender == 1 ? 'Male' : passenger.Gender == 2 ? 'Female' : 'Other'}</p>
+                        <p className="mb-3"><strong>Type:</strong> {passenger.type}</p>
+                      </div>
+                    </div>
+                  </Col>
+
                   <Col md={2}>
                     {selection.meal && (
                       <div className="text-muted small mb-2">
@@ -325,132 +344,162 @@ const ReviewInfo = () => {
     navigate("/Payment", {
       state: {
         passengerSelections,
+        returnPassengerSelections,
         SSR,
+        ReturnSSR,
         SelectedFare,
         isRoundTrip,
-        passengersData: mergedPassengersData
+        passengersData: mergedPassengersData,
+        mergedPassengersData
       }
     });
   };
 
   return (
-    <div className="container">
-      {/* Header */}
-      <Card className="mb-3 shadow-sm">
-        <Card.Body className="d-flex justify-content-between align-items-center">
-          <div>
-            <h5 className="mb-0 fw-bold">Review Your Flight Details</h5>
-            {isRoundTrip && (
-              <small className="text-muted">Round-trip Booking</small>
+    <>
+      <div className="container">
+        {/* Header */}
+        <Row>
+          <Col lg={9}>
+            <Card className="mb-3 shadow-sm">
+              <Card.Body className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h5 className="mb-0 fw-bold">Review Your Flight Details</h5>
+                  {isRoundTrip && (
+                    <small className="text-muted">Round-trip Booking</small>
+                  )}
+                </div>
+                <Button variant="" size="sm" onClick={() => navigate(-1)}>Back</Button>
+              </Card.Body>
+            </Card>
+
+
+            <h5 className="fw-bold mb-3">Review Booking</h5>
+
+            {/* Flight Info Cards */}
+            {isRoundTrip ? (
+              <>
+                {/* Round-trip Tab Navigation */}
+                <Card className="mb-3">
+                  <Card.Body>
+                    <Nav variant="tabs" activeKey={activeTab} onSelect={setActiveTab}>
+                      <Nav.Item>
+                        <Nav.Link eventKey="onward" className={activeTab === 'onward' ? 'fw-bold' : ''}>
+                          <FaPlane className="me-2" />
+                          Onward Flight
+                        </Nav.Link>
+                      </Nav.Item>
+                      {/* Return tab - only show if return data exists */}
+                      {(returnSegments || ReturnSSR) && (
+                        <Nav.Item>
+                          <Nav.Link eventKey="return" className={activeTab === 'return' ? 'fw-bold' : ''}>
+                            <FaPlane className="me-2" style={{ transform: 'scaleX(-1)' }} />
+                            Return Flight
+                          </Nav.Link>
+                        </Nav.Item>
+                      )}
+                    </Nav>
+                  </Card.Body>
+                </Card>
+
+                {/* Display flight based on active tab */}
+                {activeTab === 'onward' && onwardSegments && (
+                  <FlightCard
+                    segments={onwardSegments}
+                    flightType="onward"
+                    title="Onward Flight"
+                  />
+                )}
+                {/* Return flight - only show if return data exists */}
+                {activeTab === 'return' && returnSegments && (returnSegments || ReturnSSR) && (
+                  <FlightCard
+                    segments={returnSegments}
+                    flightType="return"
+                    title="Return Flight"
+                  />
+                )}
+              </>
+            ) : (
+              // One-way flight
+              onwardSegments && (
+                <FlightCard segments={onwardSegments} flightType="onward" />
+              )
             )}
-          </div>
-          <Button variant="" size="sm" onClick={() => navigate(-1)}>Back</Button>
-        </Card.Body>
-      </Card>
 
-      <h5 className="fw-bold mb-3">Review Booking</h5>
+            {/* Passenger Add-on Details */}
+            <Card className="container mt-2">
+              <div className="d-flex align-items-center mb-3 mt-4">
+                <h5 className="mb-0">Passenger Add-on Details</h5>
+                <FaPen className="ms-2 text-primary" />
+              </div>
 
-      {/* Flight Info Cards */}
-      {isRoundTrip ? (
-        <>
-          {/* Round-trip Tab Navigation */}
-          <Card className="mb-3">
-            <Card.Body>
-              <Nav variant="tabs" activeKey={activeTab} onSelect={setActiveTab}>
-                <Nav.Item>
-                  <Nav.Link eventKey="onward" className={activeTab === 'onward' ? 'fw-bold' : ''}>
-                    <FaPlane className="me-2" />
-                     Flight
-                  </Nav.Link>
-                </Nav.Item>
-                {/* <Nav.Item>
-                  <Nav.Link eventKey="return" className={activeTab === 'return' ? 'fw-bold' : ''}>
-                    <FaPlane className="me-2" style={{ transform: 'scaleX(-1)' }} />
-                    Return Flight
-                  </Nav.Link>
-                </Nav.Item> */}
-              </Nav>
-            </Card.Body>
-          </Card>
+              {isRoundTrip && (returnPassengerSelections || ReturnSSR) ? (
+                <>
+                  {/* Round-trip passenger addons with tabs */}
+                  <Nav variant="pills" activeKey={activeTab} onSelect={setActiveTab} className="mb-3">
+                    <Nav.Item>
+                      <Nav.Link eventKey="onward" size="sm">
+                        Onward Add-ons
+                      </Nav.Link>
+                    </Nav.Item>
+                    {/* Return tab - only show if return data exists */}
+                    {(returnPassengerSelections || ReturnSSR) && (
+                      <Nav.Item>
+                        <Nav.Link eventKey="return" size="sm">
+                          Return Add-ons
+                        </Nav.Link>
+                      </Nav.Item>
+                    )}
+                  </Nav>
 
-          {/* Display flight based on active tab */}
-          {activeTab === 'onward' && onwardSegments && (
-            <FlightCard
-              segments={onwardSegments}
-              flightType="onward"
-              title="Onward Flight"
-            />
-          )}
-          {/* {activeTab === 'return' && returnSegments && (
-            <FlightCard
-              segments={returnSegments}
-              flightType="return"
-              title="Return Flight"
-            />
-          )} */}
-        </>
-      ) : (
-        // One-way flight
-        onwardSegments && (
-          <FlightCard segments={onwardSegments} flightType="onward" />
-        )
-      )}
+                  <PassengerAddons flightType={activeTab} />
+                </>
+              ) : (
+                // One-way passenger addons or roundtrip without return data
+                <PassengerAddons flightType="onward" />
+              )}
 
-      {/* Passenger Add-on Details */}
-      <Card className="container mt-2">
-        <div className="d-flex align-items-center mb-3 mt-4">
-          <h5 className="mb-0">Passenger Add-on Details</h5>
-          <FaPen className="ms-2 text-primary" />
-        </div>
+              {/* Terms */}
+              <Form.Group controlId="termsCheck" className="mb-3">
+                <Form.Check
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={() => setAcceptedTerms(!acceptedTerms)}
+                  label={<>I have read and accept the <a href="/" className="text-primary">Terms & Conditions</a>.</>}
+                />
+              </Form.Group>
+            </Card>
 
-        {isRoundTrip ? (
-          <>
-            {/* Round-trip passenger addons with tabs */}
-            <Nav variant="pills" activeKey={activeTab} onSelect={setActiveTab} className="mb-3">
-              <Nav.Item>
-                <Nav.Link eventKey="onward" size="sm">
-                  Onward Add-ons
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="return" size="sm">
-                  Return Add-ons
-                </Nav.Link>
-              </Nav.Item>
-            </Nav>
+            {/* Continue Button */}
+            <div className="text-start mt-3">
+              <Button
+                variant="primary"
+                className="btn-red"
+                onClick={handleContinue}
+                disabled={!acceptedTerms}
+              >
+                Continue Payment
+              </Button>
+            </div>
 
-            <PassengerAddons flightType={activeTab} />
-          </>
-        ) : (
-          // One-way passenger addons
-          <PassengerAddons flightType="onward" />
-        )}
+          </Col>
+          <Col lg={3}>
+            <div>
+              <FareSummary
+                Faresummary={"Faresummary"}
+                passengerSelections={passengerSelections}
+                onwardPassengerSelections={passengerSelections.onward || passengerSelections}
+                returnPassengerSelections={returnPassengerSelections}
+                isRoundtrip={isRoundTrip}
+              />
+              {/* <PromoCodeBox /> */}
 
-        {/* Terms */}
-        <Form.Group controlId="termsCheck" className="mb-3">
-          <Form.Check
-            type="checkbox"
-            checked={acceptedTerms}
-            onChange={() => setAcceptedTerms(!acceptedTerms)}
-            label={<>I have read and accept the <a href="/" className="text-primary">Terms & Conditions</a>.</>}
-          />
-        </Form.Group>
-      </Card>
+            </div>
+          </Col>
 
-      {/* Continue Button */}
-      <div className="text-start mt-3">
-        <Button
-          variant="primary"
-          className="btn-red"
-          onClick={handleContinue}
-          disabled={!acceptedTerms}
-        >
-          Continue Payment
-        </Button>
-      </div>
 
-      {/* Custom Styles */}
-      <style jsx>{`
+          {/* Custom Styles */}
+          <style jsx>{`
         .flight-dot-line {
           width: 2px;
           height: 40px;
@@ -484,7 +533,9 @@ const ReviewInfo = () => {
           background-color: #007bff;
         }
       `}</style>
-    </div>
+        </Row>
+      </div>
+    </>
   );
 };
 

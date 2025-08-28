@@ -22,7 +22,7 @@ const FlightBooking = () => {
     const [tripType, setTripType] = useState('oneway');
 
     const [toCityFromCitySegment, setToCityFromCitySegment] = useState('');
-
+    const [fareData, setFareData] = useState({});
     const [segments, setSegments] = useState([])
     const [cityComponents, setCityComponents] = useState([]);
 
@@ -32,13 +32,21 @@ const FlightBooking = () => {
             setCityComponents([...cityComponents, newCity]);
         }
     };
-    const handleSelect = (dataSelect) => {
-        console.log('dataSelect', dataSelect)
-    }
-    const handleRemoveCity = (id) => {
-        const updatedComponents = cityComponents.filter((city) => city.id !== id);
-        setCityComponents(updatedComponents);
+    // const handleSelect = (dataSelect) => {
+    //     console.log('dataSelect', dataSelect)
+    // }
+    // const handleRemoveCity = (id) => {
+    //     const updatedComponents = cityComponents.filter((city) => city.id !== id);
+    //     setCityComponents(updatedComponents);
+    // };
+
+  
+    
+    const handleFareDataChange = (data) => {
+        setFareData(data);
+        console.log('dddddddd',data)
     };
+
     useEffect(() => {
         const resKey = localStorage.getItem('locationData');
         const CheckData = JSON.parse(resKey);
@@ -211,7 +219,7 @@ const FlightBooking = () => {
                 )}
                 <Row>
                     <Col>
-                        <FareTypeSelector />
+                        <FareTypeSelector onDataChange={handleFareDataChange} />
                     </Col>
                 </Row>
             </Container>
