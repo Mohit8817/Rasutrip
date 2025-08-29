@@ -112,13 +112,14 @@ const RoomCard = ({
     return { totalPrice, totalTax };
   };
 
+
   const handleBookNow = async (room, roomCombinations = null) => {
     if (room.AvailabilityType !== "Confirm") {
       alert("⚠️ This room is not available. Please choose another.");
       return;
     }
 
-    // ✅ Calculate total adults properly
+    // Calculate total adults properly
     let totalAdults = hotel?.adult || 1;
     const requiredRooms = hotel?.rooms || 1;
 
@@ -130,7 +131,7 @@ const RoomCard = ({
     console.log("👥 Total Adults for PAN check:", totalAdults);
     console.log("🏨 Required Rooms:", requiredRooms);
 
-    // ✅ Find room combination based on selected room
+    // Find room combination based on selected room
     const selectedRoomIndexes = findRoomCombination(
       room.RoomIndex,
       roomCombinations,
@@ -143,12 +144,12 @@ const RoomCard = ({
     setLoadingRoomId(room.RoomId);
     setLoadingRoomName(room.RoomTypeName || "Selected Room");
 
-    // ✅ Build HotelRoomsDetails array for multiple rooms
+    // Build HotelRoomsDetails array for multiple rooms
     const hotelRoomsDetails = selectedRoomIndexes.map(roomIndex => ({
       RoomIndex: roomIndex,
     }));
 
-    // ✅ Enhanced block payload with multiple rooms support
+    // Enhanced block payload with multiple rooms support
     const blockPayload = {
       UserIp: payload.UserIp || "49.36.217.215",
       HotelCode: payload.HotelCode,
@@ -167,17 +168,45 @@ const RoomCard = ({
       console.log("📥 Block Room Response:", blockRes);
 
       if (blockRes?.Error?.ErrorCode === 0) {
-        // ✅ Calculate total price for all selected rooms
+        // Calculate total price for all selected rooms
         const { totalPrice, totalTax } = calculateTotalPrice(selectedRoomIndexes);
 
-        // ✅ Get all room details for the combination
+        // Get all room details for the combination
         const selectedRooms = selectedRoomIndexes.map(index => getRoomByIndex(index)).filter(Boolean);
 
-        // ✅ Check if any room requires PAN
+        // Check if any room requires PAN
         const anyPANMandatory = selectedRooms.some(r => isPANMandatory(r));
 
+        // ✅ NEW: Get commission percentage from block room response
+        const publishedPrice = blockRes?.Result?.[0]?.Price?.PublishedPrice || totalPrice;
+        const vendorCommissionPercentage = blockRes?.Result?.[0]?.Price?.rasutripCommissionPercentage ||
+          hotel?.rasutripCommissionPercentage || 12; // Default 12%
+
+        // ✅ Calculate vendor commission amount
+        const vendorCommissionAmount = (publishedPrice * vendorCommissionPercentage) / 100;
+        const convenienceFee = 150; // Fixed convenience fee
+
+        // ✅ Calculate customer final price
+        const customerPrice = publishedPrice + convenienceFee;
+
+        // ✅ Calculate vendor payment (what we pay to hotel)
+        const vendorPayment = publishedPrice - vendorCommissionAmount;
+
+        // ✅ Our profit calculation
+        const ourProfit = customerPrice - publishedPrice;
+
+        console.log("💰 Pricing Breakdown:", {
+          publishedPrice,
+          vendorCommissionPercentage,
+          vendorCommissionAmount,
+          convenienceFee,
+          customerPrice,
+          vendorPayment,
+          ourProfit
+        });
+
         onRoomSelect?.({
-          baseFare: totalPrice,
+          baseFare: publishedPrice, // Hotel's published price (before our markup)
           tax: totalTax,
           serviceCharges: 0,
           gst: 0,
@@ -186,25 +215,40 @@ const RoomCard = ({
           hotel,
           isPANMandatory: anyPANMandatory,
           roomCombination: selectedRoomIndexes,
+          // ✅ NEW: Add commission data
+          vendorCommission: vendorCommissionAmount,
+          vendorCommissionPercentage,
+          convenienceFee,
+          customerTotalPrice: customerPrice,
+          vendorPayment,
+          ourProfit,
         });
 
         onBlockStatusChange?.("success");
 
-        // ✅ Enhanced navigation with complete data
+        // Enhanced navigation with complete pricing data
         navigate("/HotelDetail", {
           state: {
             hotel: {
               ...hotel,
-              totalAdults, // ✅ Pass calculated total adults
+              totalAdults, // Pass calculated total adults
             },
             room: selectedRooms[0], // Primary room
             rooms: selectedRooms, // All selected rooms
             roomCombination: selectedRoomIndexes,
             priceDetails: {
-              baseFare: totalPrice,
+              baseFare: publishedPrice, // Published price from API
               tax: totalTax,
               serviceCharges: 0,
               gst: 0,
+              // ✅ NEW: Commission pricing data
+              vendorCommission: vendorCommissionAmount,
+              vendorCommissionPercentage,
+              convenienceFee,
+              customerTotalPrice: customerPrice,
+              vendorPayment,
+              ourProfit,
+              publishedPrice, // Original published price
             },
             totalGuests: hotel?.guests || (hotel?.adult || 0) + (hotel?.child || 0),
             guestDetails: {

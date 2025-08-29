@@ -25,7 +25,7 @@ const GuestDetails = () => {
 
                         <FareSummaryCard priceDetails={priceDetails} />
                   
-                        <HotelPromoCodeCard />
+                        {/* <HotelPromoCodeCard /> */}
                     </Col>
                 </Row>
             </Container></div>

@@ -23,47 +23,76 @@ const HotelPaymentInfo = () => {
     priceDetails = {},
     reviewData = {},
     isPANMandatory = false,
+    blockedRoomData = {},
   } = location.state || {};
 
-  const {
-    baseFare = 0,
-    cgst = 0,
-    sgst = 0,
-    discount = 0,
-    vendorCommission = 0,
-  } = priceDetails;
+  // ✅ UPDATED: Use the same pricing logic as FareSummaryCard
+  const calculateFinalPrice = () => {
+    // Get data from blocked room response if available
+    const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
+    const priceData = roomData?.Price || {};
+    
+    // Use blocked room data first, then fallback to priceDetails
+    const {
+      baseFare = priceData.RoomPrice || priceDetails?.baseFare || 0,
+      publishedPrice = priceData.PublishedPrice || priceDetails?.publishedPrice || 0,
+      tax = priceData.Tax || priceDetails?.tax || 0,
+      discount = priceData.Discount || priceDetails?.discount || 0,
+      serviceCharges = priceData.ServiceCharges || priceDetails?.serviceCharges || 0,
+      otherCharges = priceData.OtherCharges || priceDetails?.otherCharges || 0,
+      agentCommission = priceData.AgentCommission || priceDetails?.agentCommission || 0,
+      tds = priceData.TDS || priceDetails?.tds || 0,
+      vendorCommissionPercentage = priceDetails?.vendorCommissionPercentage || 12,
+    } = priceDetails || {};
 
-  // ✅ VENDOR COMMISSION CALCULATION
-  // Formula: Customer Amount - Vendor Amount = Our Commission (Convenience Fee)
-  const calculateConvenienceFee = (baseFare, vendorCommission) => {
-    // If vendor commission is percentage, convert to amount
-    let commissionAmount = vendorCommission;
+    // GST data from blocked room response
+    const gstData = priceData.GST || {};
+    const cgstAmount = gstData.CGSTAmount || 0;
+    const sgstAmount = gstData.SGSTAmount || 0;
+    const igstAmount = gstData.IGSTAmount || 0;
+    const cgstRate = gstData.CGSTRate || 0;
+    const sgstRate = gstData.SGSTRate || 0;
+    const igstRate = gstData.IGSTRate || 0;
 
-    // If vendorCommission is less than 100, treat as percentage
-    if (vendorCommission > 0 && vendorCommission <= 100) {
-      commissionAmount = (baseFare * vendorCommission) / 100;
+    // Use PublishedPrice as main price (this includes room price + tax)
+    const actualBaseFare = publishedPrice;
+    
+    // Calculate vendor commission on published price
+    const vendorCommissionAmount = (actualBaseFare * vendorCommissionPercentage) / 100;
+    
+    // Calculate GST
+    let totalGST = 0;
+    if (cgstAmount > 0 || sgstAmount > 0 || igstAmount > 0) {
+      totalGST = cgstAmount + sgstAmount + igstAmount;
+    } else if (cgstRate > 0 || sgstRate > 0 || igstRate > 0) {
+      // Calculate GST on (published price + commission) if not provided
+      const gstBase = actualBaseFare + vendorCommissionAmount;
+      totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
     }
 
-    // Our convenience fee is the commission amount
-    return parseFloat(commissionAmount.toFixed(2));
+    // Final amount customer pays
+    const customerTotal = actualBaseFare + vendorCommissionAmount + totalGST - discount;
+    
+    return {
+      actualBaseFare,
+      vendorCommissionAmount,
+      vendorCommissionPercentage,
+      totalGST,
+      cgstAmount,
+      sgstAmount,
+      igstAmount,
+      cgstRate,
+      sgstRate,
+      igstRate,
+      discount,
+      serviceCharges,
+      otherCharges,
+      roundedTotal: parseFloat(customerTotal.toFixed(2))
+    };
   };
 
-  const convenienceFee = calculateConvenienceFee(baseFare, vendorCommission);
-
-  // ✅ UPDATED: Total calculation with convenience fee
-  const subtotal = baseFare + convenienceFee; // Base fare + our convenience fee
-  const taxableAmount = subtotal; // Apply taxes on total including convenience fee
-  const totalTax = ((taxableAmount * (cgst + sgst)) / 100);
-  const totalPayable = subtotal + totalTax - discount;
-  const roundedTotal = parseFloat(totalPayable.toFixed(2));
-
-  // For vendor payment (what we actually pay to hotel)
-  const vendorPayableAmount = baseFare; // Only base fare to vendor
-  const vendorTax = ((baseFare * (cgst + sgst)) / 100);
-  const totalVendorPayment = vendorPayableAmount + vendorTax - discount;
-
-  // Our profit = Customer payment - Vendor payment
-  const ourProfit = roundedTotal - totalVendorPayment;
+  const priceCalculation = calculateFinalPrice();
+  const { roundedTotal, actualBaseFare, vendorCommissionAmount, vendorCommissionPercentage, totalGST, cgstAmount, sgstAmount, igstAmount, cgstRate, sgstRate, igstRate, discount, serviceCharges, otherCharges } = priceCalculation;
 
   // Custom Loading Popup Component
   const BookingLoadingModal = () => (
@@ -326,7 +355,7 @@ const HotelPaymentInfo = () => {
     // ✅ CRITICAL: Generate unique ClientReferenceNo to prevent duplicate bookings
     const uniqueClientRef = generateUniqueClientReference();
 
-    // Build final payload
+    // Build final payload without vendor commission
     const finalPayload = {
       ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`),
       HotelCode: String(bookingDetails.HotelCode || 67),
@@ -334,7 +363,6 @@ const HotelPaymentInfo = () => {
       GuestNationality: "IN",
       NoOfRooms: String(processedRooms.length),
       ClientReferenceNo: uniqueClientRef, // ✅ CRITICAL: Unique reference
-      vendorCommission: convenienceFee, // ✅ FIXED: Use calculated convenience fee
       CouponDiscount: bookingDetails.CouponDiscount || 5,
       IsVoucherBooking: "true",
       HotelRoomsDetails: processedRooms,
@@ -342,11 +370,8 @@ const HotelPaymentInfo = () => {
       SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed")
     };
 
-    console.log('✅ Final booking payload (with Convenience Fee):', JSON.stringify(finalPayload, null, 2));
-    console.log(`💰 Convenience Fee: ₹${convenienceFee}`);
+    console.log('✅ Final booking payload:', JSON.stringify(finalPayload, null, 2));
     console.log(`💰 Customer Pays: ₹${roundedTotal}`);
-    console.log(`💰 Vendor Gets: ₹${totalVendorPayment.toFixed(2)}`);
-    console.log(`💰 Our Profit: ₹${ourProfit.toFixed(2)}`);
 
     return finalPayload;
   };
@@ -517,7 +542,7 @@ Please check your booking data and contact support if the issue persists.`;
 
       if (isBookingSuccessful && hasRequiredBookingData) {
         setBookingStage('Booking confirmed! Preparing confirmation details...');
-        showSuccessToast('🎉 Hotel booking confirmed successfully!');
+        showSuccessToast('Hotel booking confirmed successfully!');
 
         // ✅ Send invoice email after successful booking
         if (hasBookingId) {
@@ -540,7 +565,7 @@ Please check your booking data and contact support if the issue persists.`;
 
             if (invoiceResult.success) {
               console.log('✅ Invoice sent successfully');
-              showSuccessToast('📧 Invoice sent to your email successfully!');
+              showSuccessToast('Invoice sent to your email successfully!');
             } else {
               console.warn('⚠️ Invoice sending failed:', invoiceResult.message);
               // Don't fail the booking for invoice issues - just warn
@@ -920,51 +945,109 @@ Please check your booking data and contact support if the issue persists.`;
                   </div>
                 </div>
 
-                {/* Price Breakdown */}
+                {/* ✅ Updated Price Breakdown - Using FareSummaryCard Logic */}
                 <div className="mb-4 p-3 border rounded">
                   <h6 className="fw-bold mb-3">Price Breakdown</h6>
+                  
+                  {/* Hotel Total */}
                   <div className="row mb-2">
-                    <div className="col">Base Fare</div>
-                    <div className="col text-end">₹ {baseFare.toFixed(2)}</div>
+                    <div className="col">
+                      Hotel Total
+                      <small className="text-muted d-block">Published price (Room + Hotel taxes)</small>
+                    </div>
+                    <div className="col text-end fw-bold">₹ {actualBaseFare.toLocaleString()}</div>
                   </div>
-                  {convenienceFee > 0 && (
+                  
+                  {/* Service Charges */}
+                  {serviceCharges > 0 && (
                     <div className="row mb-2">
                       <div className="col">
-                        <span>Convenience Fee</span>
-                        <small className="text-muted d-block">Service charges</small>
+                        Service Charges
+                        <small className="text-muted d-block">Hotel service charges</small>
                       </div>
-                      <div className="col text-end text-success fw-bold">₹ {convenienceFee.toFixed(2)}</div>
+                      <div className="col text-end">₹ {serviceCharges.toFixed(2)}</div>
                     </div>
                   )}
-                  {totalTax > 0 && (
+
+                  {/* Other Charges */}
+                  {otherCharges > 0 && (
                     <div className="row mb-2">
                       <div className="col">
-                        <span>Taxes (GST)</span>
-                        <small className="text-muted d-block">CGST + SGST</small>
+                        Other Charges
+                        <small className="text-muted d-block">Additional charges</small>
                       </div>
-                      <div className="col text-end">₹ {totalTax.toFixed(2)}</div>
+                      <div className="col text-end">₹ {otherCharges.toFixed(2)}</div>
                     </div>
                   )}
+                  
+                  {/* Booking Fee */}
+                  <div className="row mb-2">
+                    <div className="col">
+                      Booking Fee
+                      <small className="text-muted d-block">Service charge ({vendorCommissionPercentage}%)</small>
+                    </div>
+                    <div className="col text-end text-success fw-bold">₹ {vendorCommissionAmount.toFixed(2)}</div>
+                  </div>
+
+                  {/* GST Breakdown */}
+                  {totalGST > 0 && (
+                    <>
+                      {cgstAmount > 0 && (
+                        <div className="row mb-2">
+                          <div className="col">
+                            CGST ({cgstRate}%)
+                            <small className="text-muted d-block">Central GST</small>
+                          </div>
+                          <div className="col text-end">₹ {cgstAmount.toFixed(2)}</div>
+                        </div>
+                      )}
+                      
+                      {sgstAmount > 0 && (
+                        <div className="row mb-2">
+                          <div className="col">
+                            SGST ({sgstRate}%)
+                            <small className="text-muted d-block">State GST</small>
+                          </div>
+                          <div className="col text-end">₹ {sgstAmount.toFixed(2)}</div>
+                        </div>
+                      )}
+                      
+                      {igstAmount > 0 && (
+                        <div className="row mb-2">
+                          <div className="col">
+                            IGST ({igstRate}%)
+                            <small className="text-muted d-block">Integrated GST</small>
+                          </div>
+                          <div className="col text-end">₹ {igstAmount.toFixed(2)}</div>
+                        </div>
+                      )}
+                      
+                      {/* Show calculated GST if not provided in response */}
+                      {(cgstAmount === 0 && sgstAmount === 0 && igstAmount === 0) && totalGST > 0 && (
+                        <div className="row mb-2">
+                          <div className="col">
+                            GST ({cgstRate + sgstRate + igstRate}%)
+                            <small className="text-muted d-block">On booking amount</small>
+                          </div>
+                          <div className="col text-end">₹ {totalGST.toFixed(2)}</div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  
+                  {/* Discount */}
                   {discount > 0 && (
                     <div className="row mb-2 text-success">
-                      <div className="col">Discount</div>
+                      <div className="col">Discount Applied</div>
                       <div className="col text-end">- ₹ {discount.toFixed(2)}</div>
                     </div>
                   )}
+                  
                   <hr />
                   <div className="row fw-bold">
                     <div className="col">Total Amount</div>
                     <div className="col text-end text-danger fs-5">₹ {roundedTotal}</div>
                   </div>
-
-                  {/* Revenue Model Info */}
-                  {ourProfit > 0 && (
-                    <div className="mt-3 p-2 bg-success bg-opacity-10 rounded">
-                      <small className="text-success fw-bold">
-                        Revenue Model: Customer pays ₹{roundedTotal} | Vendor gets ₹{totalVendorPayment.toFixed(2)} | Our profit: ₹{ourProfit.toFixed(2)}
-                      </small>
-                    </div>
-                  )}
                 </div>
 
                 {/* Lead guest info */}
@@ -1017,7 +1100,7 @@ Please check your booking data and contact support if the issue persists.`;
                     ) : bookingProcessed ? (
                       'Booking Processed'
                     ) : (
-                      `Pay ₹ {roundedTotal}`
+                      `Pay ₹${roundedTotal}`
                     )}
                   </Button>
                 </div>
