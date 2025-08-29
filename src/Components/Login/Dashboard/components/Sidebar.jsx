@@ -1,8 +1,8 @@
-// components/Sidebar.js - Updated with clean design and proper user/agent logic
+// components/Sidebar.js - Updated with Dashboard and Wallet History tabs for agents
 import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../Context/AuthContext';
-import { User, Calendar, CreditCard, Building, LogOut } from 'lucide-react';
+import { User, Calendar, CreditCard, Building, LogOut, BarChart3, Wallet } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
   const {
@@ -56,31 +56,37 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         </div>
       </div>
     );
-  }
+  };
 
-  // Base menu items for all users
-  const baseMenuItems = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'bookings', label: 'Booking', icon: Calendar },
-    { id: 'payment-history', label: 'Payment History', icon: CreditCard },
-  ];
+  // Define menu items based on user type
+  const getMenuItems = () => {
+    const baseMenuItems = [
+      { id: 'profile', label: 'Profile', icon: User },
+      { id: 'bookings', label: 'Booking', icon: Calendar },
+      { id: 'payment-history', label: 'Payment History', icon: CreditCard },
+    ];
 
-  // Agent-specific menu items
-  const agentMenuItems = [
-    { id: 'bank-details', label: 'Bank Details', icon: Building },
-  ];
+    if (isAgent()) {
+      // Agent menu items in specific order
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+        ...baseMenuItems,
+        { id: 'wallet-history', label: 'Wallet History', icon: Wallet },
+        { id: 'bank-details', label: 'Bank Details', icon: Building },
+      ];
+    }
 
-  // Combine menu items based on user type
-  const menuItems = isAgent()
-    ? [...baseMenuItems, ...agentMenuItems]
-    : baseMenuItems;
+    return baseMenuItems;
+  };
+
+  const menuItems = getMenuItems();
 
   return (
-    <div className=" bg-white border-r border-gray-200 flex flex-col">
+    <div className="h-screen w-80 bg-white border-r border-gray-200 flex flex-col">
       {/* User Profile Section */}
       <div className="px-6 py-6 border-b border-gray-200">
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4 bg-red-500">
+          <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-content text-white text-2xl font-bold mb-4 bg-red-500">
             {getUserInitials()}
           </div>
 
@@ -97,7 +103,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           )}
 
           {/* Additional User Info */}
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 mt-1">
             {formatMobile(user?.mobile)}
           </div>
 
@@ -110,14 +116,14 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 py-4">
+      <nav className="flex-1 py-2">
         {menuItems.map((item) => {
           const IconComponent = item.icon;
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center px-6 py-3 text-left transition-colors duration-200 ${activeTab === item.id
+              className={`w-full flex items-center px-6 py-2 text-left transition-colors duration-200 ${activeTab === item.id
                 ? 'bg-red-500 text-white'
                 : 'text-gray-600 hover:bg-gray-50'
                 }`}
@@ -133,13 +139,13 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       </nav>
 
       {/* Bottom Section with Logout */}
-      <div className="border-t border-gray-200">
-        <div className="p-4">
+      <div className="border-t border-gray-200 pb-3">
+        <div className="">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-4 py-3 text-left rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200"
+            className="w-full flex items-center px-4 py-1 text-left rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200"
           >
-            <LogOut className="w-5 h-5 mr-3" />
+            <LogOut className="" />
             <span className="font-medium">Logout</span>
           </button>
         </div>
