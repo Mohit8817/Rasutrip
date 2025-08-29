@@ -8,7 +8,7 @@ import { fetchSSR } from '../APIS/FlightApi/FlightApi';
 import moment from 'moment';
 import FlightLoader from '../FlightLoader/FlightLoader';
 
-const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary }) => {
+const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChange }) => {
     // Resolve current fareConfirm for oneway/roundtrip
     const tripType = localStorage.getItem('tripType') || 'oneway';
     let fareConfirm = fareConfirmData;
@@ -19,6 +19,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary }) => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
+    console.log('IsPriceChange',IsPriceChange)
     // Read origin from selected flight
     let PassagerOrigin = null;
     try {
@@ -49,6 +50,12 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary }) => {
 
     useEffect(() => {
         if (!fareConfirm) return;
+        const existingPassengers = localStorage.getItem('passengersData');
+        if (existingPassengers && passengersData.length > 0) {
+            const parsedData = JSON.parse(existingPassengers);
+            dispatch(setPassengers(parsedData));
+            return;
+        }
 
         const createEmptyPassenger = (type, index) => ({
             type,
@@ -150,8 +157,24 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary }) => {
         }),
         [summaryData]
     );
-    const setLoaderTest = () => {
 
+
+    const ReturnSSRPayload = useMemo(() => {
+
+        if (!summaryData?.return) {
+            return null;
+        }
+
+        return {
+            UserIp: localStorage.getItem('UserIp') || '',
+            ResultIndex: summaryData?.return ? summaryData?.return?.FareId : summaryData?.FareId || '',
+            SearchTokenId: localStorage.getItem('searchToken') || ''
+        }
+    },
+        [summaryData]
+    );
+
+    const setLoaderTest = () => {
         setOpen(open ? false : true)
     }
 
@@ -160,13 +183,21 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary }) => {
     const handleContinue = async () => {
         setLoading(true);
         try {
-    console.log('SSRPayload',SSRPayload);
+            console.log('SSRPayload', SSRPayload);
 
             const res = await fetchSSR(SSRPayload);
+            let ReturnSSR;
+            if (summaryData?.return) {
+                ReturnSSR = await fetchSSR(ReturnSSRPayload);
+            console.log('ReturnSSR',ReturnSSR)
+
+            }
+            console.log('ReturnSSR1',ReturnSSR)
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
             navigate('/addons', {
                 state: {
                     SSR: res?.Result || [],
+                    ReturnSSR:ReturnSSR?.Result||null,
                     SelectedFare,
                     passengersData,
                     Faresummary
@@ -175,7 +206,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary }) => {
         } catch (e) {
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
             navigate('/addons', {
-                state: { SSR: [], SelectedFare, passengersData, Faresummary }
+                state: { SSR: [], ReturnSSR:null, SelectedFare, passengersData, Faresummary }
             });
         } finally {
             setLoading(false);

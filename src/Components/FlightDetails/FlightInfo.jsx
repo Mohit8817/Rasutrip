@@ -36,9 +36,13 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
         try {
             const res = await fetchFareConfirmation(farePayload);
             const confirmedFare = res?.Result || [];
+            let  IsPriceChange = res?.IsPriceChanged
+            console.log('IsPriceChangeres',res)
+            console.log('IsPriceChangereskk',IsPriceChange)
+
             setFareConfirm(confirmedFare);
             navigate('/traveller-details', {
-                state: { SelectedFare, fareConfirmData: confirmedFare ,Faresummary:SelectedFare},
+                state: { SelectedFare, fareConfirmData: confirmedFare ,Faresummary:SelectedFare,IsPriceChange:IsPriceChange},
             });
         } catch (error) {
             setError(error);

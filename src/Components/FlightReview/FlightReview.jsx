@@ -22,22 +22,22 @@ const FlightReview = () => {
                             <BookingSteps activeIndex={3} />
                         </div>
                     </Row>
-                    <Row>
-                        <Col lg={9}>
+                    {/* <Row> */}
+                        <Col lg={12}>
                             <div >
                               <ReviewInfo/>
                                
                             </div>
 
                         </Col>
-                        <Col lg={3}>
+                        {/* <Col lg={3}>
                             <div>
                                 <FareSummary  passengerSelections={passengerSelections} SelectedFare={SelectedFare}  />
                                 <PromoCodeBox />
 
                             </div>
-                        </Col>
-                    </Row>
+                        </Col> */}
+                    {/* </Row> */}
                 </Container>
             </div>
         </div>

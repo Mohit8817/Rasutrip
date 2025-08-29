@@ -1,12 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect ,useContext} from 'react';
 import { Form, Row, Col } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../../Style/FlightBooking.css'; // Your custom styles
+import { LocationContext } from '../Context/LocationContext';
 
-const FareTypeSelector = () => {
+const FareTypeSelector = ({onDataChange}) => {
     const [selectedFare, setSelectedFare] = useState('regular');
     const [isNonStop, setIsNonStop] = useState(false);
+     const { locationData, setLocationData } = useContext(LocationContext);
 
+     useEffect(() => {
+        if (!locationData.directflight) {
+          setLocationData(prev => ({
+            ...prev,
+            directflight: isNonStop
+          }));
+        }
+    }, [selectedFare, isNonStop]);
     return (
         <div className="fare-type-container p-3 ">
             <Row className="align-items-center flex-wrap">

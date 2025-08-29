@@ -15,7 +15,10 @@ const RazorpayPayment = () => {
   const navigate = useNavigate();
   const rasocommision = localStorage.getItem('rasocommision')
   const location = useLocation();
-  const { passengerSelections = [], SSR, SelectedFare } = location.state || {};
+  const { passengerSelections = [], SSR, mergedPassengersData, ReturnSSR, isRoundTrip, ReturnData } = location.state || {};
+
+  const resFare = localStorage.getItem('fareSummery')
+  const SelectedFare = JSON.parse(resFare)
   const [loading, setLoading] = useState(false);
   const [fare, setfare] = useState(SelectedFare);
   const [journeyType, setjourneyType] = useState(null);
@@ -38,7 +41,18 @@ const RazorpayPayment = () => {
     }
   }, []); // run only once on mount
 
+
   // const baseFare = journeyType=='roundtrip'? fare?.onward.Fare.PublishedPrice+fare?.return.Fare.PublishedPrice : fare?.PublishedPrice || 0;
+  let totalReturn = 0;
+  if (isRoundTrip) {
+    totalReturn = mergedPassengersData.reduce((sum, p) =>
+      sum +
+      (p.ReturnMeal?.reduce?.((t, x) => t + (x.Price || 0), 0) || 0) +
+      (p.ReturnSeat?.reduce?.((t, x) => t + (x.Price || 0), 0) || 0) +
+      (p.ReturnBaggage?.reduce?.((t, x) => t + (x.Price || 0), 0) || 0)
+      , 0);
+  }
+
   const baseFare = journeyType === 'roundtrip'
     ? (fare?.onward?.Fare?.PublishedPrice && fare?.return?.Fare?.PublishedPrice
       ? fare.onward.Fare.PublishedPrice + fare.return.Fare.PublishedPrice
@@ -50,7 +64,7 @@ const RazorpayPayment = () => {
   const totalMeal = passengerSelections.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0);
   const totalBaggage = passengerSelections.reduce((acc, p) => acc + (p?.baggage?.Price || 0), 0);
   const totalSeat = passengerSelections.reduce((acc, p) => acc + (p?.seat?.Price || 0), 0);
-  const finalAmount = (baseFare + totalMeal + totalBaggage + totalSeat + serviceCharge).toFixed(2);
+  const finalAmount = (baseFare + totalMeal + totalBaggage + totalSeat + serviceCharge + totalReturn).toFixed(2);
   const storedPassengers = localStorage.getItem('passengersData');
   let passengersData = storedPassengers ? JSON.parse(storedPassengers) : []
 
@@ -67,9 +81,9 @@ const RazorpayPayment = () => {
         const selection = passengerSelections[index] || {};
         return {
           ...passenger,
-          Baggage: journeyType == 'roundtrip' ? [] : selection.baggage ? [selection.baggage] : [],
-          Meal: journeyType == 'roundtrip' ? [] : selection.meal ? [selection.meal] : [],
-          Seat: journeyType == 'roundtrip' ? [] : selection.seat ? [selection.seat] : [],
+          Baggage: journeyType == 'roundtrip' ? passenger.Baggage : selection.baggage ? [selection.baggage] : [],
+          Meal: journeyType == 'roundtrip' ? passenger.Meal : selection.meal ? [selection.meal] : [],
+          Seat: journeyType == 'roundtrip' ? passenger.Seat : selection.seat ? [selection.seat] : [],
         };
       });
       const IP = localStorage.getItem('UserIp');
@@ -88,6 +102,43 @@ const RazorpayPayment = () => {
         PassportIssue: formatDateToISOString(passenger.PassportIssue),
       }));
 
+      const clean = (obj) => JSON.parse(JSON.stringify(obj));
+      console.log('passengersDatak', passengersData)
+
+      let onwardPassengers = passengersData.map(passenger =>
+        clean({
+          ...passenger,
+          Baggage: passenger.Baggage,
+          Meal: passenger.Meal,
+          Seat: passenger.Seat,
+          ReturnMeal: undefined,
+          ReturnSeat: undefined,
+          ReturnBaggage: undefined
+        })
+      );
+      console.log('onwardPassengers', onwardPassengers)
+
+      let returnPassengers;
+      if (
+        journeyType === 'roundtrip' &&
+        fare?.onward?.FareId &&
+        fare?.return?.FareId
+      ) {
+        returnPassengers = passengersData.map(passenger =>
+          clean({
+            ...passenger,
+            Baggage: passenger.ReturnBaggage,
+            Meal: passenger.ReturnMeal,
+            Seat: passenger.ReturnSeat,
+            ReturnMeal: undefined,
+            ReturnSeat: undefined,
+            ReturnBaggage: undefined
+          })
+        );
+      }
+
+      console.log('returnPassengers', returnPassengers)
+
       const payload = {
         UserIp: IP,
         ResultIndex: journeyType === 'roundtrip'
@@ -98,7 +149,7 @@ const RazorpayPayment = () => {
         SearchTokenId: SearchTokenId || '',
         CouponDiscount: SelectedFare?.CouponDiscount || 0,
         vendorCommission: serviceCharge,
-        Passengers: passengersData
+        Passengers: onwardPassengers
       };
       const response = await post(payload, '/airservice/book');
 
@@ -113,7 +164,7 @@ const RazorpayPayment = () => {
           SearchTokenId: SearchTokenId || '',
           CouponDiscount: SelectedFare?.CouponDiscount || 0,
           vendorCommission: serviceCharge,
-          Passengers: passengersData
+          Passengers: returnPassengers
         };
 
         responseReturn = await post(payload, '/airservice/book');

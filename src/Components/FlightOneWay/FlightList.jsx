@@ -17,6 +17,7 @@ const FlightList = ({ filters }) => {
     departDate = new Date(),
     passengers = { adults: 1, children: 0, infants: 0 },
     cabinClass = '',
+    directflight,
   } = locationData || {};
 
   const [allFlights, setAllFlights] = useState(flightsData || []);
@@ -24,7 +25,7 @@ const FlightList = ({ filters }) => {
   const [error, setError] = useState(null);
   const [UserIpAddress, setUserIpAddress] = useState(null);
 
-
+console.log('locationData',locationData)
   const filteredFlights = useMemo(() => {
     return allFlights.filter(flight => {
       const airline = flight.Segments?.[0]?.[0]?.Airline?.AirlineName;
@@ -166,7 +167,7 @@ const FlightList = ({ filters }) => {
           Adult: passengers.adults || 1,
           Child: passengers.children || 0,
           Infant: passengers.infants || 0,
-          DirectFlight: false,
+          DirectFlight: directflight,
           JourneyType: 1,
           PreferredCarriers: null,
           CabinClass: normalizedCabin,

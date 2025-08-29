@@ -5,7 +5,7 @@ import { LocationContext } from '../Context/LocationContext';
 import { HotelSearchContext } from '../Context/HotelSearchContext';
 import '../../Style/FlightBooking.css';
 
-const SearchButton = ({ type }) => {
+const SearchButton = ({ type, }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { locationData } = useContext(LocationContext);
@@ -29,6 +29,7 @@ const SearchButton = ({ type }) => {
       cabinClass,
       tripType,
       fromCityId,
+      directflight,
       toCityId,
       totalPrice,
     } = locationData;
@@ -46,6 +47,7 @@ const SearchButton = ({ type }) => {
             AirSegments: locationData.AirSegments,
             passengers: locationData.passengers,
             cabinClass: locationData.cabinClass,
+            directflight,
             tripType: 'multicity'
           };
         } else {
@@ -60,6 +62,7 @@ const SearchButton = ({ type }) => {
             returnDate: returnDate || null,
             passengers,
             cabinClass,
+            directflight,
             tripType: tripType || 'oneway'
           };
         }
@@ -67,6 +70,7 @@ const SearchButton = ({ type }) => {
         // Helper function to handle navigation
         const goToResults = () => {
           navigate('/flight-results', { state });
+            window.location.reload();
         };
     
         if (location.pathname === '/flight-results') {

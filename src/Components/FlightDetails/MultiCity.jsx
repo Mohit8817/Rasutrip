@@ -28,9 +28,10 @@ const MultiCity = ({ FareData, fareRules, SelectedFare }) => {
         try {
             const res = await fetchFareConfirmation(farePayload);
             const confirmedFare = res?.Result || [];
+             const IsPriceChange = res?.IsPriceChanged
             setFareConfirm(confirmedFare);
             navigate('/traveller-details', {
-                state: { SelectedFare, fareConfirmData: confirmedFare, Faresummary: SelectedFare },
+                state: { SelectedFare, fareConfirmData: confirmedFare, Faresummary: SelectedFare ,IsPriceChange},
             });
         } catch (error) {
             setError(error);
