@@ -88,6 +88,22 @@ export const fetchRoomInfo = async (payload) => {
 
 
 
+
+
+
+
+// ✅ Block room before final booking
+export const blockRoom = async (payload) => {
+  try {
+    const res = await axios.post(`${baseURL}/hotelservice/blockroom`, payload);
+    return res.data;
+  } catch (error) {
+    console.error("blockRoom API error:", error);
+    throw error;
+  }
+};
+
+
 export const applyCouponCode = async (couponCode) => {
   try {
     const headers = createAuthHeaders();
@@ -169,22 +185,6 @@ export const fetchSpecialOffers = async () => {
     };
   }
 };
-export default HotelServices;
-
-
-// ✅ Block room before final booking
-export const blockRoom = async (payload) => {
-  try {
-    const res = await axios.post(`${baseURL}/hotelservice/blockroom`, payload);
-    return res.data;
-  } catch (error) {
-    console.error("blockRoom API error:", error);
-    throw error;
-  }
-};
-
-
-
 
 export const createHotelOrder = async (amount) => {
   try {
@@ -283,3 +283,4 @@ export const sendHotelInvoice = async (invoicePayload) => {
   }
 };
 
+export default HotelServices;
