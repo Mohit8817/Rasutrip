@@ -5,6 +5,7 @@ import Navbar from "react-bootstrap/Navbar";
 import Offcanvas from "react-bootstrap/Offcanvas";
 import Dropdown from "react-bootstrap/Dropdown";
 import Modal from "react-bootstrap/Modal";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../../Style/header.css";
 import logo from "../../assest/rasutrip.png";
 import Login from "../Login/Login";
@@ -15,6 +16,8 @@ const Header = () => {
     const [showLogin, setShowLogin] = useState(false);
     const [showEnquiry, setShowEnquiry] = useState(false);
     const [showOffcanvas, setShowOffcanvas] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
 
     // Function to close offcanvas
     const closeOffcanvas = () => {
@@ -24,6 +27,28 @@ const Header = () => {
     // Function to handle enquiry click
     const handleEnquiryClick = () => {
         setShowEnquiry(true);
+        closeOffcanvas();
+    };
+
+    // Function to handle tab navigation
+    const handleTabNavigation = (tabType) => {
+        // If already on home page, just scroll to slider and set tab
+        if (location.pathname === '/') {
+            // Scroll to slider section
+            const sliderElement = document.querySelector('.slider-container');
+            if (sliderElement) {
+                sliderElement.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // Set active tab using custom event
+            const event = new CustomEvent('setActiveTab', {
+                detail: { tabType }
+            });
+            window.dispatchEvent(event);
+        } else {
+            // Navigate to home page with tab parameter
+            navigate(`/?tab=${tabType}`);
+        }
         closeOffcanvas();
     };
 
@@ -43,51 +68,30 @@ const Header = () => {
                             Home
                         </Nav.Link>
 
-                        {/* Flights Dropdown */}
-                        {/* <Dropdown as={Nav.Item} className="nav-dropdown">
-                            <Dropdown.Toggle as={Nav.Link} className="nav-item-link">
-                                Flights
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu>
-                                <Dropdown.Item href="/flights/domestic">
-                                    Domestic Flights
-                                </Dropdown.Item>
-                                <Dropdown.Item href="/flights/international">
-                                    International Flights
-                                </Dropdown.Item>
-                                <Dropdown.Item href="/flights/multi-city">
-                                    Multi-City
-                                </Dropdown.Item>
-                            </Dropdown.Menu>
-                        </Dropdown> */}
-
-                        {/* Hotels Dropdown */}
-                        {/* <Dropdown as={Nav.Item} className="nav-dropdown">
-                            <Dropdown.Toggle as={Nav.Link} className="nav-item-link">
-                                Hotels
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu>
-                                <Dropdown.Item href="/hotels">
-                                    Search Hotels
-                                </Dropdown.Item>
-                                <Dropdown.Item href="/hotels/deals">
-                                    Hotel Deals
-                                </Dropdown.Item>
-                                <Dropdown.Item href="/hotels/luxury">
-                                    Luxury Hotels
-                                </Dropdown.Item>
-                            </Dropdown.Menu>
-                        </Dropdown> */}
-
-                        <Nav.Link href="/bus" className="nav-item-link">
+                        <Nav.Link
+                            as="span"
+                            onClick={() => handleTabNavigation('flight')}
+                            className="nav-item-link"
+                            style={{ cursor: "pointer" }}
+                        >
                             Flight
                         </Nav.Link>
 
-                        <Nav.Link href="/bus" className="nav-item-link">
+                        <Nav.Link
+                            as="span"
+                            onClick={() => handleTabNavigation('hotel')}
+                            className="nav-item-link"
+                            style={{ cursor: "pointer" }}
+                        >
                             Hotel
                         </Nav.Link>
 
-                        <Nav.Link href="/bus" className="nav-item-link">
+                        <Nav.Link
+                            as="span"
+                            onClick={() => handleTabNavigation('bus')}
+                            className="nav-item-link"
+                            style={{ cursor: "pointer" }}
+                        >
                             Bus
                         </Nav.Link>
 
@@ -184,24 +188,36 @@ const Header = () => {
                     </div>
 
                     <div className="bottom-nav-item">
-                        <a href="/flights/domestic" className="bottom-nav-link">
+                        <span
+                            className="bottom-nav-link"
+                            onClick={() => handleTabNavigation('flight')}
+                            style={{ cursor: "pointer" }}
+                        >
                             <i className="fas fa-plane"></i>
                             <span>Flights</span>
-                        </a>
+                        </span>
                     </div>
 
                     <div className="bottom-nav-item">
-                        <a href="/hotels" className="bottom-nav-link">
+                        <span
+                            className="bottom-nav-link"
+                            onClick={() => handleTabNavigation('hotel')}
+                            style={{ cursor: "pointer" }}
+                        >
                             <i className="fas fa-bed"></i>
                             <span>Hotels</span>
-                        </a>
+                        </span>
                     </div>
 
                     <div className="bottom-nav-item">
-                        <a href="/bus" className="bottom-nav-link">
+                        <span
+                            className="bottom-nav-link"
+                            onClick={() => handleTabNavigation('bus')}
+                            style={{ cursor: "pointer" }}
+                        >
                             <i className="fas fa-bus"></i>
                             <span>Bus</span>
-                        </a>
+                        </span>
                     </div>
 
                     <div className="bottom-nav-item">
@@ -233,9 +249,36 @@ const Header = () => {
                 </Offcanvas.Header>
                 <Offcanvas.Body>
                     <Nav className="mobile-nav">
-                        {/* Rider Section */}
+                        {/* Travel Services */}
                         <div className="mobile-nav-section">
                             <h6 className="mobile-nav-title">Travel Services</h6>
+                            <Nav.Link
+                                as="span"
+                                onClick={() => handleTabNavigation('flight')}
+                                className="mobile-nav-link"
+                                style={{ cursor: "pointer" }}
+                            >
+                                <i className="fas fa-plane"></i>
+                                Flight
+                            </Nav.Link>
+                            <Nav.Link
+                                as="span"
+                                onClick={() => handleTabNavigation('hotel')}
+                                className="mobile-nav-link"
+                                style={{ cursor: "pointer" }}
+                            >
+                                <i className="fas fa-bed"></i>
+                                Hotel
+                            </Nav.Link>
+                            <Nav.Link
+                                as="span"
+                                onClick={() => handleTabNavigation('bus')}
+                                className="mobile-nav-link"
+                                style={{ cursor: "pointer" }}
+                            >
+                                <i className="fas fa-bus"></i>
+                                Bus
+                            </Nav.Link>
                             <Nav.Link
                                 href="https://test.rasutrip.com/"
                                 className="mobile-nav-link"

@@ -16,7 +16,7 @@ const HotelDetailInfo = () => {
   const handleContinue = () => {
     const roomDetails = hotelSearchData?.roomDetails || [{ adults: 2, children: 0 }];
 
-    // 👇 Total guests = sum of adults + children in each room
+    //  Total guests = sum of adults + children in each room
     const totalGuests = roomDetails.reduce((acc, room) => {
       return acc + (room.adults || 0) + (room.children || 0);
     }, 0);
