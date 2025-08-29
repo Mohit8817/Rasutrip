@@ -1,79 +1,45 @@
 import axios from "axios";
 import baseURL from "../../../Services/Config";
 
-// ✅ Define financial service endpoints
+// ✅ Define financial service endpoints - REMOVED AGENT ENDPOINTS
 const FinancialServices = {
     getPaymentHistory: `${baseURL}/user/payment-history`,
     getWalletBalance: `${baseURL}/user/wallet-balance`,
-
-    // ✅ New agent endpoints
-    getAgentWalletHistory: `${baseURL}/agent/wallet-history`,
 };
 
 // ✅ API configuration
 const API_BASE_URL = "https://api.rasutrip.com/api/v1";
 
-// ✅ Helper function to detect user type
+// ✅ Simplified user detection (removed agent logic)
 const detectUserType = () => {
     console.log('🔍 Detecting user type...');
-
-    const storedUserType = localStorage.getItem('userType') || localStorage.getItem('user_type');
-    let detectedType = null;
-    const customerTokenKeys = ['token', 'authToken', 'customer_token', 'customerToken'];
-    const agentTokenKeys = ['agent_token', 'agentToken', 'agent_auth_token'];
-
-    const hasCustomerToken = customerTokenKeys.some(key => localStorage.getItem(key));
-    const hasAgentToken = agentTokenKeys.some(key => localStorage.getItem(key));
-
-    if (storedUserType) {
-        detectedType = storedUserType.toLowerCase();
-    } else if (hasAgentToken && !hasCustomerToken) {
-        detectedType = 'agent';
-    } else if (hasCustomerToken && !hasAgentToken) {
-        detectedType = 'customer';
-    } else {
-        const hasAnyToken = localStorage.getItem('token') || localStorage.getItem('authToken');
-        detectedType = hasAnyToken ? 'customer' : null;
-    }
-
-    console.log('✅ Final detected user type:', detectedType);
-    return detectedType;
+    return 'customer'; // Always return customer/user
 };
 
-// ✅ Helper function to get authentication headers
+// ✅ Helper function to get authentication headers (simplified for user only)
 const getAuthHeaders = () => {
-    const currentUserType = detectUserType();
-
     let token = null;
-    const tokenKeys = currentUserType === 'agent'
-        ? ['agent_token', 'agentToken', 'agent_auth_token', 'token', 'authToken']
-        : ['token', 'authToken', 'customer_token', 'customerToken', 'accessToken'];
+    const tokenKeys = ['token', 'authToken', 'customer_token', 'customerToken', 'accessToken'];
 
     for (const key of tokenKeys) {
         const value = localStorage.getItem(key) || sessionStorage.getItem(key);
         if (value) {
             token = value;
-            console.log(`🔐 Found token with key: ${key} for user type: ${currentUserType}`);
+            console.log(`🔐 Found token with key: ${key}`);
             break;
         }
     }
 
     if (!token) {
-        console.error('❌ No authentication token found for user type:', currentUserType);
+        console.error('❌ No authentication token found');
     }
 
     const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Type': currentUserType || 'customer',
+        'User-Type': 'customer',
     };
-
-    // Add additional headers for agent requests
-    if (currentUserType === 'agent') {
-        headers['X-Agent-Request'] = 'true';
-        headers['X-User-Role'] = 'agent';
-    }
 
     console.log('📤 Auth headers:', { ...headers, Authorization: token ? `Bearer ${token.substring(0, 10)}...` : 'None' });
     return headers;
@@ -110,8 +76,6 @@ const extractBookingsArray = (apiResponse) => {
         bookingsArray = apiResponse.results;
     } else if (apiResponse?.response && Array.isArray(apiResponse.response)) {
         bookingsArray = apiResponse.response;
-    } else if (apiResponse?.agentBookings && Array.isArray(apiResponse.agentBookings)) {
-        bookingsArray = apiResponse.agentBookings;
     } else if (typeof apiResponse === 'object' && apiResponse !== null) {
         const possibleArrays = Object.values(apiResponse).filter(Array.isArray);
         if (possibleArrays.length > 0) {
@@ -579,7 +543,7 @@ export const getPaymentById = async (paymentId) => {
     }
 };
 
-// ✅ Get user wallet balance
+// ✅ Get user wallet balance (ONLY USER, NO AGENT)
 export const getWalletBalance = async () => {
     try {
         // Get auth token - adjust based on your auth implementation
@@ -614,88 +578,7 @@ export const getWalletBalance = async () => {
     }
 };
 
-// ✅ NEW: Get agent wallet history/balance
-export const getAgentWalletHistory = async () => {
-    try {
-        // Get auth token - adjust based on your auth implementation
-        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-
-        const res = await axios.get(FinancialServices.getAgentWalletHistory, {
-            headers: {
-                "Content-Type": "application/json",
-                // Adjust authorization header format based on your API requirements
-                ...(token && { "Authorization": `Bearer ${token}` })
-            },
-        });
-
-        // API response format - handle your specific structure
-        const walletData = res.data.data || res.data.wallet || res.data;
-        const balance = walletData.balance || walletData.walletBalance || walletData.amount || 0;
-        const history = walletData.history || walletData.transactions || [];
-
-        return {
-            success: true,
-            data: walletData,
-            balance: balance,
-            history: history,
-            message: "Agent wallet history fetched successfully"
-        };
-    } catch (err) {
-        console.error("❌ Error fetching agent wallet history:", err.response?.data || err.message);
-        throw {
-            success: false,
-            message: err.response?.data?.message || err.message || "Failed to fetch agent wallet history",
-            error: err,
-            balance: 0,
-            history: []
-        };
-    }
-};
-
-// ✅ NEW: Universal wallet balance function that detects user type
-export const getUniversalWalletBalance = async (userType = null) => {
-    try {
-        // Auto-detect user type from localStorage or context if not provided
-        if (!userType) {
-            const userData = JSON.parse(localStorage.getItem('user') || '{}');
-            const userRole = userData.role || userData.userType || userData.type;
-            userType = userRole === 'agent' ? 'agent' : 'user';
-        }
-
-        if (userType === 'agent') {
-            // Call agent wallet API
-            const result = await getAgentWalletHistory();
-            return {
-                success: result.success,
-                balance: result.balance,
-                data: result.data,
-                message: result.message,
-                userType: 'agent'
-            };
-        } else {
-            // Call user wallet API
-            const result = await getWalletBalance();
-            return {
-                success: result.success,
-                balance: result.balance,
-                data: result.data,
-                message: result.message,
-                userType: 'user'
-            };
-        }
-    } catch (err) {
-        console.error("❌ Error fetching universal wallet balance:", err.message);
-        throw {
-            success: false,
-            message: err.message || "Failed to fetch wallet balance",
-            error: err,
-            balance: 0,
-            userType: userType || 'user'
-        };
-    }
-};
-
-// ✅ Financial utility functions
+// ✅ Financial utility functions (SIMPLIFIED - NO AGENT LOGIC)
 export const FinancialUtils = {
     // Format currency for display
     formatCurrency: (amount) => {
@@ -760,9 +643,6 @@ export const FinancialUtils = {
     hasSufficientBalance: (walletBalance, requiredAmount) => {
         return walletBalance >= requiredAmount;
     },
-
-    // ✅ Detect user type from various sources
-    detectUserType: detectUserType,
 
     // Get booking details for display
     getBookingDetails: (payment) => {
@@ -830,7 +710,6 @@ export const FinancialUtils = {
             'REFUND': 'Refund',
             'WITHDRAWAL': 'Withdrawal',
             'CASHBACK': 'Cashback',
-            'COMMISSION': 'Commission',
             'OTHER': 'Other'
         };
         return typeMap[type] || type;
@@ -846,7 +725,7 @@ export const FinancialUtils = {
     }
 };
 
-// ✅ Export individual utility objects for specific use cases
+// ✅ Export individual utility objects for specific use cases (SIMPLIFIED)
 export const PaymentUtils = {
     formatCurrency: FinancialUtils.formatCurrency,
     formatAmount: FinancialUtils.formatAmount,
@@ -863,20 +742,17 @@ export const PaymentUtils = {
 export const WalletUtils = {
     formatCurrency: FinancialUtils.formatCurrency,
     formatAmount: FinancialUtils.formatAmount,
-    hasSufficientBalance: FinancialUtils.hasSufficientBalance,
-    detectUserType: FinancialUtils.detectUserType
+    hasSufficientBalance: FinancialUtils.hasSufficientBalance
 };
 
-// ✅ Export comprehensive financial service (recommended)
+// ✅ Export comprehensive financial service (SIMPLIFIED - USER ONLY)
 const FinancialService = {
     // Payment methods
     getPaymentHistory,
     getPaymentById,
 
-    // Wallet methods
+    // Wallet methods (USER ONLY)
     getWalletBalance,
-    getAgentWalletHistory,
-    getUniversalWalletBalance,
 
     // Utility methods
     formatCurrency: FinancialUtils.formatCurrency,
@@ -886,14 +762,13 @@ const FinancialService = {
     calculateTotalAmount: FinancialUtils.calculateTotalAmount,
     groupByType: FinancialUtils.groupByType,
     hasSufficientBalance: FinancialUtils.hasSufficientBalance,
-    detectUserType: FinancialUtils.detectUserType,
     formatTransactionType: FinancialUtils.formatTransactionType,
     getBookingDetails: FinancialUtils.getBookingDetails,
     getDetailedBookingInfo: FinancialUtils.getDetailedBookingInfo,
     hasValidBookingDetails: FinancialUtils.hasValidBookingDetails,
 };
 
-// ✅ Export backward compatibility objects
+// ✅ Export backward compatibility objects (SIMPLIFIED)
 export const PaymentService = {
     getPaymentHistory,
     getPaymentById,
@@ -907,12 +782,9 @@ export const PaymentService = {
 
 export const WalletService = {
     getWalletBalance,
-    getAgentWalletHistory,
-    getUniversalWalletBalance,
     formatCurrency: WalletUtils.formatCurrency,
     formatAmount: WalletUtils.formatAmount,
     hasSufficientBalance: WalletUtils.hasSufficientBalance,
-    detectUserType: WalletUtils.detectUserType,
 };
 
 export default FinancialService;
