@@ -1,6 +1,12 @@
 // src/APIS/BusApi/BusApis.js
 import axios from "axios";
 import baseURL from "../../../Services/Config";
+import { 
+  calculateVendorCommission, 
+  calculatePriceWithCommission,
+  calculateFareFromBlockSeatResponse,
+  extractCommissionPercentage 
+} from "../../Bus/vendorCommissionUtils";
 
 const BusServices = {
   fetchCities: `${baseURL}/bus/search-city`,
@@ -45,7 +51,7 @@ export const fetchBusCities = async (cityName) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// 🚌 Fetch bus search results
+// 🚌 Fetch bus search results with vendor commission processing
 // ─────────────────────────────────────────────────────────────
 export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, UserIp) => {
   try {
@@ -55,6 +61,34 @@ export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, Us
       DestinationId,
       UserIp,
     });
+
+    // Process the response to include vendor commission calculations
+    if (response.data?.Result) {
+      response.data.Result = response.data.Result.map(bus => {
+        const commissionPercentage = extractCommissionPercentage(bus);
+        const basePrice = bus.BusPrice?.PublishedPrice || 0;
+        const fareDetails = calculatePriceWithCommission(basePrice, commissionPercentage);
+        
+        return {
+          ...bus,
+          // Add calculated fare details to the bus object
+          fareDetails: {
+            originalBasePrice: basePrice,
+            vendorCommissionPercentage: commissionPercentage,
+            vendorCommissionAmount: fareDetails.commissionAmount,
+            totalPriceWithCommission: fareDetails.totalPrice,
+            priceBreakdown: {
+              base: basePrice,
+              commission: fareDetails.commissionAmount,
+              taxes: bus.BusPrice?.Tax || 0,
+              otherCharges: bus.BusPrice?.OtherCharges || 0,
+              gst: bus.BusPrice?.GST ? 
+                (bus.BusPrice.GST.CGSTAmount + bus.BusPrice.GST.SGSTAmount + bus.BusPrice.GST.IGSTAmount) : 0
+            }
+          }
+        };
+      });
+    }
 
     return response.data;
   } catch (err) {
@@ -136,7 +170,7 @@ export const fetchBoardingDroppingPoints = async ({
 };
 
 // ─────────────────────────────────────────────────────────────
-// 🔒 Block Seat API - Temporarily lock selected seats
+// 🔒 Block Seat API with vendor commission processing
 // ─────────────────────────────────────────────────────────────
 export const blockSeats = async ({
   UserIp,
@@ -146,7 +180,8 @@ export const blockSeats = async ({
   DroppingPointId,
   OriginId,
   DestinationId,
-  Passenger // Array of passenger objects with seat information
+  Passenger, // Array of passenger objects with seat information
+  originalCommissionPercentage = 0 // Pass this from the original search result
 }) => {
   try {
     const payload = {
@@ -165,17 +200,26 @@ export const blockSeats = async ({
     const response = await axios.post(BusServices.blockSeat, payload);
 
     console.log("✅ Block Seat API Response:", response.data);
+    
+    // Process the response to include vendor commission calculations
+    if (response.data?.Result?.Passenger) {
+      const fareBreakdown = calculateFareFromBlockSeatResponse(response.data, originalCommissionPercentage);
+      
+      // Add fare breakdown to the response
+      response.data.fareBreakdown = fareBreakdown;
+      response.data.vendorCommissionDetails = {
+        commissionPercentage: originalCommissionPercentage,
+        commissionAmount: fareBreakdown?.vendorCommissionAmount || 0,
+        totalWithCommission: fareBreakdown?.totalAmount || 0
+      };
+    }
+    
     return response.data;
   } catch (error) {
     console.error("❌ Failed to block seats:", error.response?.data || error.message);
     throw error;
   }
 };
-
-
-
-
-
 
 // ───────────────────────────────────────────────
 // 📍 Get special offers (coupon list)
@@ -193,15 +237,15 @@ export const fetchSpecialOffers = async () => {
 };
 
 // ───────────────────────────────────────────────
-// 🎟 Apply coupon
+// 🎟 Apply coupon with commission-aware amount calculation
 // ───────────────────────────────────────────────
-export const applyBusCoupon = async (couponCode, totalAmount) => {
+export const applyBusCoupon = async (couponCode, totalAmountWithCommission) => {
   try {
     const response = await axios.post(
       BusServices.applyCoupon,
       {
-        coupon_code: couponCode,   // 👈 must be snake_case
-        amount: totalAmount,       // 👈 try "amount" ya "total_amount"
+        coupon_code: couponCode,
+        amount: totalAmountWithCommission, // Use total amount including vendor commission
       },
       { headers: createAuthHeaders() }
     );
@@ -212,12 +256,9 @@ export const applyBusCoupon = async (couponCode, totalAmount) => {
   }
 };
 
-
-
 // _____________________________________________________
-// ✅ FIXED: Create bus Razorpay order
+// ✅ Create bus Razorpay order with commission-inclusive amount
 // _____________________________________________________
-
 export const createBusOrder = async (orderData) => {
   try {
     console.log('📦 Creating bus order with data:', orderData);
@@ -228,7 +269,7 @@ export const createBusOrder = async (orderData) => {
     const amount = typeof orderData === 'object' ? orderData.amount : orderData;
 
     const payload = {
-      amount: amount,
+      amount: amount, // This should already include vendor commission
       currency: 'INR',
       booking_type: 'bus',
       ...(typeof orderData === 'object' && orderData)
@@ -249,17 +290,15 @@ export const createBusOrder = async (orderData) => {
 };
 
 // ________________________________________________
-// ✅ FIXED: Create bus payment order (alias for createBusOrder)
+// ✅ Create bus payment order (alias for createBusOrder)
 // ________________________________________________
-
 export const createBusPaymentOrder = async (orderData) => {
   return createBusOrder(orderData);
 };
 
 // ________________________________________________
-// ✅ NEW: Validate bus payment with exact structure as per your Postman
+// ✅ Validate bus payment with vendor commission details
 // ________________________________________________
-
 export const validateBusPayment = async (paymentData) => {
   try {
     console.log('🔍 Validating bus payment with payload:', paymentData);
@@ -268,7 +307,7 @@ export const validateBusPayment = async (paymentData) => {
 
     // Construct payload exactly as per your Postman structure
     const payload = {
-      amount: paymentData.amount,
+      amount: paymentData.amount, // This should include vendor commission
       razorpay_order_id: paymentData.razorpay_order_id,
       razorpay_payment_id: paymentData.razorpay_payment_id,
       razorpay_signature: paymentData.razorpay_signature,
@@ -279,7 +318,10 @@ export const validateBusPayment = async (paymentData) => {
         DroppingPointId: paymentData.Bus.DroppingPointId,
         SearchTokenId: paymentData.Bus.SearchTokenId,
         CouponDiscount: paymentData.Bus.CouponDiscount || 0,
-        Passenger: paymentData.Bus.Passenger
+        Passenger: paymentData.Bus.Passenger,
+        // Add vendor commission details if available
+        VendorCommissionAmount: paymentData.Bus.VendorCommissionAmount || 0,
+        VendorCommissionPercentage: paymentData.Bus.VendorCommissionPercentage || 0
       }
     };
 
@@ -300,9 +342,8 @@ export const validateBusPayment = async (paymentData) => {
 };
 
 // ________________________________________________
-// ✅ NEW: Book api 
+// ✅ Book bus api with commission details
 // ________________________________________________
-
 export const bookBus = async (bookingData) => {
   try {
     console.log('📝 Booking bus with payload:', bookingData);
@@ -323,10 +364,7 @@ export const bookBus = async (bookingData) => {
   }
 };
 
-
-
-
-// ✅ NEW: Download Invoice API - Sends invoice to user's email
+// ✅ Download Invoice API - Sends invoice to user's email
 export const downloadBusInvoice = async (invoiceData) => {
   try {
     console.log('📧 Sending bus invoice to email with payload:', invoiceData);
@@ -355,4 +393,54 @@ export const downloadBusInvoice = async (invoiceData) => {
     console.error('❌ downloadBusInvoice Error:', error.response?.data || error.message);
     throw error;
   }
+};
+
+// ______________________________________________________
+// 🔧 Helper functions for vendor commission calculations
+// ______________________________________________________
+
+/**
+ * Calculate total booking amount including vendor commission
+ * @param {object} blockSeatResponse - Response from block seat API
+ * @param {number} commissionPercentage - Vendor commission percentage
+ * @returns {object} - Total amount breakdown
+ */
+export const calculateBookingTotal = (blockSeatResponse, commissionPercentage = 0) => {
+  if (!blockSeatResponse?.Result?.Passenger) {
+    return { totalAmount: 0, commissionAmount: 0 };
+  }
+
+  let baseAmount = 0;
+  blockSeatResponse.Result.Passenger.forEach(passenger => {
+    baseAmount += passenger.Seat?.Price?.PublishedPrice || 0;
+  });
+
+  const commissionAmount = calculateVendorCommission(baseAmount, commissionPercentage);
+  const totalAmount = baseAmount + commissionAmount;
+
+  return {
+    baseAmount,
+    commissionAmount,
+    commissionPercentage,
+    totalAmount
+  };
+};
+
+/**
+ * Prepare payment data with vendor commission included
+ * @param {object} paymentInfo - Basic payment information
+ * @param {object} fareBreakdown - Fare breakdown including commission
+ * @returns {object} - Payment data ready for validation API
+ */
+export const preparePaymentDataWithCommission = (paymentInfo, fareBreakdown) => {
+  return {
+    ...paymentInfo,
+    amount: fareBreakdown.totalAmount, // Include commission in payment amount
+    Bus: {
+      ...paymentInfo.Bus,
+      VendorCommissionAmount: fareBreakdown.vendorCommissionAmount,
+      VendorCommissionPercentage: fareBreakdown.vendorCommissionPercentage,
+      BaseAmount: fareBreakdown.basePrice
+    }
+  };
 };
