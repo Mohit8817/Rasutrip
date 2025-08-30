@@ -394,7 +394,7 @@ const HotelPaymentInfo = () => {
     // CRITICAL: Generate unique ClientReferenceNo to prevent duplicate bookings
     const uniqueClientRef = generateUniqueClientReference();
 
-    // NEW: Include coupon discount in payload
+    // NEW: Include coupon discount and vendor commission in payload
     const finalPayload = {
       ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`),
       HotelCode: String(bookingDetails.HotelCode || 67),
@@ -403,6 +403,9 @@ const HotelPaymentInfo = () => {
       NoOfRooms: String(processedRooms.length),
       ClientReferenceNo: uniqueClientRef, // CRITICAL: Unique reference
       CouponDiscount: couponDiscount > 0 ? couponDiscount : (bookingDetails.CouponDiscount || 0), // NEW: Use actual coupon discount
+      vendorCommission: vendorCommissionAmount, // NEW: Add vendor commission amount
+      agentCommissionPercent: 0, // Set to 0 as per your requirement
+      vendorCommissionPercentage: vendorCommissionPercentage, // NEW: Add vendor commission percentage
       IsVoucherBooking: "true",
       HotelRoomsDetails: processedRooms,
       UserIp: String(bookingDetails.UserIp || "49.36.217.215"),
