@@ -22,14 +22,22 @@ const HotelPayment = () => {
 
                 <Row>
                     <Col lg={9}>
-                       <HotelPaymentInfo totalPrice={totalPrice} priceDetails={priceDetails} />
+                        <HotelPaymentInfo totalPrice={totalPrice} priceDetails={priceDetails} />
 
                     </Col>
                     <Col lg={3}>
-                      <div className='mt-4'>
-                          <FareSummaryCard priceDetails={priceDetails} />
-                        <HotelPromoCodeCard />
-                      </div>
+                        <div className='mt-4'>
+                            <FareSummaryCard priceDetails={priceDetails} />
+                            {/* // Tumhara current code sahi hai, bas props add kar sakte ho: */}
+                            <HotelPromoCodeCard
+                                enableCouponAPI={true}  // Special offers enable karne ke liye
+                                onCouponApplied={(couponData) => {
+                                    // Yahan tumhe coupon data mil jayega jab successfully apply hoga
+                                    console.log("Coupon applied:", couponData);
+                                    // Tum yahan fare calculation update kar sakte ho
+                                }}
+                            />
+                        </div>
                     </Col>
                 </Row>
             </Container>

@@ -20,7 +20,11 @@ const HotelServices = {
 
 // Helper function to get auth token
 const getAuthToken = () => {
-  return localStorage.getItem('token') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+  return localStorage.getItem('token') ||
+    localStorage.getItem('authToken') ||
+    sessionStorage.getItem('authToken') ||
+    localStorage.getItem('userToken') ||
+    sessionStorage.getItem('token');
 };
 
 // Helper function to create auth headers
@@ -34,7 +38,6 @@ const createAuthHeaders = () => {
     'Content-Type': 'application/json',
   };
 };
-
 
 
 // ✅ Fetch hotel cities for autocomplete or destination suggestions
@@ -86,50 +89,7 @@ export const fetchRoomInfo = async (payload) => {
 
 
 
-// ✅ Apply coupon code for hotel booking
-export const applyCouponCode = async (couponCode) => {
-  try {
-    const payload = { code: couponCode };
 
-    const res = await axios.post(HotelServices.applyCoupon, payload);
-
-    return {
-      success: true,
-      data: res.data,
-      message: res.data?.message || "Coupon applied successfully!",
-    };
-  } catch (err) {
-    console.error("❌ Failed to apply coupon:", err.response?.data || err.message);
-    return {
-      success: false,
-      data: null,
-      message:
-        err.response?.data?.message ||
-        "Invalid coupon code or coupon has expired",
-    };
-  }
-};
-
-// ✅ Fetch Special Offers
-export const fetchSpecialOffers = async () => {
-  try {
-    const res = await axios.get(HotelServices.specialOffers);
-
-    return {
-      success: true,
-      data: res.data || [],
-    };
-  } catch (err) {
-    console.error("❌ Failed to fetch offers:", err.response?.data || err.message);
-    return {
-      success: false,
-      data: [],
-      message: "Failed to load special offers",
-    };
-  }
-};
-
-export default HotelServices;
 
 
 // ✅ Block room before final booking
@@ -144,7 +104,87 @@ export const blockRoom = async (payload) => {
 };
 
 
+export const applyCouponCode = async (couponCode) => {
+  try {
+    const headers = createAuthHeaders();
+    const payload = { code: couponCode };
 
+    const res = await axios.post(HotelServices.applyCoupon, payload, { headers });
+
+    return {
+      success: true,
+      data: res.data,
+      message: res.data?.message || "Coupon applied successfully!",
+    };
+  } catch (err) {
+    console.error("❌ Failed to apply coupon:", err.response?.data || err.message);
+
+    // Handle authentication errors specifically
+    if (err.response?.status === 401 || err.response?.data?.error === "Please authenticate.") {
+      return {
+        success: false,
+        data: null,
+        message: "Please login to apply coupon code",
+        authError: true
+      };
+    }
+
+    return {
+      success: false,
+      data: null,
+      message: err.response?.data?.message || "Invalid coupon code or coupon has expired",
+    };
+  }
+};
+
+// ✅ Fetch Special Offers with Authentication
+export const fetchSpecialOffers = async () => {
+  try {
+    const headers = createAuthHeaders();
+
+    console.log("🔄 Fetching special offers with token:", getAuthToken() ? "Token found" : "No token");
+
+    const res = await axios.get(HotelServices.specialOffers, { headers });
+
+    console.log("✅ Special offers response:", res.data);
+
+    // Handle different response structures
+    let offersData = [];
+
+    if (res.data?.offers) {
+      offersData = res.data.offers;
+    } else if (Array.isArray(res.data)) {
+      offersData = res.data;
+    } else if (res.data?.data) {
+      offersData = res.data.data;
+    }
+
+    return {
+      success: true,
+      data: { offers: offersData },
+      message: "Special offers loaded successfully"
+    };
+  } catch (err) {
+    console.error("❌ Failed to fetch offers:", err.response?.data || err.message);
+
+    // Handle authentication errors
+    if (err.response?.status === 401 || err.response?.data?.error === "Please authenticate.") {
+      console.error("🚫 Authentication required for special offers");
+      return {
+        success: false,
+        data: [],
+        message: "Please login to view special offers",
+        authError: true
+      };
+    }
+
+    return {
+      success: false,
+      data: [],
+      message: err.response?.data?.message || "Failed to load special offers",
+    };
+  }
+};
 
 export const createHotelOrder = async (amount) => {
   try {
@@ -243,3 +283,4 @@ export const sendHotelInvoice = async (invoicePayload) => {
   }
 };
 
+export default HotelServices;
