@@ -493,12 +493,12 @@ const HotelPaymentInfo = () => {
       const hasActualError = (
         // Check for error object with actual error code or message
         (bookingResponse.error && (
-          bookingResponse.error.ErrorCode > 0 || 
-          bookingResponse.error.ErrorMessage || 
+          bookingResponse.error.ErrorCode > 0 ||
+          bookingResponse.error.ErrorMessage ||
           bookingResponse.error.message
         )) ||
         (bookingResponse.Error && (
-          bookingResponse.Error.ErrorCode > 0 || 
+          bookingResponse.Error.ErrorCode > 0 ||
           (bookingResponse.Error.ErrorMessage && bookingResponse.Error.ErrorMessage.trim() !== "")
         )) ||
         // Check for explicit failure indicators
@@ -526,8 +526,8 @@ const HotelPaymentInfo = () => {
         bookingResponse?.Status?.toLowerCase() === 'success' ||
         bookingResponse?.success === true ||
         // Success if ErrorCode is 0 and no error message
-        (bookingResponse?.Error?.ErrorCode === 0 && 
-         (!bookingResponse?.Error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage.trim() === ""))
+        (bookingResponse?.Error?.ErrorCode === 0 &&
+          (!bookingResponse?.Error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage.trim() === ""))
       );
 
       const hasRequiredBookingData = (
@@ -537,8 +537,8 @@ const HotelPaymentInfo = () => {
       );
 
       const hasBookingId = (
-        bookingResponse?.BookingID || 
-        bookingResponse?.bookingId || 
+        bookingResponse?.BookingID ||
+        bookingResponse?.bookingId ||
         bookingResponse?.id ||
         bookingResponse?.result?.BookingId  // Your API returns BookingId in result object
       );
