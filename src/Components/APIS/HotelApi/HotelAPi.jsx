@@ -41,10 +41,11 @@ const createAuthHeaders = () => {
 
 
 // ✅ Fetch hotel cities for autocomplete or destination suggestions
-export const fetchHotelCities = async (destination) => {
+export const fetchHotelCities = async (destination, countryCode = 'IN') => {
   try {
+    // ✅ Pass country code as parameter
     const res = await axios.get(
-      `${HotelServices.searchCities}?destination=${destination}`
+      `${HotelServices.searchCities}?destination=${destination}&country_code=${countryCode}`
     );
     return res.data?.results || [];
   } catch (err) {

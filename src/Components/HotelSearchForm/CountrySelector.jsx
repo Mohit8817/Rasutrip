@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Form, Card } from 'react-bootstrap';
-import { getNames } from 'country-list';
+import { getNames, getCode } from 'country-list'; // ✅ Import getCode also
 import '../../Style/HotelSearchForm.css';
-import { HotelSearchContext } from '../Context/HotelSearchContext'; // Context import
+import { HotelSearchContext } from '../Context/HotelSearchContext';
 
 const CountrySelector = () => {
   const { hotelSearchData, setHotelSearchData } = useContext(HotelSearchContext);
@@ -11,11 +11,13 @@ const CountrySelector = () => {
   const [country, setCountry] = useState(hotelSearchData.country || 'India');
   const countryNames = getNames();
 
-  // Update context when country changes
+  // ✅ Update context when country changes - include both name and code
   useEffect(() => {
+    const countryCode = getCode(country); // Get country code
     setHotelSearchData((prevData) => ({
       ...prevData,
-      country: country
+      country: country,
+      countryCode: countryCode || 'IN' // ✅ Add country code to context
     }));
   }, [country, setHotelSearchData]);
 
