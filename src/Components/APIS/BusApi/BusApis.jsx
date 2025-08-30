@@ -1,11 +1,11 @@
 // src/APIS/BusApi/BusApis.js
 import axios from "axios";
 import baseURL from "../../../Services/Config";
-import { 
-  calculateVendorCommission, 
+import {
+  calculateVendorCommission,
   calculatePriceWithCommission,
   calculateFareFromBlockSeatResponse,
-  extractCommissionPercentage 
+  extractCommissionPercentage
 } from "../../Bus/vendorCommissionUtils";
 
 const BusServices = {
@@ -68,7 +68,7 @@ export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, Us
         const commissionPercentage = extractCommissionPercentage(bus);
         const basePrice = bus.BusPrice?.PublishedPrice || 0;
         const fareDetails = calculatePriceWithCommission(basePrice, commissionPercentage);
-        
+
         return {
           ...bus,
           // Add calculated fare details to the bus object
@@ -82,7 +82,7 @@ export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, Us
               commission: fareDetails.commissionAmount,
               taxes: bus.BusPrice?.Tax || 0,
               otherCharges: bus.BusPrice?.OtherCharges || 0,
-              gst: bus.BusPrice?.GST ? 
+              gst: bus.BusPrice?.GST ?
                 (bus.BusPrice.GST.CGSTAmount + bus.BusPrice.GST.SGSTAmount + bus.BusPrice.GST.IGSTAmount) : 0
             }
           }
@@ -200,11 +200,11 @@ export const blockSeats = async ({
     const response = await axios.post(BusServices.blockSeat, payload);
 
     console.log("✅ Block Seat API Response:", response.data);
-    
+
     // Process the response to include vendor commission calculations
     if (response.data?.Result?.Passenger) {
       const fareBreakdown = calculateFareFromBlockSeatResponse(response.data, originalCommissionPercentage);
-      
+
       // Add fare breakdown to the response
       response.data.fareBreakdown = fareBreakdown;
       response.data.vendorCommissionDetails = {
@@ -213,7 +213,7 @@ export const blockSeats = async ({
         totalWithCommission: fareBreakdown?.totalAmount || 0
       };
     }
-    
+
     return response.data;
   } catch (error) {
     console.error("❌ Failed to block seats:", error.response?.data || error.message);
