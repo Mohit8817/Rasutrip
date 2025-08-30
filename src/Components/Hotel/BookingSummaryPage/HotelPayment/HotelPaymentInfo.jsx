@@ -5,7 +5,7 @@ import { FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { createHotelOrder, validateHotelPayment, bookHotel, sendHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
 
-const HotelPaymentInfo = () => {
+const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
   const [loading, setLoading] = useState(false);
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [bookingStage, setBookingStage] = useState('');
@@ -24,13 +24,82 @@ const HotelPaymentInfo = () => {
     reviewData = {},
     isPANMandatory = false,
     blockedRoomData = {},
-    // NEW: Get coupon data from location state
-    couponData = null,
-    appliedCouponDiscount = 0,
+    // Get coupon data from multiple sources (location state + props)
+    couponData: locationCouponData = null,
+    appliedCouponDiscount: locationCouponDiscount = 0,
   } = location.state || {};
 
-  // UPDATED: Use the same pricing logic as FareSummaryCard WITH coupon discount
+  // ENHANCED: Unified coupon data extraction with priority
+  const getCouponData = () => {
+    let finalCouponData = null;
+    let finalCouponDiscount = 0;
+
+    // Priority 1: Props from parent component (most reliable)
+    if (appliedCoupon) {
+      finalCouponData = appliedCoupon;
+      finalCouponDiscount = couponDiscount || 0;
+    }
+    // Priority 2: Location state data
+    else if (locationCouponData) {
+      finalCouponData = locationCouponData;
+      finalCouponDiscount = locationCouponDiscount || 0;
+    }
+    // Priority 3: Check other possible sources
+    else if (location.state?.appliedCoupon) {
+      finalCouponData = location.state.appliedCoupon;
+    }
+    else if (priceDetails?.couponData) {
+      finalCouponData = priceDetails.couponData;
+    }
+
+    // Calculate discount if not already calculated
+    if (finalCouponData && finalCouponDiscount <= 0) {
+      const baseFare = getBaseFareForCoupon();
+
+      if (finalCouponData.discountType === 'percentage' || finalCouponData.type === 'PERCENTAGE') {
+        const discountPercent = finalCouponData.discount || finalCouponData.value || 0;
+        finalCouponDiscount = (baseFare * discountPercent) / 100;
+      } else if (finalCouponData.discountType === 'flat' || finalCouponData.type === 'FLAT') {
+        finalCouponDiscount = finalCouponData.discount || finalCouponData.value || 0;
+      }
+
+      // Apply maximum discount limits
+      if (finalCouponData.maxDiscount && finalCouponDiscount > finalCouponData.maxDiscount) {
+        finalCouponDiscount = finalCouponData.maxDiscount;
+      }
+
+      // Apply minimum order amount check
+      if (finalCouponData.minOrderAmount && baseFare < finalCouponData.minOrderAmount) {
+        console.warn('Order amount is below minimum required for coupon');
+        finalCouponDiscount = 0;
+      }
+    }
+
+    console.log('Final Coupon Data:', finalCouponData);
+    console.log('Final Coupon Discount:', finalCouponDiscount);
+
+    return {
+      couponData: finalCouponData,
+      couponDiscount: Math.max(0, finalCouponDiscount)
+    };
+  };
+
+  // Helper function to get base fare for coupon calculation
+  const getBaseFareForCoupon = () => {
+    const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
+    const priceData = roomData?.Price || {};
+
+    return priceData.PublishedPrice ||
+      priceData.RoomPrice ||
+      priceDetails?.publishedPrice ||
+      priceDetails?.baseFare || 0;
+  };
+
+  // UPDATED: Enhanced price calculation with proper coupon handling
   const calculateFinalPrice = () => {
+    // Get coupon information
+    const { couponData: activeCoupon, couponDiscount: activeCouponDiscount } = getCouponData();
+
     // Get data from blocked room response if available
     const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
     const priceData = roomData?.Price || {};
@@ -73,25 +142,23 @@ const HotelPaymentInfo = () => {
       totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
     }
 
-    // NEW: Calculate coupon discount
-    let couponDiscount = 0;
-    if (couponData) {
-      if (couponData.discountType === 'percentage' || couponData.type === 'PERCENTAGE') {
-        const discountPercent = couponData.discount || couponData.value || 0;
-        couponDiscount = (actualBaseFare * discountPercent) / 100;
-      } else if (couponData.discountType === 'flat' || couponData.type === 'FLAT') {
-        couponDiscount = couponData.discount || couponData.value || 0;
-      }
-    }
-
-    // If appliedCouponDiscount is passed, use that instead
-    if (appliedCouponDiscount > 0) {
-      couponDiscount = appliedCouponDiscount;
-    }
+    // ENHANCED: Use the calculated coupon discount
+    const couponDiscountAmount = activeCouponDiscount;
 
     // Final amount customer pays WITH coupon discount
     const subtotal = actualBaseFare + vendorCommissionAmount + totalGST - discount;
-    const customerTotal = subtotal - couponDiscount;
+    const customerTotal = Math.max(0, subtotal - couponDiscountAmount);
+
+    console.log('Price Calculation Details:', {
+      actualBaseFare,
+      vendorCommissionAmount,
+      totalGST,
+      discount,
+      couponDiscountAmount,
+      subtotal,
+      customerTotal,
+      activeCoupon: activeCoupon?.code || activeCoupon?.couponCode || 'None'
+    });
 
     return {
       actualBaseFare,
@@ -107,8 +174,9 @@ const HotelPaymentInfo = () => {
       discount,
       serviceCharges,
       otherCharges,
-      couponDiscount, // NEW: Include coupon discount
-      subtotal, // NEW: Price before coupon
+      couponDiscount: couponDiscountAmount,
+      couponData: activeCoupon,
+      subtotal,
       roundedTotal: parseFloat(customerTotal.toFixed(2))
     };
   };
@@ -129,8 +197,9 @@ const HotelPaymentInfo = () => {
     discount,
     serviceCharges,
     otherCharges,
-    couponDiscount, // NEW
-    subtotal // NEW
+    couponDiscount: finalCouponDiscount,
+    couponData: activeCoupon,
+    subtotal
   } = priceCalculation;
 
   // Custom Loading Popup Component
@@ -394,7 +463,7 @@ const HotelPaymentInfo = () => {
     // CRITICAL: Generate unique ClientReferenceNo to prevent duplicate bookings
     const uniqueClientRef = generateUniqueClientReference();
 
-    // NEW: Include coupon discount and vendor commission in payload
+    // ENHANCED: Include proper coupon discount and vendor commission in payload
     const finalPayload = {
       ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`),
       HotelCode: String(bookingDetails.HotelCode || 67),
@@ -402,18 +471,25 @@ const HotelPaymentInfo = () => {
       GuestNationality: "IN",
       NoOfRooms: String(processedRooms.length),
       ClientReferenceNo: uniqueClientRef, // CRITICAL: Unique reference
-      CouponDiscount: couponDiscount > 0 ? couponDiscount : (bookingDetails.CouponDiscount || 0), // NEW: Use actual coupon discount
-      vendorCommission: vendorCommissionAmount, // NEW: Add vendor commission amount
+      CouponDiscount: finalCouponDiscount, // FIXED: Use calculated coupon discount
+      vendorCommission: vendorCommissionAmount, // Add vendor commission amount
       agentCommissionPercent: 0, // Set to 0 as per your requirement
-      vendorCommissionPercentage: vendorCommissionPercentage, // NEW: Add vendor commission percentage
+      vendorCommissionPercentage: vendorCommissionPercentage, // Add vendor commission percentage
       IsVoucherBooking: "true",
       HotelRoomsDetails: processedRooms,
       UserIp: String(bookingDetails.UserIp || "49.36.217.215"),
-      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed")
+      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed"),
+      // ENHANCED: Add coupon information for tracking
+      appliedCoupon: activeCoupon ? {
+        code: activeCoupon.code || activeCoupon.couponCode,
+        discount: finalCouponDiscount,
+        originalDiscount: activeCoupon.discount || activeCoupon.value,
+        type: activeCoupon.discountType || activeCoupon.type
+      } : null
     };
 
     console.log('Final booking payload:', JSON.stringify(finalPayload, null, 2));
-    console.log(`Customer Pays: ₹${roundedTotal} (Original: ₹${subtotal}, Coupon Discount: ₹${couponDiscount})`);
+    console.log(`Customer Pays: ₹${roundedTotal} (Original: ₹${subtotal}, Coupon Discount: ₹${finalCouponDiscount})`);
 
     return finalPayload;
   };
@@ -611,8 +687,8 @@ const HotelPaymentInfo = () => {
                 searchTokenId: bookingResponse.SearchTokenId,
               },
               bookingResult: bookingResponse,
-              couponData: couponData,
-              couponDiscount: couponDiscount
+              couponData: activeCoupon, // FIXED: Pass the active coupon data
+              couponDiscount: finalCouponDiscount // FIXED: Pass the actual coupon discount
             },
           });
         }, 1500);
@@ -942,20 +1018,29 @@ const HotelPaymentInfo = () => {
                       <div><strong>Adults:</strong> {adultPassengers.length} (PAN Required)</div>
                     </div>
                     <div className="col-md-4 text-end">
-                      <div className="fs-4 fw-bold text-danger">₹ {roundedTotal}</div>
-                      {/* Show coupon savings */}
-                      {couponDiscount > 0 && (
-                        <div className="text-success small">
-                          Coupon Savings: ₹{couponDiscount.toFixed(2)}
+                      <div className="fs-4 fw-bold text-danger">₹ {roundedTotal.toLocaleString()}</div>
+                      {/* ENHANCED: Show coupon savings prominently */}
+                      {finalCouponDiscount > 0 && (
+                        <div className="text-success small fw-bold">
+                          <i className="bi bi-tag-fill me-1"></i>
+                          Coupon Savings: ₹{finalCouponDiscount.toFixed(2)}
+                        </div>
+                      )}
+                      {/* Show original price if coupon applied */}
+                      {finalCouponDiscount > 0 && (
+                        <div className="text-muted small text-decoration-line-through">
+                          Original: ₹{subtotal.toFixed(2)}
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Price Breakdown with Coupon Discount */}
+                {/* ENHANCED: Price Breakdown with Better Coupon Display */}
                 <div className="mb-4 p-3 border rounded">
-                  <h6 className="fw-bold mb-3">Price Breakdown</h6>
+                  <h6 className="fw-bold mb-3">
+                    Price Breakdown
+                  </h6>
 
                   {/* Hotel Total */}
                   <div className="row mb-2">
@@ -1046,49 +1131,63 @@ const HotelPaymentInfo = () => {
                   {/* Regular Discount */}
                   {discount > 0 && (
                     <div className="row mb-2 text-success">
-                      <div className="col">Discount Applied</div>
+                      <div className="col">
+                        Discount Applied
+                        <small className="text-muted d-block">Hotel discount</small>
+                      </div>
                       <div className="col text-end">- ₹ {discount.toFixed(2)}</div>
                     </div>
                   )}
 
                   {/* Subtotal before coupon */}
-                  {couponDiscount > 0 && (
+                  {finalCouponDiscount > 0 && (
                     <div className="row mb-2 border-top pt-2">
                       <div className="col fw-bold">Subtotal</div>
                       <div className="col text-end fw-bold">₹ {subtotal.toFixed(2)}</div>
                     </div>
                   )}
 
-                  {/* Coupon Discount */}
-                  {couponDiscount > 0 && (
-                    <div className="row mb-2 text-success">
+                  {/* ENHANCED: Coupon Discount with Better Styling */}
+                  {finalCouponDiscount > 0 && (
+                    <div className="row mb-2 text-success bg-success-subtle p-2 rounded">
                       <div className="col">
-                        Coupon Discount
-                        {couponData && (
-                          <small className="text-muted d-block">
-                            Code: {couponData.code || couponData.couponCode}
-                            {couponData.discountType === 'percentage' || couponData.type === 'PERCENTAGE'
-                              ? ` (${couponData.discount || couponData.value}%)`
+                        <div className="d-flex align-items-center">
+                          <i className="bi bi-tag-fill me-2 text-success"></i>
+                          <strong>Coupon Discount</strong>
+                        </div>
+                        {activeCoupon && (
+                          <small className="text-success d-block mt-1">
+                            <strong>Code: {activeCoupon.code || activeCoupon.couponCode}</strong>
+                            {(activeCoupon.discountType === 'percentage' || activeCoupon.type === 'PERCENTAGE')
+                              ? ` (${activeCoupon.discount || activeCoupon.value}% off)`
                               : ' (Flat Discount)'}
                           </small>
                         )}
                       </div>
-                      <div className="col text-end text-success fw-bold">- ₹ {couponDiscount.toFixed(2)}</div>
+                      <div className="col text-end">
+                        <strong className="text-success fs-5">- ₹ {finalCouponDiscount.toFixed(2)}</strong>
+                      </div>
                     </div>
                   )}
 
                   <hr />
                   <div className="row fw-bold">
-                    <div className="col">Total Amount</div>
-                    <div className="col text-end text-danger fs-5">₹ {roundedTotal}</div>
+                    <div className="col fs-5">Total Amount</div>
+                    <div className="col text-end text-danger fs-4">₹ {roundedTotal.toLocaleString()}</div>
                   </div>
 
-                  {/* Show savings if coupon applied */}
-                  {couponDiscount > 0 && (
-                    <div className="text-center mt-2">
-                      <small className="text-success fw-bold">
-                        You saved ₹{couponDiscount.toFixed(2)} with this coupon!
-                      </small>
+                  {/* ENHANCED: Show savings summary if coupon applied */}
+                  {finalCouponDiscount > 0 && (
+                    <div className="text-center mt-3 p-2 bg-success-subtle rounded">
+                      <div className="text-success fw-bold">
+                        <i className="bi bi-check-circle-fill me-2"></i>
+                        Congratulations! You saved ₹{finalCouponDiscount.toFixed(2)} with this coupon!
+                      </div>
+                      {activeCoupon && (
+                        <small className="text-muted d-block mt-1">
+                          Coupon "{activeCoupon.code || activeCoupon.couponCode}" applied successfully
+                        </small>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1096,7 +1195,10 @@ const HotelPaymentInfo = () => {
                 {/* Lead guest info */}
                 {leadPassenger && (
                   <div className="mb-4 p-3 border rounded">
-                    <h6 className="fw-bold mb-2">Lead Guest Information</h6>
+                    <h6 className="fw-bold mb-2">
+                      <i className="bi bi-person-fill me-2"></i>
+                      Lead Guest Information
+                    </h6>
                     <div className="row">
                       <div className="col-md-6">
                         <strong>Name:</strong> {`${leadPassenger.Title || ''} ${leadPassenger.FirstName} ${leadPassenger.LastName}`.trim()}
@@ -1127,11 +1229,10 @@ const HotelPaymentInfo = () => {
 
               </Card.Body>
 
-              <Card.Footer className="">
+              <Card.Footer className="bg-light">
                 <div className="text-end">
                   <Button
-                    variant="danger"
-                    className="px-5"
+                    className="px-5 py-2 btn-red"
                     onClick={handlePayment}
                     disabled={roundedTotal <= 0 || loading || bookingInProgress || bookingProcessed}
                   >
@@ -1141,9 +1242,18 @@ const HotelPaymentInfo = () => {
                         {bookingInProgress ? 'Processing Booking...' : 'Loading Payment...'}
                       </>
                     ) : bookingProcessed ? (
-                      'Booking Processed'
+                      <>
+                        Booking Processed
+                      </>
                     ) : (
-                      `Pay ₹{roundedTotal}`
+                      <>
+                        Pay ₹{roundedTotal.toLocaleString()}
+                        {finalCouponDiscount > 0 && (
+                          <small className="d-block mt-1">
+                            (Saved ₹{finalCouponDiscount.toFixed(2)} with coupon)
+                          </small>
+                        )}
+                      </>
                     )}
                   </Button>
                 </div>

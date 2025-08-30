@@ -1,7 +1,12 @@
 import React from "react";
 import { Card } from "react-bootstrap";
 
-const FareSummaryCard = ({ priceDetails, blockedRoomData }) => {
+const FareSummaryCard = ({ 
+  priceDetails, 
+  blockedRoomData, 
+  appliedCoupon = null, 
+  couponDiscount = 0 
+}) => {
   // Get data from blocked room response if available
   const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
   const priceData = roomData?.Price || {};
@@ -45,8 +50,15 @@ const FareSummaryCard = ({ priceDetails, blockedRoomData }) => {
     totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
   }
 
-  // Final amount customer pays
-  const customerTotal = actualBaseFare + vendorCommissionAmount + totalGST - discount;
+  // ✅ Get coupon discount from props or priceDetails
+  const finalCouponDiscount = couponDiscount || priceDetails?.couponDiscount || priceDetails?.appliedCouponDiscount || 0;
+  const finalAppliedCoupon = appliedCoupon || priceDetails?.couponData;
+
+  // Calculate subtotal before coupon
+  const subtotal = actualBaseFare + vendorCommissionAmount + totalGST - discount;
+  
+  // Final amount customer pays with coupon discount
+  const customerTotal = Math.max(0, subtotal - finalCouponDiscount);
   const roundedTotal = parseFloat(customerTotal.toFixed(2));
   
   // Vendor gets the published price
@@ -178,11 +190,40 @@ const FareSummaryCard = ({ priceDetails, blockedRoomData }) => {
           </>
         )}
         
-        {/* Discount (if any) */}
+        {/* Regular Discount (if any) */}
         {discount > 0 && (
           <div className="d-flex justify-content-between border-bottom pb-2 mb-2 text-success">
             <span>Discount Applied</span>
             <span>- ₹ {discount.toFixed(2)}</span>
+          </div>
+        )}
+
+        {/* ✅ Subtotal before coupon (only show if coupon is applied) */}
+        {finalCouponDiscount > 0 && (
+          <div className="d-flex justify-content-between border-bottom pb-2 mb-2 fw-bold">
+            <span>Subtotal</span>
+            <span>₹ {subtotal.toFixed(2)}</span>
+          </div>
+        )}
+
+        {/* ✅ COUPON DISCOUNT - Enhanced styling */}
+        {finalCouponDiscount > 0 && (
+          <div className="d-flex justify-content-between border-bottom pb-2 mb-2 bg-success-subtle p-2 rounded text-success">
+            <span>
+              <div className="d-flex align-items-center">
+                <i className="bi bi-tag-fill me-2"></i>
+                <strong>Coupon Discount</strong>
+              </div>
+              {finalAppliedCoupon && (
+                <small className="d-block mt-1">
+                  Code: <strong>{finalAppliedCoupon.code || finalAppliedCoupon.couponCode}</strong>
+                  {(finalAppliedCoupon.discountType === 'percentage' || finalAppliedCoupon.type === 'PERCENTAGE') 
+                    ? ` (${finalAppliedCoupon.discount || finalAppliedCoupon.value}% off)`
+                    : ' (Flat Discount)'}
+                </small>
+              )}
+            </span>
+            <span className="fw-bold fs-6">- ₹ {finalCouponDiscount.toFixed(2)}</span>
           </div>
         )}
         
@@ -197,11 +238,28 @@ const FareSummaryCard = ({ priceDetails, blockedRoomData }) => {
           </div>
         )}
         
-        {/* Total Amount Customer Pays */}
+        {/* ✅ Total Amount Customer Pays (WITH COUPON DISCOUNT) */}
         <div className="d-flex justify-content-between fw-bold pt-2 border-top fs-5">
           <span>Total Amount</span>
           <span className="text-danger">₹ {roundedTotal.toLocaleString()}</span>
         </div>
+
+        {/* ✅ Show savings summary if coupon applied */}
+        {finalCouponDiscount > 0 && (
+          <div className="mt-3 p-2 bg-success-subtle border border-success rounded">
+            <div className="text-center">
+              <div className="text-success fw-bold">
+                <i className="bi bi-check-circle-fill me-2"></i>
+                You saved ₹{finalCouponDiscount.toFixed(2)} with this coupon!
+              </div>
+              {finalAppliedCoupon && (
+                <small className="text-muted d-block mt-1">
+                  Coupon "{finalAppliedCoupon.code || finalAppliedCoupon.couponCode}" applied successfully
+                </small>
+              )}
+            </div>
+          </div>
+        )}
         
         {/* Revenue breakdown - for admin/internal view */}
         {ourProfit > 0 && (
@@ -220,6 +278,13 @@ const FareSummaryCard = ({ priceDetails, blockedRoomData }) => {
               <span className="text-danger">₹{vendorPayment.toLocaleString()}</span>
             </div>
             
+            {finalCouponDiscount > 0 && (
+              <div className="d-flex justify-content-between small text-muted mb-1">
+                <span>Coupon Discount:</span>
+                <span className="text-warning">₹{finalCouponDiscount.toFixed(2)}</span>
+              </div>
+            )}
+            
             <div className="d-flex justify-content-between small mb-1">
               <span>
                 <strong>Our Revenue:</strong>
@@ -234,6 +299,11 @@ const FareSummaryCard = ({ priceDetails, blockedRoomData }) => {
             <div className="small text-muted mt-2 pt-2 border-top">
               <strong>Commission Details:</strong><br />
               Booking Fee: ₹{vendorCommissionAmount.toFixed(2)} ({vendorCommissionPercentage}% of ₹{actualBaseFare.toLocaleString()})
+              {finalCouponDiscount > 0 && (
+                <div className="mt-1">
+                  Original Total: ₹{subtotal.toFixed(2)} | After Coupon: ₹{roundedTotal.toLocaleString()}
+                </div>
+              )}
             </div>
           </div>
         )}
