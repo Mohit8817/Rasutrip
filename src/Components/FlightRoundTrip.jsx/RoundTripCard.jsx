@@ -20,7 +20,6 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
     TotalDuration
   } = segment || {};
   const fareList = flight?.FareList || [];
-
   const [showDetails, setShowDetails] = useState(false);
   const [activeTab, setActiveTab] = useState('flight');
   const [loading, setLoading] = useState(true);
@@ -29,7 +28,6 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
   const hasFetchedRef = useRef(false);
   const userIp = localStorage.getItem("UserIp") || "";
   const searchToken = localStorage.getItem("searchToken") || "";
-
   const formatFullDateTime = (datetimeStr) => {
     const date = new Date(datetimeStr);
     const options = {
@@ -101,306 +99,306 @@ const RoundTripCard = ({ flight, selectedFare, onSelect, type }) => {
     <Container className="mb-4">
       {/* <Row>
         <Col md={12}> */}
-          <Card
-            role="button"
-            tabIndex={0}
-            className={`shadow-sm p-3 round-trip-card ${selectedFare?.FareID ? 'border-primary border-2' : ''}`}
-          >
-            <Row className="align-items-center">
-              <Col md={3} className="">
-                <img className=' w-[30px] h-[30px] ' src={Airline.airlineLogo} />
-                <div className=" mt-1 text-12 ">
-                  {safeText(Airline?.AirlineName)}
-                </div>
-                <div className="text-muted small">
-                  {Airline.AirlineCode}-{safeText(Airline?.FlightNumber)}
-                </div>
-              </Col>
-
-              <Col md={3} className="">
-                <div className="fw-bold text-14  ">{safeText(Origin?.AirportCode)}</div>
-                <div className="fw-semibold text-12">{formatTime(Origin?.DepartTime)}</div>
-                <div className="text-muted small text-[14px]">{formatDate(Origin?.DepartTime)}</div>
-              </Col>
-
-              <Col md={3} className="text-center">
-                <div className="text-muted text-12">{ }</div>
-                <div className="my-1 text-12">
-                  <span className="dot"></span>
-                  <span className="line"></span>
-                  <span className="dot"></span>
-                </div>
-                <div className='text-12'>{TotalDuration ? `${TotalDuration} mins` : 'N/A'}</div>
-              </Col>
-
-              <Col md={3} className="text-center">
-                <div className="fw-bold text-14 ">{safeText(Destination?.AirportCode)}</div>
-                <div className="fw-semibold text-12">{formatTime(Destination?.ArrivalTime)}</div>
-                <div className="text-muted small">{formatDate(Destination?.ArrivalTime)}</div>
-              </Col>
-            </Row>
-
-            <small className="text-muted mt-2 text-12 d-block">
-              Airline Remark: {safeText(fareList?.[0]?.AirlineRemark)}
-            </small>
-
-            <div className="fare-options mt-2">
-              {fareList?.map((fare, index) => (
-                
-                <div
-                  key={fare?.FareID || `fare-${index}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleFareSelect(fare);
-                  }}
-                  className="d-flex text-12 align-items-center justify-content-between py-2 border-bottom"
-                >
-                  <Form.Check
-                    type="radio"
-                    name={`${type}-flight-${flight?.ResultIndex}`}
-                    className="me-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFareSelect(fare);
-                    }}// ✅ यह भी सही है
-                    // checked={selectedFare?.FareID === fare?.FareID}
-                  />
-                  <div className="me-auto">
-                    <span className="fw-semibold">
-                      ₹ {fare?.PublishedPrice || 'N/A'}
-                    </span>{' '}
-                    <span className="badge text-8 bg-secondary text-uppercase me-2">
-                      {fare?.FareType || ''}
-                    </span>
-                    <div className="text-muted text-12 small">
-                      {fare?.CabinClass || 'N/A'},{' '}
-                      <span className={fare?.IsRefundable ? 'text-success text-12' : 'text-danger text-12'}>
-                        {fare?.IsRefundable ? 'Refundable' : 'Non Refundable'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      <Card
+        role="button"
+        tabIndex={0}
+        className={`shadow-sm p-3 round-trip-card ${selectedFare?.FareID ? 'border-primary border-2' : ''}`}
+      >
+        <Row className="align-items-center">
+          <Col md={3} className="">
+            <img className=' w-[30px] h-[30px] ' src={Airline.airlineLogo} />
+            <div className=" mt-1 text-12 ">
+              {safeText(Airline?.AirlineName)}
             </div>
+            <div className="text-muted small">
+              {Airline.AirlineCode}-{safeText(Airline?.FlightNumber)}
+            </div>
+          </Col>
+
+          <Col md={3} className="">
+            <div className="fw-bold text-14  ">{safeText(Origin?.AirportCode)}</div>
+            <div className="fw-semibold text-12">{formatTime(Origin?.DepartTime)}</div>
+            <div className="text-muted small text-[14px]">{formatDate(Origin?.DepartTime)}</div>
+          </Col>
+
+          <Col md={3} className="text-center">
+            <div className="text-muted text-12">{ }</div>
+            <div className="my-1 text-12">
+              <span className="dot"></span>
+              <span className="line"></span>
+              <span className="dot"></span>
+            </div>
+            <div className='text-12'>{TotalDuration ? `${TotalDuration} mins` : 'N/A'}</div>
+          </Col>
+
+          <Col md={3} className="text-center">
+            <div className="fw-bold text-14 ">{safeText(Destination?.AirportCode)}</div>
+            <div className="fw-semibold text-12">{formatTime(Destination?.ArrivalTime)}</div>
+            <div className="text-muted small">{formatDate(Destination?.ArrivalTime)}</div>
+          </Col>
+        </Row>
+
+        <small className="text-muted mt-2 text-12 d-block">
+          Airline Remark: {safeText(fareList?.[0]?.AirlineRemark)}
+        </small>
+
+        <div className="fare-options mt-2">
+          {fareList?.map((fare, index) => (
+
             <div
-              className="flight-details-toggle mt-2 cursor-pointer"
-              onClick={() => {
-                if (!hasFetchedRef.current) {
-                  fetchData();
-                  hasFetchedRef.current = true; // ✅ block future API calls
-                }
-                setShowDetails(!showDetails);
+              key={fare?.FareID || `fare-${index}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleFareSelect(fare);
               }}
+              className="d-flex text-12 align-items-center justify-content-between py-2 border-bottom"
             >
-              {showDetails ? 'Hide Details -' : 'Flight Details +'}
+
+              <Form.Check
+                type="radio"
+                name={`${type}-flight-${flight?.ResultIndex}`}
+                className="me-2"
+                onChange={() => handleFareSelect(fare)}
+                // checked={index==0}
+                checked={selectedFare?.FareId == fare?.FareId}
+              />
+              <div className="me-auto">
+                <span className="fw-semibold">
+                  ₹ {fare?.Fare?.BaseFare || 'N/A'}
+                </span>{' '}
+                <span className="badge text-8 bg-secondary text-uppercase me-2">
+                  {fare?.FareType || ''}
+                </span>
+                <div className="text-muted text-12 small">
+                  {fare?.CabinClass || 'N/A'},{' '}
+                  <span className={fare?.IsRefundable ? 'text-success text-12' : 'text-danger text-12'}>
+                    {fare?.IsRefundable ? 'Refundable' : 'Non Refundable'}
+                  </span>
+                </div>
+              </div>
             </div>
-            {showDetails && (
-              <div className="flight-tab-box mt-4 border rounded p-3 bg-light-gray">
-                <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
-                  <Nav variant="tabs" className="mb-3">
-                    <Nav.Item><Nav.Link eventKey="flight">Flight Details</Nav.Link></Nav.Item>
-                    <Nav.Item><Nav.Link eventKey="fare-detail">Fare Details</Nav.Link></Nav.Item>
 
-                    <Nav.Item><Nav.Link eventKey="rules">Fare Rules</Nav.Link></Nav.Item>
-                    <Nav.Item><Nav.Link eventKey="baggage">Baggage</Nav.Link></Nav.Item>
-                  </Nav>
+          ))}
+        </div>
+        <div
+          className="flight-details-toggle mt-2 cursor-pointer"
+          onClick={() => {
+            if (!hasFetchedRef.current) {
+              fetchData();
+              hasFetchedRef.current = true; // ✅ block future API calls
+            }
+            setShowDetails(!showDetails);
+          }}
+        >
+          {showDetails ? 'Hide Details -' : 'Flight Details +'}
+        </div>
+        {showDetails && (
+          <div className="flight-tab-box mt-4 border rounded p-3 bg-light-gray">
+            <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
+              <Nav variant="tabs" className="mb-3">
+                <Nav.Item><Nav.Link eventKey="flight">Flight Details</Nav.Link></Nav.Item>
+                <Nav.Item><Nav.Link eventKey="fare-detail">Fare Details</Nav.Link></Nav.Item>
 
-                  <Tab.Content>
-                    <Tab.Pane eventKey="flight">
+                <Nav.Item><Nav.Link eventKey="rules">Fare Rules</Nav.Link></Nav.Item>
+                <Nav.Item><Nav.Link eventKey="baggage">Baggage</Nav.Link></Nav.Item>
+              </Nav>
 
-                      <Tab.Container defaultActiveKey="flight">
-                        <Row>
+              <Tab.Content>
+                <Tab.Pane eventKey="flight">
 
-                          <Col sm={12}>
-                            <Tab.Content>
-                              <Tab.Pane eventKey="flight">
-                                <Card className="mt-3 p-3 shadow-sm border">
+                  <Tab.Container defaultActiveKey="flight">
+                    <Row>
 
-                                  <span className='text-12'>{segment.Origin.CityName} → {segment.Destination.CityName}</span>
-                                  <small className='text-12'>{formatDate(segment.Origin.DepartTime)}</small>
-                                  {/* Delhi → Mumbai <small>Wed, Jul 16 2025</small> */}
-                                  {/* Segment 1 */}
+                      <Col sm={12}>
+                        <Tab.Content>
+                          <Tab.Pane eventKey="flight">
+                            <Card className="mt-3 p-3 shadow-sm border">
 
-                                  {flight.Segments[0].map((segment, index) => (
-                                    <div key={index}>
-                                      {/* Flight Segment UI */}
-                                      <Row className="align-items-center1 mb-4">
-                                        <Col md={3} className="text-center1">
-                                          <img
-                                            src={segment.Airline.airlineLogo}
-                                            alt={segment.Airline.AirlineName}
-                                            className="img-fluid mb-2 w-10 h-10"
-                                            style={{ maxWidth: '50px' }}
-                                          />
-                                          <h6 className="mb-0 text-12 ">{segment.Airline.AirlineName}</h6>
-                                          <small className='text-8 '>{segment.Airline.AirlineCode}-{segment.Airline.FlightNumber}</small>
+                              <span className='text-12'>{segment.Origin.CityName} → {segment.Destination.CityName}</span>
+                              <small className='text-12'>{formatDate(segment.Origin.DepartTime)}</small>
+                              {/* Delhi → Mumbai <small>Wed, Jul 16 2025</small> */}
+                              {/* Segment 1 */}
+
+                              {flight.Segments[0].map((segment, index) => (
+                                <div key={index}>
+                                  {/* Flight Segment UI */}
+                                  <Row className="align-items-center1 mb-4">
+                                    <Col md={3} className="text-center1">
+                                      <img
+                                        src={segment.Airline.airlineLogo}
+                                        alt={segment.Airline.AirlineName}
+                                        className="img-fluid mb-2 w-10 h-10"
+                                        style={{ maxWidth: '50px' }}
+                                      />
+                                      <h6 className="mb-0 text-12 ">{segment.Airline.AirlineName}</h6>
+                                      <small className='text-8 '>{segment.Airline.AirlineCode}-{segment.Airline.FlightNumber}</small>
+                                    </Col>
+
+                                    <Col md={9}>
+                                      <Row className="text-center gy-2">
+                                        <Col md={4}>
+                                          <h6 className="fw-bold text-12"> <i class="fa fa-plane-departure"></i> {segment.Origin.CityName} , {segment.Origin.CountryName}</h6>
+                                          <p className="mb-0 text-12"><small>{formatFullDateTime(segment.Origin.DepartTime)}</small></p>
+                                          <small className='text-12'>{segment.Origin.AirportName}</small><br />
+                                          {segment.Origin.Terminal && <small className='text-12'>Terminal {segment.Origin.Terminal}</small>}
                                         </Col>
 
-                                        <Col md={9}>
-                                          <Row className="text-center gy-2">
-                                            <Col md={4}>
-                                              <h6 className="fw-bold text-12"> <i class="fa fa-plane-departure"></i> {segment.Origin.CityName} , {segment.Origin.CountryName}</h6>
-                                              <p className="mb-0 text-12"><small>{formatFullDateTime(segment.Origin.DepartTime)}</small></p>
-                                              <small className='text-12'>{segment.Origin.AirportName}</small><br />
-                                              {segment.Origin.Terminal && <small className='text-12'>Terminal {segment.Origin.Terminal}</small>}
-                                            </Col>
+                                        <Col md={4}>
+                                          <div className='position-absolute text-center text-8'>
+                                            <strong>{formatDuration(segment.Duration)}</strong><br />
+                                            <div style={containerStyle}>
+                                              <span style={beforeStyle}></span>
 
-                                            <Col md={4}>
-                                              <div className='position-absolute text-center text-8'>
-                                                <strong>{formatDuration(segment.Duration)}</strong><br />
-                                                <div style={containerStyle}>
-                                                  <span style={beforeStyle}></span>
+                                            </div>
+                                            <small className="text-muted">Duration</small>
+                                          </div>
+                                        </Col>
 
-                                                </div>
-                                                <small className="text-muted">Duration</small>
-                                              </div>
-                                            </Col>
-
-                                            <Col md={4} className='text-12'>
-                                              <h6 className="fw-bold text-12" > <i class="fa fa-plane-arrival"></i> {segment.Destination.CityName}, {segment.Destination.CountryName}</h6>
-                                              <p className="mb-0 text-12"><small>{formatFullDateTime(segment.Destination.ArrivalTime)}</small></p>
-                                              {segment.Destination.AirportName && <small>{segment.Destination.AirportName}</small>}<br />
-                                              {segment.Destination.Terminal && <small>Terminal {segment.Destination.Terminal}</small>}
-                                            </Col>
-                                          </Row>
-
-                                          <Row className="mt-3">
-                                            <Col md={6}><small className='text-12'>{flight.FareList[0].CabinClass}</small></Col>
-                                            <Col md={6}><small className='text-12'><strong>Craft:</strong> {segment.Craft}</small></Col>
-                                          </Row>
+                                        <Col md={4} className='text-12'>
+                                          <h6 className="fw-bold text-12" > <i class="fa fa-plane-arrival"></i> {segment.Destination.CityName}, {segment.Destination.CountryName}</h6>
+                                          <p className="mb-0 text-12"><small>{formatFullDateTime(segment.Destination.ArrivalTime)}</small></p>
+                                          {segment.Destination.AirportName && <small>{segment.Destination.AirportName}</small>}<br />
+                                          {segment.Destination.Terminal && <small>Terminal {segment.Destination.Terminal}</small>}
                                         </Col>
                                       </Row>
 
-                                      {/* Layover row (only shown if NOT last segment) */}
-                                      {flight.Segments[0].length > 1 && index < flight.Segments[0].length - 1 && (
-                                        <Row className="text-center">
-                                          <Col>
-                                            <hr className="my-2" />
-                                            <span className="text-danger fw-bold">LAYOVER : {segment.Layover || segment.LayoverTime} {segment.Destination.CityName}</span>
-                                            <hr className="my-2" />
-                                          </Col>
-                                        </Row>
-                                      )}
-                                    </div>
-                                  ))}
+                                      <Row className="mt-3">
+                                        <Col md={6}><small className='text-12'>{flight.FareList[0].CabinClass}</small></Col>
+                                        <Col md={6}><small className='text-12'><strong>Craft:</strong> {segment.Craft}</small></Col>
+                                      </Row>
+                                    </Col>
+                                  </Row>
 
-                                  {/* end Segment 2 */}
+                                  {/* Layover row (only shown if NOT last segment) */}
+                                  {flight.Segments[0].length > 1 && index < flight.Segments[0].length - 1 && (
+                                    <Row className="text-center">
+                                      <Col>
+                                        <hr className="my-2" />
+                                        <span className="text-danger fw-bold">LAYOVER : {segment.Layover || segment.LayoverTime} {segment.Destination.CityName}</span>
+                                        <hr className="my-2" />
+                                      </Col>
+                                    </Row>
+                                  )}
+                                </div>
+                              ))}
+
+                              {/* end Segment 2 */}
 
 
-                                </Card>
-                              </Tab.Pane>
-                            </Tab.Content>
-                          </Col>
-                        </Row>
-                      </Tab.Container>
+                            </Card>
+                          </Tab.Pane>
+                        </Tab.Content>
+                      </Col>
+                    </Row>
+                  </Tab.Container>
 
 
-                    </Tab.Pane>
-                    <Tab.Pane eventKey="fare-detail">
-                      <Tab.Container className="my-4">
-                        <h5 className="fw-bold mb-3">Fare Details for ADULT</h5>
-                        <Table bordered hover responsive>
-                          <thead className="table-light">
-                            <tr>
-                              <th>Type</th>
-                              <th>Fare</th>
-                              <th>Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td>Base Price</td>
-                              <td>₹ {flight.FareList[0].Fare.BaseFare} x 1</td>
-                              <td>₹ {flight.FareList[0].Fare.BaseFare}</td>
-                            </tr>
-                            <tr>
-                              <td>Taxes and Fees</td>
-                              <td>₹ {flight.FareList[0].Fare.Tax} x 1</td>
-                              <td>₹ {flight.FareList[0].Fare.Tax}</td>
-                            </tr>
-                            <tr>
-                              <td>Service and Other Charges</td>
-                              <td>₹ {flight.FareList[0].Fare.OtherCharges}</td>
-                              <td>₹ {flight.FareList[0].Fare.OtherCharges}</td>
-                            </tr>
-                            <tr>
-                              <td>GST</td>
-                              <td>₹ 0</td>
-                              <td>₹ 0</td>
-                            </tr>
-                            <tr>
-                              <td>Discount(-)</td>
-                              <td>₹ {flight.FareList[0].Fare.Discount}</td>
-                              <td>₹ {flight.FareList[0].Fare.Discount}</td>
-                            </tr>
-                            <tr className="fw-bold">
-                              <td colSpan={2}>Total</td>
-                              <td>
-                                ₹ {
-                                  flight.FareList[0].Fare.BaseFare +
-                                  flight.FareList[0].Fare.Tax +
-                                  flight.FareList[0].Fare.OtherCharges -
-                                  flight.FareList[0].Fare.Discount
-                                }
-                              </td>
+                </Tab.Pane>
+                <Tab.Pane eventKey="fare-detail">
+                  <Tab.Container className="my-4">
+                    <h5 className="fw-bold mb-3">Fare Details for ADULT</h5>
+                    <Table bordered hover responsive>
+                      <thead className="table-light">
+                        <tr>
+                          <th>Type</th>
+                          <th>Fare</th>
+                          <th>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>Base Price</td>
+                          <td>₹ {flight.FareList[0].Fare.BaseFare} x 1</td>
+                          <td>₹ {flight.FareList[0].Fare.BaseFare}</td>
+                        </tr>
+                        <tr>
+                          <td>Taxes and Fees</td>
+                          <td>₹ {flight.FareList[0].Fare.Tax} x 1</td>
+                          <td>₹ {flight.FareList[0].Fare.Tax}</td>
+                        </tr>
+                        <tr>
+                          <td>Service and Other Charges</td>
+                          <td>₹ {flight.FareList[0].Fare.OtherCharges}</td>
+                          <td>₹ {flight.FareList[0].Fare.OtherCharges}</td>
+                        </tr>
+                        <tr>
+                          <td>GST</td>
+                          <td>₹ 0</td>
+                          <td>₹ 0</td>
+                        </tr>
+                        <tr>
+                          <td>Discount(-)</td>
+                          <td>₹ {flight.FareList[0].Fare.Discount}</td>
+                          <td>₹ {flight.FareList[0].Fare.Discount}</td>
+                        </tr>
+                        <tr className="fw-bold">
+                          <td colSpan={2}>Total</td>
+                          <td>
+                            ₹ {
+                              flight.FareList[0].Fare.BaseFare +
+                              flight.FareList[0].Fare.Tax +
+                              flight.FareList[0].Fare.OtherCharges -
+                              flight.FareList[0].Fare.Discount
+                            }
+                          </td>
 
-                            </tr>
-                          </tbody>
-                        </Table>
-                      </Tab.Container>
-                    </Tab.Pane>
+                        </tr>
+                      </tbody>
+                    </Table>
+                  </Tab.Container>
+                </Tab.Pane>
 
-                    <Tab.Pane eventKey="rules">
-                      <div className="p-3">
-                        <Table striped bordered hover responsive>
-                          <thead>
-                            <tr>
-                              <th>Fare Rule Details</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {fareRules.map((item, index) => (
-                              <tr key={index}>
-                                <td>
-                                  <div dangerouslySetInnerHTML={{ __html: item.FareRuleDetail }} />
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </Table>
-                      </div>
-                    </Tab.Pane>
+                <Tab.Pane eventKey="rules">
+                  <div className="p-3">
+                    <Table striped bordered hover responsive>
+                      <thead>
+                        <tr>
+                          <th>Fare Rule Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fareRules.map((item, index) => (
+                          <tr key={index}>
+                            <td>
+                              <div dangerouslySetInnerHTML={{ __html: item.FareRuleDetail }} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                </Tab.Pane>
 
-                    <Tab.Pane eventKey="baggage">
-                      <div className="p-3">
+                <Tab.Pane eventKey="baggage">
+                  <div className="p-3">
 
-                        <table className="table table-bordered text-center align-middle">
-                          <thead className="table-light">
-                            <tr>
-                              <th className="fw-bold">Sector</th>
-                              <th className="fw-bold">Check-In</th>
-                              <th className="fw-bold">Cabin</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {flight.FareList[0].SeatBaggage[0].map((item, index) =>
-                              <tr key={index}>
-                                <td>{item.Sector}</td>
-                                <td>{item.CheckIn || ''}</td>
-                                <td>{item.Cabin || ''}</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                    <table className="table table-bordered text-center align-middle">
+                      <thead className="table-light">
+                        <tr>
+                          <th className="fw-bold">Sector</th>
+                          <th className="fw-bold">Check-In</th>
+                          <th className="fw-bold">Cabin</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {flight.FareList[0].SeatBaggage[0].map((item, index) =>
+                          <tr key={index}>
+                            <td>{item.Sector}</td>
+                            <td>{item.CheckIn || ''}</td>
+                            <td>{item.Cabin || ''}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
 
-                    </Tab.Pane>
-                  </Tab.Content>
-                </Tab.Container>
-              </div>
-            )}
-          </Card>
-        {/* </Col>
+                </Tab.Pane>
+              </Tab.Content>
+            </Tab.Container>
+          </div>
+        )}
+      </Card>
+      {/* </Col>
       </Row> */}
     </Container>
   );

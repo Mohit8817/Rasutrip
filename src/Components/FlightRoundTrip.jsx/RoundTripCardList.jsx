@@ -12,7 +12,7 @@ import { fetchFlightData } from '../APIS/FlightApi/FlightApi';
 import FlightLoader from '../FlightLoader/FlightLoader';
 import { async } from 'q';
 
-const RoundTripCardList = ({ filters }) => {
+const RoundTripCardList = ({ filters,onFlightsLoad  }) => {
   const dispatch = useDispatch()
   const { state } = useLocation();
   const [showdetailsBar, setShowdetailsBar] = useState(false)
@@ -31,7 +31,7 @@ const RoundTripCardList = ({ filters }) => {
   const departDate = departObj?.PreferredTime || new Date();
   const returnDate = returnObj?.PreferredTime || new Date();
 
-  const [flights, setFlights] = useState([]);
+  const [flights, setFlights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -49,21 +49,21 @@ const RoundTripCardList = ({ filters }) => {
     localStorage.setItem('fareSummery', JSON.stringify(updatedData));
   };
 
-  const handleOnwardSelect = async(flight, fare) => {
+  const handleOnwardSelect = async (flight, fare) => {
     updateFareSummery(fare, 'onward');
     dispatch(setSelectedOnwardFare(fare));
     dispatch(setOnwardFlight(flight));
   };
 
-  const handleReturnSelect =async (flight, fare) => {
+  const handleReturnSelect = async (flight, fare) => {
     updateFareSummery(fare, 'return');
     dispatch(setSelectedReturnFare(fare));
     dispatch(setReturnFlight(flight));
   };
-
+ 
 
   useEffect(() => {
-    const getFlights = async () => {
+     const getFlights = async () => {
       try {
         const IP = localStorage.getItem('UserIp');
         const requestPayload = {
@@ -93,6 +93,7 @@ const RoundTripCardList = ({ filters }) => {
         const result = response?.Result || [];
 
         setFlights(result || []);
+        onFlightsLoad(result)
 
         localStorage.setItem("searchToken", response?.SearchTokenId);
         localStorage.setItem("rasocommision", response?.rasutripCommissionPercentage);
@@ -107,8 +108,20 @@ const RoundTripCardList = ({ filters }) => {
         setLoading(false);
       }
     };
+    const isRes =localStorage.getItem('SearchedFlights');
+    const isData = JSON.parse(isRes)
+   
 
-    getFlights();
+    if(isData=='[]' || !isData ){
+       getFlights();
+      
+       
+    }else{ 
+      setLoading(false);
+
+       setFlights(isData || []);
+    }
+    
   }, []);
 
   // Default selection useEffect - flights load होने के बाद automatically पहला fare select करेगा
@@ -151,7 +164,7 @@ const RoundTripCardList = ({ filters }) => {
     }
 
     return flights
-.map(flight => {
+      .map(flight => {
         const firstSegment = flight.Segments[0][0];
         const lastSegment = flight.Segments[0][flight.Segments[0].length - 1];
 
@@ -222,7 +235,7 @@ const RoundTripCardList = ({ filters }) => {
       {flights?.length > 1 ? (
         <Row>
           {/* Onward Flights */}
-          <Col  xs={6} md={6}>
+          <Col xs={6} md={6} className='p-0'>
             {Array.isArray(flights[0]) &&
               onwardFilteredFlights.map((flight, index) => (
                 <div key={flight.FlightNumber || `onward-${index + 1}`}>
@@ -236,7 +249,7 @@ const RoundTripCardList = ({ filters }) => {
               ))}
           </Col>
 
-          <Col  xs={6} md={6}>
+          <Col xs={6} md={6} className='p-0'>
             {Array.isArray(flights[1]) &&
               returnFilteredFlights.map((flight, index) => (
                 <div key={flight.FlightNumber || `return-${index + 2}`}>

@@ -25,7 +25,7 @@ const FlightCard = ({ flight }) => {
         borderTop: '2px solid #292323',
         position: 'relative',
         width: '125px',
-        
+
     };
 
     const beforeStyle = {
@@ -43,8 +43,6 @@ const FlightCard = ({ flight }) => {
 
         try {
             const res = await fetchFareRules(farePayload);
-            console.log("Fare Rule API Response:", res.Result);
-
             if (res?.Error?.ErrorCode === 0 && Array.isArray(res?.Result)) {
                 setFareRules(res.Result);
             } else {
@@ -169,7 +167,7 @@ const FlightCard = ({ flight }) => {
 
 
                         <Col col={2}>
-                            <div className="fw-bold text-dark">₹ {flight.MinPublishedPrice}</div>
+                            <div className="fw-bold text-dark">₹ {flight?.FareList[0]?.Fare?.BaseFare}</div>
                             {flight.tag && (
                                 <span className="badge bg-light text-dark">{flight.tag}</span>
                             )}
@@ -253,13 +251,13 @@ const FlightCard = ({ flight }) => {
                                                                                     </Col>
 
                                                                                     <Col md={4}>
-                                                                                    <div className='position-absolute text-center'>
-                                                                                        <strong>{formatDuration(segment.Duration)}</strong><br />
-                                                                                        <div style={containerStyle}>
-                                                                                            <span style={beforeStyle}></span>
+                                                                                        <div className='position-absolute text-center'>
+                                                                                            <strong>{formatDuration(segment.Duration)}</strong><br />
+                                                                                            <div style={containerStyle}>
+                                                                                                <span style={beforeStyle}></span>
 
-                                                                                        </div>
-                                                                                        <small className="text-muted">Duration</small>
+                                                                                            </div>
+                                                                                            <small className="text-muted">Duration</small>
                                                                                         </div>
                                                                                     </Col>
 

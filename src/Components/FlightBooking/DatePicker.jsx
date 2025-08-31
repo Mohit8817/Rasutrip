@@ -13,7 +13,10 @@ const DatePicker = ({ tripType, setTripType }) => {
     const departRef = useRef(null);
     const returnRef = useRef(null);
 
-    const formatDate = (date) => {
+    const formatDate = (date, key=null) => {
+        if (key == 'roundtrip') {
+            localStorage.setItem('tripType', 'roundtrip')
+        }
         return date?.toLocaleDateString("en-GB", {
             year: "numeric",
             month: "short",
@@ -116,7 +119,7 @@ const DatePicker = ({ tripType, setTripType }) => {
                                     setActiveCalendar(null);
                                 }
                             }}
-                             disabled={{
+                            disabled={{
                                 before: new Date(),
                                 // after: new Date(new Date().setMonth(new Date().getMonth() + 3)) 
                             }}
@@ -145,7 +148,7 @@ const DatePicker = ({ tripType, setTripType }) => {
                     <span className="label">RETURN</span>
                     <span className="date">
                         {tripType !== "oneway"
-                            ? formatDate(returnDate)
+                            ? formatDate(returnDate,'roundtrip')
                             : "--/--/----"}
                     </span>
                     <span className="day">
@@ -167,10 +170,10 @@ const DatePicker = ({ tripType, setTripType }) => {
                                         setActiveCalendar(null);
                                     }
                                 }}
-                               disabled={{
-                                before: new Date(),
-                                // after: new Date(new Date().setMonth(new Date().getMonth() + 3)) 
-                            }} 
+                                disabled={{
+                                    before: new Date(),
+                                    // after: new Date(new Date().setMonth(new Date().getMonth() + 3)) 
+                                }}
                             />
                         </div>
                     )}

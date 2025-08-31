@@ -6,16 +6,17 @@ import { useNavigate } from 'react-router-dom';
 const FarePopup = ({ show, onClose, fares = [], searchToken }) => {
   const navigate = useNavigate();
   const journeyType = localStorage.getItem('tripType')
+  const fareList = fares?.FareList || (Array.isArray(fares) ? fares : []);
+
   const handleBook = (selectedFare, fareData) => {
     localStorage.setItem('selectedFlight', JSON.stringify(fareData));
     localStorage.setItem('fareSummery', JSON.stringify(selectedFare));
     localStorage.setItem('selectedOnwardFlight', JSON.stringify(fareData));
     onClose(); // Close the modal
     navigate('/flight-details', {
-      state: { SelectedFare: selectedFare, FareData: fareData, journeyType }
+      state: { SelectedFare: selectedFare, FareData: fareData, journeyType,fares }
     });
   };
-  const fareList = fares?.FareList || (Array.isArray(fares) ? fares : []);
   if (!fareList || fareList.length === 0) {
     return (
       <Modal show={show} onHide={onClose} size="lg" centered dialogClassName="custom-modal-width">
@@ -44,7 +45,8 @@ const FarePopup = ({ show, onClose, fares = [], searchToken }) => {
                 <Card.Body>
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <h5 className="text-danger">
-                      ₹{fare?.OfferedPrice || fare?.PublishedPrice || fare?.Fare?.OfferedPrice || 0}
+                      ₹{fare?.Fare?.BaseFare}
+                      {/* ₹{fare?.OfferedPrice || fare?.PublishedPrice || fare?.Fare?.OfferedPrice || 0} */}
                     </h5>
                     {fare?.IsRefundable && (
                       <Badge bg="success" text="white">Refundable</Badge>
@@ -58,12 +60,12 @@ const FarePopup = ({ show, onClose, fares = [], searchToken }) => {
                   <p className="text-muted small m-0">{fare?.FareType || 'Publish'}</p>
 
                   {/* Fare Breakdown */}
-                  <div className="mt-2 mb-3">
+                  {/* <div className="mt-2 mb-3">
                     <small className="text-muted">
                       Base: ₹{fare?.Fare?.BaseFare || 0} +
                       Tax: ₹{fare?.Fare?.Tax || 0}
                     </small>
-                  </div>
+                  </div> */}
 
                   <hr />
 

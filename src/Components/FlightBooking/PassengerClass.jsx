@@ -5,7 +5,6 @@ import '../../Style/FlightBooking.css';
 import { LocationContext } from '../Context/LocationContext';
 import { useDispatch } from 'react-redux';
 
-
 const PassengerClass = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const { locationData, setLocationData } = useContext(LocationContext);
@@ -28,16 +27,31 @@ const PassengerClass = () => {
   }, []);
 
   const updateCount = (type, change) => {
-    setLocationData(prev => ({
-      ...prev,
-      passengers: {
-        ...prev.passengers,
-        [type]: Math.max(0, prev.passengers[type] + change),
+    setLocationData(prev => {
+      const newCount = Math.max(0, prev.passengers[type] + change);
+      const currentPassengers = prev.passengers;
+      const newPassengers = {
+        ...currentPassengers,
+        [type]: newCount
+      };
+      const totalCount = newPassengers.adults + newPassengers.children + newPassengers.infants;
+      if (type === 'infants' && newCount > 1) {
+        return prev;
       }
-    }));
+      if (totalCount > 9) {
+        return prev; 
+      }
+      if (type === 'adults' && newCount < 1) {
+        return prev;
+      }
+      
+      return {
+        ...prev,
+        passengers: newPassengers
+      };
+    });
   };
 
-  // Set default cabin class to Economy if not set
   useEffect(() => {
     if (!locationData.cabinClass) {
       setLocationData(prev => ({
@@ -64,13 +78,25 @@ const PassengerClass = () => {
   ];
 
   const selectedCabinLabel = cabinOptions.find(opt => opt.value === cabinClass)?.label || 'Select';
+  const isIncrementDisabled = (type) => {
+    if (type === 'infants') {
+      return passengers.infants >= 1;
+    }
+    return totalPassengers >= 9;
+  };
+  const isDecrementDisabled = (type) => {
+    if (type === 'adults') {
+      return passengers.adults <= 1;
+    }
+    return passengers[type] <= 0;
+  };
 
   return (
     <div className="passenger-class-wrapper" ref={ref}>
       <Card className="passenger-class-box" onClick={toggleDropdown}>
         <Card.Body>
           <div className="passenger-label">Travellers & Class</div>
-          <div className="fw-bold fs-5">{totalPassengers} Passenger</div>
+          <div className="fw-bold fs-5">{totalPassengers} Passenger{totalPassengers !== 1 ? 's' : ''}</div>
           <div className="cabin-text">{selectedCabinLabel}</div>
         </Card.Body>
       </Card>
@@ -96,9 +122,29 @@ const PassengerClass = () => {
                     <div className="text-muted small">{ages[type]}</div>
                   </div>
                   <div className="d-flex align-items-center">
-                    <Button variant="light" className="circle-btn" onClick={(e) => { e.stopPropagation(); updateCount(type, -1); }}>-</Button>
+                    <Button 
+                      variant="light" 
+                      className="circle-btn" 
+                      disabled={isDecrementDisabled(type)}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        updateCount(type, -1); 
+                      }}
+                    >
+                      -
+                    </Button>
                     <span className="mx-3">{passengers[type]}</span>
-                    <Button variant="light" className="circle-btn" onClick={(e) => { e.stopPropagation(); updateCount(type, 1); }}>+</Button>
+                    <Button 
+                      variant="light" 
+                      className="circle-btn" 
+                      disabled={isIncrementDisabled(type)}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        updateCount(type, 1); 
+                      }}
+                    >
+                      +
+                    </Button>
                   </div>
                 </div>
               );

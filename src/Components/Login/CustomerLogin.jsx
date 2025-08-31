@@ -1,6 +1,6 @@
 // src/components/auth/CustomerLogin.js
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate ,useLocation} from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/bootstrap.css';
@@ -224,6 +224,7 @@ const CustomerLogin = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Enhanced signup function with better name handling
   const handleSignup = async () => {
@@ -443,7 +444,8 @@ const CustomerLogin = () => {
             const userName = userData.firstName || userData.name || 'User';
             const greeting = existingProfile ? 'Welcome back' : 'Welcome';
             setMessage(`${greeting}, ${userName}! Login successful!`);
-            setTimeout(() => navigate('/'), 1500);
+              setTimeout(() => navigate(-1), 1500);
+            // setTimeout(() => navigate('/'), 1500);
           } else {
             console.warn('⚠️ Token saving failed');
             setError('Failed to save session. Please try again.');

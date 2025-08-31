@@ -249,6 +249,8 @@ const FlightMultiCard = ({ flight }) => {
                             >
                                 BOOK
                             </Button>
+
+                            <strong>₹{flight.FareList[0].Fare.BaseFare}</strong><br />
                             <div
                                 className="text-primary cursor-pointer small fw-semibold"
                                 onClick={() => {

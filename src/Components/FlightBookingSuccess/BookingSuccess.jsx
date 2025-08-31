@@ -24,10 +24,7 @@ const BookingSuccess = () => {
   const { bookingId, result } = location.state || {};
   const [showAlert, setShowAlert] = useState(true);
   const [invoice, setInvoice] = useState(null);
-
   const [progress, setProgress] = useState(0);
-
-  // Sample data from the provided JSON
   const bookingData = result.onward
 
 

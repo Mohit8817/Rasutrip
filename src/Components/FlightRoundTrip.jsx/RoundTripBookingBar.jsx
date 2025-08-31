@@ -20,8 +20,8 @@ const RoundTripBookingBar = () => {
   }
   const onwardSeg = selectedOnward?.Segments?.[0]?.[0] || {};
   const returnSeg = selectedReturn?.Segments?.[0]?.[0] || {};
-  const onwardFare = selectedOnwardFare?.PublishedPrice || 0;
-  const returnFare = selectedReturnFare?.PublishedPrice || 0;
+  const onwardFare = selectedOnwardFare?.Fare?.BaseFare || 0;
+  const returnFare = selectedReturnFare?.Fare?.BaseFare || 0;
   const totalFare = onwardFare + returnFare;
 
   const handleBook = () => {

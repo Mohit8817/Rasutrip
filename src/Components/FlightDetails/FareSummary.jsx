@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, Row, Col } from 'react-bootstrap';
 import '../../Style/Pagescss/FlightResultsPage.css';
 
-const FareSummary = ({ 
-  passengerSelections = [], 
-  returnPassengerSelections = [], 
+const FareSummary = ({
+  passengerSelections = [],
+  returnPassengerSelections = [],
   onwardPassengerSelections = [],
-  isRoundtrip = false 
+  isRoundtrip = false,
+  Convenience = false
+
 }) => {
   const [fareOnward, setFareOnward] = useState(null);
   const [fareReturn, setFareReturn] = useState(null);
@@ -64,12 +66,12 @@ const FareSummary = ({
     (acc, p) => acc + (p?.meal?.Price || 0),
     0
   ) : 0;
-  
+
   const returnTotalBaggage = Array.isArray(returnPassengerSelections) ? returnPassengerSelections.reduce(
     (acc, p) => acc + (p?.baggage?.Price || 0),
     0
   ) : 0;
-  
+
   const returnTotalSeat = Array.isArray(returnPassengerSelections) ? returnPassengerSelections.reduce(
     (acc, p) => acc + (p?.seat?.Price || 0),
     0
@@ -202,14 +204,15 @@ const FareSummary = ({
         {/* Render addon section with conditional breakdown */}
         {renderAddonSection()}
       </Card.Body>
-
-      <Row className="fare-row py-1" style={{ borderTop: '1px solid #e9e9e9' }}>
-        <Col className='ml-4'>Convenience Fee</Col>
-        <Col className="text-end">₹ {serviceCharge.toFixed(2)}</Col>
-      </Row>
+      {Convenience && (
+        <Row className="fare-row py-1" style={{ borderTop: '1px solid #e9e9e9' }}>
+          <Col className='ml-4'>Convenience Fee</Col>
+          <Col className="text-end">₹ {serviceCharge.toFixed(2)}</Col>
+        </Row>
+      )}
       <Card.Footer className="bg-light fw-bold d-flex justify-content-between">
         <span>Total Payable</span>
-        <span>₹ {totalPay}</span>
+        <span>₹ {Convenience?totalPay:totalPay-serviceCharge}</span>
       </Card.Footer>
     </Card>
   );

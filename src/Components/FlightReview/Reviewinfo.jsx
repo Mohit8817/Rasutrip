@@ -162,6 +162,7 @@ let ReturnData;
 
           {/* Individual Segments - same as before */}
           {currentSegments.map((segment, index) => {
+           
             const airline = segment.Airline || {};
             const origin = segment.Origin || {};
             const destination = segment.Destination || {};

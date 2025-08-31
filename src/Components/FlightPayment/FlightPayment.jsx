@@ -53,6 +53,7 @@ const FlightPayment = () => {
                                     onwardPassengerSelections={passengerSelections.onward || passengerSelections}
                                     returnPassengerSelections={returnPassengerSelections}
                                     isRoundtrip={isRoundTrip}
+                                    Convenience={true}
                                 />
                                 <PromoCodeBox />
 
