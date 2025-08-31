@@ -135,7 +135,7 @@ const AgentDashboard = () => {
                 <Row className="align-items-center">
                     <Col>
                         <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                          Welcome To the Dashboard
+                            Welcome To the Dashboard
                         </h2>
                     </Col>
                 </Row>
@@ -271,9 +271,9 @@ const AgentDashboard = () => {
                                         <div key={index} className="list-group-item border-0 px-0">
                                             <div className="d-flex align-items-center">
                                                 <div className={`w-2 h-2 rounded-circle me-3 ${activity.type === 'booking' ? 'bg-success' :
-                                                        activity.type === 'payment' ? 'bg-primary' :
-                                                            activity.type === 'reschedule' ? 'bg-warning' :
-                                                                'bg-secondary'
+                                                    activity.type === 'payment' ? 'bg-primary' :
+                                                        activity.type === 'reschedule' ? 'bg-warning' :
+                                                            'bg-secondary'
                                                     }`}></div>
                                                 <div className="flex-grow-1">
                                                     <div className="fw-medium">{activity.title}</div>

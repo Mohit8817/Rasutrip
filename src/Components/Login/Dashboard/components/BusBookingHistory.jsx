@@ -819,7 +819,6 @@ const BusBookingHistory = () => {
                                         </div>
                                     ) : (
                                         <div className="text-center py-8">
-                                            <div className="text-gray-400 text-4xl mb-2">📍</div>
                                             <p className="text-gray-500">Real-time status not available</p>
                                             <p className="text-sm text-gray-400 mt-1">
                                                 {statusPopup.data.error || 'Status tracking may not be supported for this booking'}
