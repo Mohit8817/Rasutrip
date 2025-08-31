@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
 import { FaEnvelope, FaShieldAlt } from 'react-icons/fa';
@@ -66,6 +65,15 @@ const GuestDetailsInfo = () => {
     }
   }, [existingGuestData]);
 
+  // ✅ NEW: Function to capitalize first letter of each word
+  const capitalizeFirstLetter = (str) => {
+    if (!str) return '';
+    return str
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   // ✅ Enhanced validation functions
   const isAlpha = str => /^[A-Za-z\s]+$/.test(str?.trim());
   const isEmail = str => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str?.trim());
@@ -73,12 +81,19 @@ const GuestDetailsInfo = () => {
   const isValidPAN = pan => /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan?.trim());
   const isValidGST = gst => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gst?.trim());
 
-  // ✅ ENHANCED: Improved PAN input handler with real-time validation
+  // ✅ ENHANCED: Improved input handler with auto-capitalize for names
   const handleInputChange = (roomIndex, type, personIndex, field, value) => {
     const updatedInputs = [...guestInputs];
 
+    // ✅ Special handling for name fields - auto capitalize
+    if (field === 'firstName' || field === 'lastName') {
+      // Only allow alphabetic characters and spaces, then capitalize
+      let cleanValue = value.replace(/[^A-Za-z\s]/g, '');
+      cleanValue = capitalizeFirstLetter(cleanValue);
+      updatedInputs[roomIndex][type][personIndex][field] = cleanValue;
+    }
     // ✅ Special handling for PAN field with enhanced cleaning
-    if (field === 'panNumber') {
+    else if (field === 'panNumber') {
       // Remove spaces, special characters, convert to uppercase
       let cleanValue = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
 
@@ -584,9 +599,16 @@ const GuestDetailsInfo = () => {
     }
   };
 
-  // ✅ Handle GST data change with error clearing
+  // ✅ Handle GST data change with error clearing and auto-capitalize for company name
   const handleGstDataChange = (field, value) => {
-    setGstData(prev => ({ ...prev, [field]: value }));
+    let processedValue = value;
+    
+    // Auto-capitalize company name
+    if (field === 'companyName') {
+      processedValue = capitalizeFirstLetter(value);
+    }
+    
+    setGstData(prev => ({ ...prev, [field]: processedValue }));
 
     // Clear related GST errors
     const gstErrorKey = `gst${field.charAt(0).toUpperCase() + field.slice(1)}`;

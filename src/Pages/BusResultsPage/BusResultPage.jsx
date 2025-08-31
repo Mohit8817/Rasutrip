@@ -24,7 +24,7 @@ const BusResultPage = () => {
     const [masterBusList, setMasterBusList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [noBusesFound, setNoBusesFound] = useState(false); // New state for no buses
+    const [noBusesFound, setNoBusesFound] = useState(false);
 
     const { state } = useLocation();
     const { locationData } = useContext(LocationContext);
@@ -48,6 +48,21 @@ const BusResultPage = () => {
         return `${hrs}h ${mins}m`;
     };
 
+    // Enhanced function to calculate fare with vendor commission
+    const calculateFareWithCommission = (busPrice, vendorCommissionPercentage) => {
+        const basePrice = busPrice?.PublishedPrice || 0;
+        const vendorCommissionAmount = (basePrice * vendorCommissionPercentage) / 100;
+        const totalPrice = basePrice + vendorCommissionAmount;
+        
+        return {
+            basePrice,
+            vendorCommissionAmount,
+            vendorCommissionPercentage,
+            totalPrice,
+            displayPrice: totalPrice
+        };
+    };
+
     // Fetch bus data
     useEffect(() => {
         const getBusData = async () => {
@@ -59,7 +74,7 @@ const BusResultPage = () => {
 
             setIsLoading(true);
             setError(null);
-            setNoBusesFound(false); // Reset state
+            setNoBusesFound(false);
 
             try {
                 console.log("Fetching buses for date:", DateOfJourney);
@@ -81,6 +96,12 @@ const BusResultPage = () => {
                 const mapped = apiResult.Result.map((item) => {
                     const dep = new Date(item.DepartureTime);
                     const arr = new Date(item.ArrivalTime);
+                    
+                    // Get vendor commission percentage from API response
+                    const vendorCommissionPercentage = item.BusPrice?.rasutripCommissionPercentage || 0;
+                    
+                    // Calculate fare with vendor commission
+                    const fareDetails = calculateFareWithCommission(item.BusPrice, vendorCommissionPercentage);
 
                     return {
                         operator: item.TravelName || "N/A",
@@ -93,31 +114,54 @@ const BusResultPage = () => {
                         departLocation: item.BoardingPointsDetails?.[0]?.CityPointLocation || from,
                         arriveLocation: item.DroppingPointsDetails?.[0]?.CityPointLocation || to,
                         duration: getDuration(dep, arr),
-                        price: item.BusPrice?.PublishedPrice
-                            ? `₹ ${item.BusPrice.PublishedPrice.toFixed(2)}`
-                            : "Price Not Available",
-                        numericPrice: item.BusPrice?.PublishedPrice || 0,
+                        
+                        // Original price (without commission)
+                        originalPrice: item.BusPrice?.PublishedPrice || 0,
+                        
+                        // Price with commission (for display)
+                        price: `₹ ${fareDetails.totalPrice.toFixed(2)}`,
+                        numericPrice: fareDetails.totalPrice,
+                        
+                        // Vendor commission details
+                        vendorCommissionPercentage: vendorCommissionPercentage,
+                        vendorCommissionAmount: fareDetails.vendorCommissionAmount,
+                        
+                        // Fare breakdown
+                        fareBreakdown: {
+                            basePrice: fareDetails.basePrice,
+                            vendorCommissionAmount: fareDetails.vendorCommissionAmount,
+                            vendorCommissionPercentage: vendorCommissionPercentage,
+                            totalPrice: fareDetails.totalPrice,
+                            taxes: item.BusPrice?.Tax || 0,
+                            otherCharges: item.BusPrice?.OtherCharges || 0,
+                            gst: item.BusPrice?.GST ? 
+                                (item.BusPrice.GST.CGSTAmount + item.BusPrice.GST.SGSTAmount + item.BusPrice.GST.IGSTAmount) : 0
+                        },
+                        
                         seatsAvailable: item.AvailableSeats || 0,
                         cancellationPolicies: item.CancellationPolicies || [],
                         ResultIndex: item.ResultIndex,
-                        SearchTokenId: apiResult.SearchTokenId,
+                        SearchTokenId: apiResult.SearchTokenId, 
                         OriginId,
                         DestinationId,
                         UserIp,
                         BoardingPointsDetails: item.BoardingPointsDetails || [],
                         DroppingPointsDetails: item.DroppingPointsDetails || [],
+                        
+                        // Store original bus price object for reference
+                        originalBusPrice: item.BusPrice
                     };
                 });
 
                 setMasterBusList(mapped);
 
-                // Set price range
+                // Set price range based on prices WITH commission
                 const prices = mapped.map((b) => b.numericPrice).filter(price => price > 0);
                 if (prices.length > 0) {
                     const min = Math.min(...prices);
                     const max = Math.max(...prices);
                     setActualPriceRange([min, max]);
-                    setPriceRange([min, max]); // Initialize priceRange with actual range
+                    setPriceRange([min, max]);
                 }
 
                 // Set available operators and bus types
@@ -240,7 +284,6 @@ const BusResultPage = () => {
                 </div>
             </div>
         </div>
-
     );
 };
 

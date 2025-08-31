@@ -38,24 +38,39 @@ const HotelPromoCodeCard = ({
         try {
             const response = await fetchSpecialOffers();
             console.log("Full API Response:", response); // Debug log
-            
+
             if (response.success) {
                 // Handle different response structures
                 let offersData = response.data || [];
-                
+
                 // If response.data.offers exists, use that
                 if (response.data && response.data.offers) {
                     offersData = response.data.offers;
                 }
-                
+
                 console.log("Offers Data:", offersData); // Debug log
-                
-                // Filter only HOTEL offers
-                const hotelOffers = offersData.filter(offer => 
-                    offer.applicableFor === 'HOTEL' || offer.applicableFor === 'ALL'
-                );
-                
-                console.log("Hotel Offers:", hotelOffers); // Debug log
+
+                // ✅ TEMPORARY FIX: Show all offers for testing
+                // TODO: Change this to proper filtering when backend has HOTEL offers
+                const hotelOffers = offersData.filter(offer => {
+                    // Check if offer is active and not expired
+                    const isActive = offer.isActive !== false;
+                    const isNotExpired = !offer.endDate || new Date(offer.endDate) > new Date();
+
+                    // TEMPORARY: Show all offers for testing (including FLIGHT/BUS offers)
+                    // Production code should be:
+                    // const isApplicable = offer.applicableFor === 'HOTEL' || offer.applicableFor === 'ALL';
+
+                    return isActive && isNotExpired; // Show all active offers for now
+                });
+
+                console.log("All Available Offers:", hotelOffers); // Debug log
+                console.log("Original Offers from API:", offersData.map(o => ({
+                    code: o.code,
+                    applicableFor: o.applicableFor,
+                    isActive: o.isActive
+                })));
+
                 setOffers(hotelOffers);
             } else {
                 console.error("Failed to load offers:", response.message);
@@ -129,7 +144,7 @@ const HotelPromoCodeCard = ({
     const handleOfferSelect = async (offer) => {
         setSelectedOffer(offer.code);
         setCouponCode(offer.code); // Auto-fill the input field
-        
+
         // Clear any previous status
         setCouponStatus(null);
         setCouponMessage("");
@@ -137,7 +152,7 @@ const HotelPromoCodeCard = ({
 
         // Auto-apply the coupon when selected
         setIsLoading(true);
-        
+
         try {
             const response = await applyCouponCode(offer.code);
 
@@ -210,56 +225,83 @@ const HotelPromoCodeCard = ({
                     {/* ✅ Special Offers Section */}
                     {enableCouponAPI && (
                         <div className="mt-4">
-                            <div className="d-flex align-items-center justify-content-between">                              
-                                {isLoadingOffers && (
-                                    <Spinner size="sm" animation="border" />
-                                )}
-                            </div>
-                            
                             {isLoadingOffers ? (
                                 <div className="text-center py-3">
                                     <Spinner animation="border" size="sm" />
                                     <div className="mt-2 text-muted">Loading offers...</div>
                                 </div>
                             ) : offers.length > 0 ? (
-                                <div className="border rounded p-2" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                <div className="border rounded p-2" style={{ maxHeight: '250px', overflowY: 'auto' }}>
                                     {offers.map((offer, idx) => (
-                                        <div 
+                                        <div
                                             key={idx}
-                                            className={`d-flex align-items-center p-2 mb-2 border rounded cursor-pointer ${
-                                                selectedOffer === offer.code ? 'bg-light border-danger' : 'border-light'
-                                            }`}
-                                            style={{ 
+                                            className={`d-flex align-items-center p-2 mb-2 border rounded cursor-pointer transition-all ${selectedOffer === offer.code ? 'bg-light border-danger' : 'border-light hover-shadow'
+                                                }`}
+                                            style={{
                                                 cursor: 'pointer',
                                                 transition: 'all 0.2s ease'
                                             }}
                                             onClick={() => handleOfferSelect(offer)}
+                                            onMouseEnter={(e) => {
+                                                if (selectedOffer !== offer.code) {
+                                                    e.currentTarget.style.borderColor = '#dc3545';
+                                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (selectedOffer !== offer.code) {
+                                                    e.currentTarget.style.borderColor = '#dee2e6';
+                                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                                }
+                                            }}
                                         >
                                             <Form.Check
                                                 type="radio"
                                                 id={`offer-${idx}`}
                                                 name="special-offer"
                                                 checked={selectedOffer === offer.code}
-                                                onChange={() => {}} // Handled by parent div click
+                                                onChange={() => { }} // Handled by parent div click
                                                 className="me-3"
                                             />
                                             <div className="flex-grow-1">
                                                 <div className="d-flex justify-content-between align-items-start">
                                                     <div className="">
-                                                        <strong className="text-danger">{offer.code}</strong>                                                        
-                                                        <div className="text-muted small">
+                                                        <div className="d-flex align-items-center mb-1">
+                                                            <strong className="text-danger me-2">{offer.code}</strong>
+                                                            <span className="badge bg-secondary small">{offer.applicableFor}</span>
+                                                        </div>
+                                                        <div className="text-muted small mb-1">
                                                             {offer.name || offer.description || "Special Discount"}
                                                         </div>
                                                         {offer.value && (
-                                                            <div className="text-success small fw-bold">
-                                                                Save {offer.value}
-                                                                {offer.type === 'PERCENTAGE' ? '%' : ' ₹'}
+                                                            <div className="d-flex align-items-center">
+                                                                <span className="text-success small fw-bold me-2">
+                                                                    Save {offer.value}
+                                                                    {offer.type === 'PERCENTAGE' ? '%' : ' ₹'}
+                                                                </span>
+                                                                {offer.type === 'FLAT' && (
+                                                                    <span className="badge bg-success-subtle text-success-emphasis small">
+                                                                        Flat Discount
+                                                                    </span>
+                                                                )}
+                                                                {offer.type === 'PERCENTAGE' && (
+                                                                    <span className="badge bg-primary-subtle text-primary-emphasis small">
+                                                                        Percentage Off
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
                                                     {offer.endDate && (
-                                                        <small className="text-muted">
-                                                            Valid till: {new Date(offer.endDate).toLocaleDateString()}
+                                                        <small className="text-muted text-end">
+                                                            <div>Valid till:</div>
+                                                            <div className="fw-bold">
+                                                                {new Date(offer.endDate).toLocaleDateString('en-IN', {
+                                                                    day: '2-digit',
+                                                                    month: 'short',
+                                                                    year: 'numeric'
+                                                                })}
+                                                            </div>
                                                         </small>
                                                     )}
                                                 </div>
@@ -268,9 +310,12 @@ const HotelPromoCodeCard = ({
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-3 text-muted">
+                                <div className="text-center py-4 text-muted border rounded bg-light">
                                     <i className="bi bi-info-circle me-2"></i>
-                                    No special offers available at the moment
+                                    <div>No hotel offers available at the moment</div>
+                                    <small className="d-block mt-1">
+                                        Check back later for exciting deals!
+                                    </small>
                                 </div>
                             )}
                         </div>

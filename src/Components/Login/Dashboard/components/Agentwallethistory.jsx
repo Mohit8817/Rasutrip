@@ -25,7 +25,7 @@ const AgentWalletHistory = () => {
 
             // Get token from localStorage
             const token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('access_token');
-            
+
             if (!token) {
                 throw new Error('Authentication token not found. Please login again.');
             }
@@ -50,7 +50,7 @@ const AgentWalletHistory = () => {
             }
 
             const data = await response.json();
-            
+
             // Assuming the API response structure
             if (data.success || data.status === 'success') {
                 setWalletData(data.walletSummary || data.data?.walletSummary || {
@@ -61,7 +61,7 @@ const AgentWalletHistory = () => {
                     totalWithdrawals: data.data?.totalWithdrawals || 0,
                     availableBalance: data.data?.availableBalance || 0
                 });
-                
+
                 setTransactions(data.transactions || data.data?.transactions || []);
             } else {
                 throw new Error(data.message || 'Failed to fetch wallet data');
@@ -83,9 +83,9 @@ const AgentWalletHistory = () => {
     const filteredTransactions = transactions.filter(transaction => {
         const matchesFilter = selectedFilter === 'all' || transaction.type === selectedFilter;
         const matchesSearch = (transaction.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             (transaction.bookingId || '').toLowerCase().includes(searchTerm.toLowerCase());
+            (transaction.bookingId || '').toLowerCase().includes(searchTerm.toLowerCase());
         const matchesDate = !dateFilter || (transaction.date && transaction.date.includes(dateFilter));
-        
+
         return matchesFilter && matchesSearch && matchesDate;
     });
 
@@ -105,8 +105,8 @@ const AgentWalletHistory = () => {
     };
 
     const getTypeBadge = (type) => {
-        return type === 'credit' ? 
-            <Badge bg="success" className="me-2">Credit</Badge> : 
+        return type === 'credit' ?
+            <Badge bg="success" className="me-2">Credit</Badge> :
             <Badge bg="danger" className="me-2">Debit</Badge>;
     };
 
@@ -162,8 +162,8 @@ const AgentWalletHistory = () => {
                     <p className="text-muted mb-0">Manage your earnings and transactions</p>
                 </div>
                 <div className="d-flex gap-2">
-                    <Button 
-                        variant="outline-secondary" 
+                    <Button
+                        variant="outline-secondary"
                         size="sm"
                         onClick={handleRefresh}
                         disabled={refreshing}
@@ -189,8 +189,8 @@ const AgentWalletHistory = () => {
                 <Col lg={3} md={6} className="mb-3">
                     <Card className="h-100 border-0 shadow-sm wallet-summary-card">
                         <Card.Body className="text-center">
-                            <div className="wallet-icon-wrapper bg-success bg-opacity-10 rounded-circle mx-auto mb-3" 
-                                 style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div className="wallet-icon-wrapper bg-success bg-opacity-10 rounded-circle mx-auto mb-3"
+                                style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Wallet size={24} className="text-success" />
                             </div>
                             <h4 className="text-success mb-1">
@@ -205,7 +205,7 @@ const AgentWalletHistory = () => {
                     <Card className="h-100 border-0 shadow-sm wallet-summary-card">
                         <Card.Body className="text-center">
                             <div className="wallet-icon-wrapper bg-info bg-opacity-10 rounded-circle mx-auto mb-3"
-                                 style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <TrendingUp size={24} className="text-info" />
                             </div>
                             <h4 className="text-info mb-1">
@@ -220,7 +220,7 @@ const AgentWalletHistory = () => {
                     <Card className="h-100 border-0 shadow-sm wallet-summary-card">
                         <Card.Body className="text-center">
                             <div className="wallet-icon-wrapper bg-warning bg-opacity-10 rounded-circle mx-auto mb-3"
-                                 style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <TrendingDown size={24} className="text-warning" />
                             </div>
                             <h4 className="text-warning mb-1">
@@ -235,7 +235,7 @@ const AgentWalletHistory = () => {
                     <Card className="h-100 border-0 shadow-sm wallet-summary-card">
                         <Card.Body className="text-center">
                             <div className="wallet-icon-wrapper bg-primary bg-opacity-10 rounded-circle mx-auto mb-3"
-                                 style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <Calendar size={24} className="text-primary" />
                             </div>
                             <h4 className="text-primary mb-1">
@@ -288,7 +288,7 @@ const AgentWalletHistory = () => {
                                 <option value="debit">Debit Only</option>
                             </Form.Select>
                         </Col>
-                        
+
                         <Col lg={3} md={6} className="mb-3 mb-lg-0">
                             <Form.Label>Date Filter</Form.Label>
                             <Form.Control
@@ -297,7 +297,7 @@ const AgentWalletHistory = () => {
                                 onChange={(e) => setDateFilter(e.target.value)}
                             />
                         </Col>
-                        
+
                         <Col lg={4} md={8} className="mb-3 mb-lg-0">
                             <Form.Label>Search</Form.Label>
                             <InputGroup>
@@ -311,7 +311,7 @@ const AgentWalletHistory = () => {
                                 />
                             </InputGroup>
                         </Col>
-                        
+
                         <Col lg={2} md={4}>
                             <Button variant="outline-primary" className="w-100" onClick={clearFilters}>
                                 <Filter size={16} className="me-2" />
@@ -330,7 +330,7 @@ const AgentWalletHistory = () => {
                         <Badge bg="light" text="dark">{filteredTransactions.length} transactions</Badge>
                     </div>
                 </Card.Header>
-                
+
                 <Card.Body className="p-0">
                     <div className="table-responsive">
                         <Table className="mb-0" hover>
@@ -394,8 +394,8 @@ const AgentWalletHistory = () => {
                             <Wallet size={48} className="text-muted mb-3" />
                             <h5 className="text-muted">No transactions found</h5>
                             <p className="text-muted">
-                                {transactions.length === 0 
-                                    ? 'No transactions available yet' 
+                                {transactions.length === 0
+                                    ? 'No transactions available yet'
                                     : 'Try adjusting your search or filter criteria'
                                 }
                             </p>

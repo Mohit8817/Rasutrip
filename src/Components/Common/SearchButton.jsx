@@ -1,6 +1,6 @@
 // src/Components/Common/SearchButton.jsx
-import React, { useContext} from 'react';
-import { useNavigate,useLocation } from 'react-router-dom';
+import React, { useContext } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LocationContext } from '../Context/LocationContext';
 import { HotelSearchContext } from '../Context/HotelSearchContext';
 import '../../Style/FlightBooking.css';
@@ -34,12 +34,12 @@ const SearchButton = ({ type, }) => {
       totalPrice,
     } = locationData;
 
-    console.log('locationDatakkkkk',locationData)
+    console.log('locationDatakkkkk', locationData)
 
     switch (type) {
       case 'flight': {
         const searchParams = new URLSearchParams();
-    
+
         // Build common state object
         let state = {};
         if (locationData.tripType === 'multicity' && locationData.AirSegments) {
@@ -66,20 +66,20 @@ const SearchButton = ({ type, }) => {
             tripType: tripType || 'oneway'
           };
         }
-    
+
         // Helper function to handle navigation
         const goToResults = () => {
           navigate('/flight-results', { state });
             window.location.reload();
         };
-    
+
         if (location.pathname === '/flight-results') {
           navigate(`/?${searchParams.toString()}`, { replace: true });
           setTimeout(goToResults, 10);
         } else {
           goToResults();
         }
-    
+
         break;
       }
       case 'bus':
@@ -103,18 +103,20 @@ const SearchButton = ({ type, }) => {
           guests,
           rooms,
           nights,
-          roomDetails = [] // ✅ Get actual roomDetails from context
+          country, // ✅ Get country name
+          countryCode, // ✅ Get country code
+          roomDetails = []
         } = hotelSearchData || {};
 
         console.log('🔍 Hotel Search Data:', hotelSearchData);
         console.log('🏨 Room Details from Context:', roomDetails);
+        console.log('🌍 Selected Country:', country, 'Code:', countryCode);
 
         if (city && checkIn && checkOut) {
-          // ✅ FIXED: Use actual roomDetails from context instead of undefined 'room'
           const apiRoomDetails = roomDetails.map(room => ({
             Adult: room.adults,
             Child: room.children,
-            ChildAge: Array(room.children).fill(5) // Default child age
+            ChildAge: Array(room.children).fill(5)
           }));
 
           console.log('🚀 Sending to API:', apiRoomDetails);
@@ -127,7 +129,9 @@ const SearchButton = ({ type, }) => {
               guests: Number(guests),
               rooms: Number(rooms),
               nights: Number(nights),
-              roomDetails: apiRoomDetails, // ✅ Use the properly mapped room details
+              country: country, // ✅ Pass country name
+              countryCode: countryCode, // ✅ Pass country code
+              roomDetails: apiRoomDetails,
               minRating: 4,
               maxRating: 5,
               resultCount: null

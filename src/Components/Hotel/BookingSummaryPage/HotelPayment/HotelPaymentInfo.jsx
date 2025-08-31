@@ -5,7 +5,7 @@ import { FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { createHotelOrder, validateHotelPayment, bookHotel, sendHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
 
-const HotelPaymentInfo = () => {
+const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
   const [loading, setLoading] = useState(false);
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [bookingStage, setBookingStage] = useState('');
@@ -13,7 +13,7 @@ const HotelPaymentInfo = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ CRITICAL: Prevent duplicate bookings
+  // CRITICAL: Prevent duplicate bookings
   const bookingAttemptRef = useRef(null);
   const [bookingProcessed, setBookingProcessed] = useState(false);
 
@@ -24,13 +24,82 @@ const HotelPaymentInfo = () => {
     reviewData = {},
     isPANMandatory = false,
     blockedRoomData = {},
-    // ✅ NEW: Get coupon data from location state
-    couponData = null,
-    appliedCouponDiscount = 0,
+    // Get coupon data from multiple sources (location state + props)
+    couponData: locationCouponData = null,
+    appliedCouponDiscount: locationCouponDiscount = 0,
   } = location.state || {};
 
-  // ✅ UPDATED: Use the same pricing logic as FareSummaryCard WITH coupon discount
+  // ENHANCED: Unified coupon data extraction with priority
+  const getCouponData = () => {
+    let finalCouponData = null;
+    let finalCouponDiscount = 0;
+
+    // Priority 1: Props from parent component (most reliable)
+    if (appliedCoupon) {
+      finalCouponData = appliedCoupon;
+      finalCouponDiscount = couponDiscount || 0;
+    }
+    // Priority 2: Location state data
+    else if (locationCouponData) {
+      finalCouponData = locationCouponData;
+      finalCouponDiscount = locationCouponDiscount || 0;
+    }
+    // Priority 3: Check other possible sources
+    else if (location.state?.appliedCoupon) {
+      finalCouponData = location.state.appliedCoupon;
+    }
+    else if (priceDetails?.couponData) {
+      finalCouponData = priceDetails.couponData;
+    }
+
+    // Calculate discount if not already calculated
+    if (finalCouponData && finalCouponDiscount <= 0) {
+      const baseFare = getBaseFareForCoupon();
+
+      if (finalCouponData.discountType === 'percentage' || finalCouponData.type === 'PERCENTAGE') {
+        const discountPercent = finalCouponData.discount || finalCouponData.value || 0;
+        finalCouponDiscount = (baseFare * discountPercent) / 100;
+      } else if (finalCouponData.discountType === 'flat' || finalCouponData.type === 'FLAT') {
+        finalCouponDiscount = finalCouponData.discount || finalCouponData.value || 0;
+      }
+
+      // Apply maximum discount limits
+      if (finalCouponData.maxDiscount && finalCouponDiscount > finalCouponData.maxDiscount) {
+        finalCouponDiscount = finalCouponData.maxDiscount;
+      }
+
+      // Apply minimum order amount check
+      if (finalCouponData.minOrderAmount && baseFare < finalCouponData.minOrderAmount) {
+        console.warn('Order amount is below minimum required for coupon');
+        finalCouponDiscount = 0;
+      }
+    }
+
+    console.log('Final Coupon Data:', finalCouponData);
+    console.log('Final Coupon Discount:', finalCouponDiscount);
+
+    return {
+      couponData: finalCouponData,
+      couponDiscount: Math.max(0, finalCouponDiscount)
+    };
+  };
+
+  // Helper function to get base fare for coupon calculation
+  const getBaseFareForCoupon = () => {
+    const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
+    const priceData = roomData?.Price || {};
+
+    return priceData.PublishedPrice ||
+      priceData.RoomPrice ||
+      priceDetails?.publishedPrice ||
+      priceDetails?.baseFare || 0;
+  };
+
+  // UPDATED: Enhanced price calculation with proper coupon handling
   const calculateFinalPrice = () => {
+    // Get coupon information
+    const { couponData: activeCoupon, couponDiscount: activeCouponDiscount } = getCouponData();
+
     // Get data from blocked room response if available
     const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
     const priceData = roomData?.Price || {};
@@ -73,25 +142,23 @@ const HotelPaymentInfo = () => {
       totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
     }
 
-    // ✅ NEW: Calculate coupon discount
-    let couponDiscount = 0;
-    if (couponData) {
-      if (couponData.discountType === 'percentage' || couponData.type === 'PERCENTAGE') {
-        const discountPercent = couponData.discount || couponData.value || 0;
-        couponDiscount = (actualBaseFare * discountPercent) / 100;
-      } else if (couponData.discountType === 'flat' || couponData.type === 'FLAT') {
-        couponDiscount = couponData.discount || couponData.value || 0;
-      }
-    }
-
-    // If appliedCouponDiscount is passed, use that instead
-    if (appliedCouponDiscount > 0) {
-      couponDiscount = appliedCouponDiscount;
-    }
+    // ENHANCED: Use the calculated coupon discount
+    const couponDiscountAmount = activeCouponDiscount;
 
     // Final amount customer pays WITH coupon discount
     const subtotal = actualBaseFare + vendorCommissionAmount + totalGST - discount;
-    const customerTotal = subtotal - couponDiscount;
+    const customerTotal = Math.max(0, subtotal - couponDiscountAmount);
+
+    console.log('Price Calculation Details:', {
+      actualBaseFare,
+      vendorCommissionAmount,
+      totalGST,
+      discount,
+      couponDiscountAmount,
+      subtotal,
+      customerTotal,
+      activeCoupon: activeCoupon?.code || activeCoupon?.couponCode || 'None'
+    });
 
     return {
       actualBaseFare,
@@ -107,8 +174,9 @@ const HotelPaymentInfo = () => {
       discount,
       serviceCharges,
       otherCharges,
-      couponDiscount, // ✅ NEW: Include coupon discount
-      subtotal, // ✅ NEW: Price before coupon
+      couponDiscount: couponDiscountAmount,
+      couponData: activeCoupon,
+      subtotal,
       roundedTotal: parseFloat(customerTotal.toFixed(2))
     };
   };
@@ -129,8 +197,9 @@ const HotelPaymentInfo = () => {
     discount,
     serviceCharges,
     otherCharges,
-    couponDiscount, // ✅ NEW
-    subtotal // ✅ NEW
+    couponDiscount: finalCouponDiscount,
+    couponData: activeCoupon,
+    subtotal
   } = priceCalculation;
 
   // Custom Loading Popup Component
@@ -208,16 +277,16 @@ const HotelPaymentInfo = () => {
     return leadPassenger?.Email || "mohitverma8817@gmail.com";
   };
 
-  // ✅ ENHANCED: Generate unique ClientReferenceNo to prevent duplicates
+  // ENHANCED: Generate unique ClientReferenceNo to prevent duplicates
   const generateUniqueClientReference = () => {
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 10000);
     return `CLT_${timestamp}_${random}`;
   };
 
-  // ✅ UPDATED: Include coupon discount in booking data
+  // UPDATED: Include coupon discount in booking data
   const formatBookingData = (bookingDetails) => {
-    console.log('🔄 Input booking details:', JSON.stringify(bookingDetails, null, 2));
+    console.log('Input booking details:', JSON.stringify(bookingDetails, null, 2));
 
     // Step 1: Validate input data structure
     let hotelRoomsData = [];
@@ -237,7 +306,7 @@ const HotelPaymentInfo = () => {
       throw new Error('No rooms found in booking data');
     }
 
-    // ✅ CRITICAL FIX: Global lead passenger control
+    // CRITICAL FIX: Global lead passenger control
     let leadPassengerAssigned = false;
     let leadPassengerName = '';
 
@@ -252,7 +321,7 @@ const HotelPaymentInfo = () => {
           if (isAdult) {
             leadPassengerName = `${passenger.FirstName || ''} ${passenger.LastName || ''}`.trim();
             leadPassengerFound = true;
-            console.log(`✅ Selected ${leadPassengerName} as the SINGLE Lead Passenger (Room ${roomIndex + 1})`);
+            console.log(`Selected ${leadPassengerName} as the SINGLE Lead Passenger (Room ${roomIndex + 1})`);
             break;
           }
         }
@@ -272,12 +341,12 @@ const HotelPaymentInfo = () => {
         const isAdult = parseInt(passenger.PaxType) === 1 || passenger.Age >= 18;
         const passengerName = `${passenger.FirstName || ''} ${passenger.LastName || ''}`.trim();
 
-        // ✅ CRITICAL: Only the FIRST adult passenger becomes lead passenger
+        // CRITICAL: Only the FIRST adult passenger becomes lead passenger
         const shouldBeLeadPassenger = !leadPassengerAssigned && isAdult && passengerName === leadPassengerName;
 
         if (shouldBeLeadPassenger) {
           leadPassengerAssigned = true;
-          console.log(`✅ Assigning ${passengerName} as Lead Passenger (Room ${roomIndex + 1})`);
+          console.log(`Assigning ${passengerName} as Lead Passenger (Room ${roomIndex + 1})`);
         }
 
         if (isAdult) {
@@ -301,7 +370,7 @@ const HotelPaymentInfo = () => {
             throw new Error(`Invalid PAN format for "${passengerName}": "${cleanPAN}". Required format: ABCDE1234F`);
           }
 
-          // ✅ EXACT format - only ONE lead passenger
+          // EXACT format - only ONE lead passenger
           return {
             Title: String(passenger.Title || "Mr").trim(),
             FirstName: String(passenger.FirstName || "").trim(),
@@ -310,7 +379,7 @@ const HotelPaymentInfo = () => {
             Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
             Email: String(passenger.Email || "").trim().toLowerCase(),
             PaxType: 1, // Adult
-            LeadPassenger: shouldBeLeadPassenger ? "true" : "false", // ✅ Only ONE true
+            LeadPassenger: shouldBeLeadPassenger ? "true" : "false", // Only ONE true
             Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 0,
             PassportNo: null,
             PassportIssueDate: null,
@@ -333,7 +402,7 @@ const HotelPaymentInfo = () => {
             Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
             Email: String(passenger.Email || "").trim().toLowerCase(),
             PaxType: 2, // Child
-            LeadPassenger: "false", // ✅ Children are NEVER lead passengers
+            LeadPassenger: "false", // Children are NEVER lead passengers
             Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 5,
             PassportNo: null,
             PassportIssueDate: null,
@@ -354,7 +423,7 @@ const HotelPaymentInfo = () => {
       };
     });
 
-    // ✅ Final validation: Ensure exactly ONE lead passenger
+    // Final validation: Ensure exactly ONE lead passenger
     const leadCount = processedRooms
       .flatMap(room => room.HotelPassenger)
       .filter(passenger => passenger.LeadPassenger === "true")
@@ -368,7 +437,7 @@ const HotelPaymentInfo = () => {
       throw new Error(`Multiple lead passengers found (${leadCount}). Only ONE lead passenger is allowed.`);
     }
 
-    console.log(`✅ SUCCESS: Exactly ONE lead passenger set: ${leadPassengerName}`);
+    console.log(`SUCCESS: Exactly ONE lead passenger set: ${leadPassengerName}`);
 
     // Check for duplicate PANs
     const panNumbers = new Set();
@@ -391,31 +460,41 @@ const HotelPaymentInfo = () => {
       throw new Error(`Duplicate PAN numbers found: ${duplicatePANs.join(', ')}. Each passenger must have a unique PAN number.`);
     }
 
-    // ✅ CRITICAL: Generate unique ClientReferenceNo to prevent duplicate bookings
+    // CRITICAL: Generate unique ClientReferenceNo to prevent duplicate bookings
     const uniqueClientRef = generateUniqueClientReference();
 
-    // ✅ NEW: Include coupon discount in payload
+    // ENHANCED: Include proper coupon discount and vendor commission in payload
     const finalPayload = {
       ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`),
       HotelCode: String(bookingDetails.HotelCode || 67),
       HotelName: String(bookingDetails.HotelName || "ALILA DIWA"),
       GuestNationality: "IN",
       NoOfRooms: String(processedRooms.length),
-      ClientReferenceNo: uniqueClientRef, // ✅ CRITICAL: Unique reference
-      CouponDiscount: couponDiscount > 0 ? couponDiscount : (bookingDetails.CouponDiscount || 0), // ✅ NEW: Use actual coupon discount
+      ClientReferenceNo: uniqueClientRef, // CRITICAL: Unique reference
+      CouponDiscount: finalCouponDiscount, // FIXED: Use calculated coupon discount
+      vendorCommission: vendorCommissionAmount, // Add vendor commission amount
+      agentCommissionPercent: 0, // Set to 0 as per your requirement
+      vendorCommissionPercentage: vendorCommissionPercentage, // Add vendor commission percentage
       IsVoucherBooking: "true",
       HotelRoomsDetails: processedRooms,
       UserIp: String(bookingDetails.UserIp || "49.36.217.215"),
-      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed")
+      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed"),
+      // ENHANCED: Add coupon information for tracking
+      appliedCoupon: activeCoupon ? {
+        code: activeCoupon.code || activeCoupon.couponCode,
+        discount: finalCouponDiscount,
+        originalDiscount: activeCoupon.discount || activeCoupon.value,
+        type: activeCoupon.discountType || activeCoupon.type
+      } : null
     };
 
-    console.log('✅ Final booking payload:', JSON.stringify(finalPayload, null, 2));
-    console.log(`💰 Customer Pays: ₹${roundedTotal} (Original: ₹${subtotal}, Coupon Discount: ₹${couponDiscount})`);
+    console.log('Final booking payload:', JSON.stringify(finalPayload, null, 2));
+    console.log(`Customer Pays: ₹${roundedTotal} (Original: ₹${subtotal}, Coupon Discount: ₹${finalCouponDiscount})`);
 
     return finalPayload;
   };
 
-  // ✅ UPDATED: Extract API response error directly
+  // FIXED: Extract API response error directly
   const getApiErrorMessage = (error) => {
     console.error('API Error:', error);
 
@@ -460,23 +539,23 @@ const HotelPaymentInfo = () => {
     });
   };
 
-  // Payment success handler
+  // FIXED: Payment success handler with proper error detection
   const handlePaymentSuccess = async (response, formattedBookingData, validation) => {
-    // ✅ CRITICAL: Prevent multiple booking calls
+    // CRITICAL: Prevent multiple booking calls
     if (bookingProcessed) {
-      console.log('⚠️ Booking already processed, skipping duplicate call');
+      console.log('Booking already processed, skipping duplicate call');
       return;
     }
 
     try {
       setBookingProcessed(true);
       setBookingStage('Confirming your hotel reservation...');
-      console.log('🚀 Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
+      console.log('Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
 
       const bookingResponse = await bookHotel(formattedBookingData);
-      console.log('📨 Booking API response:', JSON.stringify(bookingResponse, null, 2));
+      console.log('Booking API response:', JSON.stringify(bookingResponse, null, 2));
 
-      // ✅ UPDATED: Check for API errors first
+      // FIXED: Check for API errors first - only treat as error if there's actual error content
       if (!bookingResponse) {
         const errorMessage = 'No response received from booking API';
         setError(errorMessage);
@@ -486,8 +565,24 @@ const HotelPaymentInfo = () => {
         return;
       }
 
-      // Check for error responses from API
-      if (bookingResponse.error || bookingResponse.Error) {
+      // FIXED: Proper error detection - only flag as error if there's actual error content
+      const hasActualError = (
+        // Check for error object with actual error code or message
+        (bookingResponse.error && (
+          bookingResponse.error.ErrorCode > 0 ||
+          bookingResponse.error.ErrorMessage ||
+          bookingResponse.error.message
+        )) ||
+        (bookingResponse.Error && (
+          bookingResponse.Error.ErrorCode > 0 ||
+          (bookingResponse.Error.ErrorMessage && bookingResponse.Error.ErrorMessage.trim() !== "")
+        )) ||
+        // Check for explicit failure indicators
+        (bookingResponse.success === false) ||
+        (bookingResponse.status && bookingResponse.status.toLowerCase() === 'error')
+      );
+
+      if (hasActualError) {
         const apiError = bookingResponse.error || bookingResponse.Error;
         const errorMessage = apiError.ErrorMessage || apiError.message || 'Booking failed due to API error';
 
@@ -498,19 +593,31 @@ const HotelPaymentInfo = () => {
         return;
       }
 
-      // Check booking success
-      const isBookingSuccessful =
+      // FIXED: Better success detection
+      const isBookingSuccessful = (
         (bookingResponse?.message && /successfully|confirmed|processed/i.test(bookingResponse.message)) ||
         bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
+        bookingResponse?.result?.BookingStatus?.toLowerCase() === 'confirmed' ||
+        bookingResponse?.result?.BookingStatus === 'Processing' || // Your API returns "Processing" status
         bookingResponse?.Status?.toLowerCase() === 'success' ||
-        bookingResponse?.success === true;
+        bookingResponse?.success === true ||
+        // Success if ErrorCode is 0 and no error message
+        (bookingResponse?.Error?.ErrorCode === 0 &&
+          (!bookingResponse?.Error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage.trim() === ""))
+      );
 
-      const hasRequiredBookingData =
+      const hasRequiredBookingData = (
         bookingResponse?.userId &&
         bookingResponse?.SearchTokenId &&
-        bookingResponse?.UserIp;
+        bookingResponse?.UserIp
+      );
 
-      const hasBookingId = bookingResponse?.BookingID || bookingResponse?.bookingId || bookingResponse?.id;
+      const hasBookingId = (
+        bookingResponse?.BookingID ||
+        bookingResponse?.bookingId ||
+        bookingResponse?.id ||
+        bookingResponse?.result?.BookingId  // Your API returns BookingId in result object
+      );
 
       if (isBookingSuccessful && hasRequiredBookingData) {
         setBookingStage('Booking confirmed! Preparing confirmation details...');
@@ -521,7 +628,7 @@ const HotelPaymentInfo = () => {
           try {
             setBookingStage('Sending invoice to your email...');
             const leadPassengerEmail = getLeadPassengerEmail(formattedBookingData);
-            console.log('📧 Sending invoice to email:', leadPassengerEmail);
+            console.log('Sending invoice to email:', leadPassengerEmail);
 
             const invoicePayload = {
               UserIp: bookingResponse.UserIp || formattedBookingData.UserIp || "49.36.217.215",
@@ -533,15 +640,15 @@ const HotelPaymentInfo = () => {
             const invoiceResult = await sendHotelInvoice(invoicePayload);
 
             if (invoiceResult.success) {
-              console.log('✅ Invoice sent successfully');
+              console.log('Invoice sent successfully');
               showSuccessToast('Invoice sent to your email successfully!');
             } else {
-              console.warn('⚠️ Invoice sending failed:', invoiceResult.message);
+              console.warn('Invoice sending failed:', invoiceResult.message);
               showErrorToast('Invoice Email Warning',
                 `Booking confirmed but invoice email failed: ${invoiceResult.message || 'Unknown error'}`);
             }
           } catch (invoiceError) {
-            console.error('❌ Invoice sending error:', invoiceError);
+            console.error('Invoice sending error:', invoiceError);
             const invoiceErrorMessage = getApiErrorMessage(invoiceError);
             showErrorToast('Invoice Email Warning',
               `Booking confirmed but invoice email failed: ${invoiceErrorMessage}`);
@@ -580,23 +687,23 @@ const HotelPaymentInfo = () => {
                 searchTokenId: bookingResponse.SearchTokenId,
               },
               bookingResult: bookingResponse,
-              couponData: couponData,
-              couponDiscount: couponDiscount
+              couponData: activeCoupon, // FIXED: Pass the active coupon data
+              couponDiscount: finalCouponDiscount // FIXED: Pass the actual coupon discount
             },
           });
         }, 1500);
 
       } else {
-        // ✅ UPDATED: Show API response message directly
+        // UPDATED: Show API response message directly
         const errorMessage = bookingResponse?.message || 'Booking failed without specific error message';
         setError(errorMessage);
         showErrorToast('Booking Failed', errorMessage);
         setBookingInProgress(false);
       }
     } catch (bookingError) {
-      console.error('❌ Booking API Error:', bookingError);
+      console.error('Booking API Error:', bookingError);
 
-      // ✅ UPDATED: Use API response error directly
+      // Use API response error directly
       const apiErrorMessage = getApiErrorMessage(bookingError);
       setError(apiErrorMessage);
       showErrorToast('Booking API Error', apiErrorMessage);
@@ -604,10 +711,10 @@ const HotelPaymentInfo = () => {
     }
   };
 
-  // ✅ UPDATED: Main payment handler with API response errors
+  // Main payment handler
   const handlePayment = async () => {
     if (loading || bookingInProgress || bookingProcessed) {
-      console.log('⚠️ Payment already in progress or completed');
+      console.log('Payment already in progress or completed');
       return;
     }
 
@@ -623,16 +730,16 @@ const HotelPaymentInfo = () => {
     setBookingProcessed(false);
 
     try {
-      console.log('🔍 Starting payment process...');
-      console.log('📋 Raw booking details:', hotelBookingDetails);
+      console.log('Starting payment process...');
+      console.log('Raw booking details:', hotelBookingDetails);
 
       // Format booking data
       let formattedBookingData;
       try {
         formattedBookingData = formatBookingData(hotelBookingDetails);
-        console.log('✅ Booking data formatted successfully');
+        console.log('Booking data formatted successfully');
       } catch (formatError) {
-        console.error('❌ Format error:', formatError);
+        console.error('Format error:', formatError);
         setError(formatError.message);
         showErrorToast('Booking Data Error', formatError.message);
         setLoading(false);
@@ -651,7 +758,7 @@ const HotelPaymentInfo = () => {
         return;
       }
 
-      // ✅ UPDATED: Create order with API error handling
+      // Create order with API error handling
       try {
         const orderResponse = await createHotelOrder(roundedTotal);
         const order = orderResponse?.order;
@@ -687,23 +794,23 @@ const HotelPaymentInfo = () => {
                 Hotel: formattedBookingData,
               };
 
-              // ✅ UPDATED: Validate payment with API error handling
+              // Validate payment with API error handling
               const validation = await validateHotelPayment(validatePayload);
 
               if (validation?.message === 'Payment verified successfully' && validation?.payment?.status === 'success') {
                 setBookingStage('Payment successful! Processing hotel booking...');
                 await handlePaymentSuccess(response, formattedBookingData, validation);
               } else {
-                // ✅ UPDATED: Show API validation error directly
+                // Show API validation error directly
                 const validationError = validation?.message || validation?.error?.message || 'Payment validation failed';
                 setError(validationError);
                 showErrorToast('Payment Validation Failed', validationError);
                 setBookingInProgress(false);
               }
             } catch (validationError) {
-              console.error('❌ Payment validation error:', validationError);
+              console.error('Payment validation error:', validationError);
 
-              // ✅ UPDATED: Use API response error directly
+              // Use API response error directly
               const apiErrorMessage = getApiErrorMessage(validationError);
               setError(apiErrorMessage);
               showErrorToast('Payment Processing Error', apiErrorMessage);
@@ -735,7 +842,7 @@ const HotelPaymentInfo = () => {
 
         const rzp = new window.Razorpay(options);
         rzp.on('payment.failed', (response) => {
-          // ✅ UPDATED: Show Razorpay error directly
+          // Show Razorpay error directly
           const failureMessage = response.error.description || response.error.reason || 'Payment failed due to unknown error';
           setError(failureMessage);
           showErrorToast('Payment Failed', failureMessage);
@@ -746,9 +853,9 @@ const HotelPaymentInfo = () => {
         rzp.open();
 
       } catch (orderError) {
-        console.error('❌ Order creation error:', orderError);
+        console.error('Order creation error:', orderError);
 
-        // ✅ UPDATED: Use API response error directly
+        // Use API response error directly
         const apiErrorMessage = getApiErrorMessage(orderError);
         setError(apiErrorMessage);
         showErrorToast('Order Creation Failed', apiErrorMessage);
@@ -757,9 +864,9 @@ const HotelPaymentInfo = () => {
       }
 
     } catch (err) {
-      console.error('❌ Payment initialization error:', err);
+      console.error('Payment initialization error:', err);
 
-      // ✅ UPDATED: Use API response error directly
+      // Use API response error directly
       const apiErrorMessage = getApiErrorMessage(err);
       setError(apiErrorMessage);
       showErrorToast('Payment Initialization Failed', apiErrorMessage);
@@ -911,20 +1018,29 @@ const HotelPaymentInfo = () => {
                       <div><strong>Adults:</strong> {adultPassengers.length} (PAN Required)</div>
                     </div>
                     <div className="col-md-4 text-end">
-                      <div className="fs-4 fw-bold text-danger">₹ {roundedTotal}</div>
-                      {/* Show coupon savings */}
-                      {couponDiscount > 0 && (
-                        <div className="text-success small">
-                          Coupon Savings: ₹{couponDiscount.toFixed(2)}
+                      <div className="fs-4 fw-bold text-danger">₹ {roundedTotal.toLocaleString()}</div>
+                      {/* ENHANCED: Show coupon savings prominently */}
+                      {finalCouponDiscount > 0 && (
+                        <div className="text-success small fw-bold">
+                          <i className="bi bi-tag-fill me-1"></i>
+                          Coupon Savings: ₹{finalCouponDiscount.toFixed(2)}
+                        </div>
+                      )}
+                      {/* Show original price if coupon applied */}
+                      {finalCouponDiscount > 0 && (
+                        <div className="text-muted small text-decoration-line-through">
+                          Original: ₹{subtotal.toFixed(2)}
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Price Breakdown with Coupon Discount */}
+                {/* ENHANCED: Price Breakdown with Better Coupon Display */}
                 <div className="mb-4 p-3 border rounded">
-                  <h6 className="fw-bold mb-3">Price Breakdown</h6>
+                  <h6 className="fw-bold mb-3">
+                    Price Breakdown
+                  </h6>
 
                   {/* Hotel Total */}
                   <div className="row mb-2">
@@ -1015,49 +1131,63 @@ const HotelPaymentInfo = () => {
                   {/* Regular Discount */}
                   {discount > 0 && (
                     <div className="row mb-2 text-success">
-                      <div className="col">Discount Applied</div>
+                      <div className="col">
+                        Discount Applied
+                        <small className="text-muted d-block">Hotel discount</small>
+                      </div>
                       <div className="col text-end">- ₹ {discount.toFixed(2)}</div>
                     </div>
                   )}
 
                   {/* Subtotal before coupon */}
-                  {couponDiscount > 0 && (
+                  {finalCouponDiscount > 0 && (
                     <div className="row mb-2 border-top pt-2">
                       <div className="col fw-bold">Subtotal</div>
                       <div className="col text-end fw-bold">₹ {subtotal.toFixed(2)}</div>
                     </div>
                   )}
 
-                  {/* Coupon Discount */}
-                  {couponDiscount > 0 && (
-                    <div className="row mb-2 text-success">
+                  {/* ENHANCED: Coupon Discount with Better Styling */}
+                  {finalCouponDiscount > 0 && (
+                    <div className="row mb-2 text-success bg-success-subtle p-2 rounded">
                       <div className="col">
-                        Coupon Discount
-                        {couponData && (
-                          <small className="text-muted d-block">
-                            Code: {couponData.code || couponData.couponCode}
-                            {couponData.discountType === 'percentage' || couponData.type === 'PERCENTAGE'
-                              ? ` (${couponData.discount || couponData.value}%)`
+                        <div className="d-flex align-items-center">
+                          <i className="bi bi-tag-fill me-2 text-success"></i>
+                          <strong>Coupon Discount</strong>
+                        </div>
+                        {activeCoupon && (
+                          <small className="text-success d-block mt-1">
+                            <strong>Code: {activeCoupon.code || activeCoupon.couponCode}</strong>
+                            {(activeCoupon.discountType === 'percentage' || activeCoupon.type === 'PERCENTAGE')
+                              ? ` (${activeCoupon.discount || activeCoupon.value}% off)`
                               : ' (Flat Discount)'}
                           </small>
                         )}
                       </div>
-                      <div className="col text-end text-success fw-bold">- ₹ {couponDiscount.toFixed(2)}</div>
+                      <div className="col text-end">
+                        <strong className="text-success fs-5">- ₹ {finalCouponDiscount.toFixed(2)}</strong>
+                      </div>
                     </div>
                   )}
 
                   <hr />
                   <div className="row fw-bold">
-                    <div className="col">Total Amount</div>
-                    <div className="col text-end text-danger fs-5">₹ {roundedTotal}</div>
+                    <div className="col fs-5">Total Amount</div>
+                    <div className="col text-end text-danger fs-4">₹ {roundedTotal.toLocaleString()}</div>
                   </div>
 
-                  {/* Show savings if coupon applied */}
-                  {couponDiscount > 0 && (
-                    <div className="text-center mt-2">
-                      <small className="text-success fw-bold">
-                        You saved ₹{couponDiscount.toFixed(2)} with this coupon!
-                      </small>
+                  {/* ENHANCED: Show savings summary if coupon applied */}
+                  {finalCouponDiscount > 0 && (
+                    <div className="text-center mt-3 p-2 bg-success-subtle rounded">
+                      <div className="text-success fw-bold">
+                        <i className="bi bi-check-circle-fill me-2"></i>
+                        Congratulations! You saved ₹{finalCouponDiscount.toFixed(2)} with this coupon!
+                      </div>
+                      {activeCoupon && (
+                        <small className="text-muted d-block mt-1">
+                          Coupon "{activeCoupon.code || activeCoupon.couponCode}" applied successfully
+                        </small>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1065,7 +1195,10 @@ const HotelPaymentInfo = () => {
                 {/* Lead guest info */}
                 {leadPassenger && (
                   <div className="mb-4 p-3 border rounded">
-                    <h6 className="fw-bold mb-2">Lead Guest Information</h6>
+                    <h6 className="fw-bold mb-2">
+                      <i className="bi bi-person-fill me-2"></i>
+                      Lead Guest Information
+                    </h6>
                     <div className="row">
                       <div className="col-md-6">
                         <strong>Name:</strong> {`${leadPassenger.Title || ''} ${leadPassenger.FirstName} ${leadPassenger.LastName}`.trim()}
@@ -1096,11 +1229,10 @@ const HotelPaymentInfo = () => {
 
               </Card.Body>
 
-              <Card.Footer className="">
+              <Card.Footer className="bg-light">
                 <div className="text-end">
                   <Button
-                    variant="danger"
-                    className="px-5"
+                    className="px-5 py-2 btn-red"
                     onClick={handlePayment}
                     disabled={roundedTotal <= 0 || loading || bookingInProgress || bookingProcessed}
                   >
@@ -1110,9 +1242,18 @@ const HotelPaymentInfo = () => {
                         {bookingInProgress ? 'Processing Booking...' : 'Loading Payment...'}
                       </>
                     ) : bookingProcessed ? (
-                      'Booking Processed'
+                      <>
+                        Booking Processed
+                      </>
                     ) : (
-                      `Pay ₹{roundedTotal}`
+                      <>
+                        Pay ₹{roundedTotal.toLocaleString()}
+                        {finalCouponDiscount > 0 && (
+                          <small className="d-block mt-1">
+                            (Saved ₹{finalCouponDiscount.toFixed(2)} with coupon)
+                          </small>
+                        )}
+                      </>
                     )}
                   </Button>
                 </div>
