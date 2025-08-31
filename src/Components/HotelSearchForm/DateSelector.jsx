@@ -35,6 +35,13 @@ const DateSelector = () => {
   const getDayName = (date) =>
     date?.toLocaleDateString("en-GB", { weekday: "long" });
 
+  // 📌 Check if date is in the past
+  const isPastDate = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
   // 📌 Generate Calendar Days
   const generateDays = (month) => {
     const start = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -164,19 +171,22 @@ const DateSelector = () => {
                   const isSelected =
                     departDate &&
                     date.toDateString() === departDate.toDateString();
+                  
+                  const isPast = isPastDate(date);
 
                   return (
                     <div
                       key={index}
-                      className={`day-cell ${isSelected ? "selected" : ""}`}
+                      className={`day-cell ${isSelected ? "selected" : ""} ${isPast ? "disabled past" : ""}`}
                       onClick={() => {
-                        setDepartDate(date);
-                        if (!returnDate || date >= returnDate) {
+                        if (!isPast) {
+                          setDepartDate(date);
+                          // Automatically set return date to next day
                           const nextDay = new Date(date);
                           nextDay.setDate(date.getDate() + 1);
                           setReturnDate(nextDay);
+                          setActiveCalendar(null);
                         }
-                        setActiveCalendar(null);
                       }}
                     >
                       {date.getDate()}
@@ -237,7 +247,7 @@ const DateSelector = () => {
                 {daysReturn.map((date, index) => {
                   if (!date) return <div key={index} className="day-cell empty"></div>;
 
-                  const isDisabled = date < departDate;
+                  const isDisabled = date <= departDate; // Check-out should be after check-in
                   const isSelected =
                     returnDate &&
                     date.toDateString() === returnDate.toDateString();
@@ -355,6 +365,12 @@ const DateSelector = () => {
         .day-cell.disabled {
           color: #ccc;
           cursor: not-allowed;
+        }
+
+        .day-cell.past {
+          color: #ddd;
+          cursor: not-allowed;
+          text-decoration: line-through;
         }
 
         .day-cell.empty {
