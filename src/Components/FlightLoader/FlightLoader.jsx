@@ -1,93 +1,82 @@
-import React from 'react';
+import React from "react";
 
 const styles = {
-  loader: {
-    textAlign: 'center',
-    width: '100%',
-    position: 'relative',
-    overflow: 'hidden',
-    maxWidth: '35rem',
-    height: '30rem',
-    margin: '0 auto',
-    fontFamily: 'Roboto, sans-serif',
-  
-  },
-  wait: {
-    margin: '5rem 0',
-  },
-  iata_code: {
-    fontSize: '6rem',
-    opacity: 0.3,
-    top: '52%',
-    position: 'absolute',
-    color: '#0099cc',
-  },
-  departure_city: {
+  overlay: {
+    position: "fixed",
+    top: 0,
     left: 0,
+    width: "100vw",
+    height: "100vh",
+    backgroundColor: "rgba(255, 255, 255)",
+    zIndex: 9999,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    fontFamily: "Roboto, sans-serif",
   },
-  arrival_city: {
-    right: '1.5rem',
+  box: {
+    background: "#fff",
+    borderRadius: "8px",
+    padding: "2rem 3rem",
+    textAlign: "center",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+    border: "1px solid #ddd",
   },
-  plane: {
-    position: 'absolute',
-    margin: '0 auto',
-    width: '100%',
+  title: {
+    fontSize: "1.5rem",
+    fontWeight: "bold",
+    marginBottom: "0.5rem",
+    color: "#222",
   },
-  planeImg: {
-    animation: 'spin 2.5s linear infinite',
+  subtitle: {
+    fontSize: "1rem",
+    color: "#444",
+    marginBottom: "1.5rem",
   },
-  earthWrapper: {
-    position: 'absolute',
-    margin: '0 auto',
-    width: '100%',
-    paddingTop: '2.7rem',
+  dotsWrapper: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "0.6rem",
   },
-  earth: {
-    width: '160px',
-    height: '160px',
-    background: 'url("https://zupimages.net/up/19/34/6vlb.gif")',
-    borderRadius: '100%',
-    backgroundSize: '340px',
-    animation: 'earthAnim 12s infinite linear',
-    margin: '0 auto',
-    border: '1px solid #CDD1D3',
-  },
+  dot: (color, delay) => ({
+    width: "14px",
+    height: "14px",
+    borderRadius: "50%",
+    backgroundColor: color,
+    animation: `bounce 1s infinite`,
+    animationDelay: delay,
+  }),
   keyframes: `
-    @keyframes spin {
-      100% {
-        transform: rotate(360deg);
+    @keyframes bounce {
+      0%, 80%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
       }
-    }
-    @keyframes earthAnim {
-      0% {background-position-x: 0;}
-      100% {background-position-x: -340px;}
+      40% {
+        transform: scale(1.2);
+        opacity: 1;
+      }
     }
   `,
 };
 
-const FlightLoader = ({message}=null,color="black") => {
+const FlightLoader = ({ message = "Please Wait...", subMessage = "We are looking for all available flights for you" }) => {
   return (
     <>
       <style>{styles.keyframes}</style>
-      <div style={styles.loader}>
+      <div style={styles.overlay}>
+        <div style={styles.box}>
+          <div style={styles.title}>{message}</div>
+          <div style={styles.subtitle}>{subMessage}</div>
 
-       
-        <div style={styles.plane}>
-          <img className='d-inline'
-            src="https://zupimages.net/up/19/34/4820.gif"
-            style={styles.planeImg}
-            alt="plane"
-          />
-         
+          <div style={styles.dotsWrapper}>
+            <div style={styles.dot("#5ca9ff", "0s")}></div>
+            <div style={styles.dot("#a0a0a0", "0.2s")}></div>
+            <div style={styles.dot("#f28b82", "0.4s")}></div>
+            <div style={styles.dot("#6d6d6d", "0.6s")}></div>
+          </div>
         </div>
-         
-        <div style={styles.earthWrapper}>
-          <div style={styles.earth}></div>
-        </div>
-       
-       <span>{message}</span>
       </div>
-      
     </>
   );
 };
