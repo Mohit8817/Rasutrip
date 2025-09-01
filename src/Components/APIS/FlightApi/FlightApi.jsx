@@ -4,8 +4,8 @@ import baseURL from '../../../Services/Config';
 export const Services = {
   fetchLocation: `${baseURL}/airport/search-airport`,
   fetchFlights: `${baseURL}/airservice/search`,
-  fetchFareRulesUrl: `https://www.stagingapi.bdsd.technology/api/airservice/rest/farerule`,
-  // fetchFareRulesUrl: `${baseURL}/airservice/rest/farerule`,
+  // fetchFareRulesUrl: `https://www.stagingapi.bdsd.technology/api/airservice/rest/farerule`,
+  fetchFareRulesUrl: `${baseURL}/airservice/farerule`,
   FareConfirmation: `${baseURL}/airservice/fare-confirmation`,
   fetchssr: `${baseURL}/airservice/ssr`
 };
@@ -62,9 +62,9 @@ export const post = async (data, url, customHeaders = {}) => {
     });
 
     // Check if the response is successful
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    // if (!response.ok) {
+    //   throw new Error(`HTTP error! status: ${response.status}`);
+    // }
 
     // Parse and return the response data
     const responseData = await response.json();
@@ -75,6 +75,26 @@ export const post = async (data, url, customHeaders = {}) => {
     throw error;
   }
 };
+
+export const get = async (url, customHeaders = {}) => {
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...customHeaders,
+    };
+
+    const response = await fetch(baseURL + url, {
+      method: 'GET',
+      headers: headers,
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("GET error:", error);
+    throw error;
+  }
+};
+
 
 export const getUserIP = async () => {
   try {

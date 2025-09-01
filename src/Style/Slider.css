@@ -94,6 +94,19 @@
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
+
+@media (max-width: 768px) {
+  .overlay-box {
+    padding: 0 0 0px 0!important;
+  }
+}
+
+/* Extra small devices ke liye (optional) */
+@media (max-width: 480px) {
+  .overlay-box {
+    padding: 0 0 0px 0!important;
+  }
+}
 .slider-image-wrapper img {
   height: 670px;
   object-fit: cover;

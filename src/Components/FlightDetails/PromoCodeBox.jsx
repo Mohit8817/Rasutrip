@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { post } from '../APIS/FlightApi/FlightApi';
+import { post ,get} from '../APIS/FlightApi/FlightApi';
 
 const PromoCodeBox = () => {
   const [promoCode, setPromoCode] = useState('');
@@ -15,11 +15,12 @@ const PromoCodeBox = () => {
     setLoading(true);
     try {
       const data = { code: promoCode };
-      const res = await post(data,'/airservice/apply-coupon');
+      const res = await get('/user/special-offer');
+      // const res = await post(data,'/airservice/apply-coupon');
       setResponseMessage(res?.message || 'Promo code applied successfully!');
     } catch (error) {
-      console.error(error);
-      setResponseMessage(error.response.data.message);
+      console.log(error)
+      setResponseMessage(error.message);
     } finally {
       setLoading(false);
     }

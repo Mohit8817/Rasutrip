@@ -5,7 +5,6 @@ import '../../Style/Pagescss/FlightResultsPage.css';
 import { parse } from 'postcss';
 
 const getSidebarFilters = (allFlights) => {
-    console.log('allFlights',allFlights)
     const prices = [];
     const airlineSet = new Set();
     let maxStops = 0;
@@ -24,10 +23,7 @@ const getSidebarFilters = (allFlights) => {
     }
     
     allFlights?.forEach((flight) => {
-        // Price
-        prices.push(flight.MinPublishedPrice);
-
-        // Airlines
+        prices.push(flight?.FareList?.[0].Fare?.BaseFare);
         flight?.Segments?.forEach((segmentGroup) => {
             segmentGroup?.forEach((segment) => {
                 airlineSet.add(segment.Airline.AirlineName);
@@ -51,11 +47,9 @@ const getSidebarFilters = (allFlights) => {
 
 
 
-const FlightSidebar = ({ filters=[], setFilters=[]}) => {
-
+const FlightSidebar = ({ filters=[], setFilters=[],roundTripFlights=null}) => {
     const res = localStorage.getItem('SearchedFlights')
-    const allFlight = JSON.parse(res)
-
+    const allFlight = roundTripFlights?roundTripFlights:JSON.parse(res)
     const filters1 = getSidebarFilters(allFlight);
     const [price, setPrice] = useState(filters1?.minPrice || 1000);
     useEffect(() => {

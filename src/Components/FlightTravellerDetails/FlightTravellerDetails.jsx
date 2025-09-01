@@ -61,7 +61,7 @@ const FlightTravellerDetails = () => {
                     <Col lg={3}>
                         <div>
                             <FareSummary SelectedFare={Faresummary} />
-                            <PromoCodeBox />
+                            {/* <PromoCodeBox /> */}
 
                         </div>
                     </Col>

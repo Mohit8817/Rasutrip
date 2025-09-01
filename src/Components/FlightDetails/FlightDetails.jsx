@@ -20,7 +20,7 @@ const useFareRules = (fareId) => {
 
     const farePayload = useMemo(() => ({
         UserIp: userIp,
-        ResultIndex: fareId || "",
+        ResultIndex: fareId ,
         SearchTokenId: searchToken
     }), [userIp, searchToken, fareId]);
 
@@ -43,10 +43,10 @@ const useFareRules = (fareId) => {
     };
 
     useEffect(() => {
-        if (farePayload.ResultIndex) {
+        // if (farePayload.ResultIndex) {
             fetchData();
-        }
-    }, [farePayload]);
+        // }
+    }, []);
 
     return { fareRules, loading, error };
 };
@@ -63,7 +63,6 @@ const FlightDetails = () => {
         journeyType,
         selectedFlights = {}
     } = location?.state || {};
-
     let finalFareId = null;
     let finalFareData = null;
     if (journeyType === 'roundtrip') {
@@ -79,13 +78,11 @@ const FlightDetails = () => {
         console.warn('Unknown journey type:', journeyType);
     }
 
-    const { fareRules, loading, error } = useFareRules(finalFareId);
-
+    const { fareRules, loading, error } = useFareRules(SelectedFare.FareId);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [isAuth, setIsAuth] = useState(false);
 
     useEffect(() => {
-       
         const res = localStorage.getItem('user');
         const authObj = res ? JSON.parse(res) : null;
         const authed = !!authObj;
@@ -137,7 +134,7 @@ const FlightDetails = () => {
 
                                 <Col lg={3}>
                                     <FareSummary SelectedFare={SelectedFare} />
-                                    <PromoCodeBox />
+                                    {/* <PromoCodeBox /> */}
                                 </Col>
                             </Row>
                         </>

@@ -33,3 +33,24 @@ body {
   padding: 20px;
   border-radius: 8px;
 } */
+
+.rdp-month_caption{
+  background-color: #cb0d26;
+  display: flex;
+  justify-content: center;
+  color:white
+}
+.rdp-chevron {
+    display: inline-block;
+    fill:white!important
+}
+.rdp-today:not(.rdp-outside) {
+    color: #cb0d26!important;
+     border: none!important;
+}
+
+.rdp-selected .rdp-day_button {
+background: #cb0d26!important;
+    border: none!important;
+    color: #f4f7fd!important;
+}

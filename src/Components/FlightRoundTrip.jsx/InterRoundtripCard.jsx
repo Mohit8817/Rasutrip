@@ -8,8 +8,7 @@ const InterRoundtripCard = ({ flight, onBook,selectedFare }) => {
   const [showFarePopup, setShowFarePopup] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [activeTab, setActiveTab] = useState('flight');
-
-  const fare = flight?.FareList?.[0]?.PublishedPrice || 0;
+  const fare = flight?.FareList?.[0].Fare.BaseFare || 0;
   const refundable = flight?.FareList?.[0]?.IsRefundable ? 'Refundable' : 'Non-refundable';
   const cabinClass = flight?.FareList?.[0]?.CabinClass || 'Economy';
   const seatsLeft = flight?.FareList?.[0]?.SeatBaggage?.[0]?.[0]?.NoOfSeatAvailable || 9;

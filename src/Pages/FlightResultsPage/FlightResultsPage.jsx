@@ -22,15 +22,15 @@ const FlightResultsPage = () => {
     const dispatch = useDispatch();
     const { state } = useLocation();
     const tripType = state?.tripType || 'oneway';
-    console.log('triptypeKrishnastate',state)
-
-   console.log('triptypeKrishna',tripType)
-
-  useEffect(() => {
+    const [roundTripFlights, setRoundTripFlights] = useState(null);
+    const handleFlightsLoad = (flights) => {
+        setRoundTripFlights(flights);
+    };
+    useEffect(() => {
         dispatch(clearSelectedFlights());
     }, [dispatch]);
 
-  const flightsData = useSelector((state) => state?.flight?.flights || []);
+    const flightsData = useSelector((state) => state?.flight?.flights || []);
     const [filters, setFilters] = useState({
         airlines: [],
         stops: [],
@@ -41,72 +41,72 @@ const FlightResultsPage = () => {
         refundable: ""
     });
 
-    if(Loader)
-    
+    if (Loader)
 
-    return (
-       <div className=''>
-         <div className='relative'>
-            {tripType === 'oneway' && (
-                <Container className="">
-                    <Row>
-                        <Col className='d-none d-lg-block'>
-                            <FlightSearchBar />
-                        </Col>
-                    </Row>
-                    <Row className="mt-4 ">
-                        <Col lg={3} className='d-none d-lg-block'>
-                            <FlightSidebar className="" filters={filters} setFilters={setFilters} />
-                        </Col>
-                        <Col lg={9}>
-                            <FlightList filters={filters} />
-                        </Col>
-                    </Row>
-                </Container>
-            )}
-              {tripType === 'multicity' && (
-                <Container className="">
-                    <Row>
-                        <Col className='d-none d-lg-block'>
-                            <FlightSearchBar />
-                        </Col>
-                    </Row>
-                    <Row className="mt-4">
-                        <Col lg={3} className='d-none d-lg-block'>
-                            <FlightSidebar className="d-none d-lg-block" filters={filters} setFilters={setFilters} />
-                        </Col>
-                        <Col lg={9}>
-                            <MultiCityList filters={filters} />
-                        </Col>
-                    </Row>
-                </Container>
-            )}
 
-            {/* Round Trip Flights */}
-            {tripType === 'roundtrip' && (
-                <Container className=" relative">
-                    <Row>
-                        <Col className='d-none d-lg-block'>
-                        <FlightSearchBar />
+        return (
+            <div className=''>
+                <div className='relative'>
+                    {tripType === 'oneway' && (
+                        <Container className="">
+                            <Row>
+                                <Col className='d-none d-lg-block'>
+                                    <FlightSearchBar />
+                                </Col>
+                            </Row>
+                            <Row className="mt-4 ">
+                                <Col lg={3} className='d-none d-lg-block'>
+                                    <FlightSidebar className="" filters={filters} setFilters={setFilters} />
+                                </Col>
+                                <Col lg={9}>
+                                    <FlightList filters={filters} />
+                                </Col>
+                            </Row>
+                        </Container>
+                    )}
+                    {tripType === 'multicity' && (
+                        <Container className="">
+                            <Row>
+                                <Col className='d-none d-lg-block'>
+                                    <FlightSearchBar />
+                                </Col>
+                            </Row>
+                            <Row className="mt-4">
+                                <Col lg={3} className='d-none d-lg-block'>
+                                    <FlightSidebar className="d-none d-lg-block" filters={filters} setFilters={setFilters} />
+                                </Col>
+                                <Col lg={9}>
+                                    <MultiCityList filters={filters} />
+                                </Col>
+                            </Row>
+                        </Container>
+                    )}
 
-                            {/* <RoundsearchBar /> */}
-                        </Col>
-                    </Row>
-                    <Row className="mt-4">
-                        <Col lg={3} className='d-none d-lg-block'>
-                        <FlightSidebar className="d-none d-lg-block" filters={filters} setFilters={setFilters} />
+                    {/* Round Trip Flights */}
+                    {tripType === 'roundtrip' && (
+                        <Container className=" relative">
+                            <Row>
+                                <Col className='d-none d-lg-block'>
+                                    <FlightSearchBar />
 
-                        </Col>
-                        <Col lg={9}>
-                            <RoundTripCardList filters={filters} />
-                        </Col>
-                    </Row>
-                </Container>
-            )}
-            <RoundTripBookingBar />
-        </div>
-       </div>
-    );
+                                    {/* <RoundsearchBar /> */}
+                                </Col>
+                            </Row>
+                            <Row className="mt-4">
+                                <Col lg={3} className='d-none d-lg-block'>
+                                    <FlightSidebar className="d-none d-lg-block" roundTripFlights={roundTripFlights} filters={filters} setFilters={setFilters} />
+
+                                </Col>
+                                <Col lg={9}>
+                                    <RoundTripCardList filters={filters} onFlightsLoad={handleFlightsLoad} />
+                                </Col>
+                            </Row>
+                        </Container>
+                    )}
+                    <RoundTripBookingBar />
+                </div>
+            </div>
+        );
 };
 
 export default FlightResultsPage;

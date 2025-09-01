@@ -7,8 +7,9 @@ import countries from './countries.json';
 import { fetchSSR } from '../APIS/FlightApi/FlightApi';
 import moment from 'moment';
 import FlightLoader from '../FlightLoader/FlightLoader';
+import { validatePassenger, capitalizeName, isValidMobile, isValidEmail, isValidName, isValidAddress } from './validation.js';
 
-const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChange }) => {
+const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChange }) => {
     // Resolve current fareConfirm for oneway/roundtrip
     const tripType = localStorage.getItem('tripType') || 'oneway';
     let fareConfirm = fareConfirmData;
@@ -18,9 +19,6 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
 
     const navigate = useNavigate();
     const dispatch = useDispatch();
-
-    console.log('IsPriceChange',IsPriceChange)
-    // Read origin from selected flight
     let PassagerOrigin = null;
     try {
         if (tripType === 'oneway' || tripType === 'multicity') {
@@ -104,6 +102,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
         dispatch(updatePassenger({ type, index, field, value }));
 
     // Auto-gender mapper based on Title
+
     const inferGenderFromTitle = (title) => {
         if (!title) return '';
         const t = title.toLowerCase();
@@ -189,15 +188,15 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
             let ReturnSSR;
             if (summaryData?.return) {
                 ReturnSSR = await fetchSSR(ReturnSSRPayload);
-            console.log('ReturnSSR',ReturnSSR)
+                console.log('ReturnSSR', ReturnSSR)
 
             }
-            console.log('ReturnSSR1',ReturnSSR)
+            console.log('ReturnSSR1', ReturnSSR)
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
             navigate('/addons', {
                 state: {
                     SSR: res?.Result || [],
-                    ReturnSSR:ReturnSSR?.Result||null,
+                    ReturnSSR: ReturnSSR?.Result || null,
                     SelectedFare,
                     passengersData,
                     Faresummary
@@ -206,7 +205,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
         } catch (e) {
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
             navigate('/addons', {
-                state: { SSR: [], ReturnSSR:null, SelectedFare, passengersData, Faresummary }
+                state: { SSR: [], ReturnSSR: null, SelectedFare, passengersData, Faresummary }
             });
         } finally {
             setLoading(false);
@@ -241,6 +240,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
         const blockTitle =
             isAdult ? `Adult X ${paxCounts.ADT}` : isChild ? `Child X ${paxCounts.CHD}` : `Infant X ${paxCounts.INF}`;
         const rowTitle = isAdult ? `Adult${index + 1}` : isChild ? `Child${index + 1}` : `Infant${index + 1}`;
+
 
         return (
 
@@ -284,24 +284,55 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
                                 <Form.Control
                                     placeholder="First Name"
                                     value={p.FirstName || ''}
-                                    onChange={(e) => setField(type, index, 'FirstName', e.target.value)}
-                                    style={{ borderColor: p.FirstName ? '#ced4da' : '#dc3545' }}
+                                    onChange={(e) => {
+                                        const capitalizedName = capitalizeName(e.target.value);
+                                        setField(type, index, 'FirstName', capitalizedName);
+                                    }}
+                                    style={{
+                                        borderColor: isValidName(p.FirstName) && p.FirstName
+                                            ? '#28a745'
+                                            : p.FirstName
+                                                ? '#dc3545'
+                                                : '#ced4da'
+                                    }}
                                 />
-                                <ErrorText show={!p.FirstName} text="Please enter first name" />
+                                <ErrorText
+                                    show={p.FirstName && !isValidName(p.FirstName)}
+                                    text="Each word must start with capital letter"
+                                />
+                                <ErrorText
+                                    show={!p.FirstName}
+                                    text="Please enter first name"
+                                />
                             </Form.Group>
                         </Col>
 
-                        {/* Last Name */}
                         <Col md={3}>
                             <Form.Group>
                                 <Form.Label>Last Name</Form.Label>
                                 <Form.Control
                                     placeholder="Last Name"
                                     value={p.LastName || ''}
-                                    onChange={(e) => setField(type, index, 'LastName', e.target.value)}
-                                    style={{ borderColor: p.LastName ? '#ced4da' : '#dc3545' }}
+                                    onChange={(e) => {
+                                        const capitalizedName = capitalizeName(e.target.value);
+                                        setField(type, index, 'LastName', capitalizedName);
+                                    }}
+                                    style={{
+                                        borderColor: isValidName(p.LastName) && p.LastName
+                                            ? '#28a745'
+                                            : p.LastName
+                                                ? '#dc3545'
+                                                : '#ced4da'
+                                    }}
                                 />
-                                <ErrorText show={!p.LastName} text="Please enter last name" />
+                                <ErrorText
+                                    show={p.LastName && !isValidName(p.LastName)}
+                                    text="Each word must start with capital letter"
+                                />
+                                <ErrorText
+                                    show={!p.LastName}
+                                    text="Please enter last name"
+                                />
                             </Form.Group>
                         </Col>
 
@@ -337,13 +368,14 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
 
                         {/* Gender (now for all pax) */}
                         {showGender && (
-                            <Col md={3} >
+                            <Col md={3} className=' disabled ' >
                                 <Form.Group>
                                     <Form.Label>Gender</Form.Label>
                                     <Form.Select
                                         value={p.Gender || ''}
                                         onChange={(e) => setField(type, index, 'Gender', e.target.value)}
                                         style={{ borderColor: p.Gender ? '#ced4da' : '#dc3545' }}
+                                        disabled={true}
                                     >
                                         <option value="">Select</option>
                                         <option value="1">Male</option>
@@ -357,35 +389,72 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
                         {/* Lead-only Address */}
                         {showLeadAddress && (
                             <>
+                                {/* City */}
                                 <Col md={3}>
                                     <Form.Group>
                                         <Form.Label>City</Form.Label>
                                         <Form.Control
                                             value={p.City || ''}
-                                            onChange={(e) => setField(type, index, 'City', e.target.value)}
-                                            style={{ borderColor: p.City ? '#ced4da' : '#dc3545' }}
+                                            onChange={(e) => {
+                                                const capitalizedCity = e.target.value
+                                                    .split(' ')
+                                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                                    .join(' ');
+                                                setField(type, index, 'City', capitalizedCity);
+                                            }}
+                                            style={{
+                                                borderColor: p.City && p.City.trim()
+                                                    ? '#28a745'
+                                                    : p.City ? '#dc3545' : '#ced4da'
+                                            }}
+                                        />
+                                        <ErrorText
+                                            show={p.City && !p.City.trim()}
+                                            text="City cannot be empty"
                                         />
                                         <ErrorText show={!p.City} text="Please enter city" />
                                     </Form.Group>
                                 </Col>
 
+                                {/* Address Line 1 */}
                                 <Col md={3}>
                                     <Form.Group>
                                         <Form.Label>AddressLine1</Form.Label>
                                         <Form.Control
                                             value={p.AddressLine1 || ''}
-                                            onChange={(e) => setField(type, index, 'AddressLine1', e.target.value)}
+                                            onChange={(e) => {
+                                                const capitalizedAddress = e.target.value
+                                                    .split(' ')
+                                                    .map(word => {
+                                                        // Keep numbers as they are, capitalize only letters
+                                                        if (/^\d+$/.test(word)) {
+                                                            return word;
+                                                        }
+                                                        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                                                    })
+                                                    .join(' ');
+                                                setField(type, index, 'AddressLine1', capitalizedAddress);
+                                            }}
                                             maxLength={28}
-                                            style={{ borderColor: p.AddressLine1 ? '#ced4da' : '#dc3545' }}
+                                            style={{
+                                                borderColor: p.AddressLine1 && p.AddressLine1.trim()
+                                                    ? '#28a745'
+                                                    : p.AddressLine1 ? '#dc3545' : '#ced4da'
+                                            }}
+                                        />
+                                        <ErrorText
+                                            show={p.AddressLine1 && !p.AddressLine1.trim()}
+                                            text="Address cannot be empty"
                                         />
                                         <ErrorText show={!p.AddressLine1} text="Please enter address" />
                                     </Form.Group>
                                 </Col>
+
                             </>
                         )}
 
                         {/* Lead-only Contact */}
-                        {showLeadContact && (
+                        {/* {showLeadContact && (
                             <>
                                 <Col md={3}>
                                     <Form.Group>
@@ -402,7 +471,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
 
                                 <Col md={3}>
                                     <Form.Group>
-                                        <Form.Label>Email</Form.Label>
+                                        <Form.Label>Email 1</Form.Label>
                                         <Form.Control
                                             type="email"
                                             value={p.Email || ''}
@@ -413,7 +482,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
                                     </Form.Group>
                                 </Col>
                             </>
-                        )}
+                        )} */}
 
                         {/* Optional global PAN/PASSPORT */}
                         {flags.pan && (
@@ -520,6 +589,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
                     </Card>
 
                     {/* Contact Details (informative UI) */}
+                    {/* Contact Details */}
                     <Card className="mb-4 shadow-sm border-0">
                         <Card.Body>
                             <h5 className="fw-bold mb-2">Contact Details</h5>
@@ -535,16 +605,74 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary,IsPriceChang
                                     </Form.Select>
                                 </Col>
                                 <Col md={4}>
-                                    <Form.Control placeholder="Mobile Number" />
-                                    {/* <div className="text-danger small mt-1">Please enter mobile number</div> */}
+                                    <Form.Group>
+                                        {/* <Form.Label>Mobile Number</Form.Label> */}
+                                        <Form.Control
+                                            type="tel"
+                                            placeholder="Mobile Number"
+                                            value={passengersData[0]?.ContactNo || ''}
+                                            onChange={(e) => {
+                                                const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                                                const limitedValue = numericValue.slice(0, 10);
+                                                setField('ADT', 0, 'ContactNo', limitedValue);
+                                            }}
+                                            onInput={(e) => {
+                                                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                                            }}
+                                            maxLength="10"
+                                            style={{
+                                                borderColor: isValidMobile(passengersData[0]?.ContactNo) && passengersData[0]?.ContactNo
+                                                    ? '#28a745'
+                                                    : passengersData[0]?.ContactNo
+                                                        ? '#dc3545'
+                                                        : '#ced4da'
+                                            }}
+                                        />
+                                        <ErrorText
+                                            show={passengersData[0]?.ContactNo && !isValidMobile(passengersData[0]?.ContactNo)}
+                                            text="Mobile number must be exactly 10 digits"
+                                        />
+                                        <ErrorText
+                                            show={!passengersData[0]?.ContactNo}
+                                            text="Please enter contact number"
+                                        />
+                                    </Form.Group>
                                 </Col>
+
                                 <Col md={5}>
-                                    <Form.Control placeholder="Email" />
-                                    {/* <div className="text-danger small mt-1">Please enter email</div> */}
+                                    <Form.Group>
+                                        {/* <Form.Label>Email</Form.Label> */}
+                                        <Form.Control
+                                            type="email"
+                                            placeholder="Email"
+                                            value={passengersData[0]?.Email || ''}
+                                            onChange={(e) => {
+                                                const email = e.target.value.toLowerCase(); // Auto convert to lowercase
+                                                setField('ADT', 0, 'Email', email);
+                                            }}
+                                            style={{
+                                                borderColor: isValidEmail(passengersData[0]?.Email) && passengersData[0]?.Email
+                                                    ? '#28a745'
+                                                    : passengersData[0]?.Email
+                                                        ? '#dc3545'
+                                                        : '#ced4da'
+                                            }}
+                                        />
+                                        <ErrorText
+                                            show={!isValidEmail(passengersData[0]?.Email) && passengersData[0]?.Email}
+                                            text="Please enter a valid email address in lowercase"
+                                        />
+                                        <ErrorText
+                                            show={!passengersData[0]?.Email}
+                                            text="Please enter email"
+                                        />
+                                    </Form.Group>
                                 </Col>
+
                             </Row>
                         </Card.Body>
                     </Card>
+
 
                     {/* GST Card (Optional) */}
                     {flags.gstAllowed && (

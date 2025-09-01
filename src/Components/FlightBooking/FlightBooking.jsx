@@ -16,11 +16,11 @@ import AddCityButton from './MultiCity/AddCityButton';
 import SecondDateSelecter from './MultiCity/SecondDateSelecter';
 import AddMorecity from './MultiCity/AddMorecity';
 import AddMorecitydatapick from './MultiCity/AddMorecitydatapick';
-
+import { LocationContext } from '../Context/LocationContext';
 
 const FlightBooking = () => {
     const [tripType, setTripType] = useState('oneway');
-
+    const { locationData, setLocationData } = useContext(LocationContext);
     const [toCityFromCitySegment, setToCityFromCitySegment] = useState('');
     const [fareData, setFareData] = useState({});
     const [segments, setSegments] = useState([])
@@ -39,12 +39,8 @@ const FlightBooking = () => {
     //     const updatedComponents = cityComponents.filter((city) => city.id !== id);
     //     setCityComponents(updatedComponents);
     // };
-
-  
-    
     const handleFareDataChange = (data) => {
         setFareData(data);
-        console.log('dddddddd',data)
     };
 
     useEffect(() => {
@@ -54,31 +50,48 @@ const FlightBooking = () => {
         if (CheckData) {
             if (CheckData[0]?.from === "") {
                 setSegments([
-                    { id: 0, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
-                    { id: 1, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
+                    { id: 0, from: "Delhi", to: "Mumbai", Origin: "DEL", Destination: "BOM", PreferredTime: new Date() },
+                    // { id: 1, Origin: "BOM", Destination: "DEL", PreferredTime: new Date(new Date().setDate(new Date().getDate() + 1)) },
                 ]);
             } else {
                 setSegments(CheckData);
             }
         } else {
             setSegments([
-                { id: 0, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
-                { id: 1, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() },
+                { id: 0, from: "Delhi", to: "Mumbai", Origin: "DEL", Destination: "BOM", PreferredTime: new Date() },
+                // { id: 1, Origin: "BOM", Destination: "DEL", PreferredTime: new Date(new Date().setDate(new Date().getDate() + 1)) },
             ]);
         }
     }, []);
 
     useEffect(() => {
     }, [segments]);
-    const handleDateChange = (id, date) => {
-        const formattedDate = moment(date).format("YYYY-MM-DD") + "T00:00:00";
-        setSegments((prev) =>
-            prev.map((seg) =>
-                seg.id === id ? { ...seg, PreferredTime: formattedDate } : seg
-            )
-        );
+    const handleDateChange = (id, selectedDate) => {
+        setSegments((prev) => {
+            let newSegments = [...prev];
+            const changedIndex = newSegments.findIndex((seg) => seg.id === id);
+            if (changedIndex === -1) return prev;
+            newSegments[changedIndex] = {
+                ...newSegments[changedIndex],
+                PreferredTime: formatDateToYMD(new Date(selectedDate)), // yyyy-mm-dd
+            };
+
+            for (let i = changedIndex + 1; i < newSegments.length; i++) {
+                let nextDate = new Date(selectedDate); // hamesha original date se naya object
+                nextDate.setDate(nextDate.getDate() + (i - changedIndex)); // har row ek din aage
+                newSegments[i] = {
+                    ...newSegments[i],
+                    PreferredTime: formatDateToYMD(nextDate), // yyyy-mm-dd
+                };
+            }
+
+            return newSegments;
+        });
     };
 
+    function formatDateToYMD(date) {
+        return date.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    }
     const handleCityChange = (id, city) => {
         setSegments((prev) =>
             prev.map((seg) => {
@@ -101,29 +114,35 @@ const FlightBooking = () => {
             })
         );
     };
-
-
-    // Add another row
     const addSegment = () => {
         const newId = segments.length > 0 ? Math.max(...segments.map(s => s.id)) + 1 : 0;
+        const lastSeg = segments[segments.length - 1];
+        let nextDate = new Date();
+        if (lastSeg?.PreferredTime) {
+            const lastDate = new Date(lastSeg.PreferredTime);
+            lastDate.setDate(lastDate.getDate() + 1);
+            nextDate = lastDate;
+        }
+
         setSegments((prev) => [
             ...prev,
-            { id: newId, from: "", to: "", Origin: "", Destination: "", PreferredTime: new Date() }
+            {
+                id: newId,
+                from: lastSeg.to,
+                to: lastSeg.from,
+                Origin: lastSeg?.Destination,          // 👈 last ke "to" ko new ka "from"
+                Destination: lastSeg?.Origin,          // 👈 last ke "from" ko new ka "to"
+                PreferredTime: nextDate           // 👈 last date +1
+            }
         ]);
-    };
 
-    // Remove row
+    };
     const removeSegment = (id) => {
         setSegments((prev) => prev.filter((seg) => seg.id !== id));
     };
-
-    // setLocationData(segments)
     if (tripType == 'multicity') {
         localStorage.setItem('locationData', JSON.stringify(segments))
-
     }
-    // }
-    // }
     return (
         <div className="booking-container pt-0 mt-0">
             <Container>
@@ -168,13 +187,15 @@ const FlightBooking = () => {
                             <Row className="mt-2" key={seg.id}>
                                 <Col xs={12} sm={12} md={6} lg={5} className="mb-2">
                                     <CitySegment id={index}
+                                        from={seg.from}
+                                        to={seg.to}
                                         onSelect={(city) => handleCityChange(seg.id, city)}
                                         onToCityChange={setToCityFromCitySegment}
                                     />
                                 </Col>
 
                                 <Col xs={12} sm={6} md={3} lg={3} className="mb-2">
-                                    <DateSelect index={index}
+                                    <DateSelect index={index} DateDefault={seg.PreferredTime}
                                         onDateChange={(date) => handleDateChange(seg.id, date)}
                                     />
                                 </Col>

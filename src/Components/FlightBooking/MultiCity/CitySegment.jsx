@@ -15,7 +15,7 @@ const cityList = [
     { city: 'Goa In', airport: 'Dabolim Arpt', code: 'GOI', flag: '🇮🇳' },
 ];
 
-const CitySegment = ({ onToCityChange, onSelect, id }) => {
+const CitySegment = ({ onToCityChange,from, to, onSelect, id }) => {
     const { locationData, setLocationData } = useContext(LocationContext);
 
     const [showFromDropdown, setShowFromDropdown] = useState(false);
@@ -28,8 +28,8 @@ const CitySegment = ({ onToCityChange, onSelect, id }) => {
     const [toAirportData, setToAirportData] = useState(null);
     
     // Local input values - separate from locationData
-    const [fromInputValue, setFromInputValue] = useState(locationData.fromCity || 'Delhi');
-    const [toInputValue, setToInputValue] = useState(locationData.toCity || 'Mumbai');
+    const [fromInputValue, setFromInputValue] = useState(from || 'Delhi');
+    const [toInputValue, setToInputValue] = useState(to || 'Mumbai');
     
     // Local airport data for display
     const [fromAirportInfo, setFromAirportInfo] = useState({ 

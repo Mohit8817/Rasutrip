@@ -33,14 +33,13 @@ const SearchButton = ({ type, }) => {
       toCityId,
       totalPrice,
     } = locationData;
-
-    console.log('locationDatakkkkk', locationData)
-
     switch (type) {
       case 'flight': {
         const searchParams = new URLSearchParams();
 
-        // Build common state object
+    console.log('locationDatakkkkk', locationData)
+
+
         let state = {};
         if (locationData.tripType === 'multicity' && locationData.AirSegments) {
           state = {
@@ -70,7 +69,6 @@ const SearchButton = ({ type, }) => {
         // Helper function to handle navigation
         const goToResults = () => {
           navigate('/flight-results', { state });
-            window.location.reload();
         };
 
         if (location.pathname === '/flight-results') {

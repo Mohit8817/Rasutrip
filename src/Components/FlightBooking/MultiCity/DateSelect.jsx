@@ -3,10 +3,12 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import './MultiCity.css'; // Your custom styles
+import { now } from "moment";
 
-const DateSelect = ({ onDateChange, index }) => {
+const DateSelect = ({ onDateChange,DateDefault ,value }) => {
 
-    const [travelDate, setTravelDate] = useState(new Date());
+    
+    const [travelDate, setTravelDate] = useState( DateDefault ? new Date(DateDefault) : new Date());
     const [showCalendar, setShowCalendar] = useState(false);
 
 
@@ -50,6 +52,7 @@ const DateSelect = ({ onDateChange, index }) => {
                         <div className="multi-city-calendar-popup position-absolute bg-white mt-2 shadow rounded">
                             <DayPicker
                                 mode="single"
+                                value={value}
                                 selected={travelDate}
                                 onSelect={handleSelect}
                                 disabled={disabledDays}
