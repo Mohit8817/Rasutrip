@@ -184,10 +184,13 @@ const BusDetailsCard = ({ bus }) => {
                         lg={2}
                         className="bg-gray-50 border-t lg:border-t-0 lg:border-l border-gray-200 flex items-center justify-center p-2"
                     >
+                        {/* // Updated pricing section in BusDetailsCard.js - around line 150-180 */}
+
                         {/* Desktop Price Box */}
                         <div className="hidden md:block text-center w-full">
                             <div className="text-muted text-sm">Starting From</div>
                             <div className="fs-5 fw-bold">{bus.price}</div>
+                            {/* Show base price info */}
                             <Button
                                 className="bg-red-600 hover:bg-red-700 text-white mt-2 w-full lg:w-auto btn-red"
                                 variant="danger"
