@@ -9,6 +9,7 @@ const TripTypeSelector = ({ tripType, setTripType }) => {
         setTripType(trip)
     })
 
+    let type2;
     const handleTripTypeChange = (type) => { 
         localStorage.removeItem('fareSummery');
         localStorage.removeItem('searchToken');
@@ -17,9 +18,9 @@ const TripTypeSelector = ({ tripType, setTripType }) => {
         localStorage.removeItem('SearchedFlights');
         localStorage.setItem('tripType',type)
         setTripType(type);
-        setLocationData(prev => ({ ...prev, tripType: type }));
+       type2= setLocationData(prev => ({ ...prev, tripType: type }));
     };
-
+    
     return (
         <div className="trip-type-container">
             <div className="trip-type-tab-wrapper">

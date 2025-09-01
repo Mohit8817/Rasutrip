@@ -12,7 +12,7 @@ import { fetchFlightData } from '../APIS/FlightApi/FlightApi';
 import FlightLoader from '../FlightLoader/FlightLoader';
 import { async } from 'q';
 
-const RoundTripCardList = ({ filters,onFlightsLoad  }) => {
+const RoundTripCardList = ({ filters, onFlightsLoad }) => {
   const dispatch = useDispatch()
   const { state } = useLocation();
   const [showdetailsBar, setShowdetailsBar] = useState(false)
@@ -49,6 +49,25 @@ const RoundTripCardList = ({ filters,onFlightsLoad  }) => {
     localStorage.setItem('fareSummery', JSON.stringify(updatedData));
   };
 
+
+  useEffect(() => {
+    const existingData = JSON.parse(localStorage.getItem('fareSummery')) || {};
+    let shouldUpdate = false;
+    const updatedData = { ...existingData };
+    if (selectedOnwardFare && !existingData.onward) {
+      updatedData.onward = selectedOnwardFare;
+      shouldUpdate = true;
+    }
+    if (selectedReturnFare && !existingData.return) {
+      updatedData.return = selectedReturnFare;
+      shouldUpdate = true;
+    }
+    if (shouldUpdate) {
+      localStorage.setItem('fareSummery', JSON.stringify(updatedData));
+    }
+  }, [selectedOnwardFare, selectedReturnFare]);
+
+
   const handleOnwardSelect = async (flight, fare) => {
     updateFareSummery(fare, 'onward');
     dispatch(setSelectedOnwardFare(fare));
@@ -60,10 +79,11 @@ const RoundTripCardList = ({ filters,onFlightsLoad  }) => {
     dispatch(setSelectedReturnFare(fare));
     dispatch(setReturnFlight(flight));
   };
- 
+
+
 
   useEffect(() => {
-     const getFlights = async () => {
+    const getFlights = async () => {
       try {
         const IP = localStorage.getItem('UserIp');
         const requestPayload = {
@@ -108,20 +128,20 @@ const RoundTripCardList = ({ filters,onFlightsLoad  }) => {
         setLoading(false);
       }
     };
-    const isRes =localStorage.getItem('SearchedFlights');
+    const isRes = localStorage.getItem('SearchedFlights');
     const isData = JSON.parse(isRes)
-   
 
-    if(isData=='[]' || !isData ){
-       getFlights();
-      
-       
-    }else{ 
+
+    if (isData == '[]' || !isData) {
+      getFlights();
+
+
+    } else {
       setLoading(false);
 
-       setFlights(isData || []);
+      setFlights(isData || []);
     }
-    
+
   }, []);
 
   // Default selection useEffect - flights load होने के बाद automatically पहला fare select करेगा

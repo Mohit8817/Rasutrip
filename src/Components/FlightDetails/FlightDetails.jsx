@@ -67,18 +67,18 @@ const FlightDetails = () => {
     let finalFareData = null;
     if (journeyType === 'roundtrip') {
         finalFareData = selectedFlights;
-        finalFareId = SelectedFare?.FareId;
+        finalFareId =  SelectedFare.onward? SelectedFare?.onward?.FareId:SelectedFare?.FareId;
     } else if (journeyType == 'oneway') {
         finalFareData = SelectedFare;
-        finalFareId = FareData?.FareId;
+        finalFareId = SelectedFare?.FareId;
     } else if (journeyType === 'multicity') {
         finalFareData = selectedFlights;
-        finalFareId = selectedFlights?.FareId;
+        finalFareId = SelectedFare?.FareId;
     } else {
         console.warn('Unknown journey type:', journeyType);
     }
 
-    const { fareRules, loading, error } = useFareRules(SelectedFare.FareId);
+    const { fareRules, loading, error } = useFareRules(finalFareId);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [isAuth, setIsAuth] = useState(false);
 

@@ -44,6 +44,7 @@ const FlightBooking = () => {
     };
 
     useEffect(() => {
+       
         const resKey = localStorage.getItem('locationData');
         const CheckData = JSON.parse(resKey);
 

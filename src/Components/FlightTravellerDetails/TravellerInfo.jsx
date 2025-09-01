@@ -182,16 +182,12 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
     const handleContinue = async () => {
         setLoading(true);
         try {
-            console.log('SSRPayload', SSRPayload);
-
             const res = await fetchSSR(SSRPayload);
             let ReturnSSR;
             if (summaryData?.return) {
                 ReturnSSR = await fetchSSR(ReturnSSRPayload);
-                console.log('ReturnSSR', ReturnSSR)
 
             }
-            console.log('ReturnSSR1', ReturnSSR)
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
             navigate('/addons', {
                 state: {
@@ -368,7 +364,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
 
                         {/* Gender (now for all pax) */}
                         {showGender && (
-                            <Col md={3} className=' disabled ' >
+                            <Col md={3} className=' disabled hidden ' >
                                 <Form.Group>
                                     <Form.Label>Gender</Form.Label>
                                     <Form.Select
@@ -574,7 +570,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
             {/* Traveller Details */}
             {loading ? (
 
-                <FlightLoader />
+                <FlightLoader subMessage="Loading Traveller Details"  />
             ) : (
 
                 <>

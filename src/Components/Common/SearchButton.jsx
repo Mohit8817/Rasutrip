@@ -37,8 +37,13 @@ const SearchButton = ({ type, }) => {
       case 'flight': {
         const searchParams = new URLSearchParams();
 
-    console.log('locationDatakkkkk', locationData)
-
+        let StorageTripType=null
+        if (!localStorage.getItem('tripType')) {
+          StorageTripType=tripType
+          localStorage.setItem('tripType', tripType);
+        }else{
+         StorageTripType= localStorage.getItem('tripType')
+        }
 
         let state = {};
         if (locationData.tripType === 'multicity' && locationData.AirSegments) {
@@ -62,7 +67,7 @@ const SearchButton = ({ type, }) => {
             passengers,
             cabinClass,
             directflight,
-            tripType: tripType || 'oneway'
+            tripType: StorageTripType || 'oneway'
           };
         }
 

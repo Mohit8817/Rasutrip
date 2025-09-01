@@ -40,7 +40,8 @@ const RoundTripBookingBar = () => {
           onward: selectedOnward,
           return: selectedReturn,
         },
-        journeyType: 'roundtrip' // Added to identify trip type
+        journeyType: 'roundtrip',
+        fares:selectedOnwardFare
       },
     });
   };

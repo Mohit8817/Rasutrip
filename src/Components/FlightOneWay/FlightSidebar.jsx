@@ -8,20 +8,19 @@ const getSidebarFilters = (allFlights) => {
     const prices = [];
     const airlineSet = new Set();
     let maxStops = 0;
-   const  journeyType =localStorage.getItem('tripType')
-    if(allFlights){
+    const journeyType = localStorage.getItem('tripType')
+    if (allFlights) {
 
-        if(journeyType=='oneway' || journeyType=='multicity'){
-            allFlights=allFlights
-
-        }
-        else{
-            allFlights=allFlights[0]?allFlights[0]:allFlights
+        if (journeyType == 'oneway' || journeyType == 'multicity') {
+            allFlights = allFlights
 
         }
-        
+        else {
+            allFlights = allFlights[0] ? allFlights[0] : allFlights
+
+        }
+
     }
-    
     allFlights?.forEach((flight) => {
         prices.push(flight?.FareList?.[0].Fare?.BaseFare);
         flight?.Segments?.forEach((segmentGroup) => {
@@ -47,9 +46,9 @@ const getSidebarFilters = (allFlights) => {
 
 
 
-const FlightSidebar = ({ filters=[], setFilters=[],roundTripFlights=null}) => {
+const FlightSidebar = ({ filters = [], setFilters = [], roundTripFlights = null }) => {
     const res = localStorage.getItem('SearchedFlights')
-    const allFlight = roundTripFlights?roundTripFlights:JSON.parse(res)
+    const allFlight = roundTripFlights ? roundTripFlights : JSON.parse(res)
     const filters1 = getSidebarFilters(allFlight);
     const [price, setPrice] = useState(filters1?.minPrice || 1000);
     useEffect(() => {
@@ -57,14 +56,14 @@ const FlightSidebar = ({ filters=[], setFilters=[],roundTripFlights=null}) => {
             setPrice(filters.priceRange[0]);
         }
     }, [filters.priceRange]);
-    
+
     const timeSlots = [
         { label: '12AM-6AM', icon: 'bi-sunrise', hours: [0, 6] },
         { label: '6AM-12PM', icon: 'bi-brightness-high', hours: [6, 12] },
         { label: '12PM-6PM', icon: 'bi-sunset', hours: [12, 18] },
         { label: '6PM-12AM', icon: 'bi-moon', hours: [18, 24] },
     ];
- 
+
     const renderTimeButtons = (selectedTimeRange, name) => (
         <Row className="g-2 mb-3">
             {timeSlots.map((slot, index) => {
@@ -162,22 +161,22 @@ const FlightSidebar = ({ filters=[], setFilters=[],roundTripFlights=null}) => {
                     value={price}
                     onChange={handlePriceChange}
                 />
-               
+
 
                 <div className="d-flex justify-content-between">
-  <div className="filter_label">
-    ₹{price === 0
-      ? (filters1.minPrice && isFinite(filters1.minPrice)
-          ? filters1.minPrice
-          : 1000)
-      : price}
-  </div>
-  <div className="filter_label">
-    ₹{filters1.maxPrice && isFinite(filters1.maxPrice)
-      ? filters1.maxPrice
-      : 10000}
-  </div>
-</div>
+                    <div className="filter_label">
+                        ₹{price === 0
+                            ? (filters1.minPrice && isFinite(filters1.minPrice)
+                                ? filters1.minPrice
+                                : 1000)
+                            : price}
+                    </div>
+                    <div className="filter_label">
+                        ₹{filters1.maxPrice && isFinite(filters1.maxPrice)
+                            ? filters1.maxPrice
+                            : 10000}
+                    </div>
+                </div>
 
             </div>
 

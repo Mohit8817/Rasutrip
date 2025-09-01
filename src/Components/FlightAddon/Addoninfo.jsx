@@ -17,13 +17,8 @@ const Addoninfo = () => {
   const dispatch = useDispatch();
   const [passengersData, setPassengersData] = useState([]);
   const { SelectedFare, SSR, Faresummary, ReturnSSR } = location?.state || {};
-
   const mealOptions = Array.isArray(SSR?.Meal?.[0]) ? SSR?.Meal?.[0] : SSR?.Meal;
   const ReturnMealOptions = Array.isArray(ReturnSSR?.Meal?.[0]) ? ReturnSSR?.Meal?.[0] : ReturnSSR?.Meal;
-
-  console.log('mealOptions', SSR);
-  console.log('ReturnMeal', ReturnSSR);
-
   const [selectedSeat, setSelectedSeat] = React.useState(null);
   const [Passengers, setPassengers] = React.useState(null);
   const [activeTab, setActiveTab] = useState('onward'); // Tab state
@@ -124,8 +119,6 @@ const Addoninfo = () => {
     const updatedSelections = [...passengerSelections];
     updatedSelections[index].seat = selected;
     setPassengerSelections(updatedSelections);
-
-    console.log('check fare', passengerSelections);
     dispatch(updatePassengerAddons({
       passengerId: { index, type: passengersData[index].type },
       seat: selected
@@ -201,7 +194,6 @@ const Addoninfo = () => {
     return selection.meal && selection.baggage && selection.seat;
   });
 
-  console.log('isRoundtrip',isRoundtrip)
   const allReturnSelectionsComplete = !isRoundtrip || returnPassengerSelections.every((selection, index) => {
     if (passengersData[index]?.type === 'INF') return true;
     return selection && selection.meal && selection.baggage && selection.seat;
@@ -416,7 +408,7 @@ const Addoninfo = () => {
                 )}
 
                 <div className="text-start mt-4 mb-4">
-                  <Button
+                  <Button type='button'
                     variant="primary"
                     className="btn-red"
                     onClick={handleContinue}

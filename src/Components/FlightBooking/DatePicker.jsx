@@ -12,10 +12,9 @@ const DatePicker = ({ tripType, setTripType }) => {
     const { setLocationData } = useContext(LocationContext);
     const departRef = useRef(null);
     const returnRef = useRef(null);
-
     const formatDate = (date, key=null) => {
         if (key == 'roundtrip') {
-            localStorage.setItem('tripType', 'roundtrip')
+            localStorage.setItem('tripType', tripType?tripType:'oneway')
         }
         return date?.toLocaleDateString("en-GB", {
             year: "numeric",
