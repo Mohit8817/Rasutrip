@@ -16,7 +16,7 @@ const getSidebarFilters = (allFlights) => {
 
         }
         else{
-            allFlights=allFlights[0]
+            allFlights=allFlights[0]?allFlights[0]:allFlights
 
         }
         
