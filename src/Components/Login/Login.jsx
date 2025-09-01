@@ -75,30 +75,14 @@ const Login = () => {
               <p>
                 {getDisplayName()}
               </p>
-              {/* {isLoggedIn && userType && (
-                <span className={`small text-capitalize ${isAgent() ? 'text-primary' : 'text-success'}`}>
-                  ({getUserTypeDisplay()})
-                </span>
-              )} */}
+
             </div>
           </Dropdown.Toggle>
 
           <Dropdown.Menu>
             {isLoggedIn ? (
               <>
-                {/* <Dropdown.Header>
-                  <div className="text-center">
-                    <strong>{getUserDisplayName()}</strong>
-                    <br />
-                    <small className="text-muted">
-                      {getUserMobile()}
-                    </small>
-                    <br />
-                    <small className={`badge ${isAgent() ? 'bg-primary' : 'bg-success'}`}>
-                      {getUserTypeDisplay()}
-                    </small>
-                  </div>
-                </Dropdown.Header> */}
+
                 <Dropdown.Divider />
 
                 <Dropdown.Item onClick={() => navigate('/dashboard')}>
@@ -115,21 +99,21 @@ const Login = () => {
               </>
             ) : (
               <>
-
-
                 <Dropdown.Item onClick={() => handleSelect('customer')}>
-                  <BsPersonCircle size={20} className="me-2" />
                   Customer Login
-
                 </Dropdown.Item>
 
                 <Dropdown.Divider />
 
-                <Dropdown.Item onClick={() => handleSelect('agent')}>
-                  <BsPersonBadge size={20} className="me-2" />
+                {/* Agent Login - Hidden on mobile, visible on desktop */}
+                <Dropdown.Item
+                  onClick={() => handleSelect('agent')}
+                  className="d-none d-md-block"
+                >
                   Agent Login
-
                 </Dropdown.Item>
+
+
               </>
             )}
           </Dropdown.Menu>

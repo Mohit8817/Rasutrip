@@ -41,7 +41,7 @@ import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import UserDashboard from './Components/Login/Dashboard/pages/UserDashboard';
+import Dashboard from './Components/Login/Dashboard/pages/Dashboard';
 import BlogListPage from './Pages/Blog/BlogListPage';
 import BlogDetail from './Pages/Blog/BlogDetail';
 
@@ -87,7 +87,7 @@ function App() {
         <Route path="/set-mpin" element={<SetResetMPIN />} />
 
         {/* user and agent dashboard */}
-        <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
 
 
         {/* Dashboard */}
@@ -113,14 +113,14 @@ function App() {
       <Footer />
 
       {/* Fixed WhatsApp Icon */}
-    <a
-  href="https://wa.me/919266424809"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="fixed bottom-20 md:bottom-5 right-5 bg-green-800 text-white p-3 rounded-full shadow-lg hover:bg-green-600 transition duration-400 z-50"
->
-  <FaWhatsapp size={30} />
-</a>
+      <a
+        href="https://wa.me/919266424809"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-20 md:bottom-5 right-5 bg-green-800 text-white p-3 rounded-full shadow-lg hover:bg-green-600 transition duration-400 z-50"
+      >
+        <FaWhatsapp size={30} />
+      </a>
 
       {/* </Router> */}
       <ToastContainer position="top-right" autoClose={3000} />

@@ -583,7 +583,7 @@ const Footer = () => {
 
                             <div className="social-links mb-4 mx-1">
                                 <a
-                                    href="https://facebook.com/rasutrip"
+                                    href="https://www.facebook.com/people/RasuTrip-Flight-Bus-Hotel-Booking-Platform/61579934815097/#"
                                     className="social-link me-2"
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -592,7 +592,7 @@ const Footer = () => {
                                     <FaFacebookF />
                                 </a>
                                 <a
-                                    href="https://instagram.com/rasutrip"
+                                    href="https://www.instagram.com/rasutrip/"
                                     className="social-link me-2"
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -601,7 +601,7 @@ const Footer = () => {
                                     <FaInstagram />
                                 </a>
                                 <a
-                                    href="https://linkedin.com/company/rasutrip"
+                                    href="https://www.linkedin.com/company/rasutrip-websoft-technologies-llp/?viewAsMember=true"
                                     className="social-link me-2"
                                     target="_blank"
                                     rel="noopener noreferrer"

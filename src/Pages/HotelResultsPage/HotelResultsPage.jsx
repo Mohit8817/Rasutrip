@@ -127,6 +127,8 @@ const HotelResultsPage = () => {
           description: item.HotelDescription || "",
           resultIndex: item.ResultIndex,
           SearchTokenId,
+          rasutripCommissionPercentage: item.Price?.rasutripCommissionPercentage || "",
+          originalPriceData: item.Price,
         }));
 
         setMasterHotelList(formattedHotels);

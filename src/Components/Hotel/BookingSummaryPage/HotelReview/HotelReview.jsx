@@ -25,7 +25,7 @@ const HotelReview = () => {
                     </Col>
                     <Col lg={3} className='mt-4'>
                         <FareSummaryCard priceDetails={priceDetails} />
-                        <HotelPromoCodeCard />
+                
                     </Col>
                 </Row>
             </Container>

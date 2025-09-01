@@ -8,6 +8,8 @@ const HotelServices = {
   hotelInfo: `${baseURL}/hotelservice/gethotelinfo`,
   roomInfo: `${baseURL}/hotelservice/getroominfo`,
   blockRoom: `${baseURL}/hotelservice/blockroom`,
+  applyCoupon: `${baseURL}/airservice/apply-coupon`,
+  specialOffers: `${baseURL}/user/special-offer`,
   createOrder: `${baseURL}/hotelservice/create-order`,
   validate: `${baseURL}/hotelservice/validate`,
   book: `${baseURL}/hotelservice/book`,
@@ -18,15 +20,20 @@ const HotelServices = {
 
 // Helper function to get auth token
 const getAuthToken = () => {
-  return localStorage.getItem('token') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+  return localStorage.getItem('token') ||
+    localStorage.getItem('authToken') ||
+    sessionStorage.getItem('authToken') ||
+    localStorage.getItem('userToken') ||
+    sessionStorage.getItem('token');
 };
 
-// Helper function to create auth headers
+// ✅ Updated createAuthHeaders with token validation
 const createAuthHeaders = () => {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error('Authentication token not found. Please login again.');
+  if (!validateToken()) {
+    throw new Error('Authentication token is missing or expired. Please login again.');
   }
+
+  const token = getAuthToken();
   return {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
@@ -34,12 +41,12 @@ const createAuthHeaders = () => {
 };
 
 
-
 // ✅ Fetch hotel cities for autocomplete or destination suggestions
-export const fetchHotelCities = async (destination) => {
+export const fetchHotelCities = async (destination, countryCode = 'IN') => {
   try {
+    // ✅ Pass country code as parameter
     const res = await axios.get(
-      `${HotelServices.searchCities}?destination=${destination}`
+      `${HotelServices.searchCities}?destination=${destination}&country_code=${countryCode}`
     );
     return res.data?.results || [];
   } catch (err) {
@@ -82,6 +89,12 @@ export const fetchRoomInfo = async (payload) => {
 };
 
 
+
+
+
+
+
+// ✅ Block room before final booking
 export const blockRoom = async (payload) => {
   try {
     const res = await axios.post(`${baseURL}/hotelservice/blockroom`, payload);
@@ -93,7 +106,87 @@ export const blockRoom = async (payload) => {
 };
 
 
+export const applyCouponCode = async (couponCode) => {
+  try {
+    const headers = createAuthHeaders();
+    const payload = { code: couponCode };
 
+    const res = await axios.post(HotelServices.applyCoupon, payload, { headers });
+
+    return {
+      success: true,
+      data: res.data,
+      message: res.data?.message || "Coupon applied successfully!",
+    };
+  } catch (err) {
+    console.error("❌ Failed to apply coupon:", err.response?.data || err.message);
+
+    // Handle authentication errors specifically
+    if (err.response?.status === 401 || err.response?.data?.error === "Please authenticate.") {
+      return {
+        success: false,
+        data: null,
+        message: "Please login to apply coupon code",
+        authError: true
+      };
+    }
+
+    return {
+      success: false,
+      data: null,
+      message: err.response?.data?.message || "Invalid coupon code or coupon has expired",
+    };
+  }
+};
+
+// ✅ Fetch Special Offers with Authentication
+export const fetchSpecialOffers = async () => {
+  try {
+    const headers = createAuthHeaders();
+
+    console.log("🔄 Fetching special offers with token:", getAuthToken() ? "Token found" : "No token");
+
+    const res = await axios.get(HotelServices.specialOffers, { headers });
+
+    console.log("✅ Special offers response:", res.data);
+
+    // Handle different response structures
+    let offersData = [];
+
+    if (res.data?.offers) {
+      offersData = res.data.offers;
+    } else if (Array.isArray(res.data)) {
+      offersData = res.data;
+    } else if (res.data?.data) {
+      offersData = res.data.data;
+    }
+
+    return {
+      success: true,
+      data: { offers: offersData },
+      message: "Special offers loaded successfully"
+    };
+  } catch (err) {
+    console.error("❌ Failed to fetch offers:", err.response?.data || err.message);
+
+    // Handle authentication errors
+    if (err.response?.status === 401 || err.response?.data?.error === "Please authenticate.") {
+      console.error("🚫 Authentication required for special offers");
+      return {
+        success: false,
+        data: [],
+        message: "Please login to view special offers",
+        authError: true
+      };
+    }
+
+    return {
+      success: false,
+      data: [],
+      message: err.response?.data?.message || "Failed to load special offers",
+    };
+  }
+};
 
 export const createHotelOrder = async (amount) => {
   try {
@@ -144,23 +237,66 @@ export const validateHotelPayment = async (payload) => {
   }
 };
 
-// ✅ Final Hotel Booking API Call
+// ✅ Updated bookHotel function with consistent authentication
 export const bookHotel = async (bookingPayload) => {
   try {
-    const token = localStorage.getItem('token');
-    const res = await axios.post(HotelServices.book, bookingPayload, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    // Use the same auth header creation as other functions
+    const headers = createAuthHeaders();
+
+    console.log('🔄 Sending booking request with headers:', {
+      'Authorization': headers.Authorization ? 'Bearer [TOKEN_PRESENT]' : 'Missing',
+      'Content-Type': headers['Content-Type']
     });
+
+    console.log('📝 Booking payload:', JSON.stringify(bookingPayload, null, 2));
+
+    const res = await axios.post(HotelServices.book, bookingPayload, { headers });
+
     console.log('✅ Hotel Booking API Success:', res.data);
     return res.data;
+
   } catch (err) {
-    console.error('❌ Error booking hotel:', err.response?.data || err.message);
-    return null;
+    console.error('❌ Hotel booking API error:', {
+      status: err.response?.status,
+      statusText: err.response?.statusText,
+      data: err.response?.data,
+      message: err.message
+    });
+
+    // Re-throw the error so the calling function can handle it properly
+    throw err;
   }
 };
 
+
+
+// ✅ Enhanced token validation function
+const validateToken = () => {
+  const token = getAuthToken();
+
+  if (!token) {
+    console.error('❌ No authentication token found');
+    return false;
+  }
+
+  try {
+    // Basic JWT token validation (check if it's not expired)
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+
+    if (payload.exp && payload.exp < currentTime) {
+      console.error('❌ Token has expired');
+      return false;
+    }
+
+    console.log('✅ Token is valid, expires at:', new Date(payload.exp * 1000));
+    return true;
+
+  } catch (error) {
+    console.error('❌ Invalid token format:', error);
+    return false;
+  }
+};
 
 
 
@@ -192,3 +328,4 @@ export const sendHotelInvoice = async (invoicePayload) => {
   }
 };
 
+export default HotelServices;

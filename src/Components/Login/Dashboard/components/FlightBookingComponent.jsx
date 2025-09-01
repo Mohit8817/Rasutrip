@@ -159,39 +159,47 @@ const FlightBookingComponent = () => {
       )} */}
 
       {/* Booking Type Tabs */}
-      <div className="flex w-full mb-6 gap-2">
+      <div className="flex w-full mb-6 bg-gray-50 p-2 shadow-sm">
         <button
-          className={`flex-1 text-center px-4 py-2 rounded transition-all duration-200 font-medium
-            ${bookingType === 'upcoming'
-              ? 'bg-green-500 text-white shadow-md'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
-          `}
+          className={`flex-1 text-center rounded-lg transition-all duration-300 font-semibold text-sm
+      ${bookingType === 'upcoming'
+              ? 'bg-red-500 text-white shadow-sm'
+              : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
+    `}
           onClick={() => setBookingType('upcoming')}
         >
           Upcoming Flights
           {upcomingBookings.length > 0 && (
-            <span className="ml-2 px-2 py-1 text-xs bg-white text-blue-500 rounded-full">
+            <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
+        ${bookingType === 'upcoming'
+                ? 'bg-white text-red-500'
+                : 'bg-red-100 text-red-600'}
+      `}>
               {upcomingBookings.length}
             </span>
           )}
         </button>
+
         <button
-          className={`flex-1 text-center px-4 py-2 rounded transition-all duration-200 font-medium
-            ${bookingType === 'all'
-              ? 'bg-green-500 text-white shadow-md'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
-          `}
+          className={`flex-1 text-center px-6 py-2 rounded-lg transition-all duration-300 font-semibold text-sm
+      ${bookingType === 'all'
+              ? 'bg-red-500 text-white shadow-md'
+              : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
+    `}
           onClick={() => setBookingType('all')}
         >
           All Flights
           {allBookings.length > 0 && (
-            <span className="ml-2 px-2 py-1 text-xs bg-white text-blue-500 rounded-full">
+            <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
+        ${bookingType === 'all'
+                ? 'bg-white text-red-500'
+                : 'bg-red-100 text-red-600'}
+      `}>
               {allBookings.length}
             </span>
           )}
         </button>
       </div>
-
       {/* Flight Bookings Table */}
       <div className="bg-white rounded border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
@@ -224,7 +232,6 @@ const FlightBookingComponent = () => {
                 <tr>
                   <td colSpan="14" className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center">
-                      <span className="text-4xl mb-4">✈️</span>
                       <span className="text-lg font-medium text-gray-600">No flight bookings found</span>
                       <span className="text-sm text-gray-400 mt-1">
                         {bookingType === 'upcoming'
@@ -248,7 +255,7 @@ const FlightBookingComponent = () => {
                 </tr>
               ) : (
                 currentBookings.map((booking, index) => {
-                  console.log(`✈️ Rendering row ${index + 1}:`, booking);
+                  console.log(`Rendering row ${index + 1}:`, booking);
                   return (
                     <tr key={booking.bookingId || index} className="border-b border-gray-200 hover:bg-gray-100">
                       <td className="px-4 py-3 text-sm text-gray-900 font-mono">
@@ -299,12 +306,12 @@ const FlightBookingComponent = () => {
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <span className={`font-medium ${booking.status?.toLowerCase() === 'confirmed' || booking.bookingStatus?.toLowerCase() === 'confirmed'
-                            ? 'text-green-600' :
-                            booking.status?.toLowerCase() === 'pending' || booking.bookingStatus?.toLowerCase() === 'pending'
-                              ? 'text-orange-600' :
-                              booking.status?.toLowerCase() === 'cancelled' || booking.bookingStatus?.toLowerCase() === 'cancelled'
-                                ? 'text-red-600' :
-                                'text-blue-600'
+                          ? 'text-green-600' :
+                          booking.status?.toLowerCase() === 'pending' || booking.bookingStatus?.toLowerCase() === 'pending'
+                            ? 'text-orange-600' :
+                            booking.status?.toLowerCase() === 'cancelled' || booking.bookingStatus?.toLowerCase() === 'cancelled'
+                              ? 'text-red-600' :
+                              'text-blue-600'
                           }`}>
                           {booking.status || booking.bookingStatus || 'Confirmed'}
                         </span>
@@ -314,12 +321,12 @@ const FlightBookingComponent = () => {
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <span className={`font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' || booking.paymentStatus?.toLowerCase() === 'paid'
-                            ? 'text-green-600' :
-                            booking.paymentStatus?.toLowerCase() === 'processing'
-                              ? 'text-orange-600' :
-                              booking.paymentStatus?.toLowerCase() === 'failed'
-                                ? 'text-red-600' :
-                                'text-green-600'
+                          ? 'text-green-600' :
+                          booking.paymentStatus?.toLowerCase() === 'processing'
+                            ? 'text-orange-600' :
+                            booking.paymentStatus?.toLowerCase() === 'failed'
+                              ? 'text-red-600' :
+                              'text-green-600'
                           }`}>
                           {booking.paymentStatus || 'Completed'}
                         </span>
@@ -339,7 +346,7 @@ const FlightBookingComponent = () => {
                           }}
                           className="text-blue-500 hover:text-blue-700 font-medium flex items-center"
                         >
-                          <span className="mr-1">👁️</span>
+                          <span className="mr-1"></span>
                           View
                         </button>
                       </td>

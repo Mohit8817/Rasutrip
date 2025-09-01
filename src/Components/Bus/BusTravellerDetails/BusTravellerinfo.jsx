@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, Form, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
-import { FaArrowLeft } from 'react-icons/fa';
-import { blockSeats } from '../../APIS/BusApi/BusApis'; // Import your blockSeats API function
+import { blockSeats } from '../../APIS/BusApi/BusApis';
 
 const BusTravellerinfo = () => {
     const navigate = useNavigate();
@@ -13,6 +12,7 @@ const BusTravellerinfo = () => {
     const [showGstinForm, setShowGstinForm] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [seatsBlocked, setSeatsBlocked] = useState(false);
+    const [blockSeatResponse, setBlockSeatResponse] = useState(null);
 
     const [passengerData, setPassengerData] = useState(
         selectedSeats.map((seat, index) => ({
@@ -228,6 +228,7 @@ const BusTravellerinfo = () => {
             if (blockResponse && blockResponse.ResponseStatus === 1) {
                 console.log("✅ Seats blocked successfully");
                 setSeatsBlocked(true);
+                setBlockSeatResponse(blockResponse);
                 return blockResponse;
             } else {
                 // Extract the exact error message from API response
@@ -295,27 +296,31 @@ const BusTravellerinfo = () => {
             contactData: contactData, // Contact information
             gstData: showGstinForm ? gstData : null, // GST data only if form was shown
             showGstinForm: showGstinForm, // Whether GST form was shown
-            blockSeatResponse: null, // Will be updated when API completes
-            seatsBlocked: false, // Will be updated when API completes
-            isBlockingSeats: true // Indicate that blocking is in progress
+            blockSeatResponse: blockSeatResponse, // Current block seat response (if any)
+            seatsBlocked: seatsBlocked, // Current block status
+            isBlockingSeats: true, // Indicate that blocking is in progress
         };
 
-        console.log("🚀 Passing data to review component:", dataToPass);
+        console.log("Passing data to review component:", dataToPass);
 
         // Navigate to review page immediately after basic validation passes
         navigate("/bus-review", {
             state: dataToPass
         });
 
-        // Call block seats API in background
-        try {
-            const blockResponse = await callBlockSeatsAPI();
-            console.log("✅ Seats blocked successfully in background:", blockResponse);
+        // Call block seats API in background if not already blocked
+        if (!seatsBlocked) {
+            try {
+                const blockResponse = await callBlockSeatsAPI();
+                console.log("Seats blocked successfully in background:", blockResponse);
 
-        } catch (error) {
-            console.error("❌ Error blocking seats in background:", error);
-            // Error is already set in callBlockSeatsAPI function
-        } finally {
+            } catch (error) {
+                console.error("Error blocking seats in background:", error);
+                // Error is already set in callBlockSeatsAPI function
+            } finally {
+                setIsSubmitting(false);
+            }
+        } else {
             setIsSubmitting(false);
         }
     };
@@ -338,255 +343,262 @@ const BusTravellerinfo = () => {
 
     return (
         <div className="container my-4">
+            <div className="row">
+                <div className=" ">
+                    {/* Traveller Details */}
+                    <Card className="mb-4 shadow-sm border-0">
+                        <Card.Header className="bg-white border-bottom">
+                            <h6 className="mb-0">Traveller Details</h6>
+                            <small className="text-muted">Please make sure you enter the Name as per your Government photo id.</small>
+                        </Card.Header>
+                        <Card.Body>
+                            {selectedSeats.map((seat, index) => (
+                                <div key={index} className="border rounded p-3 mb-3">
+                                    <div className="d-flex justify-content-between mb-3">
+                                        <strong>Passenger {index + 1}</strong>
+                                        <strong>Seat {seat.SeatName || seat.SeatNo || seat.name || `S${index + 1}`}</strong>
+                                    </div>
+                                    <Row className="g-3">
+                                        <Col md={2}>
+                                            <Form.Group>
+                                                <Form.Select
+                                                    value={passengerData[index]?.title || ''}
+                                                    onChange={(e) => handlePassengerChange(index, 'title', e.target.value)}
+                                                >
+                                                    <option value="">Title</option>
+                                                    <option value="Mr">Mr</option>
+                                                    <option value="Ms">Ms</option>
+                                                    <option value="Mrs">Mrs</option>
+                                                </Form.Select>
+                                            </Form.Group>
+                                        </Col>
 
-            {/* Traveller Details */}
-            <Card className="mb-4 shadow-sm border-0">
-                <Card.Header className="bg-white border-bottom">
-                    <h6 className="mb-0">Traveller Details</h6>
-                    <small className="text-muted">Please make sure you enter the Name as per your Government photo id.</small>
-                </Card.Header>
-                <Card.Body>
-                    {selectedSeats.map((seat, index) => (
-                        <div key={index} className="border rounded p-3 mb-3">
-                            <div className="d-flex justify-content-between mb-3">
-                                <strong>Passenger {index + 1}</strong>
-                                <strong>Seat {seat.SeatName || seat.SeatNo || seat.name || `S${index + 1}`}</strong>
-                            </div>
-                            <Row className="g-3">
-                                <Col md={2}>
-                                    <Form.Group>
-                                        <Form.Select
-                                            value={passengerData[index]?.title || ''}
-                                            onChange={(e) => handlePassengerChange(index, 'title', e.target.value)}
-                                        >
-                                            <option value="">Title</option>
-                                            <option value="Mr">Mr</option>
-                                            <option value="Ms">Ms</option>
-                                            <option value="Mrs">Mrs</option>
-                                        </Form.Select>
-                                    </Form.Group>
-                                </Col>
+                                        <Col md={5}>
+                                            <Form.Group>
+                                                <Form.Control
+                                                    type="text"
+                                                    placeholder="First Name *"
+                                                    value={passengerData[index]?.firstName || ''}
+                                                    onChange={(e) => handlePassengerChange(index, 'firstName', e.target.value)}
+                                                />
+                                            </Form.Group>
+                                        </Col>
 
-                                <Col md={5}>
-                                    <Form.Group>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="First Name *"
-                                            value={passengerData[index]?.firstName || ''}
-                                            onChange={(e) => handlePassengerChange(index, 'firstName', e.target.value)}
-                                        />
-                                    </Form.Group>
-                                </Col>
+                                        <Col md={5}>
+                                            <Form.Group>
+                                                <Form.Control
+                                                    type="text"
+                                                    placeholder="Last Name *"
+                                                    value={passengerData[index]?.lastName || ''}
+                                                    onChange={(e) => handlePassengerChange(index, 'lastName', e.target.value)}
+                                                />
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
 
-                                <Col md={5}>
-                                    <Form.Group>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="Last Name *"
-                                            value={passengerData[index]?.lastName || ''}
-                                            onChange={(e) => handlePassengerChange(index, 'lastName', e.target.value)}
-                                        />
-                                    </Form.Group>
-                                </Col>
-                            </Row>
+                                    <Row className='g-3 mt-1'>
+                                        <Col md={2}>
+                                            <Form.Group>
+                                                <Form.Control
+                                                    type="number"
+                                                    placeholder="Age *"
+                                                    min="1"
+                                                    max="120"
+                                                    value={passengerData[index]?.age || ''}
+                                                    onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
+                                                />
+                                            </Form.Group>
+                                        </Col>
 
-                            <Row className='g-3 mt-1'>
-                                <Col md={2}>
-                                    <Form.Group>
-                                        <Form.Control
-                                            type="number"
-                                            placeholder="Age *"
-                                            min="1"
-                                            max="120"
-                                            value={passengerData[index]?.age || ''}
-                                            onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
-                                        />
-                                    </Form.Group>
-                                </Col>
+                                        <Col md={2}>
+                                            <Form.Select
+                                                value={passengerData[index].gender}
+                                                onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
+                                            >
+                                                <option value="">Gender *</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
+                                            </Form.Select>
+                                        </Col>
 
-                                <Col md={2}>
+                                        <Col md={4}>
+                                            <Form.Group>
+                                                <Form.Select
+                                                    value={passengerData[index]?.idType || ''}
+                                                    onChange={(e) => handlePassengerChange(index, 'idType', e.target.value)}
+                                                >
+                                                    <option value="">ID Type</option>
+                                                    <option value="Aadhaar Card">Aadhaar Card</option>
+                                                    <option value="PAN Card">PAN Card</option>
+                                                    <option value="Voter ID Card">Voter ID Card</option>
+                                                    <option value="Driving Licence">Driving Licence</option>
+                                                </Form.Select>
+                                            </Form.Group>
+                                        </Col>
+
+                                        <Col md={4}>
+                                            <Form.Group>
+                                                <Form.Control
+                                                    type="text"
+                                                    placeholder="ID Number"
+                                                    value={passengerData[index]?.idNumber || ''}
+                                                    onChange={(e) => handlePassengerChange(index, 'idNumber', e.target.value)}
+                                                />
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
+                                </div>
+                            ))}
+                        </Card.Body>
+                    </Card>
+
+                    {/* Contact Details */}
+                    <Card className="mb-4 shadow-sm border-0">
+                        <Card.Header className="bg-white border-bottom">
+                            <h6 className="mb-0">Contact Details</h6>
+                            <small className="text-muted">Your ticket and bus information will be sent here</small>
+                        </Card.Header>
+
+                        <Card.Body>
+                            <Row className="align-items-center g-3">
+                                <Col md={3}>
                                     <Form.Select
-                                        value={passengerData[index].gender}
-                                        onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
+                                        value={contactData.countryCode}
+                                        onChange={(e) => handleContactChange('countryCode', e.target.value)}
                                     >
-                                        <option value="">Gender *</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                        <option value="Other">Other</option>
+                                        <option value="+91">India (+91)</option>
+                                        <option value="+1">USA (+1)</option>
+                                        <option value="+44">UK (+44)</option>
+                                        <option value="+971">UAE (+971)</option>
                                     </Form.Select>
                                 </Col>
 
                                 <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Select
-                                            value={passengerData[index]?.idType || ''}
-                                            onChange={(e) => handlePassengerChange(index, 'idType', e.target.value)}
-                                        >
-                                            <option value="">ID Type</option>
-                                            <option value="Aadhaar Card">Aadhaar Card</option>
-                                            <option value="PAN Card">PAN Card</option>
-                                            <option value="Voter ID Card">Voter ID Card</option>
-                                            <option value="Driving Licence">Driving Licence</option>
-                                        </Form.Select>
-                                    </Form.Group>
+                                    <Form.Control
+                                        type="tel"
+                                        placeholder="Enter mobile number *"
+                                        value={contactData.mobile}
+                                        onChange={(e) => handleContactChange('mobile', e.target.value)}
+                                    />
                                 </Col>
 
-                                <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="ID Number"
-                                            value={passengerData[index]?.idNumber || ''}
-                                            onChange={(e) => handlePassengerChange(index, 'idNumber', e.target.value)}
-                                        />
-                                    </Form.Group>
+                                <Col md={5}>
+                                    <Form.Control
+                                        type="email"
+                                        placeholder="Enter email address *"
+                                        value={contactData.email}
+                                        onChange={(e) => handleContactChange('email', e.target.value)}
+                                    />
                                 </Col>
                             </Row>
-                        </div>
-                    ))}
-                </Card.Body>
-            </Card>
+                        </Card.Body>
+                    </Card>
 
-            {/* Contact Details */}
-            <Card className="mb-4 shadow-sm border-0">
-                <Card.Header className="bg-white border-bottom">
-                    <h6 className="mb-0">Contact Details</h6>
-                    <small className="text-muted">Your ticket and bus information will be sent here</small>
-                </Card.Header>
+                    {/* GST Details */}
+                    <Card className="mb-4 shadow-sm border-0">
+                        <Card.Header className="bg-light">
+                            <Row className="align-items-center">
+                                <Col md={9}>
+                                    <h6 className="mb-0">Use GSTIN for this booking (Optional)</h6>
+                                    <small className="text-muted">Claim credit of GST charges. Your taxes may get updated post submitting your GST details.</small>
+                                </Col>
+                                <Col md={3} className="text-end">
+                                    <Button
+                                        className='btn-red'
+                                        onClick={() => setShowGstinForm(!showGstinForm)}
+                                        size="sm"
+                                    >
+                                        {showGstinForm ? 'Remove GST' : 'Add GST Details'}
+                                    </Button>
+                                </Col>
+                            </Row>
+                        </Card.Header>
 
-                <Card.Body>
-                    <Row className="align-items-center g-3">
-                        <Col md={3}>
-                            <Form.Select
-                                value={contactData.countryCode}
-                                onChange={(e) => handleContactChange('countryCode', e.target.value)}
-                            >
-                                <option value="+91">🇮🇳 India (+91)</option>
-                                <option value="+1">🇺🇸 USA (+1)</option>
-                                <option value="+44">🇬🇧 UK (+44)</option>
-                                <option value="+971">🇦🇪 UAE (+971)</option>
-                            </Form.Select>
-                        </Col>
+                        {showGstinForm && (
+                            <Card.Body>
+                                <Row className="g-3">
+                                    <Col md={4}>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="GST Number"
+                                            value={gstData.gstNumber}
+                                            onChange={(e) => handleGstChange('gstNumber', e.target.value.toUpperCase())}
+                                            maxLength={15}
+                                        />
+                                    </Col>
 
-                        <Col md={4}>
-                            <Form.Control
-                                type="tel"
-                                placeholder="Enter mobile number *"
-                                value={contactData.mobile}
-                                onChange={(e) => handleContactChange('mobile', e.target.value)}
-                            />
-                        </Col>
+                                    <Col md={4}>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Registered Company Name"
+                                            value={gstData.companyName}
+                                            onChange={(e) => handleGstChange('companyName', e.target.value)}
+                                        />
+                                    </Col>
 
-                        <Col md={5}>
-                            <Form.Control
-                                type="email"
-                                placeholder="Enter email address *"
-                                value={contactData.email}
-                                onChange={(e) => handleContactChange('email', e.target.value)}
-                            />
+                                    <Col md={4}>
+                                        <Form.Control
+                                            type="tel"
+                                            placeholder="Registered Contact No"
+                                            value={gstData.contactNo}
+                                            onChange={(e) => handleGstChange('contactNo', e.target.value)}
+                                        />
+                                    </Col>
 
-                        </Col>
-                    </Row>
-                </Card.Body>
-            </Card>
+                                    <Col md={6}>
+                                        <Form.Control
+                                            type="email"
+                                            placeholder="Registered Email"
+                                            value={gstData.email}
+                                            onChange={(e) => handleGstChange('email', e.target.value)}
+                                        />
+                                    </Col>
 
-            {/* GST Details */}
-            <Card className="mb-4 shadow-sm border-0">
-                <Card.Header className="bg-light">
-                    <Row className="align-items-center">
-                        <Col md={9}>
-                            <h6 className="mb-0">Use GSTIN for this booking (Optional)</h6>
-                            <small className="text-muted">Claim credit of GST charges. Your taxes may get updated post submitting your GST details.</small>
-                        </Col>
-                        <Col md={3} className="text-end">
-                            <Button
-                                className='btn-red'
-                                onClick={() => setShowGstinForm(!showGstinForm)}
-                                size="sm"
-                            >
-                                {showGstinForm ? 'Remove GST' : 'Add GST Details'}
-                            </Button>
-                        </Col>
-                    </Row>
-                </Card.Header>
+                                    <Col md={6}>
+                                        <Form.Control
+                                            as="textarea"
+                                            rows={1}
+                                            placeholder="Registered Address"
+                                            value={gstData.address}
+                                            onChange={(e) => handleGstChange('address', e.target.value)}
+                                        />
+                                    </Col>
+                                </Row>
+                            </Card.Body>
+                        )}
+                    </Card>
 
-                {showGstinForm && (
-                    <Card.Body>
-                        <Row className="g-3">
-                            <Col md={4}>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="GST Number"
-                                    value={gstData.gstNumber}
-                                    onChange={(e) => handleGstChange('gstNumber', e.target.value.toUpperCase())}
-                                    maxLength={15}
-                                />
-                            </Col>
+                    {/* Action Buttons */}
+                    <div className="text-end mb-4 mt-4">
+                        <Button
+                            onClick={handleContinue}
+                            disabled={isSubmitting}
+                            className="btn-red px-5 py-2"
+                            style={{ fontSize: '1.1rem' }}
+                            type="button"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Spinner size="sm" className="me-2" />
+                                    Processing...
+                                </>
+                            ) : (
+                                'Continue to Review'
+                            )}
+                        </Button>
+                    </div>
 
-                            <Col md={4}>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="Registered Company Name"
-                                    value={gstData.companyName}
-                                    onChange={(e) => handleGstChange('companyName', e.target.value)}
-                                />
-                            </Col>
-
-                            <Col md={4}>
-                                <Form.Control
-                                    type="tel"
-                                    placeholder="Registered Contact No"
-                                    value={gstData.contactNo}
-                                    onChange={(e) => handleGstChange('contactNo', e.target.value)}
-                                />
-                            </Col>
-
-                            <Col md={6}>
-                                <Form.Control
-                                    type="email"
-                                    placeholder="Registered Email"
-                                    value={gstData.email}
-                                    onChange={(e) => handleGstChange('email', e.target.value)}
-                                />
-                            </Col>
-
-                            <Col md={6}>
-                                <Form.Control
-                                    as="textarea"
-                                    rows={1}
-                                    placeholder="Registered Address"
-                                    value={gstData.address}
-                                    onChange={(e) => handleGstChange('address', e.target.value)}
-                                />
-                            </Col>
-                        </Row>
-                    </Card.Body>
-                )}
-            </Card>
+                    {/* API Error Display - Only shows API response errors */}
+                    {apiError && (
+                        <Alert variant="danger" className="mb-4" dismissible onClose={() => setApiError(null)}>
+                            <strong>Error:</strong> {apiError}
+                        </Alert>
+                    )}
+                </div>
 
 
-            {/* Action Buttons */}
-            <div className="text-end mb-4 mt-4">
-                <Button
-                    onClick={handleContinue}
-                    disabled={isSubmitting}
-                    className="btn-red px-5 py-2"
-                    style={{ fontSize: '1.1rem' }}
-                    type="button"
-                >
-                    Continue to Review
-                </Button>
             </div>
-
-
-
-            {/* API Error Display - Only shows API response errors */}
-            {apiError && (
-                <Alert variant="danger" className="mb-4" dismissible onClose={() => setApiError(null)}>
-                    <strong>Error:</strong> {apiError}
-                </Alert>
-            )}
-
         </div>
     );
 };

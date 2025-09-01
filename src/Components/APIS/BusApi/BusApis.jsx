@@ -1,12 +1,20 @@
 // src/APIS/BusApi/BusApis.js
 import axios from "axios";
 import baseURL from "../../../Services/Config";
+import {
+  calculateVendorCommission,
+  calculatePriceWithCommission,
+  calculateFareFromBlockSeatResponse,
+  extractCommissionPercentage
+} from "../../Bus/vendorCommissionUtils";
 
 const BusServices = {
   fetchCities: `${baseURL}/bus/search-city`,
   searchResults: `${baseURL}/busservice/search`,
   seatLayout: `${baseURL}/busservice/seatlayout`,
   boardingDroppingPoints: `${baseURL}/busservice/boardingpoint`,
+  specialOffers: `${baseURL}/user/special-offer`,
+  applyCoupon: `${baseURL}/airservice/apply-coupon`,
   blockSeat: `${baseURL}/busservice/blockseat`,
   createOrder: `${baseURL}/busservice/create-order`,
   validatePayment: `${baseURL}/busservice/validate`,
@@ -21,13 +29,11 @@ const getAuthToken = () => {
 
 // Helper function to create auth headers
 const createAuthHeaders = () => {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error('Authentication token not found. Please login again.');
-  }
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   return {
-    'Authorization': `Bearer ${token}`,
+    'Authorization': token ? `Bearer ${token}` : '',
     'Content-Type': 'application/json',
+    'Accept': 'application/json'
   };
 };
 
@@ -45,7 +51,7 @@ export const fetchBusCities = async (cityName) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// 🚌 Fetch bus search results
+// 🚌 Fetch bus search results with vendor commission processing
 // ─────────────────────────────────────────────────────────────
 export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, UserIp) => {
   try {
@@ -55,6 +61,34 @@ export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, Us
       DestinationId,
       UserIp,
     });
+
+    // Process the response to include vendor commission calculations
+    if (response.data?.Result) {
+      response.data.Result = response.data.Result.map(bus => {
+        const commissionPercentage = extractCommissionPercentage(bus);
+        const basePrice = bus.BusPrice?.PublishedPrice || 0;
+        const fareDetails = calculatePriceWithCommission(basePrice, commissionPercentage);
+
+        return {
+          ...bus,
+          // Add calculated fare details to the bus object
+          fareDetails: {
+            originalBasePrice: basePrice,
+            vendorCommissionPercentage: commissionPercentage,
+            vendorCommissionAmount: fareDetails.commissionAmount,
+            totalPriceWithCommission: fareDetails.totalPrice,
+            priceBreakdown: {
+              base: basePrice,
+              commission: fareDetails.commissionAmount,
+              taxes: bus.BusPrice?.Tax || 0,
+              otherCharges: bus.BusPrice?.OtherCharges || 0,
+              gst: bus.BusPrice?.GST ?
+                (bus.BusPrice.GST.CGSTAmount + bus.BusPrice.GST.SGSTAmount + bus.BusPrice.GST.IGSTAmount) : 0
+            }
+          }
+        };
+      });
+    }
 
     return response.data;
   } catch (err) {
@@ -136,7 +170,7 @@ export const fetchBoardingDroppingPoints = async ({
 };
 
 // ─────────────────────────────────────────────────────────────
-// 🔒 Block Seat API - Temporarily lock selected seats
+// 🔒 Block Seat API with vendor commission processing
 // ─────────────────────────────────────────────────────────────
 export const blockSeats = async ({
   UserIp,
@@ -146,7 +180,8 @@ export const blockSeats = async ({
   DroppingPointId,
   OriginId,
   DestinationId,
-  Passenger // Array of passenger objects with seat information
+  Passenger, // Array of passenger objects with seat information
+  originalCommissionPercentage = 0 // Pass this from the original search result
 }) => {
   try {
     const payload = {
@@ -165,6 +200,20 @@ export const blockSeats = async ({
     const response = await axios.post(BusServices.blockSeat, payload);
 
     console.log("✅ Block Seat API Response:", response.data);
+
+    // Process the response to include vendor commission calculations
+    if (response.data?.Result?.Passenger) {
+      const fareBreakdown = calculateFareFromBlockSeatResponse(response.data, originalCommissionPercentage);
+
+      // Add fare breakdown to the response
+      response.data.fareBreakdown = fareBreakdown;
+      response.data.vendorCommissionDetails = {
+        commissionPercentage: originalCommissionPercentage,
+        commissionAmount: fareBreakdown?.vendorCommissionAmount || 0,
+        totalWithCommission: fareBreakdown?.totalAmount || 0
+      };
+    }
+
     return response.data;
   } catch (error) {
     console.error("❌ Failed to block seats:", error.response?.data || error.message);
@@ -172,10 +221,44 @@ export const blockSeats = async ({
   }
 };
 
-// _____________________________________________________
-// ✅ FIXED: Create bus Razorpay order
-// _____________________________________________________
+// ───────────────────────────────────────────────
+// 📍 Get special offers (coupon list)
+// ───────────────────────────────────────────────
+export const fetchSpecialOffers = async () => {
+  try {
+    const response = await axios.get(BusServices.specialOffers, {
+      headers: createAuthHeaders(),
+    });
+    return response.data;
+  } catch (err) {
+    console.error("❌ Error fetching special offers:", err.response?.data || err.message);
+    return [];
+  }
+};
 
+// ───────────────────────────────────────────────
+// 🎟 Apply coupon with commission-aware amount calculation
+// ───────────────────────────────────────────────
+export const applyBusCoupon = async (couponCode, totalAmountWithCommission) => {
+  try {
+    const response = await axios.post(
+      BusServices.applyCoupon,
+      {
+        coupon_code: couponCode,
+        amount: totalAmountWithCommission, // Use total amount including vendor commission
+      },
+      { headers: createAuthHeaders() }
+    );
+    return response.data;
+  } catch (err) {
+    console.error("❌ Error applying coupon:", err.response?.data || err.message);
+    throw err;
+  }
+};
+
+// _____________________________________________________
+// ✅ Create bus Razorpay order with commission-inclusive amount
+// _____________________________________________________
 export const createBusOrder = async (orderData) => {
   try {
     console.log('📦 Creating bus order with data:', orderData);
@@ -186,7 +269,7 @@ export const createBusOrder = async (orderData) => {
     const amount = typeof orderData === 'object' ? orderData.amount : orderData;
 
     const payload = {
-      amount: amount,
+      amount: amount, // This should already include vendor commission
       currency: 'INR',
       booking_type: 'bus',
       ...(typeof orderData === 'object' && orderData)
@@ -207,17 +290,15 @@ export const createBusOrder = async (orderData) => {
 };
 
 // ________________________________________________
-// ✅ FIXED: Create bus payment order (alias for createBusOrder)
+// ✅ Create bus payment order (alias for createBusOrder)
 // ________________________________________________
-
 export const createBusPaymentOrder = async (orderData) => {
   return createBusOrder(orderData);
 };
 
 // ________________________________________________
-// ✅ NEW: Validate bus payment with exact structure as per your Postman
+// ✅ Validate bus payment with vendor commission details
 // ________________________________________________
-
 export const validateBusPayment = async (paymentData) => {
   try {
     console.log('🔍 Validating bus payment with payload:', paymentData);
@@ -226,7 +307,7 @@ export const validateBusPayment = async (paymentData) => {
 
     // Construct payload exactly as per your Postman structure
     const payload = {
-      amount: paymentData.amount,
+      amount: paymentData.amount, // This should include vendor commission
       razorpay_order_id: paymentData.razorpay_order_id,
       razorpay_payment_id: paymentData.razorpay_payment_id,
       razorpay_signature: paymentData.razorpay_signature,
@@ -237,7 +318,10 @@ export const validateBusPayment = async (paymentData) => {
         DroppingPointId: paymentData.Bus.DroppingPointId,
         SearchTokenId: paymentData.Bus.SearchTokenId,
         CouponDiscount: paymentData.Bus.CouponDiscount || 0,
-        Passenger: paymentData.Bus.Passenger
+        Passenger: paymentData.Bus.Passenger,
+        // Add vendor commission details if available
+        VendorCommissionAmount: paymentData.Bus.VendorCommissionAmount || 0,
+        VendorCommissionPercentage: paymentData.Bus.VendorCommissionPercentage || 0
       }
     };
 
@@ -258,9 +342,8 @@ export const validateBusPayment = async (paymentData) => {
 };
 
 // ________________________________________________
-// ✅ NEW: Book api 
+// ✅ Book bus api with commission details
 // ________________________________________________
-
 export const bookBus = async (bookingData) => {
   try {
     console.log('📝 Booking bus with payload:', bookingData);
@@ -281,227 +364,83 @@ export const bookBus = async (bookingData) => {
   }
 };
 
-
-
-// ================================================
-// 🚌 ENHANCED BUS INVOICE DOWNLOAD API 
-// ================================================
-
+// ✅ Download Invoice API - Sends invoice to user's email
 export const downloadBusInvoice = async (invoiceData) => {
   try {
-    console.log('📄 Starting bus invoice download...');
-    console.log('📤 Invoice Data:', invoiceData);
-
-    // Input validation
-    if (!invoiceData.SearchTokenId) {
-      throw new Error('SearchTokenId is required for invoice download');
-    }
-
-    if (!invoiceData.BookingId) {
-      throw new Error('BookingId is required for invoice download');
-    }
+    console.log('📧 Sending bus invoice to email with payload:', invoiceData);
 
     const headers = createAuthHeaders();
 
-    // Helper to generate unique IDs
-    const generateUniqueId = (prefix) => {
-      return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    };
-
-    // Enhanced payload with proper data structure + unique invoiceId
+    // Construct payload as per your Postman structure
     const payload = {
       UserIp: invoiceData.UserIp || "122.161.64.143",
       SearchTokenId: invoiceData.SearchTokenId,
-      BookingId: String(invoiceData.BookingId).trim(), // Ensure it's a clean string
-      receiverEmail: invoiceData.receiverEmail || "",
-      invoiceNo: generateUniqueId("INV"), // 👈 unique invoice number
-      transactionId: generateUniqueId("TXN"), // 👈 unique transactionId
+      BookingId: invoiceData.BookingId,
+      receiverEmail: invoiceData.receiverEmail
     };
 
-    console.log('📤 Final payload being sent:', payload);
-    console.log('🔗 API Endpoint:', BusServices.downloadInvoice);
+    console.log('📤 Sending invoice email payload:', payload);
 
-    // Make API request with enhanced configuration
-    const response = await axios({
-      method: 'POST',
-      url: BusServices.downloadInvoice,
-      data: payload,
-      headers: {
-        ...headers,
-        'Accept': 'application/pdf, application/json',
-        'Content-Type': 'application/json',
-      },
-      responseType: 'blob', // Critical for file downloads
-      timeout: 30000, // 30 second timeout
-      validateStatus: function (status) {
-        // Accept both success and 409 conflict status
-        return (status >= 200 && status < 300) || status === 409;
-      }
-    });
+    const response = await axios.post(
+      BusServices.downloadInvoice,
+      payload,
+      { headers }
+    );
 
-    console.log('✅ API Response Status:', response.status);
-    console.log('📄 Response Headers:', response.headers);
-
-    // Handle 409 Conflict - Invoice already generated
-    if (response.status === 409) {
-      console.log('⚠️ Invoice already exists (409)');
-
-      // Try to parse the response to get more info
-      try {
-        const text = await response.data.text();
-        const jsonResponse = JSON.parse(text);
-
-        return {
-          success: true,
-          alreadyExists: true,
-          message: jsonResponse.message || 'Invoice already generated and sent to email',
-          data: jsonResponse
-        };
-      } catch (parseError) {
-        return {
-          success: true,
-          alreadyExists: true,
-          message: 'Invoice already generated and sent to email'
-        };
-      }
-    }
-
-    // Check content type for successful responses
-    const contentType = response.headers['content-type'] || response.headers['Content-Type'];
-    console.log('📋 Content Type:', contentType);
-
-    // Handle PDF response
-    if (contentType && (contentType.includes('application/pdf') || contentType.includes('application/octet-stream'))) {
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const fileSize = blob.size;
-
-      console.log('📊 PDF File Size:', fileSize, 'bytes');
-
-      if (fileSize < 100) {
-        throw new Error('Downloaded file seems too small, might be corrupted');
-      }
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-
-      // Generate filename with timestamp
-      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-      const filename = `bus-invoice-${invoiceData.BookingId}-${timestamp}.pdf`;
-
-      link.setAttribute('download', filename);
-      link.style.display = 'none';
-      document.body.appendChild(link);
-
-      // Trigger download
-      link.click();
-
-      // Cleanup
-      setTimeout(() => {
-        if (document.body.contains(link)) {
-          document.body.removeChild(link);
-        }
-        window.URL.revokeObjectURL(url);
-      }, 100);
-
-      console.log('✅ Invoice downloaded successfully:', filename);
-      return { success: true, filename, fileSize, downloaded: true };
-
-    } else {
-      // Handle non-PDF response (might be JSON success message)
-      try {
-        const text = await response.data.text();
-        console.log('📄 Non-PDF Response:', text);
-
-        let jsonResponse;
-        try {
-          jsonResponse = JSON.parse(text);
-        } catch (parseError) {
-          throw new Error(`Expected PDF but received: ${contentType}`);
-        }
-
-        // Check if it's a success message without PDF
-        if (jsonResponse.success || jsonResponse.Success) {
-          return {
-            success: true,
-            message: jsonResponse.message || 'Invoice processed successfully',
-            data: jsonResponse
-          };
-        }
-
-        if (jsonResponse.error || jsonResponse.Error) {
-          throw new Error(jsonResponse.error?.message || jsonResponse.Error?.ErrorMessage || 'Server returned an error');
-        }
-
-        throw new Error('Expected PDF but received JSON response');
-      } catch (textError) {
-        throw new Error(`Unexpected response format: ${contentType}`);
-      }
-    }
-
+    console.log('✅ downloadBusInvoice Success:', response.data);
+    return response.data;
   } catch (error) {
-    console.error('❌ Invoice Download Error:', error);
-
-    // Enhanced error handling
-    if (error.response) {
-      console.error('❌ Error Status:', error.response.status);
-      console.error('❌ Error Data:', error.response.data);
-
-      // Special handling for 409 (should not reach here due to validateStatus)
-      if (error.response.status === 409) {
-        return {
-          success: true,
-          alreadyExists: true,
-          message: 'Invoice already generated and sent to email'
-        };
-      }
-
-      let errorMessage = `Server error (${error.response.status})`;
-
-      if (error.response.status === 401) {
-        errorMessage = 'Authentication failed. Please login again.';
-      } else if (error.response.status === 404) {
-        errorMessage = 'Invoice not found. Please check your booking ID.';
-      } else if (error.response.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
-      } else if (error.response.status === 400) {
-        errorMessage = 'Invalid request. Please check your booking details.';
-      }
-
-      // Try to extract error message from response
-      if (error.response.data) {
-        try {
-          let errorData = error.response.data;
-
-          // If it's a blob, convert to text first
-          if (errorData instanceof Blob) {
-            const text = await errorData.text();
-            errorData = JSON.parse(text);
-          }
-
-          if (errorData.Error?.ErrorMessage) {
-            errorMessage = errorData.Error.ErrorMessage;
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
-          }
-        } catch (parseError) {
-          console.error('Could not parse error response');
-        }
-      }
-
-      throw new Error(errorMessage);
-
-    } else if (error.request) {
-      console.error('❌ Network Error:', error.request);
-      throw new Error('Network error. Please check your internet connection.');
-
-    } else if (error.code === 'ECONNABORTED') {
-      throw new Error('Request timeout. Please try again.');
-
-    } else {
-      // Re-throw the original error if it's already a custom error
-      throw error;
-    }
+    console.error('❌ downloadBusInvoice Error:', error.response?.data || error.message);
+    throw error;
   }
+};
+
+// ______________________________________________________
+// 🔧 Helper functions for vendor commission calculations
+// ______________________________________________________
+
+/**
+ * Calculate total booking amount including vendor commission
+ * @param {object} blockSeatResponse - Response from block seat API
+ * @param {number} commissionPercentage - Vendor commission percentage
+ * @returns {object} - Total amount breakdown
+ */
+export const calculateBookingTotal = (blockSeatResponse, commissionPercentage = 0) => {
+  if (!blockSeatResponse?.Result?.Passenger) {
+    return { totalAmount: 0, commissionAmount: 0 };
+  }
+
+  let baseAmount = 0;
+  blockSeatResponse.Result.Passenger.forEach(passenger => {
+    baseAmount += passenger.Seat?.Price?.PublishedPrice || 0;
+  });
+
+  const commissionAmount = calculateVendorCommission(baseAmount, commissionPercentage);
+  const totalAmount = baseAmount + commissionAmount;
+
+  return {
+    baseAmount,
+    commissionAmount,
+    commissionPercentage,
+    totalAmount
+  };
+};
+
+/**
+ * Prepare payment data with vendor commission included
+ * @param {object} paymentInfo - Basic payment information
+ * @param {object} fareBreakdown - Fare breakdown including commission
+ * @returns {object} - Payment data ready for validation API
+ */
+export const preparePaymentDataWithCommission = (paymentInfo, fareBreakdown) => {
+  return {
+    ...paymentInfo,
+    amount: fareBreakdown.totalAmount, // Include commission in payment amount
+    Bus: {
+      ...paymentInfo.Bus,
+      VendorCommissionAmount: fareBreakdown.vendorCommissionAmount,
+      VendorCommissionPercentage: fareBreakdown.vendorCommissionPercentage,
+      BaseAmount: fareBreakdown.basePrice
+    }
+  };
 };

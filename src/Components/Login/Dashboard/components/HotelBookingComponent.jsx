@@ -7,7 +7,10 @@ import {
     isHotelUserAuthenticated,
     fetchHotelRealTimeStatus,
     fetchMultipleHotelRealTimeStatus
-} from "../../services/bookingApi"; // Update this path according to your project structure
+} from "../../services/bookingApi";
+
+// Invoice download service - adjust the import path as needed
+import { sendHotelInvoice } from "../../../APIS/HotelApi/HotelAPi";
 
 const HotelBookingHistory = () => {
     const [bookingType, setBookingType] = useState('all');
@@ -17,18 +20,60 @@ const HotelBookingHistory = () => {
     const [allBookings, setAllBookings] = useState([]);
     const [debugInfo, setDebugInfo] = useState(null);
     const [userRole, setUserRole] = useState('customer');
-    const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest first, 'asc' for oldest first
+    const [sortOrder, setSortOrder] = useState('desc');
 
     // Real-time status states
     const [realTimeStatuses, setRealTimeStatuses] = useState({});
     const [loadingStatuses, setLoadingStatuses] = useState(new Set());
     const [initialStatusLoaded, setInitialStatusLoaded] = useState(false);
 
+    // Invoice download states
+    const [downloadingInvoices, setDownloadingInvoices] = useState(new Set());
+
+    // Status popup states
+    const [statusModalOpen, setStatusModalOpen] = useState(false);
+    const [selectedBookingForStatus, setSelectedBookingForStatus] = useState(null);
+    const [statusModalLoading, setStatusModalLoading] = useState(false);
+
     // Get user role on component mount
     useEffect(() => {
         const role = getHotelUserType();
         setUserRole(role || 'customer');
     }, []);
+
+    // Handle opening status modal
+    const handleOpenStatusModal = async (booking) => {
+        setSelectedBookingForStatus(booking);
+        setStatusModalOpen(true);
+        setStatusModalLoading(true);
+
+        // Fetch fresh real-time status for the modal
+        try {
+            const result = await fetchHotelRealTimeStatus(booking, userRole);
+
+            // Update the real-time status in state
+            setRealTimeStatuses(prev => ({
+                ...prev,
+                [booking.bookingId]: result
+            }));
+
+            if (!result.success) {
+                toast.error(`Failed to fetch latest status: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error fetching status for modal:', error);
+            toast.error('Failed to fetch latest booking status');
+        } finally {
+            setStatusModalLoading(false);
+        }
+    };
+
+    // Handle closing status modal
+    const handleCloseStatusModal = () => {
+        setStatusModalOpen(false);
+        setSelectedBookingForStatus(null);
+        setStatusModalLoading(false);
+    };
 
     // Handle real-time status check for single hotel booking
     const handleRealTimeCheck = async (booking) => {
@@ -71,7 +116,6 @@ const HotelBookingHistory = () => {
     const autoFetchRealTimeStatus = async (bookings = null) => {
         const currentBookings = bookings || getCurrentBookings();
 
-        // Only fetch for confirmed/active hotel bookings
         const activeBookings = currentBookings.filter(booking =>
             booking.bookingStatus?.toLowerCase() === 'confirmed' ||
             booking.bookingStatus?.toLowerCase() === 'booked'
@@ -85,7 +129,6 @@ const HotelBookingHistory = () => {
 
         console.log(`Auto-fetching real-time status for ${activeBookings.length} active hotel bookings`);
 
-        // Add all booking IDs to loading state
         const bookingIds = activeBookings.map(b => b.bookingId);
         setLoadingStatuses(prev => new Set([...prev, ...bookingIds]));
 
@@ -99,10 +142,47 @@ const HotelBookingHistory = () => {
         } catch (error) {
             console.error('Error in auto-fetch hotel real-time status:', error);
         } finally {
-            // Remove all booking IDs from loading state
             setLoadingStatuses(prev => {
                 const newSet = new Set(prev);
                 bookingIds.forEach(id => newSet.delete(id));
+                return newSet;
+            });
+        }
+    };
+
+    // Handle invoice download
+    const handleInvoiceDownload = async (booking) => {
+        const bookingId = booking.bookingId;
+
+        if (!booking.searchTokenId) {
+            toast.error('Invoice download not available - Missing search token');
+            return;
+        }
+
+        setDownloadingInvoices(prev => new Set(prev.add(bookingId)));
+
+        try {
+            const invoicePayload = {
+                UserIp: booking.rawData?.UserIp || "49.36.217.215",
+                BookingId: bookingId,
+                SearchTokenId: booking.searchTokenId,
+                receiverEmail: booking.email
+            };
+
+            const result = await sendHotelInvoice(invoicePayload);
+
+            if (result.success) {
+                toast.success('Invoice sent to your email successfully!');
+            } else {
+                toast.error(`Failed to send invoice: ${result.message || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error downloading invoice:', error);
+            toast.error('Failed to download invoice. Please try again.');
+        } finally {
+            setDownloadingInvoices(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(bookingId);
                 return newSet;
             });
         }
@@ -112,7 +192,6 @@ const HotelBookingHistory = () => {
     const formatHotelBookingData = (apiResponse, isUpcoming = false) => {
         console.log('📊 Raw API response for formatting:', apiResponse);
 
-        // Handle different response structures
         let bookingsArray = [];
 
         if (Array.isArray(apiResponse)) {
@@ -147,7 +226,6 @@ const HotelBookingHistory = () => {
             const booking = bookingWrapper.Result || bookingWrapper;
             console.log(`🏨 Actual hotel booking data for ${index + 1}:`, booking);
 
-            // Enhanced booking ID mapping
             const bookingId = bookingWrapper.bookingId ||
                 bookingWrapper.BookingId ||
                 bookingWrapper.BookingID ||
@@ -162,68 +240,58 @@ const HotelBookingHistory = () => {
                 booking.userId ||
                 `HTL${Date.now()}${index}`;
 
-            // Enhanced confirmation number mapping
             const confirmationNo =
-                // First priority: Direct confirmation fields
                 booking.ConfirmationNo ||
                 booking.confirmationNumber ||
                 booking.confirmation_no ||
                 booking.confirmationNo ||
                 booking.ConfirmationNumber ||
-
-                // Second priority: Reference/PNR fields
                 booking.referenceNumber ||
                 booking.ReferenceNumber ||
                 booking.reference_number ||
                 booking.PNR ||
                 booking.pnr ||
                 booking.Pnr ||
-
-                // Third priority: Booking reference fields
                 booking.BookingReference ||
                 booking.bookingReference ||
                 booking.booking_reference ||
                 booking.BookingRef ||
                 booking.bookingRef ||
-
-                // Fourth priority: Hotel-specific confirmation fields
                 booking.HotelConfirmationNo ||
                 booking.hotelConfirmationNo ||
                 booking.hotel_confirmation_no ||
                 booking.HotelReference ||
                 booking.hotelReference ||
-
-                // Fifth priority: Use booking ID if no confirmation found
                 bookingWrapper.bookingId ||
                 booking.BookingId ||
                 booking.bookingId ||
-
-                // Final fallback
                 'PENDING';
 
-            console.log(`🔍 Confirmation number mapping for booking ${index + 1}: ${confirmationNo}`);
-
-            // Hotel information mapping
+            // Hotel information mapping with fallback handling
             const hotelName = booking.HotelName ||
                 booking.hotelName ||
                 booking.hotel_name ||
                 booking.name ||
                 booking.propertyName ||
-                'N/A';
+                booking.hotel ||
+                booking.Hotel ||
+                'Hotel Name Not Available';
 
             const hotelCode = booking.HotelCode ||
                 booking.hotelCode ||
                 booking.hotel_code ||
                 booking.code ||
                 booking.propertyCode ||
-                'N/A';
+                booking.Code ||
+                'Not Available';
 
             const city = booking.City ||
                 booking.city ||
                 booking.location ||
                 booking.destination ||
                 booking.CityName ||
-                'N/A';
+                booking.cityName ||
+                'Not Available';
 
             const checkInDate = booking.CheckIn ||
                 booking.checkInDate ||
@@ -241,8 +309,7 @@ const HotelBookingHistory = () => {
                 booking.toDate ||
                 'N/A';
 
-            // Room type and guest count logic
-            let roomType = 'N/A';
+            let roomType = 'Standard Room';
             let numberOfRooms = '1';
             let numberOfGuests = 'N/A';
 
@@ -254,6 +321,7 @@ const HotelBookingHistory = () => {
                     firstRoom.roomTypeName ||
                     firstRoom.roomType ||
                     booking.RoomType ||
+                    booking.roomType ||
                     'Standard Room';
 
                 numberOfRooms = booking.HotelRoomsDetails.length.toString();
@@ -265,14 +333,18 @@ const HotelBookingHistory = () => {
                     }
                 });
                 numberOfGuests = totalGuests > 0 ? totalGuests.toString() : 'N/A';
+            } else if (booking.roomType || booking.RoomType) {
+                roomType = booking.roomType || booking.RoomType;
             }
 
+            // Fixed booking status mapping
             const bookingStatus = booking.Status ||
                 booking.status ||
                 booking.bookingStatus ||
                 booking.BookingStatus ||
                 booking.confirmationStatus ||
-                'Confirmed';
+                booking.booking_status ||
+                (booking.IsConfirmed === true || booking.isConfirmed === true ? 'Confirmed' : 'Pending');
 
             const totalAmount = bookingWrapper.RasuTripInvoiceAmount ||
                 booking.InvoiceAmount ||
@@ -281,9 +353,9 @@ const HotelBookingHistory = () => {
                 booking.amount ||
                 booking.fare ||
                 booking.price ||
+                booking.Amount ||
                 '0';
 
-            // Lead guest information
             let leadGuestName = 'N/A';
             let contactNumber = 'N/A';
             let email = 'N/A';
@@ -298,15 +370,20 @@ const HotelBookingHistory = () => {
                 }
             }
 
+            // Fixed payment status mapping
             const paymentStatus = booking.PaymentStatus ||
                 booking.paymentStatus ||
-                (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
+                booking.payment_status ||
+                (bookingStatus === 'Confirmed' ? 'Completed' :
+                    bookingStatus === 'Cancelled' ? 'Refunded' :
+                        bookingStatus === 'Pending' ? 'Processing' : 'Pending');
 
             const createdAt = bookingWrapper.createdAt ||
                 booking.BookingDate ||
                 booking.bookingDate ||
                 booking.InvoiceCreatedOn ||
                 booking.createdAt ||
+                booking.created_at ||
                 new Date().toISOString();
 
             const formatCreatedDate = (dateString) => {
@@ -340,7 +417,6 @@ const HotelBookingHistory = () => {
 
             const nights = calculateNights(checkInDate, checkOutDate);
 
-            // Extract SearchTokenId for hotel voucher/confirmation download
             const searchTokenId = bookingWrapper.SearchTokenId ||
                 booking.SearchTokenId ||
                 booking.searchTokenId ||
@@ -367,11 +443,10 @@ const HotelBookingHistory = () => {
                 paymentStatus: String(paymentStatus),
                 createdAt: formatCreatedDate(createdAt),
                 rawCreatedDate: new Date(createdAt),
-                // Agent/customer fields
                 bookedByRole: booking.bookedByRole || userRole || 'customer',
                 isAgentBooking: booking.isAgentBooking || userRole === 'agent',
                 bookingSource: booking.bookingSource || (userRole === 'agent' ? 'AGENT_PORTAL' : 'CUSTOMER_PORTAL'),
-                searchTokenId: searchTokenId, // Add for voucher download
+                searchTokenId: searchTokenId,
                 rawData: bookingWrapper
             };
 
@@ -391,9 +466,9 @@ const HotelBookingHistory = () => {
             const dateB = b.rawCreatedDate || new Date(b.createdAt || 0);
 
             if (order === 'desc') {
-                return dateB - dateA; // Newest first
+                return dateB - dateA;
             } else {
-                return dateA - dateB; // Oldest first
+                return dateA - dateB;
             }
         });
 
@@ -405,9 +480,8 @@ const HotelBookingHistory = () => {
         setLoading(true);
         setError(null);
         setDebugInfo(null);
-        setInitialStatusLoaded(false); // Reset status loading flag
+        setInitialStatusLoaded(false);
 
-        // Check authentication
         if (!isHotelUserAuthenticated()) {
             setError('Please login to view your hotel booking history.');
             setLoading(false);
@@ -425,7 +499,6 @@ const HotelBookingHistory = () => {
                 errors: []
             };
 
-            // Try to fetch upcoming bookings
             try {
                 console.log('Fetching upcoming hotel bookings...');
                 const upcomingResponse = await fetchUpcomingHotelBookings(userRole);
@@ -442,7 +515,6 @@ const HotelBookingHistory = () => {
                 debugData.errors.push(`Upcoming: ${err.message || 'Unknown error'}`);
             }
 
-            // Try to fetch all bookings
             try {
                 console.log('Fetching all hotel bookings...');
                 const allResponse = await fetchAllHotelBookings(userRole);
@@ -459,24 +531,21 @@ const HotelBookingHistory = () => {
                 debugData.errors.push(`All bookings: ${err.message || 'Unknown error'}`);
             }
 
-            // Update state with loaded data
             console.log('Updating state with hotel booking data...');
             setUpcomingBookings([...upcomingData]);
             setAllBookings([...allData]);
             setDebugInfo(debugData);
 
-            // Immediately fetch real-time status for the loaded bookings
             const allLoadedBookings = [...upcomingData, ...allData];
             if (allLoadedBookings.length > 0) {
                 console.log('Immediately fetching real-time status for loaded hotel bookings...');
                 setTimeout(() => {
                     autoFetchRealTimeStatus(allLoadedBookings);
-                }, 500); // Small delay to ensure state is updated
+                }, 500);
             } else {
                 setInitialStatusLoaded(true);
             }
 
-            // Show success or partial success message
             if (upcomingData.length > 0 || allData.length > 0) {
                 console.log('Successfully loaded hotel booking data - Upcoming:', upcomingData.length, 'All:', allData.length);
             } else if (debugData.errors.length === 0) {
@@ -493,12 +562,10 @@ const HotelBookingHistory = () => {
         }
     };
 
-    // Load bookings when component mounts
     useEffect(() => {
         loadHotelBookings();
     }, []);
 
-    // Re-sort when sort order changes
     useEffect(() => {
         if (upcomingBookings.length > 0) {
             setUpcomingBookings(prev => sortBookingsByDate(prev, sortOrder));
@@ -508,19 +575,17 @@ const HotelBookingHistory = () => {
         }
     }, [sortOrder]);
 
-    // Auto-refresh real-time status every 5 minutes (only after initial load)
     useEffect(() => {
         if (!initialStatusLoaded) return;
 
         const interval = setInterval(() => {
             console.log('Auto-refreshing hotel real-time status...');
             autoFetchRealTimeStatus();
-        }, 300000); // 5 minutes for hotels
+        }, 300000);
 
         return () => clearInterval(interval);
     }, [allBookings, upcomingBookings, initialStatusLoaded]);
 
-    // Get current bookings based on selected type
     const getCurrentBookings = () => {
         console.log('Getting current hotel bookings for type:', bookingType);
         if (bookingType === 'upcoming') {
@@ -531,7 +596,6 @@ const HotelBookingHistory = () => {
 
     const currentBookings = getCurrentBookings();
 
-    // Format date for display
     const formatDate = (dateString) => {
         if (!dateString || dateString === 'N/A') return 'N/A';
         try {
@@ -547,19 +611,16 @@ const HotelBookingHistory = () => {
         }
     };
 
-    // Format amount for display
     const formatAmount = (amount) => {
         if (!amount || amount === '0') return '₹0';
         if (typeof amount === 'string' && amount.startsWith('₹')) return amount;
         return `₹${amount}`;
     };
 
-    // Handle sort order toggle
     const toggleSortOrder = () => {
         setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
     };
 
-    // Get status badge color
     const getStatusColor = (status) => {
         const statusLower = String(status).toLowerCase();
 
@@ -591,101 +652,240 @@ const HotelBookingHistory = () => {
         }
     };
 
-    // Render real-time status for hotel bookings
-    const renderRealTimeStatus = (booking) => {
-        const bookingId = booking.bookingId;
-        const isLoading = loadingStatuses.has(bookingId);
-        const statusData = realTimeStatuses[bookingId];
+    const getPaymentStatusColor = (status) => {
+        const statusLower = String(status).toLowerCase();
 
-        // Show loading initially if we haven't loaded statuses yet
-        if (!initialStatusLoaded && !statusData &&
-            (booking.bookingStatus?.toLowerCase() === 'confirmed' ||
-                booking.bookingStatus?.toLowerCase() === 'booked')) {
-            return (
-                <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
-                    <span className="text-xs text-gray-500">Loading...</span>
-                </div>
-            );
+        switch (statusLower) {
+            case 'completed':
+            case 'paid':
+            case 'success':
+                return 'text-green-600';
+            case 'processing':
+            case 'pending':
+                return 'text-orange-600';
+            case 'failed':
+            case 'cancelled':
+                return 'text-red-600';
+            case 'refunded':
+                return 'text-purple-600';
+            default:
+                return 'text-blue-600';
         }
+    };
 
-        // Show manual loading when button is clicked
-        if (isLoading) {
-            return (
-                <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
-                    <span className="text-xs text-gray-500">Checking...</span>
-                </div>
-            );
-        }
 
-        if (statusData?.error) {
-            return (
-                <div className="flex flex-col items-start">
-                    <span className="text-xs text-red-500">Error: {statusData.error}</span>
-                    <button
-                        onClick={() => handleRealTimeCheck(booking)}
-                        className="mt-1 text-xs text-blue-500 hover:text-blue-700"
-                        title="Retry"
-                    >
-                        Retry
-                    </button>
-                </div>
-            );
-        }
 
-        if (statusData?.status && statusData.success) {
-            return (
-                <div className="flex flex-col items-start">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(statusData.status)}`}>
-                        {statusData.status}
-                    </span>
-                    <div className="flex items-center mt-1">
-                        <span className="text-xs text-gray-400">
-                            {statusData.lastUpdated.toLocaleTimeString('en-IN', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}
-                        </span>
+    // Status Modal Component
+    const StatusModal = ({ booking, statusData, isLoading, onClose }) => {
+        if (!booking) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                    {/* Modal Header */}
+                    <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                        <h2 className="text-xl font-semibold text-gray-800">
+                            Booking Status Details
+                        </h2>
                         <button
-                            onClick={() => handleRealTimeCheck(booking)}
-                            className="ml-2 text-xs text-blue-500 hover:text-blue-700"
-                            title="Refresh Status"
+                            onClick={onClose}
+                            className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
                         >
-                            Refresh
+                            ×
+                        </button>
+                    </div>
+
+                    {/* Modal Content */}
+                    <div className="p-6">
+                        {/* Booking Info */}
+                        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                            <h3 className="font-semibold text-gray-800 mb-3">Hotel Booking Information</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span className="font-medium text-gray-600">Booking ID:</span>
+                                    <span className="ml-2 font-mono text-gray-800">{booking.bookingId}</span>
+                                </div>
+                                <div>
+                                    <span className="font-medium text-gray-600">Confirmation No:</span>
+                                    <span className="ml-2 font-mono text-gray-800">{booking.confirmationNo}</span>
+                                </div>
+                                <div>
+                                    <span className="font-medium text-gray-600">Hotel Name:</span>
+                                    <span className="ml-2 text-gray-800">{booking.hotelName}</span>
+                                </div>
+                                <div>
+                                    <span className="font-medium text-gray-600">City:</span>
+                                    <span className="ml-2 text-gray-800">{booking.city}</span>
+                                </div>
+                                <div>
+                                    <span className="font-medium text-gray-600">Check-in:</span>
+                                    <span className="ml-2 text-gray-800">{formatDate(booking.checkInDate)}</span>
+                                </div>
+                                <div>
+                                    <span className="font-medium text-gray-600">Check-out:</span>
+                                    <span className="ml-2 text-gray-800">{formatDate(booking.checkOutDate)}</span>
+                                </div>
+                                <div>
+                                    <span className="font-medium text-gray-600">Lead Guest:</span>
+                                    <span className="ml-2 text-gray-800">{booking.leadGuestName}</span>
+                                </div>
+                                <div>
+                                    <span className="font-medium text-gray-600">Total Amount:</span>
+                                    <span className="ml-2 text-gray-800 font-medium">{formatAmount(booking.totalAmount)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Current Status Section */}
+                        <div className="mb-6">
+                            <h3 className="font-semibold text-gray-800 mb-3">Current Status</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <h4 className="font-medium text-gray-700 mb-2">Booking Status</h4>
+                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(booking.bookingStatus)}`}>
+                                        {booking.bookingStatus}
+                                    </span>
+                                </div>
+                                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                    <h4 className="font-medium text-gray-700 mb-2">Payment Status</h4>
+                                    <span className={`font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                                        {booking.paymentStatus}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Real-time Status Section */}
+                        <div className="mb-6">
+                            <h3 className="font-semibold text-gray-800 mb-3">Real-time Status</h3>
+
+                            {isLoading ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
+                                    <span className="text-gray-600">Fetching latest status...</span>
+                                </div>
+                            ) : statusData ? (
+                                statusData.success ? (
+                                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(statusData.status)}`}>
+                                                {statusData.status}
+                                            </span>
+                                            <div className="text-sm text-gray-500">
+                                                Last updated: {statusData.lastUpdated.toLocaleString('en-IN')}
+                                            </div>
+                                        </div>
+
+                                        {/* Additional Status Details */}
+                                        {statusData.data && (
+                                            <div className="mt-4 space-y-2">
+                                                <h5 className="font-medium text-gray-700">Additional Details:</h5>
+                                                <div className="bg-gray-50 rounded p-3">
+                                                    <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                                                        {JSON.stringify(statusData.data, null, 2)}
+                                                    </pre>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="mt-4 flex justify-end">
+                                            <button
+                                                onClick={() => handleRealTimeCheck(booking)}
+                                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                                            >
+                                                Refresh Status
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                        <div className="flex items-center">
+                                            <div className="flex-shrink-0">
+                                                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <div className="ml-3">
+                                                <h4 className="text-sm font-medium text-red-800">
+                                                    Unable to fetch real-time status
+                                                </h4>
+                                                <div className="mt-2 text-sm text-red-700">
+                                                    {statusData.error}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 flex justify-end">
+                                            <button
+                                                onClick={() => handleRealTimeCheck(booking)}
+                                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                                            >
+                                                Try Again
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
+                            ) : (
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                                    <div className="text-gray-500 mb-4">No real-time status data available</div>
+                                    <button
+                                        onClick={() => handleRealTimeCheck(booking)}
+                                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                                    >
+                                        Check Status
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Timeline Section */}
+                        <div className="mb-6">
+                            <h3 className="font-semibold text-gray-800 mb-3">Booking Timeline</h3>
+                            <div className="space-y-3">
+                                <div className="flex items-center">
+                                    <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                                    <div className="flex-1">
+                                        <div className="text-sm font-medium text-gray-800">Booking Created</div>
+                                        <div className="text-xs text-gray-500">{booking.createdAt}</div>
+                                    </div>
+                                </div>
+
+                                {booking.bookingStatus === 'Confirmed' && (
+                                    <div className="flex items-center">
+                                        <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+                                        <div className="flex-1">
+                                            <div className="text-sm font-medium text-gray-800">Booking Confirmed</div>
+                                            <div className="text-xs text-gray-500">Confirmation No: {booking.confirmationNo}</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {statusData?.status && statusData.success && statusData.status !== booking.bookingStatus && (
+                                    <div className="flex items-center">
+                                        <div className={`w-3 h-3 rounded-full mr-3 ${statusData.status.toLowerCase().includes('check') ? 'bg-purple-500' : 'bg-orange-500'}`}></div>
+                                        <div className="flex-1">
+                                            <div className="text-sm font-medium text-gray-800">Real-time Status: {statusData.status}</div>
+                                            <div className="text-xs text-gray-500">Updated: {statusData.lastUpdated.toLocaleString('en-IN')}</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Modal Footer */}
+                    <div className="flex justify-end px-6 py-4 bg-gray-50 border-t border-gray-200">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                        >
+                            Close
                         </button>
                     </div>
                 </div>
-            );
-        }
-
-        // For non-confirmed bookings or when no status available
-        const isConfirmed = booking.bookingStatus?.toLowerCase() === 'confirmed' ||
-            booking.bookingStatus?.toLowerCase() === 'booked';
-
-        if (!isConfirmed) {
-            return (
-                <div className="flex items-center">
-                    <span className="text-xs text-gray-400">Not applicable</span>
-                </div>
-            );
-        }
-
-        return (
-            <div className="flex items-center">
-                <span className="text-xs text-gray-400">No live data</span>
-                <button
-                    onClick={() => handleRealTimeCheck(booking)}
-                    className="ml-2 text-xs text-blue-500 hover:text-blue-700"
-                    title="Check Status"
-                >
-                    Check
-                </button>
             </div>
         );
     };
 
-    // Render loading state
     if (loading) {
         return (
             <div className="bg-white rounded-lg shadow p-6">
@@ -699,223 +899,245 @@ const HotelBookingHistory = () => {
     }
 
     return (
-        <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h5 className="text-2xl font-bold text-gray-800">My Hotel Bookings</h5>
-                </div>
-
-            </div>
-
-            {/* Error Display */}
-            {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center">
-                        <span className="text-red-500 text-xl mr-2">⚠️</span>
-                        <div>
-                            <h3 className="text-red-800 font-medium">Error Loading Hotel Bookings</h3>
-                            <p className="text-red-600 mt-1">{error}</p>
-                            <button
-                                onClick={loadHotelBookings}
-                                className="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
-                            >
-                                Try Again
-                            </button>
-                        </div>
+        <>
+            <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h5 className="text-2xl font-bold text-gray-800">My Hotel Bookings</h5>
                     </div>
                 </div>
-            )}
 
-            {/* Debug Info */}
-            {debugInfo && debugInfo.errors && debugInfo.errors.length > 0 && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
-                    <strong>Debug Info:</strong> {debugInfo.errors.join(', ')}
+                {error && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center">
+                            <div>
+                                <h3 className="text-red-800 font-medium">Error Loading Hotel Bookings</h3>
+                                <p className="text-red-600 mt-1">{error}</p>
+                                <button
+                                    onClick={loadHotelBookings}
+                                    className="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                                >
+                                    Try Again
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {debugInfo && debugInfo.errors && debugInfo.errors.length > 0 && (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                        <strong>Debug Info:</strong> {debugInfo.errors.join(', ')}
+                    </div>
+                )}
+
+                {/* Booking Type Tabs */}
+                <div className="flex w-full mb-6 bg-gray-50 p-2 shadow-sm">
+                    <button
+                        className={`flex-1 text-center rounded-lg transition-all duration-300 font-semibold text-sm px-6 py-2
+                ${bookingType === 'upcoming'
+                                ? 'bg-red-500 text-white shadow-sm'
+                                : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
+            `}
+                        onClick={() => setBookingType('upcoming')}
+                    >
+                        Upcoming Bookings
+                        {upcomingBookings.length > 0 && (
+                            <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
+                    ${bookingType === 'upcoming'
+                                    ? 'bg-white text-red-500'
+                                    : 'bg-red-100 text-red-600'}
+                `}>
+                                {upcomingBookings.length}
+                            </span>
+                        )}
+                    </button>
+
+                    <button
+                        className={`flex-1 text-center px-6 py-2 rounded-lg transition-all duration-300 font-semibold text-sm
+                ${bookingType === 'all'
+                                ? 'bg-red-500 text-white shadow-md'
+                                : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
+            `}
+                        onClick={() => setBookingType('all')}
+                    >
+                        All Bookings
+                        {allBookings.length > 0 && (
+                            <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
+                    ${bookingType === 'all'
+                                    ? 'bg-white text-red-500'
+                                    : 'bg-red-100 text-red-600'}
+                `}>
+                                {allBookings.length}
+                            </span>
+                        )}
+                    </button>
                 </div>
-            )}
 
-            {/* Booking Type Tabs */}
-            <div className="flex w-full mb-6 gap-2">
-                <button
-                    className={`flex-1 text-center px-4 py-2 rounded transition-all duration-200 font-medium
-                        ${bookingType === 'upcoming'
-                            ? 'bg-green-500 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
-                    `}
-                    onClick={() => setBookingType('upcoming')}
-                >
-                    Upcoming Bookings
-                    {upcomingBookings.length > 0 && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-white text-green-500 rounded-full">
-                            {upcomingBookings.length}
-                        </span>
-                    )}
-                </button>
-                <button
-                    className={`flex-1 text-center px-4 py-2 rounded transition-all duration-200 font-medium
-                        ${bookingType === 'all'
-                            ? 'bg-green-500 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
-                    `}
-                    onClick={() => setBookingType('all')}
-                >
-                    All Bookings
-                    {allBookings.length > 0 && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-white text-green-500 rounded-full">
-                            {allBookings.length}
-                        </span>
-                    )}
-                </button>
-            </div>
-
-            {/* Hotel Bookings Table */}
-            <div className="bg-white rounded border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-gray-100">
-                            <tr className="border-b border-gray-200">
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Booking ID</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Hotel Name</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">City</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Check-in</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Check-out</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Nights</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Rooms</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Guests</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Room Type</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Confirmation No.</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Amount</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payment Status</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200"
-                                    onClick={toggleSortOrder}
-                                    title="Click to change sort order">
-                                    Booked On {sortOrder === 'desc' ? '↓' : '↑'}
-                                </th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-Time Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-gray-50">
-                            {console.log('Rendering table rows for:', currentBookings.length, 'hotel bookings')}
-                            {currentBookings.length === 0 ? (
-                                <tr>
-                                    <td colSpan="16" className="px-4 py-12 text-center">
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-4xl mb-4">🏨</span>
-                                            <span className="text-lg font-medium text-gray-600">No hotel bookings found</span>
-                                            <span className="text-sm text-gray-400 mt-1">
-                                                {bookingType === 'upcoming'
-                                                    ? 'Your upcoming hotel stays will appear here'
-                                                    : 'Your hotel booking history will appear here'
-                                                }
-                                            </span>
-                                            <div className="mt-2 text-xs text-gray-500">
-                                                Debug: Upcoming={upcomingBookings.length}, All={allBookings.length}, Current={currentBookings.length}
-                                                <br />
-                                                Sort Order: {sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
-                                            </div>
-                                            <button
-                                                onClick={loadHotelBookings}
-                                                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                            >
-                                                Refresh Bookings
-                                            </button>
-                                        </div>
-                                    </td>
+                {/* Hotel Bookings Table */}
+                <div className="bg-white rounded border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-gray-100">
+                                <tr className="border-b border-gray-200">
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Booking ID</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Hotel Details</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Check-in</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Check-out</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Nights</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Rooms/Guests</th>
+                                    <th className="px-3 py-3 text-left text-sm font-medium text-gray-700 w-20">Room Type</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Confirmation No.</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Booking Status</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Amount</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payment Status</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200"
+                                        onClick={toggleSortOrder}
+                                        title="Click to change sort order">
+                                        Booked On {sortOrder === 'desc' ? '↓' : '↑'}
+                                    </th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-Time Status</th>
                                 </tr>
-                            ) : (
-                                currentBookings.map((booking, index) => {
-                                    console.log(`Rendering row ${index + 1}:`, booking);
-                                    return (
-                                        <tr key={`${booking.bookingId}-${index}`} className="border-b border-gray-200 hover:bg-gray-100">
-                                            <td className="px-4 py-3 text-sm text-gray-900 font-mono">
-                                                {booking.bookingId}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                                                <div className="max-w-xs truncate" title={booking.hotelName}>
-                                                    {booking.hotelName}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    Code: {booking.hotelCode}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900">
-                                                {booking.city}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900">
-                                                {formatDate(booking.checkInDate)}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900">
-                                                {formatDate(booking.checkOutDate)}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                                                {booking.nights} {booking.nights === 1 ? 'night' : 'nights'}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900">
-                                                {booking.numberOfRooms}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900">
-                                                {booking.numberOfGuests}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-600">
-                                                <div className="max-w-xs truncate" title={booking.roomType}>
-                                                    {booking.roomType}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-900 font-mono">
-                                                {booking.confirmationNo}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.bookingStatus)}`}>
-                                                    {booking.bookingStatus}
+                            </thead>
+                            <tbody className="bg-gray-50">
+                                {console.log('Rendering table rows for:', currentBookings.length, 'hotel bookings')}
+                                {currentBookings.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="14" className="px-4 py-12 text-center">
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-lg font-medium text-gray-600">No hotel bookings found</span>
+                                                <span className="text-sm text-gray-400 mt-1">
+                                                    {bookingType === 'upcoming'
+                                                        ? 'Your upcoming hotel stays will appear here'
+                                                        : 'Your hotel booking history will appear here'
+                                                    }
                                                 </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                                {formatAmount(booking.totalAmount)}
-                                            </td>
-                                            <td className="px-4 py-3 text-sm">
-                                                <span className={`font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' ? 'text-green-600' :
-                                                    booking.paymentStatus?.toLowerCase() === 'processing' ? 'text-orange-600' :
-                                                        booking.paymentStatus?.toLowerCase() === 'failed' ? 'text-red-600' :
-                                                            'text-blue-600'
-                                                    }`}>
-                                                    {booking.paymentStatus}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-600">
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium">{booking.createdAt}</span>
-                                                    <span className="text-xs text-gray-400">
-                                                        {sortOrder === 'desc' ? 'Latest First' : 'Oldest First'}
-                                                    </span>
+                                                <div className="mt-2 text-xs text-gray-500">
+                                                    Debug: Upcoming={upcomingBookings.length}, All={allBookings.length}, Current={currentBookings.length}
+                                                    <br />
+                                                    Sort Order: {sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
                                                 </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-sm">
                                                 <button
-                                                    onClick={() => {
-                                                        console.log('View hotel booking details:', booking);
-                                                        // You can add your view details logic here
-                                                    }}
-                                                    className="text-blue-500 hover:text-blue-700 font-medium flex items-center"
+                                                    onClick={loadHotelBookings}
+                                                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                                 >
-                                                    <span className="mr-1">👁️</span>
-                                                    View
+                                                    Refresh Bookings
                                                 </button>
-                                            </td>
-                                            <td className="px-4 py-3 text-sm">
-                                                {renderRealTimeStatus(booking)}
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    currentBookings.map((booking, index) => {
+                                        console.log(`Rendering row ${index + 1}:`, booking);
+                                        const isDownloadingInvoice = downloadingInvoices.has(booking.bookingId);
+
+                                        return (
+                                            <tr key={`${booking.bookingId}-${index}`} className="border-b border-gray-200 hover:bg-gray-100">
+                                                <td className="px-4 py-3 text-sm text-gray-900 font-mono">
+                                                    {booking.bookingId}
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-900">
+                                                    <div className="font-medium max-w-xs">
+                                                        <div className="truncate" title={booking.hotelName}>
+                                                            {booking.hotelName}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 mt-1">
+                                                            <div>Code: {booking.hotelCode}</div>
+                                                            <div>City: {booking.city}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-900">
+                                                    {formatDate(booking.checkInDate)}
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-900">
+                                                    {formatDate(booking.checkOutDate)}
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                                                    {booking.nights} {booking.nights === 1 ? 'night' : 'nights'}
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-900">
+                                                    <div>
+                                                        <div>{booking.numberOfRooms} room{booking.numberOfRooms !== '1' ? 's' : ''}</div>
+                                                        <div className="text-xs text-gray-500">{booking.numberOfGuests} guest{booking.numberOfGuests !== '1' ? 's' : ''}</div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-3 text-sm text-gray-600 w-20">
+                                                    <div className="truncate text-xs" title={booking.roomType}>
+                                                        {booking.roomType}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-900 font-mono">
+                                                    {booking.confirmationNo}
+                                                </td>
+                                                <td className="px-4 py-3 text-sm">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.bookingStatus)}`}>
+                                                        {booking.bookingStatus}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                                    {formatAmount(booking.totalAmount)}
+                                                </td>
+                                                <td className="px-4 py-3 text-sm">
+                                                    <span className={`font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                                                        {booking.paymentStatus}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-600">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">{booking.createdAt}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm">
+                                                    <div className="flex flex-col space-y-1">
+
+
+                                                        {/* Download Invoice Button */}
+                                                        <button
+                                                            onClick={() => handleInvoiceDownload(booking)}
+                                                            disabled={isDownloadingInvoice || !booking.searchTokenId}
+                                                            className={`px-3 py-1 rounded text-white text-xs ${!booking.searchTokenId
+                                                                ? "bg-gray-400 cursor-not-allowed"
+                                                                : isDownloadingInvoice
+                                                                    ? "bg-orange-500 cursor-wait"
+                                                                    : "bg-red-500 hover:bg-red-600"
+                                                                }`}
+                                                            title={!booking.searchTokenId ? "Invoice not available" : "Download Invoice"}
+                                                        >
+                                                            {isDownloadingInvoice ? "Downloading..." : "Invoice"}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm">
+                                                    {/* Status Button */}
+                                                    <button
+                                                        onClick={() => handleOpenStatusModal(booking)}
+                                                        className="text-xs text-green-500 hover:text-green-700"
+                                                        title="View Detailed Status"
+                                                    >
+                                                        Status
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-
-        </div>
+            {/* Status Modal */}
+            {statusModalOpen && (
+                <StatusModal
+                    booking={selectedBookingForStatus}
+                    statusData={realTimeStatuses[selectedBookingForStatus?.bookingId]}
+                    isLoading={statusModalLoading}
+                    onClose={handleCloseStatusModal}
+                />
+            )}
+        </>
     );
 };
 

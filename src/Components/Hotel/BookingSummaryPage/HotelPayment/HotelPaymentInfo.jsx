@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, Button, Alert, Modal } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-// import { createHotelOrder, validateHotelPayment, bookHotel } from '../../../APIS/HotelApi/HotelAPi';
 import { createHotelOrder, validateHotelPayment, bookHotel, sendHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
 
-const HotelPaymentInfo = () => {
+const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
   const [loading, setLoading] = useState(false);
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [bookingStage, setBookingStage] = useState('');
@@ -14,24 +13,194 @@ const HotelPaymentInfo = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // CRITICAL: Prevent duplicate bookings
+  const bookingAttemptRef = useRef(null);
+  const [bookingProcessed, setBookingProcessed] = useState(false);
+
   const {
     payload = {},
     hotelBookingDetails = {},
     priceDetails = {},
     reviewData = {},
     isPANMandatory = false,
+    blockedRoomData = {},
+    // Get coupon data from multiple sources (location state + props)
+    couponData: locationCouponData = null,
+    appliedCouponDiscount: locationCouponDiscount = 0,
   } = location.state || {};
 
-  const {
-    baseFare = 0,
-    cgst = 0,
-    sgst = 0,
-    discount = 0,
-    vendorCommission = 0,
-  } = priceDetails;
+  // ENHANCED: Unified coupon data extraction with priority
+  const getCouponData = () => {
+    let finalCouponData = null;
+    let finalCouponDiscount = 0;
 
-  const totalPayable = baseFare + cgst + sgst - discount;
-  const roundedTotal = parseFloat(totalPayable.toFixed(2));
+    // Priority 1: Props from parent component (most reliable)
+    if (appliedCoupon) {
+      finalCouponData = appliedCoupon;
+      finalCouponDiscount = couponDiscount || 0;
+    }
+    // Priority 2: Location state data
+    else if (locationCouponData) {
+      finalCouponData = locationCouponData;
+      finalCouponDiscount = locationCouponDiscount || 0;
+    }
+    // Priority 3: Check other possible sources
+    else if (location.state?.appliedCoupon) {
+      finalCouponData = location.state.appliedCoupon;
+    }
+    else if (priceDetails?.couponData) {
+      finalCouponData = priceDetails.couponData;
+    }
+
+    // Calculate discount if not already calculated
+    if (finalCouponData && finalCouponDiscount <= 0) {
+      const baseFare = getBaseFareForCoupon();
+
+      if (finalCouponData.discountType === 'percentage' || finalCouponData.type === 'PERCENTAGE') {
+        const discountPercent = finalCouponData.discount || finalCouponData.value || 0;
+        finalCouponDiscount = (baseFare * discountPercent) / 100;
+      } else if (finalCouponData.discountType === 'flat' || finalCouponData.type === 'FLAT') {
+        finalCouponDiscount = finalCouponData.discount || finalCouponData.value || 0;
+      }
+
+      // Apply maximum discount limits
+      if (finalCouponData.maxDiscount && finalCouponDiscount > finalCouponData.maxDiscount) {
+        finalCouponDiscount = finalCouponData.maxDiscount;
+      }
+
+      // Apply minimum order amount check
+      if (finalCouponData.minOrderAmount && baseFare < finalCouponData.minOrderAmount) {
+        console.warn('Order amount is below minimum required for coupon');
+        finalCouponDiscount = 0;
+      }
+    }
+
+    console.log('Final Coupon Data:', finalCouponData);
+    console.log('Final Coupon Discount:', finalCouponDiscount);
+
+    return {
+      couponData: finalCouponData,
+      couponDiscount: Math.max(0, finalCouponDiscount)
+    };
+  };
+
+  // Helper function to get base fare for coupon calculation
+  const getBaseFareForCoupon = () => {
+    const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
+    const priceData = roomData?.Price || {};
+
+    return priceData.PublishedPrice ||
+      priceData.RoomPrice ||
+      priceDetails?.publishedPrice ||
+      priceDetails?.baseFare || 0;
+  };
+
+  // UPDATED: Enhanced price calculation with proper coupon handling
+  const calculateFinalPrice = () => {
+    // Get coupon information
+    const { couponData: activeCoupon, couponDiscount: activeCouponDiscount } = getCouponData();
+
+    // Get data from blocked room response if available
+    const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
+    const priceData = roomData?.Price || {};
+
+    // Use blocked room data first, then fallback to priceDetails
+    const {
+      baseFare = priceData.RoomPrice || priceDetails?.baseFare || 0,
+      publishedPrice = priceData.PublishedPrice || priceDetails?.publishedPrice || 0,
+      tax = priceData.Tax || priceDetails?.tax || 0,
+      discount = priceData.Discount || priceDetails?.discount || 0,
+      serviceCharges = priceData.ServiceCharges || priceDetails?.serviceCharges || 0,
+      otherCharges = priceData.OtherCharges || priceDetails?.otherCharges || 0,
+      agentCommission = priceData.AgentCommission || priceDetails?.agentCommission || 0,
+      tds = priceData.TDS || priceDetails?.tds || 0,
+      vendorCommissionPercentage = priceDetails?.vendorCommissionPercentage || 12,
+    } = priceDetails || {};
+
+    // GST data from blocked room response
+    const gstData = priceData.GST || {};
+    const cgstAmount = gstData.CGSTAmount || 0;
+    const sgstAmount = gstData.SGSTAmount || 0;
+    const igstAmount = gstData.IGSTAmount || 0;
+    const cgstRate = gstData.CGSTRate || 0;
+    const sgstRate = gstData.SGSTRate || 0;
+    const igstRate = gstData.IGSTRate || 0;
+
+    // Use PublishedPrice as main price (this includes room price + tax)
+    const actualBaseFare = publishedPrice;
+
+    // Calculate vendor commission on published price
+    const vendorCommissionAmount = (actualBaseFare * vendorCommissionPercentage) / 100;
+
+    // Calculate GST
+    let totalGST = 0;
+    if (cgstAmount > 0 || sgstAmount > 0 || igstAmount > 0) {
+      totalGST = cgstAmount + sgstAmount + igstAmount;
+    } else if (cgstRate > 0 || sgstRate > 0 || igstRate > 0) {
+      // Calculate GST on (published price + commission) if not provided
+      const gstBase = actualBaseFare + vendorCommissionAmount;
+      totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
+    }
+
+    // ENHANCED: Use the calculated coupon discount
+    const couponDiscountAmount = activeCouponDiscount;
+
+    // Final amount customer pays WITH coupon discount
+    const subtotal = actualBaseFare + vendorCommissionAmount + totalGST - discount;
+    const customerTotal = Math.max(0, subtotal - couponDiscountAmount);
+
+    console.log('Price Calculation Details:', {
+      actualBaseFare,
+      vendorCommissionAmount,
+      totalGST,
+      discount,
+      couponDiscountAmount,
+      subtotal,
+      customerTotal,
+      activeCoupon: activeCoupon?.code || activeCoupon?.couponCode || 'None'
+    });
+
+    return {
+      actualBaseFare,
+      vendorCommissionAmount,
+      vendorCommissionPercentage,
+      totalGST,
+      cgstAmount,
+      sgstAmount,
+      igstAmount,
+      cgstRate,
+      sgstRate,
+      igstRate,
+      discount,
+      serviceCharges,
+      otherCharges,
+      couponDiscount: couponDiscountAmount,
+      couponData: activeCoupon,
+      subtotal,
+      roundedTotal: parseFloat(customerTotal.toFixed(2))
+    };
+  };
+
+  const priceCalculation = calculateFinalPrice();
+  const {
+    roundedTotal,
+    actualBaseFare,
+    vendorCommissionAmount,
+    vendorCommissionPercentage,
+    totalGST,
+    cgstAmount,
+    sgstAmount,
+    igstAmount,
+    cgstRate,
+    sgstRate,
+    igstRate,
+    discount,
+    serviceCharges,
+    otherCharges,
+    couponDiscount: finalCouponDiscount,
+    couponData: activeCoupon,
+    subtotal
+  } = priceCalculation;
 
   // Custom Loading Popup Component
   const BookingLoadingModal = () => (
@@ -44,9 +213,7 @@ const HotelPaymentInfo = () => {
     >
       <Modal.Body className="text-center py-5">
         <div className="mb-4">
-          {/* Custom CSS Animation */}
-          <div
-          >
+          <div className="spinner-border text-danger" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
         </div>
@@ -70,7 +237,6 @@ const HotelPaymentInfo = () => {
           </p>
         </div>
 
-        {/* Progress indicators */}
         <div className="mt-4">
           <div className="d-flex justify-content-center align-items-center">
             <div className="progress w-75" style={{ height: '6px' }}>
@@ -111,9 +277,16 @@ const HotelPaymentInfo = () => {
     return leadPassenger?.Email || "mohitverma8817@gmail.com";
   };
 
-  // ✅ CORRECTED: Lead passenger logic - Only ONE lead passenger across ALL rooms
+  // ENHANCED: Generate unique ClientReferenceNo to prevent duplicates
+  const generateUniqueClientReference = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    return `CLT_${timestamp}_${random}`;
+  };
+
+  // UPDATED: Include coupon discount in booking data
   const formatBookingData = (bookingDetails) => {
-    console.log('🔄 Input booking details:', JSON.stringify(bookingDetails, null, 2));
+    console.log('Input booking details:', JSON.stringify(bookingDetails, null, 2));
 
     // Step 1: Validate input data structure
     let hotelRoomsData = [];
@@ -133,7 +306,7 @@ const HotelPaymentInfo = () => {
       throw new Error('No rooms found in booking data');
     }
 
-    // ✅ CRITICAL FIX: Global lead passenger control
+    // CRITICAL FIX: Global lead passenger control
     let leadPassengerAssigned = false;
     let leadPassengerName = '';
 
@@ -148,7 +321,7 @@ const HotelPaymentInfo = () => {
           if (isAdult) {
             leadPassengerName = `${passenger.FirstName || ''} ${passenger.LastName || ''}`.trim();
             leadPassengerFound = true;
-            console.log(`✅ Selected ${leadPassengerName} as the SINGLE Lead Passenger (Room ${roomIndex + 1})`);
+            console.log(`Selected ${leadPassengerName} as the SINGLE Lead Passenger (Room ${roomIndex + 1})`);
             break;
           }
         }
@@ -156,7 +329,7 @@ const HotelPaymentInfo = () => {
     }
 
     if (!leadPassengerFound) {
-      throw new Error('❌ No adult passenger found to assign as lead passenger');
+      throw new Error('No adult passenger found to assign as lead passenger');
     }
 
     const processedRooms = hotelRoomsData.map((room, roomIndex) => {
@@ -168,19 +341,19 @@ const HotelPaymentInfo = () => {
         const isAdult = parseInt(passenger.PaxType) === 1 || passenger.Age >= 18;
         const passengerName = `${passenger.FirstName || ''} ${passenger.LastName || ''}`.trim();
 
-        // ✅ CRITICAL: Only the FIRST adult passenger becomes lead passenger
+        // CRITICAL: Only the FIRST adult passenger becomes lead passenger
         const shouldBeLeadPassenger = !leadPassengerAssigned && isAdult && passengerName === leadPassengerName;
 
         if (shouldBeLeadPassenger) {
           leadPassengerAssigned = true;
-          console.log(`✅ Assigning ${passengerName} as Lead Passenger (Room ${roomIndex + 1})`);
+          console.log(`Assigning ${passengerName} as Lead Passenger (Room ${roomIndex + 1})`);
         }
 
         if (isAdult) {
           // PAN validation for adults
           const panValue = passenger.PAN;
           if (!panValue || typeof panValue !== 'string') {
-            throw new Error(`❌ Adult passenger "${passengerName}" is missing PAN number`);
+            throw new Error(`Adult passenger "${passengerName}" is missing PAN number`);
           }
 
           const cleanPAN = panValue.trim().toUpperCase();
@@ -189,15 +362,15 @@ const HotelPaymentInfo = () => {
           if (!cleanPAN ||
             ['NULL', 'UNDEFINED', 'N/A', 'NA', 'NONE', ''].includes(cleanPAN) ||
             cleanPAN.replace(/\s/g, '') === '') {
-            throw new Error(`❌ Adult passenger "${passengerName}" has invalid PAN: "${panValue}"`);
+            throw new Error(`Adult passenger "${passengerName}" has invalid PAN: "${panValue}"`);
           }
 
           // PAN format validation
           if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(cleanPAN) && cleanPAN.length < 5) {
-            throw new Error(`❌ Invalid PAN format for "${passengerName}": "${cleanPAN}". Required format: ABCDE1234F`);
+            throw new Error(`Invalid PAN format for "${passengerName}": "${cleanPAN}". Required format: ABCDE1234F`);
           }
 
-          // ✅ EXACT format - only ONE lead passenger
+          // EXACT format - only ONE lead passenger
           return {
             Title: String(passenger.Title || "Mr").trim(),
             FirstName: String(passenger.FirstName || "").trim(),
@@ -206,7 +379,7 @@ const HotelPaymentInfo = () => {
             Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
             Email: String(passenger.Email || "").trim().toLowerCase(),
             PaxType: 1, // Adult
-            LeadPassenger: shouldBeLeadPassenger ? "true" : "false", // ✅ Only ONE true
+            LeadPassenger: shouldBeLeadPassenger ? "true" : "false", // Only ONE true
             Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 0,
             PassportNo: null,
             PassportIssueDate: null,
@@ -229,7 +402,7 @@ const HotelPaymentInfo = () => {
             Phoneno: String(passenger.Phoneno || "").replace(/\D/g, ''),
             Email: String(passenger.Email || "").trim().toLowerCase(),
             PaxType: 2, // Child
-            LeadPassenger: "false", // ✅ Children are NEVER lead passengers
+            LeadPassenger: "false", // Children are NEVER lead passengers
             Age: passenger.Age && !isNaN(passenger.Age) ? parseInt(passenger.Age) : 5,
             PassportNo: null,
             PassportIssueDate: null,
@@ -250,21 +423,21 @@ const HotelPaymentInfo = () => {
       };
     });
 
-    // ✅ Final validation: Ensure exactly ONE lead passenger
+    // Final validation: Ensure exactly ONE lead passenger
     const leadCount = processedRooms
       .flatMap(room => room.HotelPassenger)
       .filter(passenger => passenger.LeadPassenger === "true")
       .length;
 
     if (leadCount === 0) {
-      throw new Error('❌ No lead passenger found. At least one adult passenger is required.');
+      throw new Error('No lead passenger found. At least one adult passenger is required.');
     }
 
     if (leadCount > 1) {
-      throw new Error(`❌ Multiple lead passengers found (${leadCount}). Only ONE lead passenger is allowed.`);
+      throw new Error(`Multiple lead passengers found (${leadCount}). Only ONE lead passenger is allowed.`);
     }
 
-    console.log(`✅ SUCCESS: Exactly ONE lead passenger set: ${leadPassengerName}`);
+    console.log(`SUCCESS: Exactly ONE lead passenger set: ${leadPassengerName}`);
 
     // Check for duplicate PANs
     const panNumbers = new Set();
@@ -284,80 +457,67 @@ const HotelPaymentInfo = () => {
     });
 
     if (duplicatePANs.length > 0) {
-      throw new Error(`❌ Duplicate PAN numbers found: ${duplicatePANs.join(', ')}. Each passenger must have a unique PAN number.`);
+      throw new Error(`Duplicate PAN numbers found: ${duplicatePANs.join(', ')}. Each passenger must have a unique PAN number.`);
     }
 
-    // Build final payload
+    // CRITICAL: Generate unique ClientReferenceNo to prevent duplicate bookings
+    const uniqueClientRef = generateUniqueClientReference();
+
+    // ENHANCED: Include proper coupon discount and vendor commission in payload
     const finalPayload = {
       ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`),
       HotelCode: String(bookingDetails.HotelCode || 67),
       HotelName: String(bookingDetails.HotelName || "ALILA DIWA"),
       GuestNationality: "IN",
       NoOfRooms: String(processedRooms.length),
-      ClientReferenceNo: bookingDetails.ClientReferenceNo || 0,
-      vendorCommission: bookingDetails.vendorCommission || 10,
-      CouponDiscount: bookingDetails.CouponDiscount || 5,
+      ClientReferenceNo: uniqueClientRef, // CRITICAL: Unique reference
+      CouponDiscount: finalCouponDiscount, // FIXED: Use calculated coupon discount
+      vendorCommission: vendorCommissionAmount, // Add vendor commission amount
+      agentCommissionPercent: 0, // Set to 0 as per your requirement
+      vendorCommissionPercentage: vendorCommissionPercentage, // Add vendor commission percentage
       IsVoucherBooking: "true",
       HotelRoomsDetails: processedRooms,
       UserIp: String(bookingDetails.UserIp || "49.36.217.215"),
-      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed")
+      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed"),
+      // ENHANCED: Add coupon information for tracking
+      appliedCoupon: activeCoupon ? {
+        code: activeCoupon.code || activeCoupon.couponCode,
+        discount: finalCouponDiscount,
+        originalDiscount: activeCoupon.discount || activeCoupon.value,
+        type: activeCoupon.discountType || activeCoupon.type
+      } : null
     };
 
-    console.log('✅ Final booking payload (SINGLE lead passenger):', JSON.stringify(finalPayload, null, 2));
+    console.log('Final booking payload:', JSON.stringify(finalPayload, null, 2));
+    console.log(`Customer Pays: ₹${roundedTotal} (Original: ₹${subtotal}, Coupon Discount: ₹${finalCouponDiscount})`);
 
     return finalPayload;
   };
 
-  // API error handler
-  const handleApiError = (error, context = 'API') => {
-    let errorMessage = `${context} failed. Please try again.`;
+  // FIXED: Extract API response error directly
+  const getApiErrorMessage = (error) => {
+    console.error('API Error:', error);
 
-    if (error?.response) {
-      const status = error.response.status;
+    if (error?.response?.data) {
       const data = error.response.data;
 
-      if (data?.error?.ErrorCode === 1163 || data?.Error?.ErrorCode === 1163) {
-        errorMessage = `❌ PAN MANDATORY ERROR (Code: 1163): ${data?.error?.ErrorMessage || data?.Error?.ErrorMessage || 'Mandatory PAN information not available.'}
-
-  This error occurs when:
-  • Multiple passengers have LeadPassenger: "true" 
-  • Duplicate PAN numbers are used
-  • PAN format is incorrect (must be ABCDE1234F)
-  • Required PAN data is missing for adults
-
-  Please ensure:
-  ✅ Only ONE passenger is marked as lead passenger
-  ✅ All adult passengers have unique, valid PAN numbers
-  ✅ PAN format: 5 letters + 4 digits + 1 letter`;
-        return { message: errorMessage, isPANError: true };
-      }
-
-      switch (status) {
-        case 400:
-          errorMessage = data?.Error?.ErrorMessage || data?.message || 'Invalid request data. Please check your booking details.';
-          break;
-        case 422:
-          errorMessage = data?.Error?.ErrorMessage || 'Invalid booking data. Please check all required fields.';
-          break;
-        case 500:
-          errorMessage = 'Hotel booking service is temporarily unavailable. Please try again later.';
-          if (data?.Error?.ErrorMessage) errorMessage += ` (${data.Error.ErrorMessage})`;
-          break;
-        default:
-          errorMessage = data?.Error?.ErrorMessage || data?.message || `${context} failed with status ${status}`;
-      }
-    } else if (error?.request) {
-      errorMessage = 'Network error. Please check your internet connection and try again.';
-    } else {
-      errorMessage = error?.message || `${context} failed due to an unexpected error.`;
+      // Try different error message paths from API response
+      if (data.error?.ErrorMessage) return data.error.ErrorMessage;
+      if (data.Error?.ErrorMessage) return data.Error.ErrorMessage;
+      if (data.message) return data.message;
+      if (data.error?.message) return data.error.message;
+      if (data.Error?.message) return data.Error.message;
+      if (typeof data === 'string') return data;
     }
-    return { message: errorMessage };
+
+    if (error?.message) return error.message;
+
+    return 'An unexpected error occurred';
   };
 
   // Toast helpers
-  const showErrorToast = (message, additionalInfo = '') => {
-    const toastMessage = additionalInfo ? `${message}\n${additionalInfo}` : message;
-    toast.error(toastMessage, {
+  const showErrorToast = (title, message) => {
+    toast.error(`${title}: ${message}`, {
       position: "top-right",
       autoClose: 10000,
       hideProgressBar: false,
@@ -379,182 +539,120 @@ const HotelPaymentInfo = () => {
     });
   };
 
-  // ✅ FIXED: Payment success handler without invoice email functionality
-  //   const handlePaymentSuccess = async (response, formattedBookingData, validation) => {
-  //     try {
-  //       setBookingStage('Confirming your hotel reservation...');
-  //       console.log('🚀 Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
-
-  //       const bookingResponse = await bookHotel(formattedBookingData);
-  //       console.log('📨 Booking API response:', JSON.stringify(bookingResponse, null, 2));
-
-  //       // Check for PAN mandatory errors first
-  //       if (
-  //         bookingResponse?.error?.ErrorCode === 1163 ||
-  //         bookingResponse?.Error?.ErrorCode === 1163 ||
-  //         (bookingResponse?.error?.ErrorMessage?.toLowerCase().includes('mandatory pan'))
-  //       ) {
-  //         const panErrorMsg = `❌ HOTEL API ERROR: PAN MANDATORY (Code: 1163)
-
-  // API Error: ${bookingResponse?.error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage || 'Mandatory PAN info unavailable.'}
-
-  // This usually indicates:
-  // • Multiple passengers marked as LeadPassenger: "true"
-  // • Duplicate PAN numbers in the request
-  // • Invalid PAN format or missing PAN data
-  // • API-side validation failure
-
-  // Please check your booking data and contact support if the issue persists.`;
-
-  //         setError(panErrorMsg);
-  //         showErrorToast('❌ Hotel API PAN Error', panErrorMsg);
-  //         setBookingInProgress(false);
-  //         setLoading(false);
-  //         return;
-  //       }
-
-  //       // Check booking success
-  //       const isBookingSuccessful =
-  //         (bookingResponse?.message && /successfully|confirmed|processed/i.test(bookingResponse.message)) ||
-  //         bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
-  //         bookingResponse?.Status?.toLowerCase() === 'success' ||
-  //         bookingResponse?.success === true;
-
-  //       const hasRequiredBookingData =
-  //         bookingResponse?.userId &&
-  //         bookingResponse?.SearchTokenId &&
-  //         bookingResponse?.UserIp;
-
-  //       if (isBookingSuccessful && hasRequiredBookingData) {
-  //         setBookingStage('Booking confirmed! Preparing confirmation details...');
-  //         showSuccessToast('🎉 Hotel booking confirmed successfully!');
-
-  //         // Navigate to confirmation page
-  //         setBookingStage('Redirecting to confirmation page...');
-
-  //         setTimeout(() => {
-  //           setBookingInProgress(false);
-  //           navigate('/hotel/confirmation', {
-  //             state: {
-  //               booking: bookingResponse,
-  //               amount: roundedTotal,
-  //               reviewData,
-  //               hotelDetails: {
-  //                 name: formattedBookingData?.HotelName,
-  //                 code: formattedBookingData?.HotelCode,
-  //               },
-  //               paymentDetails: {
-  //                 orderId: response.razorpay_order_id,
-  //                 paymentId: response.razorpay_payment_id,
-  //               },
-  //               confirmationDetails: {
-  //                 userId: bookingResponse.userId,
-  //                 searchTokenId: bookingResponse.SearchTokenId,
-  //                 bookingId: bookingResponse.BookingID,
-  //                 userIp: bookingResponse.UserIp,
-  //                 message: bookingResponse.message,
-  //                 bookingTime: new Date().toISOString(),
-  //               },
-  //               isBooked: true,
-  //               bookingDetails: {
-  //                 contactData: getLeadPassenger(formattedBookingData),
-  //                 searchTokenId: bookingResponse.SearchTokenId,
-  //               },
-  //               bookingResult: bookingResponse
-  //             },
-  //           });
-  //         }, 1500);
-
-  //       } else {
-  //         let errMsg = 'Booking failed. Please contact support with your payment details.';
-  //         if (bookingResponse?.Error?.ErrorMessage) errMsg = bookingResponse.Error.ErrorMessage;
-  //         else if (bookingResponse?.error?.message) errMsg = bookingResponse.error.message;
-  //         else if (bookingResponse?.message && !/successfully/i.test(bookingResponse.message))
-  //           errMsg = `Booking Issue: ${bookingResponse.message}`;
-  //         else if (!hasRequiredBookingData)
-  //           errMsg = 'Booking response missing required confirmation data. Please contact support.';
-  //         else if (!isBookingSuccessful) errMsg = 'Booking status could not be confirmed. Please contact support.';
-
-  //         setError(`Booking Failed: ${errMsg}`);
-  //         showErrorToast('❌ Booking Failed', errMsg);
-  //         setBookingInProgress(false);
-  //       }
-  //     } catch (bookingError) {
-  //       console.error('❌ Booking API Error:', bookingError);
-  //       const { message: errMsg, isPANError } = handleApiError(bookingError, 'Hotel Booking');
-  //       if (isPANError) {
-  //         setError(errMsg);
-  //         showErrorToast('❌ PAN Mandatory Error', errMsg);
-  //       } else {
-  //         setError(`Booking Error: ${errMsg}`);
-  //         showErrorToast('❌ Booking API Error', errMsg);
-  //       }
-  //       setBookingInProgress(false);
-  //     }
-  //   };
-
-
-
-  // ✅ UPDATED: Payment success handler WITH invoice email functionality
+  // FIXED: Payment success handler with proper error detection and token validation
   const handlePaymentSuccess = async (response, formattedBookingData, validation) => {
+    // CRITICAL: Prevent multiple booking calls
+    if (bookingProcessed) {
+      console.log('Booking already processed, skipping duplicate call');
+      return;
+    }
+
     try {
+      setBookingProcessed(true);
       setBookingStage('Confirming your hotel reservation...');
-      console.log('🚀 Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
+      console.log('Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
 
-      const bookingResponse = await bookHotel(formattedBookingData);
-      console.log('📨 Booking API response:', JSON.stringify(bookingResponse, null, 2));
-
-      // Check for PAN mandatory errors first
-      if (
-        bookingResponse?.error?.ErrorCode === 1163 ||
-        bookingResponse?.Error?.ErrorCode === 1163 ||
-        (bookingResponse?.error?.ErrorMessage?.toLowerCase().includes('mandatory pan'))
-      ) {
-        const panErrorMsg = `❌ HOTEL API ERROR: PAN MANDATORY (Code: 1163)
-    
-API Error: ${bookingResponse?.error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage || 'Mandatory PAN info unavailable.'}
-
-This usually indicates:
-• Multiple passengers marked as LeadPassenger: "true"
-• Duplicate PAN numbers in the request
-• Invalid PAN format or missing PAN data
-• API-side validation failure
-
-Please check your booking data and contact support if the issue persists.`;
-
-        setError(panErrorMsg);
-        showErrorToast('❌ Hotel API PAN Error', panErrorMsg);
+      // Validate token before making the booking call
+      const token = localStorage.getItem('token');
+      if (!token) {
+        const errorMessage = 'Authentication token not found. Please login and try again.';
+        setError(errorMessage);
+        showErrorToast('Authentication Error', errorMessage);
         setBookingInProgress(false);
         setLoading(false);
         return;
       }
 
-      // Check booking success
-      const isBookingSuccessful =
+      console.log('Token present:', token ? 'Yes' : 'No');
+
+      const bookingResponse = await bookHotel(formattedBookingData);
+      console.log('Booking API response:', JSON.stringify(bookingResponse, null, 2));
+
+      // Handle the booking response
+      if (!bookingResponse) {
+        const errorMessage = 'No response received from booking API';
+        setError(errorMessage);
+        showErrorToast('Booking Failed', errorMessage);
+        setBookingInProgress(false);
+        setLoading(false);
+        return;
+      }
+
+      // Check for API errors - the response structure from your error shows nested Error object
+      const hasActualError = (
+        (bookingResponse.error?.Error?.ErrorCode && bookingResponse.error.Error.ErrorCode > 0) ||
+        (bookingResponse.error?.Error?.ErrorMessage && bookingResponse.error.Error.ErrorMessage.trim() !== "") ||
+        (bookingResponse.Error?.ErrorCode && bookingResponse.Error.ErrorCode > 0) ||
+        (bookingResponse.Error?.ErrorMessage && bookingResponse.Error.ErrorMessage.trim() !== "") ||
+        (bookingResponse.success === false) ||
+        (bookingResponse.status && bookingResponse.status.toLowerCase() === 'error')
+      );
+
+      if (hasActualError) {
+        // Extract error message from nested structure
+        const apiError = bookingResponse.error?.Error || bookingResponse.Error;
+        const errorMessage = apiError?.ErrorMessage || apiError?.message || 'Booking failed due to API error';
+        const errorCode = apiError?.ErrorCode || 'Unknown';
+
+        console.error('Booking API Error:', { errorCode, errorMessage, fullResponse: bookingResponse });
+
+        // Handle authentication errors specifically
+        if (errorCode === 401 || errorMessage.includes('Authenticate') || errorMessage.includes('authentication')) {
+          const authErrorMessage = 'Authentication failed. Please login again and retry booking.';
+          setError(authErrorMessage);
+          showErrorToast('Authentication Error', authErrorMessage);
+
+          // Optionally redirect to login
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            navigate('/login', { state: { returnTo: location.pathname } });
+          }, 3000);
+        } else {
+          setError(errorMessage);
+          showErrorToast('Booking API Error', `Error ${errorCode}: ${errorMessage}`);
+        }
+
+        setBookingInProgress(false);
+        setLoading(false);
+        return;
+      }
+
+      // Check for successful booking
+      const isBookingSuccessful = (
         (bookingResponse?.message && /successfully|confirmed|processed/i.test(bookingResponse.message)) ||
         bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
+        bookingResponse?.result?.BookingStatus?.toLowerCase() === 'confirmed' ||
+        bookingResponse?.result?.BookingStatus === 'Processing' ||
         bookingResponse?.Status?.toLowerCase() === 'success' ||
-        bookingResponse?.success === true;
+        bookingResponse?.success === true ||
+        // Success if ErrorCode is 0 and no error message (or empty error message)
+        (bookingResponse?.Error?.ErrorCode === 0 &&
+          (!bookingResponse?.Error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage.trim() === ""))
+      );
 
-      const hasRequiredBookingData =
+      const hasRequiredBookingData = (
         bookingResponse?.userId &&
         bookingResponse?.SearchTokenId &&
-        bookingResponse?.UserIp;
+        bookingResponse?.UserIp
+      );
 
-      // ✅ NEW: Check if we have BookingId for invoice
-      const hasBookingId = bookingResponse?.BookingID || bookingResponse?.bookingId || bookingResponse?.id;
+      const hasBookingId = (
+        bookingResponse?.BookingID ||
+        bookingResponse?.bookingId ||
+        bookingResponse?.id ||
+        bookingResponse?.result?.BookingId
+      );
 
       if (isBookingSuccessful && hasRequiredBookingData) {
         setBookingStage('Booking confirmed! Preparing confirmation details...');
-        showSuccessToast('🎉 Hotel booking confirmed successfully!');
+        showSuccessToast('Hotel booking confirmed successfully!');
 
-        // ✅ NEW: Send invoice email after successful booking
+        // Send invoice email after successful booking
         if (hasBookingId) {
           try {
             setBookingStage('Sending invoice to your email...');
-
             const leadPassengerEmail = getLeadPassengerEmail(formattedBookingData);
-            console.log('📧 Sending invoice to email:', leadPassengerEmail);
+            console.log('Sending invoice to email:', leadPassengerEmail);
 
             const invoicePayload = {
               UserIp: bookingResponse.UserIp || formattedBookingData.UserIp || "49.36.217.215",
@@ -563,27 +661,22 @@ Please check your booking data and contact support if the issue persists.`;
               receiverEmail: leadPassengerEmail
             };
 
-            console.log('📧 Invoice payload:', invoicePayload);
-
             const invoiceResult = await sendHotelInvoice(invoicePayload);
 
             if (invoiceResult.success) {
-              console.log('✅ Invoice sent successfully');
-              showSuccessToast('📧 Invoice sent to your email successfully!');
+              console.log('Invoice sent successfully');
+              showSuccessToast('Invoice sent to your email successfully!');
             } else {
-              console.warn('⚠️ Invoice sending failed:', invoiceResult.message);
-              // Don't fail the booking for invoice issues - just warn
-              showErrorToast('⚠️ Booking confirmed but invoice email failed',
-                `Your booking is confirmed but we couldn't send the invoice email. Please contact support with your booking ID: ${hasBookingId}`);
+              console.warn('Invoice sending failed:', invoiceResult.message);
+              showErrorToast('Invoice Email Warning',
+                `Booking confirmed but invoice email failed: ${invoiceResult.message || 'Unknown error'}`);
             }
           } catch (invoiceError) {
-            console.error('❌ Invoice sending error:', invoiceError);
-            // Don't fail the booking for invoice issues
-            showErrorToast('⚠️ Invoice Email Warning',
-              `Booking confirmed but invoice email failed. Your booking ID: ${hasBookingId}`);
+            console.error('Invoice sending error:', invoiceError);
+            const invoiceErrorMessage = getApiErrorMessage(invoiceError);
+            showErrorToast('Invoice Email Warning',
+              `Booking confirmed but invoice email failed: ${invoiceErrorMessage}`);
           }
-        } else {
-          console.warn('⚠️ No BookingId found for invoice sending');
         }
 
         // Navigate to confirmation page
@@ -617,156 +710,219 @@ Please check your booking data and contact support if the issue persists.`;
                 contactData: getLeadPassenger(formattedBookingData),
                 searchTokenId: bookingResponse.SearchTokenId,
               },
-              bookingResult: bookingResponse
+              bookingResult: bookingResponse,
+              couponData: activeCoupon,
+              couponDiscount: finalCouponDiscount
             },
           });
         }, 1500);
 
       } else {
-        let errMsg = 'Booking failed. Please contact support with your payment details.';
-        if (bookingResponse?.Error?.ErrorMessage) errMsg = bookingResponse.Error.ErrorMessage;
-        else if (bookingResponse?.error?.message) errMsg = bookingResponse.error.message;
-        else if (bookingResponse?.message && !/successfully/i.test(bookingResponse.message))
-          errMsg = `Booking Issue: ${bookingResponse.message}`;
-        else if (!hasRequiredBookingData)
-          errMsg = 'Booking response missing required confirmation data. Please contact support.';
-        else if (!isBookingSuccessful) errMsg = 'Booking status could not be confirmed. Please contact support.';
+        // Show more detailed error information
+        const errorMessage = bookingResponse?.message ||
+          `Booking failed. Missing required data: ${!hasRequiredBookingData ? 'user/search data' : 'booking ID'}`;
+        console.error('Booking validation failed:', {
+          isBookingSuccessful,
+          hasRequiredBookingData,
+          hasBookingId,
+          response: bookingResponse
+        });
 
-        setError(`Booking Failed: ${errMsg}`);
-        showErrorToast('❌ Booking Failed', errMsg);
+        setError(errorMessage);
+        showErrorToast('Booking Failed', errorMessage);
         setBookingInProgress(false);
       }
     } catch (bookingError) {
-      console.error('❌ Booking API Error:', bookingError);
-      const { message: errMsg, isPANError } = handleApiError(bookingError, 'Hotel Booking');
-      if (isPANError) {
-        setError(errMsg);
-        showErrorToast('❌ PAN Mandatory Error', errMsg);
+      console.error('Booking API Error:', bookingError);
+
+      // Handle different types of errors
+      if (bookingError.response?.status === 401) {
+        const authErrorMessage = 'Authentication failed. Please login again and retry booking.';
+        setError(authErrorMessage);
+        showErrorToast('Authentication Error', authErrorMessage);
+
+        // Clear token and redirect to login
+        localStorage.removeItem('token');
+        setTimeout(() => {
+          navigate('/login', { state: { returnTo: location.pathname } });
+        }, 3000);
+      } else if (bookingError.response?.status === 500) {
+        const serverErrorMessage = 'Server error occurred. Please try again in a few minutes.';
+        setError(serverErrorMessage);
+        showErrorToast('Server Error', serverErrorMessage);
       } else {
-        setError(`Booking Error: ${errMsg}`);
-        showErrorToast('❌ Booking API Error', errMsg);
+        // Use the enhanced error message extraction
+        const apiErrorMessage = getApiErrorMessage(bookingError);
+        setError(apiErrorMessage);
+        showErrorToast('Booking API Error', apiErrorMessage);
       }
+
       setBookingInProgress(false);
     }
   };
 
-
   // Main payment handler
   const handlePayment = async () => {
+    if (loading || bookingInProgress || bookingProcessed) {
+      console.log('Payment already in progress or completed');
+      return;
+    }
+
+    const currentAttemptId = Date.now();
+    if (bookingAttemptRef.current && (currentAttemptId - bookingAttemptRef.current) < 30000) {
+      showErrorToast('Payment In Progress', 'Please wait for the current payment to complete');
+      return;
+    }
+
+    bookingAttemptRef.current = currentAttemptId;
     setLoading(true);
     setError('');
+    setBookingProcessed(false);
 
     try {
-      console.log('🔍 Starting payment process...');
-      console.log('📋 Raw booking details:', hotelBookingDetails);
+      console.log('Starting payment process...');
+      console.log('Raw booking details:', hotelBookingDetails);
 
       // Format booking data
       let formattedBookingData;
       try {
         formattedBookingData = formatBookingData(hotelBookingDetails);
-        console.log('✅ Booking data formatted successfully');
+        console.log('Booking data formatted successfully');
       } catch (formatError) {
-        console.error('❌ Format error:', formatError);
+        console.error('Format error:', formatError);
         setError(formatError.message);
-        showErrorToast('❌ Booking Data Error', formatError.message);
+        showErrorToast('Booking Data Error', formatError.message);
         setLoading(false);
+        bookingAttemptRef.current = null;
         return;
       }
 
       // Load Razorpay
       const razorpayLoaded = await loadRazorpayScript();
       if (!razorpayLoaded) {
-        const errMsg = 'Payment system failed to load. Please refresh and try again.';
-        setError(errMsg);
-        showErrorToast('❌ Payment System Error', errMsg);
+        const errorMessage = 'Payment system failed to load. Please refresh and try again.';
+        setError(errorMessage);
+        showErrorToast('Payment System Error', errorMessage);
         setLoading(false);
+        bookingAttemptRef.current = null;
         return;
       }
 
-      // Create order
-      const orderResponse = await createHotelOrder(roundedTotal);
-      const order = orderResponse?.order;
-      if (!order?.id) throw new Error('Failed to create payment order');
+      // Create order with API error handling
+      try {
+        const orderResponse = await createHotelOrder(roundedTotal);
+        const order = orderResponse?.order;
 
-      // Razorpay options
-      const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_glwdvx2PlFDStN',
-        amount: order.amount,
-        currency: order.currency,
-        name: 'TTS Travels',
-        description: 'Hotel Booking Payment',
-        order_id: order.id,
-        handler: async (response) => {
-          try {
-            // Show booking progress modal
-            setBookingInProgress(true);
-            setBookingStage('Validating payment...');
+        if (!order?.id) {
+          const errorMessage = orderResponse?.message || 'Failed to create payment order';
+          setError(errorMessage);
+          showErrorToast('Order Creation Failed', errorMessage);
+          setLoading(false);
+          bookingAttemptRef.current = null;
+          return;
+        }
 
-            const validatePayload = {
-              amount: roundedTotal,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              bookingType: 'HOTEL',
-              Hotel: formattedBookingData,
-            };
+        // Razorpay options
+        const options = {
+          key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_glwdvx2PlFDStN',
+          amount: order.amount,
+          currency: order.currency,
+          name: 'Rasutrip',
+          description: 'Hotel Booking Payment',
+          order_id: order.id,
+          handler: async (response) => {
+            try {
+              setBookingInProgress(true);
+              setBookingStage('Validating payment...');
 
-            const validation = await validateHotelPayment(validatePayload);
+              const validatePayload = {
+                amount: roundedTotal,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                bookingType: 'HOTEL',
+                Hotel: formattedBookingData,
+              };
 
-            if (validation?.message === 'Payment verified successfully' && validation?.payment?.status === 'success') {
-              setBookingStage('Payment successful! Processing hotel booking...');
-              await handlePaymentSuccess(response, formattedBookingData, validation);
-            } else {
-              const validationError = validation?.message || 'Payment validation failed.';
-              setError(validationError);
-              showErrorToast('❌ Payment Validation Failed', validationError);
+              // Validate payment with API error handling
+              const validation = await validateHotelPayment(validatePayload);
+
+              if (validation?.message === 'Payment verified successfully' && validation?.payment?.status === 'success') {
+                setBookingStage('Payment successful! Processing hotel booking...');
+                await handlePaymentSuccess(response, formattedBookingData, validation);
+              } else {
+                // Show API validation error directly
+                const validationError = validation?.message || validation?.error?.message || 'Payment validation failed';
+                setError(validationError);
+                showErrorToast('Payment Validation Failed', validationError);
+                setBookingInProgress(false);
+              }
+            } catch (validationError) {
+              console.error('Payment validation error:', validationError);
+
+              // Use API response error directly
+              const apiErrorMessage = getApiErrorMessage(validationError);
+              setError(apiErrorMessage);
+              showErrorToast('Payment Processing Error', apiErrorMessage);
               setBookingInProgress(false);
+            } finally {
+              setLoading(false);
+              bookingAttemptRef.current = null;
             }
-          } catch (err) {
-            const { message: errMsg } = handleApiError(err, 'Payment Processing');
-            setError(errMsg);
-            showErrorToast('❌ Payment Processing Error', errMsg);
-            setBookingInProgress(false);
-          } finally {
-            setLoading(false);
-          }
-        },
-        prefill: {
-          name: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.FirstName || 'Guest',
-          email: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.Email || 'guest@example.com',
-          contact: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.Phoneno || '9999999999',
-        },
-        notes: {
-          address: 'Hotel Booking Payment',
-          hotelName: formattedBookingData?.HotelName || 'Hotel Booking',
-        },
-        theme: { color: '#c90d26' },
-        modal: {
-          ondismiss: () => {
-            setLoading(false);
-            setBookingInProgress(false);
-            showErrorToast('⚠️ Payment Cancelled', 'Payment was cancelled by user');
           },
-        },
-      };
+          prefill: {
+            name: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.FirstName || 'Guest',
+            email: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.Email || 'guest@example.com',
+            contact: formattedBookingData?.HotelRoomsDetails?.[0]?.HotelPassenger?.[0]?.Phoneno || '9999999999',
+          },
+          notes: {
+            address: 'Hotel Booking Payment',
+            hotelName: formattedBookingData?.HotelName || 'Hotel Booking',
+          },
+          theme: { color: '#c90d26' },
+          modal: {
+            ondismiss: () => {
+              setLoading(false);
+              setBookingInProgress(false);
+              bookingAttemptRef.current = null;
+              showErrorToast('Payment Cancelled', 'Payment was cancelled by user');
+            },
+          },
+        };
 
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', (response) => {
-        const failureMessage = `Payment failed: ${response.error.description || 'Unknown error'}`;
-        setError(failureMessage);
-        showErrorToast('❌ Payment Failed', failureMessage);
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', (response) => {
+          // Show Razorpay error directly
+          const failureMessage = response.error.description || response.error.reason || 'Payment failed due to unknown error';
+          setError(failureMessage);
+          showErrorToast('Payment Failed', failureMessage);
+          setLoading(false);
+          setBookingInProgress(false);
+          bookingAttemptRef.current = null;
+        });
+        rzp.open();
+
+      } catch (orderError) {
+        console.error('Order creation error:', orderError);
+
+        // Use API response error directly
+        const apiErrorMessage = getApiErrorMessage(orderError);
+        setError(apiErrorMessage);
+        showErrorToast('Order Creation Failed', apiErrorMessage);
         setLoading(false);
-        setBookingInProgress(false);
-      });
-      rzp.open();
+        bookingAttemptRef.current = null;
+      }
 
     } catch (err) {
-      console.error('❌ Payment initialization error:', err);
-      const { message: errMsg } = handleApiError(err, 'Payment Initialization');
-      setError(errMsg);
-      showErrorToast('❌ Payment Initialization Failed', errMsg);
+      console.error('Payment initialization error:', err);
+
+      // Use API response error directly
+      const apiErrorMessage = getApiErrorMessage(err);
+      setError(apiErrorMessage);
+      showErrorToast('Payment Initialization Failed', apiErrorMessage);
       setLoading(false);
       setBookingInProgress(false);
+      bookingAttemptRef.current = null;
     }
   };
 
@@ -890,6 +1046,14 @@ Please check your booking data and contact support if the issue persists.`;
               <Card.Header className="">
                 <div className="d-flex align-items-center">
                   <h5 className="mb-0 fw-bold">Secure Payment</h5>
+                  {/* Show processing status */}
+                  {(loading || bookingInProgress) && (
+                    <div className="ms-auto">
+                      <div className="spinner-border spinner-border-sm text-danger" role="status">
+                        <span className="visually-hidden">Processing...</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card.Header>
               <Card.Body>
@@ -904,15 +1068,186 @@ Please check your booking data and contact support if the issue persists.`;
                       <div><strong>Adults:</strong> {adultPassengers.length} (PAN Required)</div>
                     </div>
                     <div className="col-md-4 text-end">
-                      <div className="fs-4 fw-bold text-danger">₹ {roundedTotal}</div>
+                      <div className="fs-4 fw-bold text-danger">₹ {roundedTotal.toLocaleString()}</div>
+                      {/* ENHANCED: Show coupon savings prominently */}
+                      {finalCouponDiscount > 0 && (
+                        <div className="text-success small fw-bold">
+                          <i className="bi bi-tag-fill me-1"></i>
+                          Coupon Savings: ₹{finalCouponDiscount.toFixed(2)}
+                        </div>
+                      )}
+                      {/* Show original price if coupon applied */}
+                      {finalCouponDiscount > 0 && (
+                        <div className="text-muted small text-decoration-line-through">
+                          Original: ₹{subtotal.toFixed(2)}
+                        </div>
+                      )}
                     </div>
                   </div>
+                </div>
+
+                {/* ENHANCED: Price Breakdown with Better Coupon Display */}
+                <div className="mb-4 p-3 border rounded">
+                  <h6 className="fw-bold mb-3">
+                    Price Breakdown
+                  </h6>
+
+                  {/* Hotel Total */}
+                  <div className="row mb-2">
+                    <div className="col">
+                      Hotel Total
+                      <small className="text-muted d-block">Published price (Room + Hotel taxes)</small>
+                    </div>
+                    <div className="col text-end fw-bold">₹ {actualBaseFare.toLocaleString()}</div>
+                  </div>
+
+                  {/* Service Charges */}
+                  {serviceCharges > 0 && (
+                    <div className="row mb-2">
+                      <div className="col">
+                        Service Charges
+                        <small className="text-muted d-block">Hotel service charges</small>
+                      </div>
+                      <div className="col text-end">₹ {serviceCharges.toFixed(2)}</div>
+                    </div>
+                  )}
+
+                  {/* Other Charges */}
+                  {otherCharges > 0 && (
+                    <div className="row mb-2">
+                      <div className="col">
+                        Other Charges
+                        <small className="text-muted d-block">Additional charges</small>
+                      </div>
+                      <div className="col text-end">₹ {otherCharges.toFixed(2)}</div>
+                    </div>
+                  )}
+
+                  {/* Booking Fee */}
+                  <div className="row mb-2">
+                    <div className="col">
+                      Booking Fee
+                    </div>
+                    <div className="col text-end text-success fw-bold">₹ {vendorCommissionAmount.toFixed(2)}</div>
+                  </div>
+
+                  {/* GST Breakdown */}
+                  {totalGST > 0 && (
+                    <>
+                      {cgstAmount > 0 && (
+                        <div className="row mb-2">
+                          <div className="col">
+                            CGST ({cgstRate}%)
+                            <small className="text-muted d-block">Central GST</small>
+                          </div>
+                          <div className="col text-end">₹ {cgstAmount.toFixed(2)}</div>
+                        </div>
+                      )}
+
+                      {sgstAmount > 0 && (
+                        <div className="row mb-2">
+                          <div className="col">
+                            SGST ({sgstRate}%)
+                            <small className="text-muted d-block">State GST</small>
+                          </div>
+                          <div className="col text-end">₹ {sgstAmount.toFixed(2)}</div>
+                        </div>
+                      )}
+
+                      {igstAmount > 0 && (
+                        <div className="row mb-2">
+                          <div className="col">
+                            IGST ({igstRate}%)
+                            <small className="text-muted d-block">Integrated GST</small>
+                          </div>
+                          <div className="col text-end">₹ {igstAmount.toFixed(2)}</div>
+                        </div>
+                      )}
+
+                      {/* Show calculated GST if not provided in response */}
+                      {(cgstAmount === 0 && sgstAmount === 0 && igstAmount === 0) && totalGST > 0 && (
+                        <div className="row mb-2">
+                          <div className="col">
+                            GST ({cgstRate + sgstRate + igstRate}%)
+                            <small className="text-muted d-block">On booking amount</small>
+                          </div>
+                          <div className="col text-end">₹ {totalGST.toFixed(2)}</div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Regular Discount */}
+                  {discount > 0 && (
+                    <div className="row mb-2 text-success">
+                      <div className="col">
+                        Discount Applied
+                        <small className="text-muted d-block">Hotel discount</small>
+                      </div>
+                      <div className="col text-end">- ₹ {discount.toFixed(2)}</div>
+                    </div>
+                  )}
+
+                  {/* Subtotal before coupon */}
+                  {finalCouponDiscount > 0 && (
+                    <div className="row mb-2 border-top pt-2">
+                      <div className="col fw-bold">Subtotal</div>
+                      <div className="col text-end fw-bold">₹ {subtotal.toFixed(2)}</div>
+                    </div>
+                  )}
+
+                  {/* ENHANCED: Coupon Discount with Better Styling */}
+                  {finalCouponDiscount > 0 && (
+                    <div className="row mb-2 text-success bg-success-subtle p-2 rounded">
+                      <div className="col">
+                        <div className="d-flex align-items-center">
+                          <i className="bi bi-tag-fill me-2 text-success"></i>
+                          <strong>Coupon Discount</strong>
+                        </div>
+                        {activeCoupon && (
+                          <small className="text-success d-block mt-1">
+                            <strong>Code: {activeCoupon.code || activeCoupon.couponCode}</strong>
+                            {(activeCoupon.discountType === 'percentage' || activeCoupon.type === 'PERCENTAGE')
+                              ? ` (${activeCoupon.discount || activeCoupon.value}% off)`
+                              : ' (Flat Discount)'}
+                          </small>
+                        )}
+                      </div>
+                      <div className="col text-end">
+                        <strong className="text-success fs-5">- ₹ {finalCouponDiscount.toFixed(2)}</strong>
+                      </div>
+                    </div>
+                  )}
+
+                  <hr />
+                  <div className="row fw-bold">
+                    <div className="col fs-5">Total Amount</div>
+                    <div className="col text-end text-danger fs-4">₹ {roundedTotal.toLocaleString()}</div>
+                  </div>
+
+                  {/* ENHANCED: Show savings summary if coupon applied */}
+                  {finalCouponDiscount > 0 && (
+                    <div className="text-center mt-3 p-2 bg-success-subtle rounded">
+                      <div className="text-success fw-bold">
+                        <i className="bi bi-check-circle-fill me-2"></i>
+                        Congratulations! You saved ₹{finalCouponDiscount.toFixed(2)} with this coupon!
+                      </div>
+                      {activeCoupon && (
+                        <small className="text-muted d-block mt-1">
+                          Coupon "{activeCoupon.code || activeCoupon.couponCode}" applied successfully
+                        </small>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Lead guest info */}
                 {leadPassenger && (
                   <div className="mb-4 p-3 border rounded">
-                    <h6 className="fw-bold mb-2">Lead Guest Information</h6>
+                    <h6 className="fw-bold mb-2">
+                      <i className="bi bi-person-fill me-2"></i>
+                      Lead Guest Information
+                    </h6>
                     <div className="row">
                       <div className="col-md-6">
                         <strong>Name:</strong> {`${leadPassenger.Title || ''} ${leadPassenger.FirstName} ${leadPassenger.LastName}`.trim()}
@@ -943,15 +1278,32 @@ Please check your booking data and contact support if the issue persists.`;
 
               </Card.Body>
 
-              <Card.Footer className="">
+              <Card.Footer className="bg-light">
                 <div className="text-end">
                   <Button
-                    variant="danger"
-                    className="px-5"
+                    className="px-5 py-2 btn-red"
                     onClick={handlePayment}
-                    disabled={roundedTotal <= 0 || loading || bookingInProgress}
+                    disabled={roundedTotal <= 0 || loading || bookingInProgress || bookingProcessed}
                   >
-                    {`Pay ₹ ${roundedTotal}`}
+                    {loading || bookingInProgress ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                        {bookingInProgress ? 'Processing Booking...' : 'Loading Payment...'}
+                      </>
+                    ) : bookingProcessed ? (
+                      <>
+                        Booking Processed
+                      </>
+                    ) : (
+                      <>
+                        Pay ₹{roundedTotal.toLocaleString()}
+                        {finalCouponDiscount > 0 && (
+                          <small className="d-block mt-1">
+                            (Saved ₹{finalCouponDiscount.toFixed(2)} with coupon)
+                          </small>
+                        )}
+                      </>
+                    )}
                   </Button>
                 </div>
               </Card.Footer>
@@ -961,7 +1313,7 @@ Please check your booking data and contact support if the issue persists.`;
             {error && (
               <Alert variant="danger" className="mb-4" dismissible onClose={() => setError('')}>
                 <FaExclamationTriangle className="me-2" />
-                <strong>Error:</strong>
+                <strong>API Error:</strong>
                 <div style={{ whiteSpace: 'pre-line', marginTop: 8 }}>{error}</div>
               </Alert>
             )}

@@ -3,9 +3,7 @@ import HotelDetailInfo from './HotelDetailInfo';
 import HotelStep from '../HotelStep';
 import { Container, Row, Col } from 'react-bootstrap';
 import FareSummaryCard from '../FareSummaryCard';
-import HotelPromoCodeCard from '../HotelPromoCodeCard ';
 import { useLocation } from "react-router-dom";
-
 
 const HotelDetail = () => {
     const [selectedPrice, setSelectedPrice] = useState(null);
@@ -29,9 +27,10 @@ const HotelDetail = () => {
                 </Col>
 
                 <Col lg={3}>
-                    <FareSummaryCard priceDetails={priceDetails} />
-
-                    <HotelPromoCodeCard />
+                    <FareSummaryCard
+                        priceDetails={priceDetails}
+                        selectedPrice={selectedPrice}
+                    />
                 </Col>
             </Row>
         </Container>

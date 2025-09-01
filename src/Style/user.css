@@ -194,3 +194,13 @@
   border-radius: 0.375rem !important;
   box-shadow: none !important;
 }
+
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-item svg {
+  flex-shrink: 0; /* Icon ka size fixed rahega */
+}
