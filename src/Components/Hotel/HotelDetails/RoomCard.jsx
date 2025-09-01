@@ -96,20 +96,21 @@ const RoomCard = ({
     return roomData.find(room => room.RoomIndex === roomIndex);
   };
 
-  // ✅ NEW: Function to calculate total price for multiple rooms
+  // ✅ UPDATED: Function to calculate total price for multiple rooms using PublishedPrice
   const calculateTotalPrice = (roomIndexes) => {
-    let totalPrice = 0;
+    let totalPublishedPrice = 0;
     let totalTax = 0;
 
     roomIndexes.forEach(index => {
       const room = getRoomByIndex(index);
       if (room) {
-        totalPrice += Number(room?.Price?.OfferedPrice || 0);
+        // ✅ Use PublishedPrice instead of OfferedPrice
+        totalPublishedPrice += Number(room?.Price?.PublishedPrice || 0);
         totalTax += Number(room?.Price?.Tax || 0);
       }
     });
 
-    return { totalPrice, totalTax };
+    return { totalPublishedPrice, totalTax };
   };
 
 
@@ -168,8 +169,8 @@ const RoomCard = ({
       console.log("📥 Block Room Response:", blockRes);
 
       if (blockRes?.Error?.ErrorCode === 0) {
-        // Calculate total price for all selected rooms
-        const { totalPrice, totalTax } = calculateTotalPrice(selectedRoomIndexes);
+        // ✅ Calculate total price for all selected rooms using PublishedPrice
+        const { totalPublishedPrice, totalTax } = calculateTotalPrice(selectedRoomIndexes);
 
         // Get all room details for the combination
         const selectedRooms = selectedRoomIndexes.map(index => getRoomByIndex(index)).filter(Boolean);
@@ -177,26 +178,26 @@ const RoomCard = ({
         // Check if any room requires PAN
         const anyPANMandatory = selectedRooms.some(r => isPANMandatory(r));
 
-        // ✅ NEW: Get commission percentage from block room response
-        const publishedPrice = blockRes?.Result?.[0]?.Price?.PublishedPrice || totalPrice;
+        // ✅ Use the final block room response PublishedPrice as source of truth
+        const finalPublishedPrice = blockRes?.Result?.[0]?.Price?.PublishedPrice || totalPublishedPrice;
         const vendorCommissionPercentage = blockRes?.Result?.[0]?.Price?.rasutripCommissionPercentage ||
           hotel?.rasutripCommissionPercentage || 12; // Default 12%
 
         // ✅ Calculate vendor commission amount
-        const vendorCommissionAmount = (publishedPrice * vendorCommissionPercentage) / 100;
+        const vendorCommissionAmount = (finalPublishedPrice * vendorCommissionPercentage) / 100;
         const convenienceFee = 150; // Fixed convenience fee
 
         // ✅ Calculate customer final price
-        const customerPrice = publishedPrice + convenienceFee;
+        const customerPrice = finalPublishedPrice + convenienceFee;
 
         // ✅ Calculate vendor payment (what we pay to hotel)
-        const vendorPayment = publishedPrice - vendorCommissionAmount;
+        const vendorPayment = finalPublishedPrice - vendorCommissionAmount;
 
         // ✅ Our profit calculation
-        const ourProfit = customerPrice - publishedPrice;
+        const ourProfit = customerPrice - finalPublishedPrice;
 
         console.log("💰 Pricing Breakdown:", {
-          publishedPrice,
+          finalPublishedPrice,
           vendorCommissionPercentage,
           vendorCommissionAmount,
           convenienceFee,
@@ -206,7 +207,7 @@ const RoomCard = ({
         });
 
         onRoomSelect?.({
-          baseFare: publishedPrice, // Hotel's published price (before our markup)
+          baseFare: finalPublishedPrice, // Use final PublishedPrice from block response
           tax: totalTax,
           serviceCharges: 0,
           gst: 0,
@@ -237,7 +238,7 @@ const RoomCard = ({
             rooms: selectedRooms, // All selected rooms
             roomCombination: selectedRoomIndexes,
             priceDetails: {
-              baseFare: publishedPrice, // Published price from API
+              baseFare: finalPublishedPrice, // Use final PublishedPrice
               tax: totalTax,
               serviceCharges: 0,
               gst: 0,
@@ -248,7 +249,7 @@ const RoomCard = ({
               customerTotalPrice: customerPrice,
               vendorPayment,
               ourProfit,
-              publishedPrice, // Original published price
+              publishedPrice: finalPublishedPrice, // Final published price
             },
             totalGuests: hotel?.guests || (hotel?.adult || 0) + (hotel?.child || 0),
             guestDetails: {
@@ -325,20 +326,19 @@ const RoomCard = ({
         )}
       </h5>
 
-
-
       {availableRooms.length > 0 ? (
         availableRooms.map((room, idx) => {
-          const offeredPrice = Number(room?.Price?.OfferedPrice || 0);
+          // ✅ CHANGED: Use PublishedPrice instead of OfferedPrice
+          const publishedPrice = Number(room?.Price?.PublishedPrice || 0);
           const panMandatory = isPANMandatory(room);
           const isCurrentRoomLoading = loadingRoomId === room.RoomId;
 
-          // ✅ Calculate combination price for display
-          let displayPrice = offeredPrice;
+          // ✅ Calculate combination price for display using PublishedPrice
+          let displayPrice = publishedPrice;
           if (displayRooms > 1 && roomCombinations) {
             const combination = findRoomCombination(room.RoomIndex, roomCombinations, displayRooms);
-            const { totalPrice } = calculateTotalPrice(combination);
-            displayPrice = totalPrice;
+            const { totalPublishedPrice } = calculateTotalPrice(combination);
+            displayPrice = totalPublishedPrice;
           }
 
           return (
@@ -351,7 +351,6 @@ const RoomCard = ({
                   {panMandatory && (
                     <span className="">*</span>
                   )}
-
                 </div>
 
                 <div className="small text-muted mb-1">
@@ -361,12 +360,12 @@ const RoomCard = ({
                   {displayGuests} Guest{displayGuests > 1 ? 's' : ''} ({displayAdults} Adult{displayAdults > 1 ? 's' : ''}, {displayChildren} Child{displayChildren !== 1 ? 'ren' : ''}) • {displayRooms} Room{displayRooms > 1 ? 's' : ''}
                 </div>
 
-                {/* ✅ Price display with room count consideration */}
+                {/* ✅ UPDATED: Price display with PublishedPrice */}
                 <div className="fw-bold text-dark mb-2">
                   ₹{displayPrice.toLocaleString()}
                   {displayRooms > 1 && (
                     <small className="text-muted ms-2">
-                      (₹{offeredPrice.toLocaleString()} per room)
+                      (₹{publishedPrice.toLocaleString()} per room)
                     </small>
                   )}
                 </div>
