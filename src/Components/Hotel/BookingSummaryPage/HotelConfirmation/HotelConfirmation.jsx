@@ -1,10 +1,11 @@
-// src/components/Hotel/HotelConfirmation.js - ENHANCED VERSION WITH BETTER UI
+// src/components/Hotel/HotelConfirmation.js - ENHANCED VERSION WITH PDF GENERATION
 
 import React, { useEffect, useState } from 'react';
 import { Container, Card, Button, Row, Col, Badge, Spinner, Alert } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaDownload, FaCheckCircle, FaHome, FaEnvelope, FaPhone, FaUser, FaCalendarAlt, FaHotel, FaCreditCard, FaFileInvoiceDollar } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import jsPDF from 'jspdf';
 import { sendHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
 
 const HotelConfirmation = () => {
@@ -62,68 +63,180 @@ const HotelConfirmation = () => {
         );
     }
 
-    // Enhanced invoice download with proper file handling
+    // Generate PDF Invoice using jsPDF
+    const generatePDFInvoice = () => {
+        const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId || 'N/A';
+        const hotelName = hotelDetails?.name || actualBooking?.HotelName || 'Hotel';
+        const bookingTime = confirmationDetails?.bookingTime ? new Date(confirmationDetails.bookingTime).toLocaleDateString() : new Date().toLocaleDateString();
+        const guestName = `${leadPassenger.Title || ''} ${leadPassenger.FirstName || ''} ${leadPassenger.LastName || ''}`.trim() || 'Guest';
+
+        // Create new PDF document
+        const doc = new jsPDF();
+        
+        // Set font
+        doc.setFont("helvetica");
+        
+        // Header - Company Logo/Name (you can add logo later)
+        doc.setFontSize(24);
+        doc.setTextColor(40, 44, 52);
+        doc.text('HOTEL BOOKING INVOICE', 105, 30, { align: 'center' });
+        
+        // Add a line under header
+        doc.setDrawColor(0, 0, 0);
+        doc.line(20, 35, 190, 35);
+        
+        // Invoice details section
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        
+        // Left side - Invoice Info
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text('INVOICE DETAILS', 20, 55);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`, 20, 65);
+        doc.text(`Booking ID: ${bookingId}`, 20, 72);
+        doc.text(`Booking Date: ${bookingTime}`, 20, 79);
+        
+        // Right side - Hotel Info
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text('HOTEL INFORMATION', 120, 55);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Hotel Name: ${hotelName}`, 120, 65);
+        doc.text('Location: India', 120, 72);
+        
+        // Guest Information Section
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text('GUEST INFORMATION', 20, 100);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Guest Name: ${guestName}`, 20, 110);
+        if (leadPassenger.Email) {
+            doc.text(`Email: ${leadPassenger.Email}`, 20, 117);
+        }
+        if (leadPassenger.Phoneno) {
+            doc.text(`Phone: ${leadPassenger.Phoneno}`, 20, 124);
+        }
+        if (leadPassenger.Age) {
+            doc.text(`Age: ${leadPassenger.Age} years`, 20, 131);
+        }
+        
+        // Payment Details Section
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text('PAYMENT DETAILS', 20, 150);
+        
+        // Create a table-like structure for payment details
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, 160, 170, 40); // Main rectangle
+        
+        // Table headers
+        doc.setFillColor(240, 240, 240);
+        doc.rect(20, 160, 170, 10, 'F');
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text('Description', 25, 167);
+        doc.text('Amount', 150, 167);
+        
+        // Table content
+        doc.setFont("helvetica", "normal");
+        doc.text('Hotel Booking Charges', 25, 177);
+        doc.text(`₹${amount?.toLocaleString() || '0'}`, 150, 177);
+        
+        if (paymentDetails?.paymentId) {
+            doc.text(`Payment ID: ${paymentDetails.paymentId}`, 25, 187);
+        }
+        
+        // Total amount - highlighted
+        doc.setFillColor(52, 168, 83);
+        doc.rect(20, 190, 170, 10, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.text('TOTAL AMOUNT PAID:', 25, 197);
+        doc.text(`₹${amount?.toLocaleString() || '0'}`, 150, 197);
+        
+        // Reset text color
+        doc.setTextColor(0, 0, 0);
+        
+        // Terms and Conditions
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text('TERMS & CONDITIONS', 20, 220);
+        
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text('• This invoice is computer generated and does not require signature.', 20, 230);
+        doc.text('• Please carry this invoice and a valid ID for hotel check-in.', 20, 237);
+        doc.text('• For any queries, please contact our support team with your booking ID.', 20, 244);
+        doc.text('• Cancellation and modification policies apply as per booking terms.', 20, 251);
+        
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text('Thank you for choosing our service! Have a pleasant stay.', 105, 270, { align: 'center' });
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 280, { align: 'center' });
+        
+        return doc;
+    };
+
+    // Enhanced invoice download with PDF generation
     const handleDownloadInvoice = async () => {
         setDownloadingInvoice(true);
 
         try {
             const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId;
-            const searchTokenId = confirmationDetails?.searchTokenId || actualBooking?.SearchTokenId;
-            const userIp = confirmationDetails?.userIp || actualBooking?.UserIp || "49.36.217.215";
-            const receiverEmail = leadPassenger?.Email || "guest@example.com";
-
+            
             if (!bookingId) {
                 throw new Error('Booking ID not found');
             }
 
-            const invoicePayload = {
-                UserIp: userIp,
-                BookingId: parseInt(bookingId),
-                SearchTokenId: searchTokenId,
-                receiverEmail: receiverEmail
-            };
+            // Generate PDF using jsPDF
+            const doc = generatePDFInvoice();
+            
+            // Save the PDF with a meaningful filename
+            const fileName = `Hotel-Invoice-${bookingId}-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
 
-            console.log('📧 Downloading invoice with payload:', invoicePayload);
+            toast.success('📄 Invoice downloaded successfully!', {
+                position: "top-right",
+                autoClose: 5000
+            });
 
-            const invoiceResult = await sendHotelInvoice(invoicePayload);
+            // Optional: Also send to email (keep the original API call)
+            try {
+                const searchTokenId = confirmationDetails?.searchTokenId || actualBooking?.SearchTokenId;
+                const userIp = confirmationDetails?.userIp || actualBooking?.UserIp || "49.36.217.215";
+                const receiverEmail = leadPassenger?.Email || "guest@example.com";
 
-            if (invoiceResult.success) {
-                // Check if the response contains file data
-                if (invoiceResult.fileData || invoiceResult.data) {
-                    // Create blob and download file
-                    const fileData = invoiceResult.fileData || invoiceResult.data;
-                    const blob = new Blob([fileData], { type: 'application/pdf' });
-                    const url = window.URL.createObjectURL(blob);
+                const invoicePayload = {
+                    UserIp: userIp,
+                    BookingId: parseInt(bookingId),
+                    SearchTokenId: searchTokenId,
+                    receiverEmail: receiverEmail
+                };
 
-                    // Create temporary link and trigger download
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `Hotel-Invoice-${bookingId}.pdf`;
-                    document.body.appendChild(link);
-                    link.click();
-
-                    // Cleanup
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-
-                    toast.success('📄 Invoice downloaded successfully!', {
-                        position: "top-right",
-                        autoClose: 5000
-                    });
-                } else {
-                    // Fallback: Email sent successfully
-                    toast.success('📧 Invoice sent to your email successfully!', {
-                        position: "top-right",
-                        autoClose: 5000
-                    });
-                }
-            } else {
-                throw new Error(invoiceResult.message || 'Failed to generate invoice');
+                await sendHotelInvoice(invoicePayload);
+                
+                toast.info('📧 Invoice also sent to your email!', {
+                    position: "top-right",
+                    autoClose: 3000
+                });
+            } catch (emailError) {
+                console.log('Email sending failed, but PDF downloaded successfully:', emailError);
             }
 
         } catch (error) {
-            console.error('❌ Invoice download error:', error);
-            toast.error(`❌ ${error.message || 'Failed to download invoice. Please try again or contact support.'}`, {
+            console.error('❌ Invoice generation error:', error);
+            toast.error(`❌ ${error.message || 'Failed to generate invoice. Please try again.'}`, {
                 position: "top-right",
                 autoClose: 7000
             });
@@ -286,10 +399,13 @@ const HotelConfirmation = () => {
                                                         aria-hidden="true"
                                                         className="me-2"
                                                     />
-                                                    Processing...
+                                                    Generating PDF...
                                                 </>
                                             ) : (
-                                                'Download Invoice'
+                                                <>
+                                                    <FaDownload className="me-2" />
+                                                    Download PDF Invoice
+                                                </>
                                             )}
                                         </Button>
 
@@ -304,6 +420,7 @@ const HotelConfirmation = () => {
                                                 minWidth: '200px'
                                             }}
                                         >
+                                            <FaHome className="me-2" />
                                             Back to Home
                                         </Button>
                                     </div>
@@ -317,18 +434,19 @@ const HotelConfirmation = () => {
                                         <div className="d-flex align-items-start">
                                             <div className="flex-grow-1">
                                                 <Alert.Heading as="h6" className="text-info mb-2 fw-bold">
-                                                    Important Information
+                                                    📄 PDF Invoice Generation
                                                 </Alert.Heading>
                                                 <p className="mb-2 text-dark">
-                                                    Please save your booking ID{' '}
+                                                    Click "Download PDF Invoice" to generate and save a professional PDF invoice to your device. 
+                                                    Your booking ID{' '}
                                                     <Badge bg="info" className="mx-1 px-3 py-1">
                                                         {bookingId}
                                                     </Badge>
-                                                    {' '}for future reference and hotel check-in.
+                                                    {' '}will be included in the PDF.
                                                 </p>
                                                 <small className="text-muted">
-                                                    📧 A detailed confirmation email has been sent to your registered email address.
-                                                    For any assistance or changes, please contact our 24/7 support team with your booking ID.
+                                                    📧 The invoice will also be sent to your email address automatically.
+                                                    For any assistance, please contact our 24/7 support team.
                                                 </small>
                                             </div>
                                         </div>

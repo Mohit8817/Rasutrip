@@ -27,12 +27,13 @@ const getAuthToken = () => {
     sessionStorage.getItem('token');
 };
 
-// Helper function to create auth headers
+// ✅ Updated createAuthHeaders with token validation
 const createAuthHeaders = () => {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error('Authentication token not found. Please login again.');
+  if (!validateToken()) {
+    throw new Error('Authentication token is missing or expired. Please login again.');
   }
+
+  const token = getAuthToken();
   return {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json',
@@ -236,23 +237,66 @@ export const validateHotelPayment = async (payload) => {
   }
 };
 
-// ✅ Final Hotel Booking API Call
+// ✅ Updated bookHotel function with consistent authentication
 export const bookHotel = async (bookingPayload) => {
   try {
-    const token = localStorage.getItem('token');
-    const res = await axios.post(HotelServices.book, bookingPayload, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    // Use the same auth header creation as other functions
+    const headers = createAuthHeaders();
+
+    console.log('🔄 Sending booking request with headers:', {
+      'Authorization': headers.Authorization ? 'Bearer [TOKEN_PRESENT]' : 'Missing',
+      'Content-Type': headers['Content-Type']
     });
+
+    console.log('📝 Booking payload:', JSON.stringify(bookingPayload, null, 2));
+
+    const res = await axios.post(HotelServices.book, bookingPayload, { headers });
+
     console.log('✅ Hotel Booking API Success:', res.data);
     return res.data;
+
   } catch (err) {
-    console.error('❌ Error booking hotel:', err.response?.data || err.message);
-    return null;
+    console.error('❌ Hotel booking API error:', {
+      status: err.response?.status,
+      statusText: err.response?.statusText,
+      data: err.response?.data,
+      message: err.message
+    });
+
+    // Re-throw the error so the calling function can handle it properly
+    throw err;
   }
 };
 
+
+
+// ✅ Enhanced token validation function
+const validateToken = () => {
+  const token = getAuthToken();
+
+  if (!token) {
+    console.error('❌ No authentication token found');
+    return false;
+  }
+
+  try {
+    // Basic JWT token validation (check if it's not expired)
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+
+    if (payload.exp && payload.exp < currentTime) {
+      console.error('❌ Token has expired');
+      return false;
+    }
+
+    console.log('✅ Token is valid, expires at:', new Date(payload.exp * 1000));
+    return true;
+
+  } catch (error) {
+    console.error('❌ Invalid token format:', error);
+    return false;
+  }
+};
 
 
 

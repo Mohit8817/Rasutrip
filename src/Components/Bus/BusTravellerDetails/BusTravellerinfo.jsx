@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, Form, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
-import { FaArrowLeft } from 'react-icons/fa';
 import { blockSeats } from '../../APIS/BusApi/BusApis';
-import BusFareSummary from '../BusFareSummary'; // Import the fare summary component
 
 const BusTravellerinfo = () => {
     const navigate = useNavigate();
@@ -46,38 +44,6 @@ const BusTravellerinfo = () => {
 
     // Only API errors now - removed custom validation errors
     const [apiError, setApiError] = useState(null);
-
-    // Calculate fare summary from selected bus data
-    const calculateFareSummary = () => {
-        const busData = state?.busData || {};
-        const fareBreakdown = busData.fareBreakdown || {};
-        const numberOfSeats = selectedSeats.length;
-
-        // Base calculation per seat
-        const basePricePerSeat = fareBreakdown.basePrice || 0;
-        const vendorCommissionPercentage = fareBreakdown.vendorCommissionPercentage || 0;
-        const vendorCommissionPerSeat = fareBreakdown.vendorCommissionAmount || 0;
-        
-        // Total calculation for all seats
-        const totalBasePrice = basePricePerSeat * numberOfSeats;
-        const totalVendorCommission = vendorCommissionPerSeat * numberOfSeats;
-        const totalTaxes = (fareBreakdown.taxes || 0) * numberOfSeats;
-        const totalOtherCharges = (fareBreakdown.otherCharges || 0) * numberOfSeats;
-        const totalGst = (fareBreakdown.gst || 0) * numberOfSeats;
-
-        return {
-            basePrice: totalBasePrice,
-            vendorCommissionPercentage: vendorCommissionPercentage,
-            vendorCommissionAmount: totalVendorCommission,
-            taxes: totalTaxes,
-            otherCharges: totalOtherCharges,
-            gst: totalGst,
-            discount: 0, // Can be updated when coupon is applied
-            totalAmount: totalBasePrice + totalVendorCommission + totalTaxes + totalOtherCharges + totalGst
-        };
-    };
-
-    const fareSummary = calculateFareSummary();
 
     // Debug function to analyze seat data
     const debugSeatData = () => {
@@ -294,48 +260,6 @@ const BusTravellerinfo = () => {
         }
     };
 
-    // Calculate updated fare summary from block seat response
-    const getUpdatedFareSummary = () => {
-        if (!blockSeatResponse?.Result?.Passenger) {
-            return fareSummary; // Return original calculation if no block response
-        }
-
-        const passengers = blockSeatResponse.Result.Passenger;
-        let totalBasePrice = 0;
-        let totalVendorCommission = 0;
-        let vendorCommissionPercentage = 0;
-
-        passengers.forEach(passenger => {
-            const seatPrice = passenger.Seat?.Price;
-            if (seatPrice) {
-                totalBasePrice += seatPrice.PublishedPrice || 0;
-                
-                // Calculate vendor commission if percentage is available
-                const originalBusData = state?.busData || {};
-                const originalFareBreakdown = originalBusData.fareBreakdown || {};
-                vendorCommissionPercentage = originalFareBreakdown.vendorCommissionPercentage || 0;
-                
-                if (vendorCommissionPercentage > 0) {
-                    const commissionAmount = (seatPrice.PublishedPrice * vendorCommissionPercentage) / 100;
-                    totalVendorCommission += commissionAmount;
-                }
-            }
-        });
-
-        return {
-            basePrice: totalBasePrice,
-            vendorCommissionPercentage: vendorCommissionPercentage,
-            vendorCommissionAmount: totalVendorCommission,
-            taxes: 0, // From block seat response if available
-            otherCharges: 0, // From block seat response if available
-            gst: 0, // From block seat response if available
-            discount: 0, // Can be updated when coupon is applied
-            totalAmount: totalBasePrice + totalVendorCommission
-        };
-    };
-
-    const currentFareSummary = getUpdatedFareSummary();
-
     // Basic validation - only check if fields have values, no format validation
     const hasRequiredData = () => {
         // Check if all passengers have basic required fields
@@ -375,7 +299,6 @@ const BusTravellerinfo = () => {
             blockSeatResponse: blockSeatResponse, // Current block seat response (if any)
             seatsBlocked: seatsBlocked, // Current block status
             isBlockingSeats: true, // Indicate that blocking is in progress
-            fareSummary: currentFareSummary // Pass current fare summary
         };
 
         console.log("Passing data to review component:", dataToPass);
@@ -421,7 +344,7 @@ const BusTravellerinfo = () => {
     return (
         <div className="container my-4">
             <div className="row">
-                <div className="col-lg-8">
+                <div className=" ">
                     {/* Traveller Details */}
                     <Card className="mb-4 shadow-sm border-0">
                         <Card.Header className="bg-white border-bottom">
@@ -674,40 +597,7 @@ const BusTravellerinfo = () => {
                     )}
                 </div>
 
-                {/* Right sidebar with fare summary */}
-                <div className="col-lg-4">
-                    <BusFareSummary
-                        basePrice={currentFareSummary.basePrice}
-                        vendorCommissionPercentage={currentFareSummary.vendorCommissionPercentage}
-                        taxes={currentFareSummary.taxes}
-                        otherCharges={currentFareSummary.otherCharges}
-                        gst={currentFareSummary.gst}
-                        discount={currentFareSummary.discount}
-                        showVendorCommission={true}
-                    />
 
-                    {/* Seats Information */}
-                    <Card className="shadow-sm mt-3">
-                        <Card.Header className="bg-white">
-                            <h6 className="mb-0">Selected Seats</h6>
-                        </Card.Header>
-                        <Card.Body>
-                            {selectedSeats.map((seat, index) => (
-                                <div key={index} className="d-flex justify-content-between mb-2">
-                                    <span>Seat {seat.SeatName || seat.SeatNo || seat.name || `S${index + 1}`}</span>
-                                    <span className="text-muted">Passenger {index + 1}</span>
-                                </div>
-                            ))}
-                        </Card.Body>
-                    </Card>
-
-                    {/* Block seat status indicator */}
-                    {seatsBlocked && (
-                        <Alert variant="success" className="mt-3">
-                            <small>Seats have been temporarily blocked for you</small>
-                        </Alert>
-                    )}
-                </div>
             </div>
         </div>
     );

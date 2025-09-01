@@ -51,20 +51,65 @@ const AgentWalletHistory = () => {
 
             const data = await response.json();
 
-            // Assuming the API response structure
-            if (data.success || data.status === 'success') {
-                setWalletData(data.walletSummary || data.data?.walletSummary || {
-                    currentBalance: data.data?.currentBalance || 0,
-                    thisMonthEarnings: data.data?.thisMonthEarnings || 0,
-                    pendingWithdrawals: data.data?.pendingWithdrawals || 0,
-                    totalEarnings: data.data?.totalEarnings || 0,
-                    totalWithdrawals: data.data?.totalWithdrawals || 0,
-                    availableBalance: data.data?.availableBalance || 0
-                });
+            if (data.payments && Array.isArray(data.payments)) {
+                // Transform API data to match component expectations
+                const transformedTransactions = data.payments.map(payment => ({
+                    id: payment._id,
+                    date: new Date(payment.createdAt).toLocaleDateString('en-IN'),
+                    time: new Date(payment.createdAt).toLocaleTimeString('en-IN', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    }),
+                    description: payment.note || `${payment.paymentMode} for ${payment.type} booking`,
+                    bookingId: payment.note ? payment.note.match(/\d+/)?.[0] : 'N/A',
+                    type: payment.transactionType, // 'credit' or 'debit'
+                    amount: payment.amount,
+                    status: payment.isSuccess ? 'completed' : 'failed',
+                    category: payment.type, // flight, hotel, bus
+                    paymentMode: payment.paymentMode,
+                    source: payment.source
+                }));
 
-                setTransactions(data.transactions || data.data?.transactions || []);
+                setTransactions(transformedTransactions);
+
+                // Calculate wallet summary from transactions
+                const totalEarnings = data.payments
+                    .filter(p => p.transactionType === 'credit' && p.isSuccess)
+                    .reduce((sum, p) => sum + p.amount, 0);
+
+                const totalWithdrawals = data.payments
+                    .filter(p => p.transactionType === 'debit' && p.isSuccess)
+                    .reduce((sum, p) => sum + p.amount, 0);
+
+                const currentBalance = totalEarnings - totalWithdrawals;
+
+                // This month earnings
+                const currentMonth = new Date().getMonth();
+                const currentYear = new Date().getFullYear();
+                const thisMonthEarnings = data.payments
+                    .filter(p => {
+                        const paymentDate = new Date(p.createdAt);
+                        return p.transactionType === 'credit' && 
+                               p.isSuccess &&
+                               paymentDate.getMonth() === currentMonth &&
+                               paymentDate.getFullYear() === currentYear;
+                    })
+                    .reduce((sum, p) => sum + p.amount, 0);
+
+                const pendingWithdrawals = data.payments
+                    .filter(p => p.transactionType === 'debit' && !p.isSuccess)
+                    .reduce((sum, p) => sum + p.amount, 0);
+
+                setWalletData({
+                    currentBalance,
+                    thisMonthEarnings,
+                    pendingWithdrawals,
+                    totalEarnings,
+                    totalWithdrawals,
+                    availableBalance: currentBalance - pendingWithdrawals
+                });
             } else {
-                throw new Error(data.message || 'Failed to fetch wallet data');
+                throw new Error('Invalid API response format');
             }
         } catch (err) {
             console.error('Error fetching wallet data:', err);
@@ -83,7 +128,8 @@ const AgentWalletHistory = () => {
     const filteredTransactions = transactions.filter(transaction => {
         const matchesFilter = selectedFilter === 'all' || transaction.type === selectedFilter;
         const matchesSearch = (transaction.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (transaction.bookingId || '').toLowerCase().includes(searchTerm.toLowerCase());
+            (transaction.bookingId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (transaction.category || '').toLowerCase().includes(searchTerm.toLowerCase());
         const matchesDate = !dateFilter || (transaction.date && transaction.date.includes(dateFilter));
 
         return matchesFilter && matchesSearch && matchesDate;
@@ -110,9 +156,22 @@ const AgentWalletHistory = () => {
             <Badge bg="danger" className="me-2">Debit</Badge>;
     };
 
+    const getCategoryIcon = (category) => {
+        switch(category?.toLowerCase()) {
+            case 'flight':
+                return '';
+            case 'hotel':
+                return '';
+            case 'bus':
+                return '';
+            default:
+                return '';
+        }
+    };
+
     const formatAmount = (amount, type) => {
         const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-        const formatted = `₹${numAmount?.toLocaleString() || '0'}`;
+        const formatted = `₹${numAmount?.toLocaleString('en-IN') || '0'}`;
         return type === 'credit' ? `+${formatted}` : `-${formatted}`;
     };
 
@@ -155,27 +214,12 @@ const AgentWalletHistory = () => {
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 className="mb-1">
-                        <Wallet className="me-2" size={28} />
+                    <h4 className="mb-1">
                         Wallet History
-                    </h2>
+                    </h4>
                     <p className="text-muted mb-0">Manage your earnings and transactions</p>
                 </div>
-                <div className="d-flex gap-2">
-                    <Button
-                        variant="outline-secondary"
-                        size="sm"
-                        onClick={handleRefresh}
-                        disabled={refreshing}
-                    >
-                        <RefreshCw size={16} className={`me-2 ${refreshing ? 'spin' : ''}`} />
-                        {refreshing ? 'Refreshing...' : 'Refresh'}
-                    </Button>
-                    <Button variant="primary" size="sm">
-                        <Download size={16} className="me-2" />
-                        Export Report
-                    </Button>
-                </div>
+               
             </div>
 
             {error && (
@@ -185,143 +229,73 @@ const AgentWalletHistory = () => {
             )}
 
             {/* Wallet Summary Cards */}
-            <Row className="mb-4">
-                <Col lg={3} md={6} className="mb-3">
-                    <Card className="h-100 border-0 shadow-sm wallet-summary-card">
-                        <Card.Body className="text-center">
-                            <div className="wallet-icon-wrapper bg-success bg-opacity-10 rounded-circle mx-auto mb-3"
-                                style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Wallet size={24} className="text-success" />
-                            </div>
-                            <h4 className="text-success mb-1">
-                                ₹{(walletData?.currentBalance || 0).toLocaleString()}
-                            </h4>
-                            <small className="text-muted">Current Balance</small>
-                        </Card.Body>
-                    </Card>
-                </Col>
+            {walletData && (
+                <Row className="mb-4">
+                    <Col lg={3} md={6} className="mb-3">
+                        <Card className="h-100 border-0 shadow-sm wallet-summary-card">
+                            <Card.Body className="text-center">
+                                <div className="wallet-icon-wrapper bg-success bg-opacity-10 rounded-circle mx-auto mb-3"
+                                    style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Wallet size={24} className="text-success" />
+                                </div>
+                                <h4 className="text-success mb-1">
+                                    ₹{(walletData.currentBalance || 0).toLocaleString('en-IN')}
+                                </h4>
+                                <small className="text-muted">Current Balance</small>
+                            </Card.Body>
+                        </Card>
+                    </Col>
 
-                <Col lg={3} md={6} className="mb-3">
-                    <Card className="h-100 border-0 shadow-sm wallet-summary-card">
-                        <Card.Body className="text-center">
-                            <div className="wallet-icon-wrapper bg-info bg-opacity-10 rounded-circle mx-auto mb-3"
-                                style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <TrendingUp size={24} className="text-info" />
-                            </div>
-                            <h4 className="text-info mb-1">
-                                ₹{(walletData?.thisMonthEarnings || 0).toLocaleString()}
-                            </h4>
-                            <small className="text-muted">This Month Earnings</small>
-                        </Card.Body>
-                    </Card>
-                </Col>
+                    <Col lg={3} md={6} className="mb-3">
+                        <Card className="h-100 border-0 shadow-sm wallet-summary-card">
+                            <Card.Body className="text-center">
+                                <div className="wallet-icon-wrapper bg-info bg-opacity-10 rounded-circle mx-auto mb-3"
+                                    style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <TrendingUp size={24} className="text-info" />
+                                </div>
+                                <h4 className="text-info mb-1">
+                                    ₹{(walletData.thisMonthEarnings || 0).toLocaleString('en-IN')}
+                                </h4>
+                                <small className="text-muted">This Month Earnings</small>
+                            </Card.Body>
+                        </Card>
+                    </Col>
 
-                <Col lg={3} md={6} className="mb-3">
-                    <Card className="h-100 border-0 shadow-sm wallet-summary-card">
-                        <Card.Body className="text-center">
-                            <div className="wallet-icon-wrapper bg-warning bg-opacity-10 rounded-circle mx-auto mb-3"
-                                style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <TrendingDown size={24} className="text-warning" />
-                            </div>
-                            <h4 className="text-warning mb-1">
-                                ₹{(walletData?.pendingWithdrawals || 0).toLocaleString()}
-                            </h4>
-                            <small className="text-muted">Pending Withdrawals</small>
-                        </Card.Body>
-                    </Card>
-                </Col>
+                    <Col lg={3} md={6} className="mb-3">
+                        <Card className="h-100 border-0 shadow-sm wallet-summary-card">
+                            <Card.Body className="text-center">
+                                <div className="wallet-icon-wrapper bg-warning bg-opacity-10 rounded-circle mx-auto mb-3"
+                                    style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <TrendingDown size={24} className="text-warning" />
+                                </div>
+                                <h4 className="text-warning mb-1">
+                                    ₹{(walletData.pendingWithdrawals || 0).toLocaleString('en-IN')}
+                                </h4>
+                                <small className="text-muted">Pending Withdrawals</small>
+                            </Card.Body>
+                        </Card>
+                    </Col>
 
-                <Col lg={3} md={6} className="mb-3">
-                    <Card className="h-100 border-0 shadow-sm wallet-summary-card">
-                        <Card.Body className="text-center">
-                            <div className="wallet-icon-wrapper bg-primary bg-opacity-10 rounded-circle mx-auto mb-3"
-                                style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Calendar size={24} className="text-primary" />
-                            </div>
-                            <h4 className="text-primary mb-1">
-                                ₹{(walletData?.totalEarnings || 0).toLocaleString()}
-                            </h4>
-                            <small className="text-muted">Total Earnings</small>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
+                    <Col lg={3} md={6} className="mb-3">
+                        <Card className="h-100 border-0 shadow-sm wallet-summary-card">
+                            <Card.Body className="text-center">
+                                <div className="wallet-icon-wrapper bg-primary bg-opacity-10 rounded-circle mx-auto mb-3"
+                                    style={{ width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Calendar size={24} className="text-primary" />
+                                </div>
+                                <h4 className="text-primary mb-1">
+                                    ₹{(walletData.totalEarnings || 0).toLocaleString('en-IN')}
+                                </h4>
+                                <small className="text-muted">Total Earnings</small>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
+            )}
 
-            {/* Quick Actions */}
-            <Row className="mb-4">
-                <Col>
-                    <Card className="border-0 shadow-sm">
-                        <Card.Body>
-                            <h5 className="mb-3">Quick Actions</h5>
-                            <div className="d-flex flex-wrap gap-2">
-                                <Button variant="success" size="sm">
-                                    <TrendingUp size={16} className="me-2" />
-                                    Add Money
-                                </Button>
-                                <Button variant="primary" size="sm">
-                                    <TrendingDown size={16} className="me-2" />
-                                    Withdraw Funds
-                                </Button>
-                                <Button variant="outline-secondary" size="sm">
-                                    <Download size={16} className="me-2" />
-                                    Download Statement
-                                </Button>
-                                <Button variant="outline-info" size="sm">
-                                    <Calendar size={16} className="me-2" />
-                                    Set Auto-Withdrawal
-                                </Button>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
+          
 
-            {/* Filters and Search */}
-            <Card className="border-0 shadow-sm mb-4">
-                <Card.Body>
-                    <Row className="align-items-end">
-                        <Col lg={3} md={6} className="mb-3 mb-lg-0">
-                            <Form.Label>Filter by Type</Form.Label>
-                            <Form.Select value={selectedFilter} onChange={(e) => setSelectedFilter(e.target.value)}>
-                                <option value="all">All Transactions</option>
-                                <option value="credit">Credit Only</option>
-                                <option value="debit">Debit Only</option>
-                            </Form.Select>
-                        </Col>
-
-                        <Col lg={3} md={6} className="mb-3 mb-lg-0">
-                            <Form.Label>Date Filter</Form.Label>
-                            <Form.Control
-                                type="date"
-                                value={dateFilter}
-                                onChange={(e) => setDateFilter(e.target.value)}
-                            />
-                        </Col>
-
-                        <Col lg={4} md={8} className="mb-3 mb-lg-0">
-                            <Form.Label>Search</Form.Label>
-                            <InputGroup>
-                                <InputGroup.Text>
-                                    <Search size={16} />
-                                </InputGroup.Text>
-                                <Form.Control
-                                    placeholder="Search by description or booking ID..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </InputGroup>
-                        </Col>
-
-                        <Col lg={2} md={4}>
-                            <Button variant="outline-primary" className="w-100" onClick={clearFilters}>
-                                <Filter size={16} className="me-2" />
-                                Clear Filters
-                            </Button>
-                        </Col>
-                    </Row>
-                </Card.Body>
-            </Card>
-
+           
             {/* Transaction History */}
             <Card className="border-0 shadow-sm">
                 <Card.Header className="bg-white border-bottom">
@@ -358,18 +332,21 @@ const AgentWalletHistory = () => {
                                             </div>
                                         </td>
                                         <td className="py-3">
-                                            <div>
-                                                <div className="fw-medium">
-                                                    {transaction.description || 'No description'}
+                                            <div className="d-flex align-items-center">
+                                                <span className="me-2">{getCategoryIcon(transaction.category)}</span>
+                                                <div>
+                                                    <div className="fw-medium">
+                                                        {transaction.description || 'No description'}
+                                                    </div>
+                                                    <small className="text-muted text-capitalize">
+                                                        {transaction.category || 'general'} • {transaction.paymentMode}
+                                                    </small>
                                                 </div>
-                                                <small className="text-muted text-capitalize">
-                                                    {transaction.category || 'general'}
-                                                </small>
                                             </div>
                                         </td>
                                         <td className="py-3">
                                             <code className="bg-light px-2 py-1 rounded">
-                                                {transaction.bookingId || transaction.reference_id || 'N/A'}
+                                                #{transaction.bookingId}
                                             </code>
                                         </td>
                                         <td className="py-3">

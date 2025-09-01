@@ -539,7 +539,7 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
     });
   };
 
-  // FIXED: Payment success handler with proper error detection
+  // FIXED: Payment success handler with proper error detection and token validation
   const handlePaymentSuccess = async (response, formattedBookingData, validation) => {
     // CRITICAL: Prevent multiple booking calls
     if (bookingProcessed) {
@@ -552,10 +552,23 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
       setBookingStage('Confirming your hotel reservation...');
       console.log('Sending booking request with payload:', JSON.stringify(formattedBookingData, null, 2));
 
+      // Validate token before making the booking call
+      const token = localStorage.getItem('token');
+      if (!token) {
+        const errorMessage = 'Authentication token not found. Please login and try again.';
+        setError(errorMessage);
+        showErrorToast('Authentication Error', errorMessage);
+        setBookingInProgress(false);
+        setLoading(false);
+        return;
+      }
+
+      console.log('Token present:', token ? 'Yes' : 'No');
+
       const bookingResponse = await bookHotel(formattedBookingData);
       console.log('Booking API response:', JSON.stringify(bookingResponse, null, 2));
 
-      // FIXED: Check for API errors first - only treat as error if there's actual error content
+      // Handle the booking response
       if (!bookingResponse) {
         const errorMessage = 'No response received from booking API';
         setError(errorMessage);
@@ -565,43 +578,54 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
         return;
       }
 
-      // FIXED: Proper error detection - only flag as error if there's actual error content
+      // Check for API errors - the response structure from your error shows nested Error object
       const hasActualError = (
-        // Check for error object with actual error code or message
-        (bookingResponse.error && (
-          bookingResponse.error.ErrorCode > 0 ||
-          bookingResponse.error.ErrorMessage ||
-          bookingResponse.error.message
-        )) ||
-        (bookingResponse.Error && (
-          bookingResponse.Error.ErrorCode > 0 ||
-          (bookingResponse.Error.ErrorMessage && bookingResponse.Error.ErrorMessage.trim() !== "")
-        )) ||
-        // Check for explicit failure indicators
+        (bookingResponse.error?.Error?.ErrorCode && bookingResponse.error.Error.ErrorCode > 0) ||
+        (bookingResponse.error?.Error?.ErrorMessage && bookingResponse.error.Error.ErrorMessage.trim() !== "") ||
+        (bookingResponse.Error?.ErrorCode && bookingResponse.Error.ErrorCode > 0) ||
+        (bookingResponse.Error?.ErrorMessage && bookingResponse.Error.ErrorMessage.trim() !== "") ||
         (bookingResponse.success === false) ||
         (bookingResponse.status && bookingResponse.status.toLowerCase() === 'error')
       );
 
       if (hasActualError) {
-        const apiError = bookingResponse.error || bookingResponse.Error;
-        const errorMessage = apiError.ErrorMessage || apiError.message || 'Booking failed due to API error';
+        // Extract error message from nested structure
+        const apiError = bookingResponse.error?.Error || bookingResponse.Error;
+        const errorMessage = apiError?.ErrorMessage || apiError?.message || 'Booking failed due to API error';
+        const errorCode = apiError?.ErrorCode || 'Unknown';
 
-        setError(errorMessage);
-        showErrorToast('Booking API Error', errorMessage);
+        console.error('Booking API Error:', { errorCode, errorMessage, fullResponse: bookingResponse });
+
+        // Handle authentication errors specifically
+        if (errorCode === 401 || errorMessage.includes('Authenticate') || errorMessage.includes('authentication')) {
+          const authErrorMessage = 'Authentication failed. Please login again and retry booking.';
+          setError(authErrorMessage);
+          showErrorToast('Authentication Error', authErrorMessage);
+
+          // Optionally redirect to login
+          setTimeout(() => {
+            localStorage.removeItem('token');
+            navigate('/login', { state: { returnTo: location.pathname } });
+          }, 3000);
+        } else {
+          setError(errorMessage);
+          showErrorToast('Booking API Error', `Error ${errorCode}: ${errorMessage}`);
+        }
+
         setBookingInProgress(false);
         setLoading(false);
         return;
       }
 
-      // FIXED: Better success detection
+      // Check for successful booking
       const isBookingSuccessful = (
         (bookingResponse?.message && /successfully|confirmed|processed/i.test(bookingResponse.message)) ||
         bookingResponse?.BookingStatus?.toLowerCase() === 'confirmed' ||
         bookingResponse?.result?.BookingStatus?.toLowerCase() === 'confirmed' ||
-        bookingResponse?.result?.BookingStatus === 'Processing' || // Your API returns "Processing" status
+        bookingResponse?.result?.BookingStatus === 'Processing' ||
         bookingResponse?.Status?.toLowerCase() === 'success' ||
         bookingResponse?.success === true ||
-        // Success if ErrorCode is 0 and no error message
+        // Success if ErrorCode is 0 and no error message (or empty error message)
         (bookingResponse?.Error?.ErrorCode === 0 &&
           (!bookingResponse?.Error?.ErrorMessage || bookingResponse?.Error?.ErrorMessage.trim() === ""))
       );
@@ -616,7 +640,7 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
         bookingResponse?.BookingID ||
         bookingResponse?.bookingId ||
         bookingResponse?.id ||
-        bookingResponse?.result?.BookingId  // Your API returns BookingId in result object
+        bookingResponse?.result?.BookingId
       );
 
       if (isBookingSuccessful && hasRequiredBookingData) {
@@ -687,15 +711,23 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
                 searchTokenId: bookingResponse.SearchTokenId,
               },
               bookingResult: bookingResponse,
-              couponData: activeCoupon, // FIXED: Pass the active coupon data
-              couponDiscount: finalCouponDiscount // FIXED: Pass the actual coupon discount
+              couponData: activeCoupon,
+              couponDiscount: finalCouponDiscount
             },
           });
         }, 1500);
 
       } else {
-        // UPDATED: Show API response message directly
-        const errorMessage = bookingResponse?.message || 'Booking failed without specific error message';
+        // Show more detailed error information
+        const errorMessage = bookingResponse?.message ||
+          `Booking failed. Missing required data: ${!hasRequiredBookingData ? 'user/search data' : 'booking ID'}`;
+        console.error('Booking validation failed:', {
+          isBookingSuccessful,
+          hasRequiredBookingData,
+          hasBookingId,
+          response: bookingResponse
+        });
+
         setError(errorMessage);
         showErrorToast('Booking Failed', errorMessage);
         setBookingInProgress(false);
@@ -703,10 +735,28 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
     } catch (bookingError) {
       console.error('Booking API Error:', bookingError);
 
-      // Use API response error directly
-      const apiErrorMessage = getApiErrorMessage(bookingError);
-      setError(apiErrorMessage);
-      showErrorToast('Booking API Error', apiErrorMessage);
+      // Handle different types of errors
+      if (bookingError.response?.status === 401) {
+        const authErrorMessage = 'Authentication failed. Please login again and retry booking.';
+        setError(authErrorMessage);
+        showErrorToast('Authentication Error', authErrorMessage);
+
+        // Clear token and redirect to login
+        localStorage.removeItem('token');
+        setTimeout(() => {
+          navigate('/login', { state: { returnTo: location.pathname } });
+        }, 3000);
+      } else if (bookingError.response?.status === 500) {
+        const serverErrorMessage = 'Server error occurred. Please try again in a few minutes.';
+        setError(serverErrorMessage);
+        showErrorToast('Server Error', serverErrorMessage);
+      } else {
+        // Use the enhanced error message extraction
+        const apiErrorMessage = getApiErrorMessage(bookingError);
+        setError(apiErrorMessage);
+        showErrorToast('Booking API Error', apiErrorMessage);
+      }
+
       setBookingInProgress(false);
     }
   };
@@ -1077,7 +1127,6 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
                   <div className="row mb-2">
                     <div className="col">
                       Booking Fee
-                      <small className="text-muted d-block">Service charge ({vendorCommissionPercentage}%)</small>
                     </div>
                     <div className="col text-end text-success fw-bold">₹ {vendorCommissionAmount.toFixed(2)}</div>
                   </div>
