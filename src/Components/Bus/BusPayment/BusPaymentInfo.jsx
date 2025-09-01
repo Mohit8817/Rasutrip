@@ -1097,7 +1097,7 @@ const BusPaymentInfo = () => {
                         </Row>
                     )}
 
-                  
+
 
                     {/* TDS Deduction */}
                     {fareBreakdown.tds > 0 && (
