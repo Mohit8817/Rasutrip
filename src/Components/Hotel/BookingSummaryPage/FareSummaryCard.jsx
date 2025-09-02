@@ -202,46 +202,7 @@ const FareSummaryCard = ({
             )}
           </div>
         </div>
-        {/* Breakdown for clarity */}
-        {finalCouponDiscount > 0 && (
-          <div className="mt-3 p-2 bg-light rounded">
-            <small className="text-muted fw-bold d-block mb-2">Payment Breakdown:</small>
-            <div className="row text-sm">
-              <div className="col-8">
-                <small>Subtotal:</small>
-              </div>
-              <div className="col-4 text-end">
-                <small>₹{subtotalBeforeDiscounts.toFixed(2)}</small>
-              </div>
-            </div>
-            {finalDiscount > 0 && (
-              <div className="row text-sm">
-                <div className="col-8">
-                  <small>Hotel discount:</small>
-                </div>
-                <div className="col-4 text-end">
-                  <small className="text-success">-₹{finalDiscount.toFixed(2)}</small>
-                </div>
-              </div>
-            )}
-            <div className="row text-sm">
-              <div className="col-8">
-                <small>Coupon discount:</small>
-              </div>
-              <div className="col-4 text-end">
-                <small className="text-success">-₹{finalCouponDiscount.toFixed(2)}</small>
-              </div>
-            </div>
-            <div className="row text-sm border-top pt-1 mt-1">
-              <div className="col-8">
-                <small className="fw-bold">Final Amount:</small>
-              </div>
-              <div className="col-4 text-end">
-                <small className="fw-bold">₹{roundedTotal}</small>
-              </div>
-            </div>
-          </div>
-        )}
+       
 
       </Card.Body>
     </Card>
