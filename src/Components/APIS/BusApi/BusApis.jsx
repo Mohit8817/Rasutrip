@@ -221,17 +221,37 @@ export const blockSeats = async ({
   }
 };
 
+
 // ───────────────────────────────────────────────
 // 📍 Get special offers (coupon list)
 // ───────────────────────────────────────────────
 export const fetchSpecialOffers = async () => {
   try {
+    console.log("🔄 Fetching special offers from:", BusServices.specialOffers);
+
     const response = await axios.get(BusServices.specialOffers, {
       headers: createAuthHeaders(),
+      timeout: 10000, // 10 second timeout
     });
-    return response.data;
+
+    console.log("✅ Special offers response:", response.data);
+
+    // Handle different response structures
+    if (response.data && response.data.success) {
+      return response.data.data || response.data.offers || response.data;
+    }
+
+    return response.data || [];
+
   } catch (err) {
-    console.error("❌ Error fetching special offers:", err.response?.data || err.message);
+    console.error("❌ Error fetching special offers:", {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data,
+      url: BusServices.specialOffers
+    });
+
+    // Return empty array instead of throwing to prevent component crash
     return [];
   }
 };
@@ -241,21 +261,72 @@ export const fetchSpecialOffers = async () => {
 // ───────────────────────────────────────────────
 export const applyBusCoupon = async (couponCode, totalAmountWithCommission) => {
   try {
+    // Validate inputs
+    if (!couponCode || couponCode.trim() === '') {
+      throw new Error('Coupon code is required');
+    }
+
+    if (!totalAmountWithCommission || totalAmountWithCommission <= 0) {
+      throw new Error('Valid amount is required');
+    }
+
+    const payload = {
+      couponCode: couponCode.trim(), // Ensure no extra spaces
+      amount: Number(totalAmountWithCommission), // Ensure it's a number
+    };
+
+    console.log("🎫 Applying coupon with payload:", payload);
+    console.log("🌐 API endpoint:", BusServices.applyCoupon);
+    console.log("🔑 Headers:", createAuthHeaders());
+
     const response = await axios.post(
       BusServices.applyCoupon,
+      payload,
       {
-        coupon_code: couponCode,
-        amount: totalAmountWithCommission, // Use total amount including vendor commission
-      },
-      { headers: createAuthHeaders() }
+        headers: createAuthHeaders(),
+        timeout: 15000, // 15 second timeout
+      }
     );
+
+    console.log("🎉 Apply coupon response:", response.data);
+
+    // Handle different success response structures
+    if (response.data) {
+      // If API returns success: false, treat as error
+      if (response.data.success === false) {
+        throw new Error(response.data.message || 'Coupon application failed');
+      }
+
+      return response.data;
+    }
+
     return response.data;
+
   } catch (err) {
-    console.error("❌ Error applying coupon:", err.response?.data || err.message);
-    throw err;
+    console.error("❌ Error applying coupon:", {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data,
+      url: BusServices.applyCoupon,
+      payload: { couponCode, amount: totalAmountWithCommission }
+    });
+
+    // Enhanced error handling
+    if (err.response) {
+      // Server responded with error status
+      const errorMessage = err.response.data?.message ||
+        err.response.data?.error ||
+        `Server error: ${err.response.status}`;
+      throw new Error(errorMessage);
+    } else if (err.request) {
+      // Request made but no response received
+      throw new Error('Network error: Unable to reach server');
+    } else {
+      // Something else happened
+      throw new Error(err.message || 'Failed to apply coupon');
+    }
   }
 };
-
 // _____________________________________________________
 // ✅ Create bus Razorpay order with commission-inclusive amount
 // _____________________________________________________

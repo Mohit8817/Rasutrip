@@ -202,7 +202,7 @@ const FareSummaryCard = ({
             )}
           </div>
         </div>
-       
+
 
       </Card.Body>
     </Card>

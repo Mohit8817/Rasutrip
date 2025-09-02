@@ -1,4 +1,3 @@
-// src/Components/BusFareSummary.jsx
 import React from "react";
 import { Card } from "react-bootstrap";
 import { useLocation } from 'react-router-dom';
@@ -13,13 +12,16 @@ const BusFareSummary = ({
   gst,
   discount = 0,
   showVendorCommission = true,
-  totalPrice
+  totalPrice,
+  couponDiscount = 0,
+  appliedCouponData = null
 }) => {
   const location = useLocation();
 
   // Get data from location state (passed from BusDetailinfo)
   const state = location.state;
   console.log("BusFareSummary - Full state:", state);
+  console.log("BusFareSummary - Coupon data:", { couponDiscount, appliedCouponData });
 
   // Extract data from the state object that comes from BusDetailinfo
   const selectedSeats = state?.selectedSeats || [];
@@ -212,7 +214,7 @@ const BusFareSummary = ({
   const convenienceFee = showVendorCommission && fareData.commissionPercentage > 0 ?
     (fareData.publishedPrice * fareData.commissionPercentage) / 100 : 0;
 
-  // Calculate subtotal (before convenience fee) - include all charges, subtract discounts and TDS
+  // Calculate subtotal (before convenience fee and coupon discount) - include all charges, subtract discounts and TDS
   const subtotal = fareData.publishedPrice +
     fareData.serviceCharges +
     fareData.tax +
@@ -222,13 +224,18 @@ const BusFareSummary = ({
     fareData.discount -
     fareData.tds;
 
-  // Calculate final total
-  const finalTotal = subtotal + convenienceFee;
+  // Add convenience fee to get total before coupon
+  const totalBeforeCoupon = subtotal + convenienceFee;
+
+  // Apply coupon discount to get final total
+  const finalTotal = Math.max(0, totalBeforeCoupon - (couponDiscount || 0));
 
   console.log("BusFareSummary - Final calculation:", {
     fareData,
     convenienceFee,
     subtotal,
+    couponDiscount,
+    totalBeforeCoupon,
     finalTotal
   });
 
@@ -269,7 +276,7 @@ const BusFareSummary = ({
           {/* Published Price - Main price from API */}
           {fareData.publishedPrice > 0 && (
             <div className="fare-row">
-              <span>Base Fare{fareData.numberOfSeats > 0 ? `(${fareData.numberOfSeats} seats)` : ''}</span>
+              <span>Base Fare{fareData.numberOfSeats > 0 ? ` (${fareData.numberOfSeats} seats)` : ''}</span>
               <span>₹ {fareData.publishedPrice.toFixed(2)}</span>
             </div>
           )}
@@ -320,15 +327,13 @@ const BusFareSummary = ({
             </div>
           )}
 
-
-
           {/* TDS Deduction - Always show */}
           <div className="fare-row">
             <span>TDS (-)</span>
             <span>- ₹ {fareData.tds.toFixed(2)}</span>
           </div>
 
-          {/* Discount - Always show */}
+          {/* API Discount - Always show */}
           <div className="fare-row">
             <span>Discount (-)</span>
             <span>- ₹ {fareData.discount.toFixed(2)}</span>
@@ -347,6 +352,25 @@ const BusFareSummary = ({
             <div className="fare-row">
               <span>Convenience Fee</span>
               <span>₹ {convenienceFee.toFixed(2)}</span>
+            </div>
+          )}
+
+          <hr className="my-2" />
+
+          {/* Total Before Coupon */}
+          <div className="fare-row fw-bold">
+            <span>Total Before Discount</span>
+            <span>₹ {totalBeforeCoupon.toFixed(2)}</span>
+          </div>
+
+          {/* Coupon Discount - Show only if applied */}
+          {couponDiscount > 0 && appliedCouponData && (
+            <div className="fare-row text-success">
+              <span>
+                Coupon Discount (-)
+                <small className="text-muted d-block">{appliedCouponData.code}</small>
+              </span>
+              <span>- ₹ {couponDiscount.toFixed(2)}</span>
             </div>
           )}
 
