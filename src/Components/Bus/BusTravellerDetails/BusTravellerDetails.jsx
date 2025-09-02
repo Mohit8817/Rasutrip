@@ -25,7 +25,7 @@ const BusTravellerDetails = () => {
                     </Col>
                     <Col lg={3}>
                         <BusFareSummary totalPrice={totalPrice} />
-                        <BusPromoCode />
+                      
 
                     </Col>
                 </Row>

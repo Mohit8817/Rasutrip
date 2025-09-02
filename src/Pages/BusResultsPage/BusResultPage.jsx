@@ -53,7 +53,7 @@ const BusResultPage = () => {
         const basePrice = busPrice?.PublishedPrice || 0;
         const vendorCommissionAmount = (basePrice * vendorCommissionPercentage) / 100;
         const totalPrice = basePrice + vendorCommissionAmount;
-        
+
         return {
             basePrice,
             vendorCommissionAmount,
@@ -93,14 +93,19 @@ const BusResultPage = () => {
                     return;
                 }
 
+                // Updated portion of BusResultPage.js - around line 90-130
+
                 const mapped = apiResult.Result.map((item) => {
                     const dep = new Date(item.DepartureTime);
                     const arr = new Date(item.ArrivalTime);
-                    
+
                     // Get vendor commission percentage from API response
                     const vendorCommissionPercentage = item.BusPrice?.rasutripCommissionPercentage || 0;
-                    
-                    // Calculate fare with vendor commission
+
+                    // Get base price from API
+                    const basePrice = item.BusPrice?.PublishedPrice || 0;
+
+                    // Calculate fare with vendor commission (for booking purposes)
                     const fareDetails = calculateFareWithCommission(item.BusPrice, vendorCommissionPercentage);
 
                     return {
@@ -114,40 +119,41 @@ const BusResultPage = () => {
                         departLocation: item.BoardingPointsDetails?.[0]?.CityPointLocation || from,
                         arriveLocation: item.DroppingPointsDetails?.[0]?.CityPointLocation || to,
                         duration: getDuration(dep, arr),
-                        
-                        // Original price (without commission)
-                        originalPrice: item.BusPrice?.PublishedPrice || 0,
-                        
-                        // Price with commission (for display)
-                        price: `₹ ${fareDetails.totalPrice.toFixed(2)}`,
-                        numericPrice: fareDetails.totalPrice,
-                        
-                        // Vendor commission details
+
+                        // DISPLAY PRICE - Show exact API response value without formatting
+                        price: `₹ ${basePrice}`,
+                        numericPrice: basePrice, // This is used for price range filtering
+
+                        // Keep original price for reference
+                        originalPrice: basePrice,
+
+                        // BOOKING PRICES - All pricing details for booking process
+                        totalPriceWithCommission: fareDetails.totalPrice,
                         vendorCommissionPercentage: vendorCommissionPercentage,
                         vendorCommissionAmount: fareDetails.vendorCommissionAmount,
-                        
-                        // Fare breakdown
+
+                        // Complete fare breakdown for booking
                         fareBreakdown: {
-                            basePrice: fareDetails.basePrice,
+                            basePrice: basePrice,
                             vendorCommissionAmount: fareDetails.vendorCommissionAmount,
                             vendorCommissionPercentage: vendorCommissionPercentage,
-                            totalPrice: fareDetails.totalPrice,
+                            totalPrice: fareDetails.totalPrice, // This includes commission
                             taxes: item.BusPrice?.Tax || 0,
                             otherCharges: item.BusPrice?.OtherCharges || 0,
-                            gst: item.BusPrice?.GST ? 
+                            gst: item.BusPrice?.GST ?
                                 (item.BusPrice.GST.CGSTAmount + item.BusPrice.GST.SGSTAmount + item.BusPrice.GST.IGSTAmount) : 0
                         },
-                        
+
                         seatsAvailable: item.AvailableSeats || 0,
                         cancellationPolicies: item.CancellationPolicies || [],
                         ResultIndex: item.ResultIndex,
-                        SearchTokenId: apiResult.SearchTokenId, 
+                        SearchTokenId: apiResult.SearchTokenId,
                         OriginId,
                         DestinationId,
                         UserIp,
                         BoardingPointsDetails: item.BoardingPointsDetails || [],
                         DroppingPointsDetails: item.DroppingPointsDetails || [],
-                        
+
                         // Store original bus price object for reference
                         originalBusPrice: item.BusPrice
                     };
@@ -155,11 +161,11 @@ const BusResultPage = () => {
 
                 setMasterBusList(mapped);
 
-                // Set price range based on prices WITH commission
-                const prices = mapped.map((b) => b.numericPrice).filter(price => price > 0);
-                if (prices.length > 0) {
-                    const min = Math.min(...prices);
-                    const max = Math.max(...prices);
+                // Set price range based on BASE PRICES (not commission prices)
+                const basePrices = mapped.map((b) => b.numericPrice).filter(price => price > 0);
+                if (basePrices.length > 0) {
+                    const min = Math.min(...basePrices);
+                    const max = Math.max(...basePrices);
                     setActualPriceRange([min, max]);
                     setPriceRange([min, max]);
                 }
