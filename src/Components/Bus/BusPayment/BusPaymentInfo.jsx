@@ -1129,7 +1129,7 @@ const BusPaymentInfo = () => {
                             <Col xs={8}>
                                 Convenience Fee
                                 {fareBreakdown.commissionPercentage > 0 && (
-                                    <small className="text-muted"> ({fareBreakdown.commissionPercentage.toFixed(1)}%)</small>
+                                    <small className="text-muted"></small>
                                 )}
                             </Col>
                             <Col xs={4} className="text-end">₹{convenienceFee.toFixed(2)}</Col>
@@ -1141,7 +1141,7 @@ const BusPaymentInfo = () => {
                     {/* Final Total */}
                     <Row className="fw-bold fs-5">
                         <Col xs={8}>Total Amount</Col>
-                        <Col xs={4} className="text-end text-danger">₹{finalAmount}</Col>
+                        <Col xs={4} className="text-end">₹{finalAmount}</Col>
                     </Row>
 
 

@@ -269,16 +269,8 @@ const BusFareSummary = ({
           {/* Published Price - Main price from API */}
           {fareData.publishedPrice > 0 && (
             <div className="fare-row">
-              <span>Published Price {fareData.numberOfSeats > 0 ? `(${fareData.numberOfSeats} seats)` : ''}</span>
+              <span>Base Fare{fareData.numberOfSeats > 0 ? `(${fareData.numberOfSeats} seats)` : ''}</span>
               <span>₹ {fareData.publishedPrice.toFixed(2)}</span>
-            </div>
-          )}
-
-          {/* Offered Price - Show only if different from Published Price and greater than 0 */}
-          {fareData.offeredPrice > 0 && fareData.offeredPrice !== fareData.publishedPrice && (
-            <div className="fare-row text-success">
-              <span>Offered Price</span>
-              <span>₹ {fareData.offeredPrice.toFixed(2)}</span>
             </div>
           )}
 
@@ -328,7 +320,7 @@ const BusFareSummary = ({
             </div>
           )}
 
-         
+
 
           {/* TDS Deduction - Always show */}
           <div className="fare-row">
@@ -353,7 +345,7 @@ const BusFareSummary = ({
           {/* Convenience Fee - Show only if commission is configured and greater than 0 */}
           {showVendorCommission && convenienceFee > 0 && (
             <div className="fare-row">
-              <span>Convenience Fee ({fareData.commissionPercentage.toFixed(1)}%)</span>
+              <span>Convenience Fee</span>
               <span>₹ {convenienceFee.toFixed(2)}</span>
             </div>
           )}
@@ -362,21 +354,9 @@ const BusFareSummary = ({
 
           {/* Final Total */}
           <div className="fare-total">
-            <span><strong>Total Amount</strong></span>
-            <span><strong>₹ {finalTotal.toFixed(2)}</strong></span>
+            <span>Total Amount</span>
+            <span>₹ {finalTotal.toFixed(2)}</span>
           </div>
-
-          {/* Show selected seats info if available */}
-          {selectedSeats && selectedSeats.length > 0 && (
-            <div className="mt-3 pt-2 border-top">
-              <div className="text-muted small mb-1">Selected Seats:</div>
-              <div className="fw-bold">
-                {selectedSeats.map(seat => seat.SeatName || seat.seatName).join(', ')}
-              </div>
-            </div>
-          )}
-
-
         </Card.Body>
       </Card>
     </div>
