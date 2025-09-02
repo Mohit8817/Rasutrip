@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Offcanvas } from 'react-bootstrap';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Profile from '../components/Profile';
 import BookingTabs from '../components/BookingtTabs';
@@ -10,9 +11,11 @@ import PaymentHistory from '../components/PaymentHistory';
 import BankDetails from '../components/BankDetails';
 import AgentDashboard from '../components/AgentDashboard';
 import AgentWalletHistory from '../components/Agentwallethistory';
-// import AgentWalletHistory from '../components/AgentWalletHistory';
 
 const Dashboard = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    
     const user = {
         name: ' ',
         mobile: ' ',
@@ -26,14 +29,61 @@ const Dashboard = () => {
     // Check if user is agent
     const isAgent = user.role === 'agent' || user.userType === 'agent' || user.type === 'agent' || userType === 'agent';
 
-    // Set default tab based on user type
-    const [activeTab, setActiveTab] = useState(isAgent ? 'dashboard' : 'profile');
+    // Function to determine initial tab based on user type and URL params
+    const getInitialTab = () => {
+        // Check if there's a specific tab requested in URL params
+        const urlParams = new URLSearchParams(location.search);
+        const requestedTab = urlParams.get('tab');
+        
+        if (requestedTab) {
+            // Validate that the requested tab is allowed for this user type
+            if (requestedTab === 'dashboard' && !isAgent) {
+                return 'profile'; // Redirect non-agents away from dashboard
+            }
+            if (['wallet-history', 'bank-details'].includes(requestedTab) && !isAgent) {
+                return 'profile'; // Redirect non-agents away from agent-only tabs
+            }
+            return requestedTab;
+        }
+        
+        // Default tab selection based on user type
+        return isAgent ? 'dashboard' : 'profile';
+    };
+
+    // Set initial tab based on user type
+    const [activeTab, setActiveTab] = useState(getInitialTab);
     const [activeBookingTab, setActiveBookingTab] = useState('Flight');
     const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
+    // Update URL when tab changes (optional - for better UX)
+    useEffect(() => {
+        const urlParams = new URLSearchParams(location.search);
+        const currentTab = urlParams.get('tab');
+        
+        if (currentTab !== activeTab) {
+            // Update URL without causing a page reload
+            const newUrl = `${location.pathname}?tab=${activeTab}`;
+            window.history.replaceState(null, '', newUrl);
+        }
+    }, [activeTab, location.pathname, location.search]);
+
+    // Enhanced tab change handler with validation
+    const handleTabChange = (newTab) => {
+        // Validate tab access based on user type
+        if (!isAgent && ['dashboard', 'wallet-history', 'bank-details'].includes(newTab)) {
+            console.warn(`Access denied: ${newTab} is only available for agents`);
+            return;
+        }
+        
+        setActiveTab(newTab);
+        setShowMobileSidebar(false); // Close mobile sidebar after selection
+    };
+
     const handleLogout = () => {
         console.log('Logging out...');
+        // Add your actual logout logic here
         alert('Logout functionality would be implemented here');
+        navigate('/'); // Redirect to home after logout
     };
 
     const renderBookingContent = () => {
@@ -56,7 +106,12 @@ const Dashboard = () => {
                 if (isAgent) {
                     return <AgentDashboard />;
                 } else {
-                    return <div className="alert alert-warning">Access Denied: Dashboard is only available for agents.</div>;
+                    return (
+                        <div className="alert alert-warning">
+                            <h5>Access Denied</h5>
+                            <p>Dashboard is only available for agents. Redirecting to profile...</p>
+                        </div>
+                    );
                 }
             case 'profile':
                 return <Profile user={user} userType={userType} />;
@@ -79,14 +134,24 @@ const Dashboard = () => {
                 if (isAgent) {
                     return <AgentWalletHistory />;
                 } else {
-                    return <div className="alert alert-warning">Access Denied: Wallet History is only available for agents.</div>;
+                    return (
+                        <div className="alert alert-warning">
+                            <h5>Access Denied</h5>
+                            <p>Wallet History is only available for agents.</p>
+                        </div>
+                    );
                 }
             case 'bank-details':
                 // Only render if user is an agent
                 if (isAgent) {
                     return <BankDetails />;
                 } else {
-                    return <div className="alert alert-warning">Access Denied: Bank Details are only available for agents.</div>;
+                    return (
+                        <div className="alert alert-warning">
+                            <h5>Access Denied</h5>
+                            <p>Bank Details are only available for agents.</p>
+                        </div>
+                    );
                 }
             default:
                 return <Profile user={user} userType={userType} />;
@@ -109,7 +174,7 @@ const Dashboard = () => {
             case 'bank-details':
                 return 'Bank Details';
             default:
-                return 'Dashboard';
+                return isAgent ? 'Dashboard' : 'Profile';
         }
     };
 
@@ -135,7 +200,7 @@ const Dashboard = () => {
                             {getPageTitle()}
                         </h5>
                         <small className="text-muted">
-                            {isAgent ? 'Agent Portal' : 'Dashboard'}
+                            {isAgent ? 'Agent Portal' : 'User Dashboard'}
                         </small>
                     </div>
 
@@ -168,10 +233,7 @@ const Dashboard = () => {
                         user={user}
                         userType={userType}
                         activeTab={activeTab}
-                        setActiveTab={(tab) => {
-                            setActiveTab(tab);
-                            setShowMobileSidebar(false); // Close sidebar on mobile after selection
-                        }}
+                        setActiveTab={handleTabChange}
                         onLogout={handleLogout}
                         isMobile={true}
                     />
@@ -189,7 +251,7 @@ const Dashboard = () => {
                                     user={user}
                                     userType={userType}
                                     activeTab={activeTab}
-                                    setActiveTab={setActiveTab}
+                                    setActiveTab={handleTabChange}
                                     onLogout={handleLogout}
                                     isMobile={false}
                                 />
@@ -223,7 +285,7 @@ const Dashboard = () => {
                                 <button
                                     className={`btn w-100 border-0 py-2 px-1 text-center ${activeTab === 'dashboard' ? 'text-primary' : 'text-muted'
                                         }`}
-                                    onClick={() => setActiveTab('dashboard')}
+                                    onClick={() => handleTabChange('dashboard')}
                                 >
                                     <div className="mb-1">
                                         <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -239,7 +301,7 @@ const Dashboard = () => {
                             <button
                                 className={`btn w-100 border-0 py-2 px-1 text-center ${activeTab === 'profile' ? 'text-primary' : 'text-muted'
                                     }`}
-                                onClick={() => setActiveTab('profile')}
+                                onClick={() => handleTabChange('profile')}
                             >
                                 <div className="mb-1">
                                     <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -254,7 +316,7 @@ const Dashboard = () => {
                             <button
                                 className={`btn w-100 border-0 py-2 px-1 text-center ${activeTab === 'bookings' ? 'text-primary' : 'text-muted'
                                     }`}
-                                onClick={() => setActiveTab('bookings')}
+                                onClick={() => handleTabChange('bookings')}
                             >
                                 <div className="mb-1">
                                     <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -269,7 +331,7 @@ const Dashboard = () => {
                             <button
                                 className={`btn w-100 border-0 py-2 px-1 text-center ${activeTab === 'payment-history' ? 'text-primary' : 'text-muted'
                                     }`}
-                                onClick={() => setActiveTab('payment-history')}
+                                onClick={() => handleTabChange('payment-history')}
                             >
                                 <div className="mb-1">
                                     <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -286,7 +348,7 @@ const Dashboard = () => {
                                 <button
                                     className={`btn w-100 border-0 py-2 px-1 text-center ${activeTab === 'wallet-history' ? 'text-primary' : 'text-muted'
                                         }`}
-                                    onClick={() => setActiveTab('wallet-history')}
+                                    onClick={() => handleTabChange('wallet-history')}
                                 >
                                     <div className="mb-1">
                                         <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
@@ -305,7 +367,7 @@ const Dashboard = () => {
                                 <button
                                     className={`btn w-100 border-0 py-2 px-1 text-center ${activeTab === 'bank-details' ? 'text-primary' : 'text-muted'
                                         }`}
-                                    onClick={() => setActiveTab('bank-details')}
+                                    onClick={() => handleTabChange('bank-details')}
                                 >
                                     <div className="mb-1">
                                         <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">

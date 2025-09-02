@@ -61,6 +61,24 @@ const Login = () => {
     return userType;
   };
 
+  // Enhanced dashboard navigation based on user type
+  const handleDashboardNavigation = () => {
+    const currentUserIsAgent = user && (
+      user.role === 'agent' || 
+      user.userType === 'agent' || 
+      user.type === 'agent' || 
+      userType === 'agent'
+    );
+
+    if (currentUserIsAgent) {
+      // Agent: Navigate to dashboard tab
+      navigate('/dashboard?tab=dashboard');
+    } else {
+      // Regular user: Navigate to profile tab
+      navigate('/dashboard?tab=profile');
+    }
+  };
+
   return (
     <div className="d-flex justify-content-center align-items-center login-container">
       <div className="login-dropdown-box">
@@ -75,17 +93,13 @@ const Login = () => {
               <p>
                 {getDisplayName()}
               </p>
-
             </div>
           </Dropdown.Toggle>
 
           <Dropdown.Menu>
             {isLoggedIn ? (
               <>
-
-                <Dropdown.Divider />
-
-                <Dropdown.Item onClick={() => navigate('/dashboard')}>
+                <Dropdown.Item onClick={handleDashboardNavigation}>
                   <i className="fas fa-tachometer-alt me-2"></i>
                   Dashboard
                 </Dropdown.Item>
@@ -112,8 +126,6 @@ const Login = () => {
                 >
                   Agent Login
                 </Dropdown.Item>
-
-
               </>
             )}
           </Dropdown.Menu>
