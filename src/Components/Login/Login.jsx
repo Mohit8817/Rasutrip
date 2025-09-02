@@ -64,9 +64,9 @@ const Login = () => {
   // Enhanced dashboard navigation based on user type
   const handleDashboardNavigation = () => {
     const currentUserIsAgent = user && (
-      user.role === 'agent' || 
-      user.userType === 'agent' || 
-      user.type === 'agent' || 
+      user.role === 'agent' ||
+      user.userType === 'agent' ||
+      user.type === 'agent' ||
       userType === 'agent'
     );
 
