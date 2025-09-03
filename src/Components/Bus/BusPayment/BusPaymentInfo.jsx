@@ -1,4 +1,4 @@
-// src/components/Bus/BusPaymentInfo.js - ENHANCED VERSION with Invoice Email
+// src/components/Bus/BusPaymentInfo.js - ENHANCED VERSION with Proper Fare Calculation
 
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Alert, Modal } from 'react-bootstrap';
@@ -47,9 +47,176 @@ const BusPaymentInfo = () => {
         vendorCommission = 10.97
     } = state || {};
 
-    const convenienceFee = 0;
-    const gstAmount = totalPrice * 0.18;
-    const finalAmount = (totalPrice + gstAmount + convenienceFee).toFixed(2);
+    // Enhanced fare calculation function - similar to BusFareSummary
+    const calculateFareBreakdown = () => {
+        console.log("Calculating fare breakdown from state:", state);
+
+        // Initialize fare calculation object
+        const fareData = {
+            basePrice: 0,
+            publishedPrice: 0,
+            offeredPrice: 0,
+            tax: 0,
+            otherCharges: 0,
+            serviceCharges: 0,
+            agentCommission: 0,
+            tds: 0,
+            discount: 0,
+            gst: {
+                cgstAmount: 0,
+                sgstAmount: 0,
+                igstAmount: 0,
+                total: 0
+            },
+            commissionPercentage: 0,
+            numberOfSeats: selectedSeats?.length || 0
+        };
+
+        // Method 1: Calculate from selected seats (most accurate)
+        if (selectedSeats && selectedSeats.length > 0) {
+            console.log("Calculating from selected seats:", selectedSeats);
+
+            let totals = {
+                basePrice: 0,
+                publishedPrice: 0,
+                offeredPrice: 0,
+                tax: 0,
+                otherCharges: 0,
+                serviceCharges: 0,
+                agentCommission: 0,
+                tds: 0,
+                discount: 0,
+                cgst: 0,
+                sgst: 0,
+                igst: 0
+            };
+
+            selectedSeats.forEach(seat => {
+                const seatPriceObj = seat?.Price || seat;
+
+                totals.basePrice += Number(seatPriceObj?.BasePrice || 0);
+                totals.publishedPrice += Number(seatPriceObj?.PublishedPrice || 0);
+                totals.offeredPrice += Number(seatPriceObj?.OfferedPrice || 0);
+                totals.tax += Number(seatPriceObj?.Tax || 0);
+                totals.otherCharges += Number(seatPriceObj?.OtherCharges || 0);
+                totals.serviceCharges += Number(seatPriceObj?.ServiceCharges || 0);
+                totals.agentCommission += Number(seatPriceObj?.AgentCommission || 0);
+                totals.tds += Number(seatPriceObj?.TDS || 0);
+                totals.discount += Number(seatPriceObj?.Discount || 0);
+
+                // Handle GST object structure
+                if (seatPriceObj?.GST && typeof seatPriceObj.GST === 'object') {
+                    totals.cgst += Number(seatPriceObj.GST.CGSTAmount || 0);
+                    totals.sgst += Number(seatPriceObj.GST.SGSTAmount || 0);
+                    totals.igst += Number(seatPriceObj.GST.IGSTAmount || 0);
+                } else {
+                    totals.igst += Number(seatPriceObj?.GST || 0);
+                }
+            });
+
+            // Set fare data from calculated totals
+            fareData.basePrice = totals.basePrice;
+            fareData.publishedPrice = totals.publishedPrice;
+            fareData.offeredPrice = totals.offeredPrice;
+            fareData.tax = totals.tax;
+            fareData.otherCharges = totals.otherCharges;
+            fareData.serviceCharges = totals.serviceCharges;
+            fareData.agentCommission = totals.agentCommission;
+            fareData.tds = totals.tds;
+            fareData.discount = totals.discount;
+            fareData.gst = {
+                cgstAmount: totals.cgst,
+                sgstAmount: totals.sgst,
+                igstAmount: totals.igst,
+                total: totals.cgst + totals.sgst + totals.igst
+            };
+        }
+
+        // Method 2: Use bus data if seat data not available
+        else if (bus?.originalBusPrice || bus?.BusPrice || bus?.Price) {
+            console.log("Calculating from bus data:", bus);
+            const busPriceObj = bus.originalBusPrice || bus.BusPrice || bus.Price;
+
+            fareData.basePrice = Number(busPriceObj.BasePrice || 0);
+            fareData.publishedPrice = Number(busPriceObj.PublishedPrice || 0);
+            fareData.offeredPrice = Number(busPriceObj.OfferedPrice || 0);
+            fareData.tax = Number(busPriceObj.Tax || 0);
+            fareData.otherCharges = Number(busPriceObj.OtherCharges || 0);
+            fareData.serviceCharges = Number(busPriceObj.ServiceCharges || 0);
+            fareData.agentCommission = Number(busPriceObj.AgentCommission || 0);
+            fareData.tds = Number(busPriceObj.TDS || 0);
+            fareData.discount = Number(busPriceObj.Discount || 0);
+
+            // Handle GST object structure
+            if (busPriceObj.GST && typeof busPriceObj.GST === 'object') {
+                fareData.gst = {
+                    cgstAmount: Number(busPriceObj.GST.CGSTAmount || 0),
+                    sgstAmount: Number(busPriceObj.GST.SGSTAmount || 0),
+                    igstAmount: Number(busPriceObj.GST.IGSTAmount || 0),
+                    total: Number(busPriceObj.GST.CGSTAmount || 0) +
+                        Number(busPriceObj.GST.SGSTAmount || 0) +
+                        Number(busPriceObj.GST.IGSTAmount || 0)
+                };
+            } else {
+                fareData.gst = {
+                    cgstAmount: 0,
+                    sgstAmount: 0,
+                    igstAmount: Number(busPriceObj.GST || 0),
+                    total: Number(busPriceObj.GST || 0)
+                };
+            }
+        }
+
+        // Method 3: Use state total price as fallback
+        else if (totalPrice && totalPrice > 0) {
+            console.log("Using state total price:", totalPrice);
+            fareData.publishedPrice = Number(totalPrice);
+            fareData.basePrice = Number(totalPrice);
+            fareData.offeredPrice = Number(totalPrice);
+
+            // Calculate basic 18% GST on total price as fallback
+            const calculatedGST = fareData.publishedPrice * 0.18;
+            fareData.gst = {
+                cgstAmount: 0,
+                sgstAmount: 0,
+                igstAmount: calculatedGST,
+                total: calculatedGST
+            };
+        }
+
+        // Get dynamic commission percentage
+        fareData.commissionPercentage = Number(
+            bus?.vendorCommissionPercentage ||
+            bus?.originalBusPrice?.rasutripCommissionPercentage ||
+            state?.vendorCommissionPercentage ||
+            vendorCommission ||
+            0
+        );
+
+        console.log("Final calculated fare data:", fareData);
+        return fareData;
+    };
+
+    // Calculate fare breakdown
+    const fareBreakdown = calculateFareBreakdown();
+
+    // Calculate convenience fee (vendor commission)
+    const convenienceFee = fareBreakdown.commissionPercentage > 0 ?
+        (fareBreakdown.publishedPrice * fareBreakdown.commissionPercentage) / 100 : 0;
+
+    // Calculate subtotal (before convenience fee)
+    const subtotal = fareBreakdown.publishedPrice +
+        fareBreakdown.serviceCharges +
+        fareBreakdown.tax +
+        fareBreakdown.otherCharges +
+        fareBreakdown.gst.total +
+        fareBreakdown.agentCommission -
+        fareBreakdown.discount -
+        fareBreakdown.tds +
+        (couponDiscount ? -couponDiscount : 0);
+
+    // Calculate final amount
+    const finalAmount = (subtotal + convenienceFee).toFixed(2);
 
     // ✅ Enhanced BookingId validation function
     const isValidBookingId = (id) => {
@@ -62,7 +229,6 @@ const BusPaymentInfo = () => {
             return false;
         }
 
-        // Check if it's a valid number (can be string or number)
         const numericValue = Number(idString);
         return !isNaN(numericValue) && numericValue > 0 && idString.length >= 1 && idString.length <= 20;
     };
@@ -72,62 +238,46 @@ const BusPaymentInfo = () => {
         console.log('🔍 EXTRACTING BOOKING ID FROM RESPONSE:');
         console.log('📊 Full Response:', JSON.stringify(response, null, 2));
 
-        // Define all possible locations where BookingId might be found
         const possiblePaths = [
-            // Direct paths
             response?.BookingId,
             response?.bookingId,
             response?.booking_id,
             response?.id,
-
-            // Data nested paths
             response?.data?.BookingId,
             response?.data?.bookingId,
             response?.data?.booking_id,
             response?.data?.id,
-
-            // Response nested paths
             response?.response?.BookingId,
             response?.response?.bookingId,
             response?.response?.booking_id,
             response?.response?.id,
-
-            // Result nested paths
             response?.result?.BookingId,
             response?.result?.bookingId,
             response?.result?.booking_id,
             response?.result?.id,
-
-            // Bus specific paths (based on your API structure)
             response?.Bus?.BookingId,
             response?.bus?.BookingId,
             response?.booking?.BookingId,
             response?.booking?.id,
-
-            // Deep nested paths
             response?.data?.response?.BookingId,
             response?.data?.result?.BookingId,
             response?.response?.data?.BookingId,
-
-            // Array first element (if response is an array)
             Array.isArray(response) ? response[0]?.BookingId : null,
             Array.isArray(response?.data) ? response.data[0]?.BookingId : null,
         ];
 
         console.log('🎯 Checking possible BookingId locations:', possiblePaths);
 
-        // Find the first valid BookingId
         for (let i = 0; i < possiblePaths.length; i++) {
             const candidateId = possiblePaths[i];
             console.log(`🔎 Checking path ${i}: ${candidateId} (type: ${typeof candidateId})`);
 
             if (isValidBookingId(candidateId)) {
                 console.log(`✅ FOUND VALID BOOKING ID: ${candidateId}`);
-                return String(candidateId); // Always return as string
+                return String(candidateId);
             }
         }
 
-        // If no direct BookingId found, try to find any numeric value that could be an ID
         console.log('⚠️ No direct BookingId found, searching for numeric values...');
 
         const searchForNumericIds = (obj, path = '') => {
@@ -136,7 +286,6 @@ const BusPaymentInfo = () => {
             for (const [key, value] of Object.entries(obj)) {
                 const currentPath = path ? `${path}.${key}` : key;
 
-                // Check if this could be an ID field
                 if (typeof value === 'number' && value > 0 && value < 999999) {
                     console.log(`🔢 Found numeric value at ${currentPath}: ${value}`);
                     if (key.toLowerCase().includes('id') || key.toLowerCase().includes('booking')) {
@@ -145,7 +294,6 @@ const BusPaymentInfo = () => {
                     }
                 }
 
-                // Recursively search nested objects
                 if (typeof value === 'object' && value !== null) {
                     const nestedResult = searchForNumericIds(value, currentPath);
                     if (nestedResult) return nestedResult;
@@ -172,7 +320,6 @@ const BusPaymentInfo = () => {
 
             if (!bookingId || !isValidBookingId(bookingId)) {
                 console.error('❌ Invalid booking ID for invoice:', bookingId);
-                // Don't throw error, just log warning as invoice is optional
                 console.warn('⚠️ Skipping invoice email due to invalid booking ID');
                 return false;
             }
@@ -184,9 +331,9 @@ const BusPaymentInfo = () => {
             }
 
             const invoiceData = {
-                UserIp: "122.161.64.143", // Your actual IP
+                UserIp: "122.161.64.143",
                 SearchTokenId: searchTokenId || "",
-                BookingId: String(bookingId), // Ensure it's a string
+                BookingId: String(bookingId),
                 receiverEmail: userEmail
             };
 
@@ -195,7 +342,6 @@ const BusPaymentInfo = () => {
             const invoiceResult = await downloadBusInvoice(invoiceData);
             console.log('✅ Invoice email sent successfully:', invoiceResult);
 
-            // Show success toast for invoice
             toast.success('📧 Invoice sent to your email!', {
                 position: "top-right",
                 autoClose: 3000,
@@ -209,7 +355,6 @@ const BusPaymentInfo = () => {
         } catch (error) {
             console.error('❌ Invoice email failed:', error);
 
-            // Don't throw error for invoice failure, just show warning
             toast.warn('⚠️ Invoice email failed. You can contact support for invoice.', {
                 position: "top-right",
                 autoClose: 5000,
@@ -332,7 +477,6 @@ const BusPaymentInfo = () => {
 
     // ✅ Helper function to get valid address
     const getValidAddress = (passenger, contactData, fromCity, toCity) => {
-        // Priority order: passenger address > contact address > city-based fallback
         if (passenger?.address && passenger.address.trim()) {
             return passenger.address.trim();
         }
@@ -341,7 +485,6 @@ const BusPaymentInfo = () => {
             return contactData.address.trim();
         }
 
-        // Default fallback address based on cities
         return `${fromCity || 'Delhi'}, India`;
     };
 
@@ -349,13 +492,11 @@ const BusPaymentInfo = () => {
     const extractSeatName = (seat, index) => {
         debugLog(`🪑 Raw seat data for index ${index}:`, seat);
 
-        // If seat is null/undefined, use fallback
         if (!seat) {
             console.warn(`⚠️ No seat data for index ${index}, using fallback`);
             return `S${index + 1}`;
         }
 
-        // Try different seat name properties in priority order
         let seatName = seat.SeatName ||
             seat.seatName ||
             seat.seatNumber ||
@@ -366,31 +507,26 @@ const BusPaymentInfo = () => {
 
         debugLog(`🔍 Extracted seat name: "${seatName}" (type: ${typeof seatName})`);
 
-        // If it's already a valid string format, keep it
         if (typeof seatName === 'string' && seatName.trim()) {
             const trimmedSeat = seatName.trim();
 
-            // Check if it matches common seat patterns (A1, B2, 1A, 2B, etc.)
             if (/^[A-Z]\d+$|^\d+[A-Z]$|^[A-Z]\d+[A-Z]$|^[0-9]+$/.test(trimmedSeat)) {
                 debugLog(`✅ Valid seat format found: "${trimmedSeat}"`);
                 return trimmedSeat;
             }
 
-            // If it contains alphanumeric characters, keep as is
             if (/[A-Za-z0-9]/.test(trimmedSeat)) {
                 debugLog(`✅ Alphanumeric seat name: "${trimmedSeat}"`);
                 return trimmedSeat;
             }
         }
 
-        // If it's a number, convert to string
         if (typeof seatName === 'number' && !isNaN(seatName)) {
             const numSeat = seatName.toString();
             debugLog(`✅ Number converted to string: "${numSeat}"`);
             return numSeat;
         }
 
-        // Try to extract number from string if it exists
         if (typeof seatName === 'string') {
             const numberMatch = seatName.match(/\d+/);
             if (numberMatch) {
@@ -400,7 +536,6 @@ const BusPaymentInfo = () => {
             }
         }
 
-        // Final fallback - use index-based seat name
         const fallbackSeat = `S${index + 1}`;
         console.warn(`⚠️ Using fallback seat name: "${fallbackSeat}"`);
         return fallbackSeat;
@@ -421,7 +556,7 @@ const BusPaymentInfo = () => {
             ),
             passenger_count: bookingState.passengerData?.length || 0,
             base_fare: bookingState.totalPrice,
-            taxes: gstAmount,
+            taxes: fareBreakdown.gst.total,
             total_amount: amount
         },
         customer_details: {
@@ -438,19 +573,15 @@ const BusPaymentInfo = () => {
         console.log('👥 Passenger count:', bookingState.passengerData?.length);
 
         const passengers = bookingState.passengerData?.map((passenger, index) => {
-            // ✅ Use enhanced seat name extraction
             const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
 
             console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}"`);
 
-            // ✅ Ensure address is always provided and not empty
             const validAddress = getValidAddress(passenger, bookingState.contactData, bookingState.fromCity, bookingState.toCity);
 
-            // ✅ Better email handling with validation
             const emailAddress = bookingState.contactData?.email || passenger.email || '';
             const phoneNumber = bookingState.contactData?.mobile || passenger.phone || '';
 
-            // ✅ Debug email and phone data
             debugLog(`📧 Contact info for passenger ${index + 1}:`, {
                 email: emailAddress,
                 phone: phoneNumber,
@@ -469,7 +600,7 @@ const BusPaymentInfo = () => {
                 IdNumber: passenger.idNumber || null,
                 Address: validAddress,
                 Age: passenger.age?.toString(),
-                SeatName: seatName // ✅ This is now guaranteed to be a valid string
+                SeatName: seatName
             };
         }) || [];
 
@@ -512,15 +643,12 @@ const BusPaymentInfo = () => {
         console.log('👥 Passenger count:', bookingState.passengerData?.length);
 
         const passengers = bookingState.passengerData?.map((passenger, index) => {
-            // ✅ Use enhanced seat name extraction
             const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
 
             console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}"`);
 
-            // ✅ Ensure address is always provided and not empty
             const validAddress = getValidAddress(passenger, bookingState.contactData, bookingState.fromCity, bookingState.toCity);
 
-            // ✅ Better email handling with validation
             const emailAddress = bookingState.contactData?.email || passenger.email || '';
             const phoneNumber = bookingState.contactData?.mobile || passenger.phone || '';
 
@@ -536,12 +664,12 @@ const BusPaymentInfo = () => {
                 IdNumber: passenger.idNumber || null,
                 Address: validAddress,
                 Age: passenger.age?.toString(),
-                SeatName: seatName // ✅ This is now guaranteed to be a valid string
+                SeatName: seatName
             };
         }) || [];
 
         const bookingData = {
-            UserIp: "122.161.64.143", // ✅ Use your actual IP from the payload
+            UserIp: "122.161.64.143",
             SearchTokenId: bookingState.searchTokenId || bookingState.bus?.SearchTokenId || "",
             ResultIndex: bookingState.busBookingData?.ResultIndex || bookingState.bus?.ResultIndex || "TB-1",
             BoardingPointId: bookingState.selectedBoardingPoint?.BoardingPointId || bookingState.boardingPoint?.BoardingPointId || bookingState.boardingPoint?.id || 1,
@@ -736,7 +864,7 @@ const BusPaymentInfo = () => {
                                 isValidated: true,
                                 isBooked: true,
                                 bookingType: 'bus',
-                                extractedBookingId: extractedBookingId // Pass the booking ID for reference
+                                extractedBookingId: extractedBookingId
                             },
                         });
 
@@ -880,50 +1008,156 @@ const BusPaymentInfo = () => {
                 </Card.Body>
             </Card>
 
-            {/* ✅ Enhanced Payment Summary */}
+            {/* ✅ ENHANCED Payment Summary with Detailed Breakdown */}
             <Card className="mb-4 shadow-sm">
                 <Card.Header className="bg-white">
-                    <h6 className="fw-bold mb-0">Payment Summary</h6>
+                    <h6 className="fw-bold mb-0">
+                        Payment Summary
+                        {fareBreakdown.numberOfSeats > 0 && (
+                            <small className="ms-2 text-muted">
+                                ({fareBreakdown.numberOfSeats} seat{fareBreakdown.numberOfSeats !== 1 ? 's' : ''})
+                            </small>
+                        )}
+                    </h6>
                 </Card.Header>
                 <Card.Body>
-                    <Row className="mb-2">
-                        <Col xs={8}>Base Fare ({selectedSeats.length} seats)</Col>
-                        <Col xs={4} className="text-end">₹{totalPrice.toFixed(2)}</Col>
-                    </Row>
-                    <Row className="mb-2">
-                        <Col xs={8}>Taxes & GST (18%)</Col>
-                        <Col xs={4} className="text-end">₹{gstAmount.toFixed(2)}</Col>
-                    </Row>
-                    <Row className="mb-2">
-                        <Col xs={8}>Convenience Fee</Col>
-                        <Col xs={4} className="text-end">₹{convenienceFee.toFixed(2)}</Col>
-                    </Row>
-                    {couponDiscount > 0 && (
+                    {/* Base Price - Show only if different from Published Price and greater than 0 */}
+                    {fareBreakdown.basePrice > 0 && fareBreakdown.basePrice !== fareBreakdown.publishedPrice && (
                         <Row className="mb-2">
-                            <Col xs={8}>Discount</Col>
-                            <Col xs={4} className="text-end text-success">-₹{couponDiscount.toFixed(2)}</Col>
+                            <Col xs={8}>Base Price</Col>
+                            <Col xs={4} className="text-end">₹{fareBreakdown.basePrice.toFixed(2)}</Col>
                         </Row>
                     )}
+
+                    {/* Published Price - Main price from API */}
+                    {fareBreakdown.publishedPrice > 0 && (
+                        <Row className="mb-2">
+                            <Col xs={8}>Published Price</Col>
+                            <Col xs={4} className="text-end">₹{fareBreakdown.publishedPrice.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+                    {/* Offered Price - Show only if different from Published Price and greater than 0 */}
+                    {fareBreakdown.offeredPrice > 0 && fareBreakdown.offeredPrice !== fareBreakdown.publishedPrice && (
+                        <Row className="mb-2 text-success">
+                            <Col xs={8}>Offered Price</Col>
+                            <Col xs={4} className="text-end">₹{fareBreakdown.offeredPrice.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+                    {/* Service Charges */}
+                    {fareBreakdown.serviceCharges > 0 && (
+                        <Row className="mb-2">
+                            <Col xs={8}>Service Charges</Col>
+                            <Col xs={4} className="text-end">₹{fareBreakdown.serviceCharges.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+                    {/* Tax */}
+                    {fareBreakdown.tax > 0 && (
+                        <Row className="mb-2">
+                            <Col xs={8}>Tax</Col>
+                            <Col xs={4} className="text-end">₹{fareBreakdown.tax.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+                    {/* Other Charges */}
+                    {fareBreakdown.otherCharges > 0 && (
+                        <Row className="mb-2">
+                            <Col xs={8}>Other Charges</Col>
+                            <Col xs={4} className="text-end">₹{fareBreakdown.otherCharges.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+                    {/* GST - Always show total GST */}
+                    <Row className="mb-2">
+                        <Col xs={8}>GST</Col>
+                        <Col xs={4} className="text-end">₹{fareBreakdown.gst.total.toFixed(2)}</Col>
+                    </Row>
+
+                    {/* GST Breakdown - Show individual components only if they have values */}
+                    {fareBreakdown.gst.cgstAmount > 0 && (
+                        <Row className="mb-1">
+                            <Col xs={8} className="text-muted small ps-4">• CGST</Col>
+                            <Col xs={4} className="text-end text-muted small">₹{fareBreakdown.gst.cgstAmount.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+                    {fareBreakdown.gst.sgstAmount > 0 && (
+                        <Row className="mb-1">
+                            <Col xs={8} className="text-muted small ps-4">• SGST</Col>
+                            <Col xs={4} className="text-end text-muted small">₹{fareBreakdown.gst.sgstAmount.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+                    {fareBreakdown.gst.igstAmount > 0 && (
+                        <Row className="mb-2">
+                            <Col xs={8} className="text-muted small ps-4">• IGST</Col>
+                            <Col xs={4} className="text-end text-muted small">₹{fareBreakdown.gst.igstAmount.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+
+
+                    {/* TDS Deduction */}
+                    {fareBreakdown.tds > 0 && (
+                        <Row className="mb-2 text-danger">
+                            <Col xs={8}>TDS (-)</Col>
+                            <Col xs={4} className="text-end">-₹{fareBreakdown.tds.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+                    {/* Discount */}
+                    {(fareBreakdown.discount > 0 || couponDiscount > 0) && (
+                        <Row className="mb-2 text-success">
+                            <Col xs={8}>Discount (-)</Col>
+                            <Col xs={4} className="text-end">-₹{(fareBreakdown.discount + (couponDiscount || 0)).toFixed(2)}</Col>
+                        </Row>
+                    )}
+
                     <hr />
+
+                    {/* Subtotal */}
+                    <Row className="mb-2 fw-bold">
+                        <Col xs={8}>Subtotal</Col>
+                        <Col xs={4} className="text-end">₹{subtotal.toFixed(2)}</Col>
+                    </Row>
+
+                    {/* Convenience Fee - Show only if commission is configured and greater than 0 */}
+                    {convenienceFee > 0 && (
+                        <Row className="mb-2">
+                            <Col xs={8}>
+                                Convenience Fee
+                                {fareBreakdown.commissionPercentage > 0 && (
+                                    <small className="text-muted"> ({fareBreakdown.commissionPercentage.toFixed(1)}%)</small>
+                                )}
+                            </Col>
+                            <Col xs={4} className="text-end">₹{convenienceFee.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+                    <hr />
+
+                    {/* Final Total */}
                     <Row className="fw-bold fs-5">
                         <Col xs={8}>Total Amount</Col>
                         <Col xs={4} className="text-end text-danger">₹{finalAmount}</Col>
                     </Row>
+
+
                 </Card.Body>
             </Card>
 
             {/* ✅ Enhanced Payment Button Section */}
             <Card className="shadow-sm">
                 <Card.Body>
-                    <div className=" mb-3">
+                    <div className="mb-3">
                         <p className="text-muted small mb-0">
                             <strong>Please note:</strong> By placing this order, you agree to our{' '}
                             <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Terms Of Use</a> and{' '}
                             <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Privacy Policy</a>
                         </p>
-                        <p className="text-success small mb-0 mt-2">
-                            📧 <strong>Invoice will be sent to:</strong> {contactData?.email || 'N/A'}
-                        </p>
+
                     </div>
 
                     <div className="d-flex gap-3 justify-content-between align-items-center">
@@ -939,7 +1173,6 @@ const BusPaymentInfo = () => {
                                 `Pay Now ₹${finalAmount}`
                             )}
                         </Button>
-
                     </div>
                 </Card.Body>
             </Card>

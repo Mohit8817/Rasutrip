@@ -42,8 +42,266 @@ const BusTravellerinfo = () => {
         address: ''
     });
 
-    // Only API errors now - removed custom validation errors
+    // Validation errors state
+    const [validationErrors, setValidationErrors] = useState({});
     const [apiError, setApiError] = useState(null);
+
+    // Auto-fill saved data state
+    const [savedTravellerData, setSavedTravellerData] = useState(null);
+    const [showAutoFillOptions, setShowAutoFillOptions] = useState(false);
+
+    // Load saved traveller data from localStorage on component mount
+    useEffect(() => {
+        const saved = localStorage.getItem('savedTravellerData');
+        if (saved) {
+            try {
+                const parsedData = JSON.parse(saved);
+                setSavedTravellerData(parsedData);
+                setShowAutoFillOptions(true);
+            } catch (error) {
+                console.error('Error loading saved data:', error);
+            }
+        }
+    }, []);
+
+    // Auto gender selection based on title
+    const handleTitleChange = (index, title) => {
+        const updated = [...passengerData];
+        updated[index] = {
+            ...updated[index],
+            title: title,
+            gender: title === 'Mr' ? 'Male' :
+                title === 'Mrs' ? 'Female' :
+                    title === 'Ms' ? 'Female' : ''
+        };
+        setPassengerData(updated);
+
+        // Clear validation error for this field
+        if (validationErrors[`passenger_${index}_title`]) {
+            const newErrors = { ...validationErrors };
+            delete newErrors[`passenger_${index}_title`];
+            delete newErrors[`passenger_${index}_gender`];
+            setValidationErrors(newErrors);
+        }
+    };
+
+    // Handle passenger data change with title case for names
+    const handlePassengerChange = (index, field, value) => {
+        let processedValue = value;
+
+        // Auto title case for firstName and lastName (first letter uppercase, rest lowercase)
+        if (field === 'firstName' || field === 'lastName') {
+            processedValue = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+        }
+
+        // Age validation - only numbers
+        if (field === 'age') {
+            processedValue = value.replace(/[^0-9]/g, '');
+            if (parseInt(processedValue) > 120) {
+                processedValue = '120';
+            }
+        }
+
+        // ID Number processing based on ID Type
+        if (field === 'idNumber') {
+            const idType = passengerData[index]?.idType;
+            if (idType === 'PAN Card') {
+                processedValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (processedValue.length > 10) {
+                    processedValue = processedValue.substring(0, 10);
+                }
+            } else if (idType === 'Aadhaar Card') {
+                processedValue = value.replace(/[^0-9]/g, '');
+                if (processedValue.length > 12) {
+                    processedValue = processedValue.substring(0, 12);
+                }
+            }
+        }
+
+        const updated = [...passengerData];
+        updated[index] = { ...updated[index], [field]: processedValue };
+        setPassengerData(updated);
+
+        // Clear validation error for this field
+        const errorKey = `passenger_${index}_${field}`;
+        if (validationErrors[errorKey]) {
+            const newErrors = { ...validationErrors };
+            delete newErrors[errorKey];
+            setValidationErrors(newErrors);
+        }
+    };
+
+    // Handle contact data change with validation
+    const handleContactChange = (field, value) => {
+        let processedValue = value;
+
+        // Mobile number validation - only numbers
+        if (field === 'mobile') {
+            processedValue = value.replace(/[^0-9]/g, '');
+            if (processedValue.length > 10) {
+                processedValue = processedValue.substring(0, 10);
+            }
+        }
+
+        setContactData(prev => ({ ...prev, [field]: processedValue }));
+
+        // Clear validation error for this field
+        if (validationErrors[`contact_${field}`]) {
+            const newErrors = { ...validationErrors };
+            delete newErrors[`contact_${field}`];
+            setValidationErrors(newErrors);
+        }
+    };
+
+    // Handle GST data change with validation
+    const handleGstChange = (field, value) => {
+        let processedValue = value;
+
+        if (field === 'gstNumber') {
+            processedValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (processedValue.length > 15) {
+                processedValue = processedValue.substring(0, 15);
+            }
+        }
+
+        if (field === 'contactNo') {
+            processedValue = value.replace(/[^0-9]/g, '');
+            if (processedValue.length > 10) {
+                processedValue = processedValue.substring(0, 10);
+            }
+        }
+
+        setGstData(prev => ({ ...prev, [field]: processedValue }));
+
+        // Clear validation error for this field
+        if (validationErrors[`gst_${field}`]) {
+            const newErrors = { ...validationErrors };
+            delete newErrors[`gst_${field}`];
+            setValidationErrors(newErrors);
+        }
+    };
+
+    // Validation functions
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
+    const validateMobile = (mobile) => {
+        return mobile.length === 10 && /^[6-9]\d{9}$/.test(mobile);
+    };
+
+    const validatePAN = (pan) => {
+        const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+        return panRegex.test(pan);
+    };
+
+    const validateAadhaar = (aadhaar) => {
+        return aadhaar.length === 12 && /^\d{12}$/.test(aadhaar);
+    };
+
+    const validateGST = (gst) => {
+        const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+        return gstRegex.test(gst);
+    };
+
+    // Comprehensive validation function
+    const validateForm = () => {
+        const errors = {};
+
+        // Validate passenger data
+        passengerData.forEach((passenger, index) => {
+            if (!passenger.title) {
+                errors[`passenger_${index}_title`] = 'Title is required';
+            }
+
+            if (!passenger.firstName.trim()) {
+                errors[`passenger_${index}_firstName`] = 'First name is required';
+            } else if (passenger.firstName.trim().length < 2) {
+                errors[`passenger_${index}_firstName`] = 'First name must be at least 2 characters';
+            }
+
+            if (!passenger.lastName.trim()) {
+                errors[`passenger_${index}_lastName`] = 'Last name is required';
+            } else if (passenger.lastName.trim().length < 2) {
+                errors[`passenger_${index}_lastName`] = 'Last name must be at least 2 characters';
+            }
+
+            if (!passenger.age) {
+                errors[`passenger_${index}_age`] = 'Age is required';
+            } else if (parseInt(passenger.age) < 1 || parseInt(passenger.age) > 120) {
+                errors[`passenger_${index}_age`] = 'Age must be between 1 and 120';
+            }
+
+            if (!passenger.gender) {
+                errors[`passenger_${index}_gender`] = 'Gender is required';
+            }
+
+            // ID validation if provided
+            if (passenger.idType && passenger.idNumber) {
+                if (passenger.idType === 'PAN Card' && !validatePAN(passenger.idNumber)) {
+                    errors[`passenger_${index}_idNumber`] = 'Invalid PAN format (e.g., ABCDE1234F)';
+                }
+                if (passenger.idType === 'Aadhaar Card' && !validateAadhaar(passenger.idNumber)) {
+                    errors[`passenger_${index}_idNumber`] = 'Invalid Aadhaar format (12 digits)';
+                }
+            }
+
+            // If ID type is selected, ID number is required
+            if (passenger.idType && !passenger.idNumber) {
+                errors[`passenger_${index}_idNumber`] = 'ID number is required when ID type is selected';
+            }
+        });
+
+        // Validate contact data
+        if (!contactData.mobile.trim()) {
+            errors.contact_mobile = 'Mobile number is required';
+        } else if (!validateMobile(contactData.mobile)) {
+            errors.contact_mobile = 'Invalid mobile number (10 digits starting with 6-9)';
+        }
+
+        if (!contactData.email.trim()) {
+            errors.contact_email = 'Email address is required';
+        } else if (!validateEmail(contactData.email)) {
+            errors.contact_email = 'Invalid email format';
+        }
+
+        // Validate GST data if GST form is shown
+        if (showGstinForm) {
+            if (!gstData.gstNumber.trim()) {
+                errors.gst_gstNumber = 'GST number is required';
+            } else if (!validateGST(gstData.gstNumber)) {
+                errors.gst_gstNumber = 'Invalid GST format';
+            }
+
+            if (!gstData.companyName.trim()) {
+                errors.gst_companyName = 'Company name is required';
+            }
+
+            if (!gstData.contactNo.trim()) {
+                errors.gst_contactNo = 'Contact number is required';
+            } else if (!validateMobile(gstData.contactNo)) {
+                errors.gst_contactNo = 'Invalid contact number';
+            }
+
+            if (!gstData.email.trim()) {
+                errors.gst_email = 'Email is required';
+            } else if (!validateEmail(gstData.email)) {
+                errors.gst_email = 'Invalid email format';
+            }
+
+            if (!gstData.address.trim()) {
+                errors.gst_address = 'Address is required';
+            }
+        }
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    
+
+
 
     // Debug function to analyze seat data
     const debugSeatData = () => {
@@ -62,23 +320,6 @@ const BusTravellerinfo = () => {
                 allKeys: Object.keys(seat || {})
             });
         });
-    };
-
-    // Handle passenger data change
-    const handlePassengerChange = (index, field, value) => {
-        const updated = [...passengerData];
-        updated[index] = { ...updated[index], [field]: value };
-        setPassengerData(updated);
-    };
-
-    // Handle contact data change
-    const handleContactChange = (field, value) => {
-        setContactData(prev => ({ ...prev, [field]: value }));
-    };
-
-    // Handle GST data change
-    const handleGstChange = (field, value) => {
-        setGstData(prev => ({ ...prev, [field]: value }));
     };
 
     // Enhanced function to prepare passenger data for block seats API
@@ -260,34 +501,25 @@ const BusTravellerinfo = () => {
         }
     };
 
-    // Basic validation - only check if fields have values, no format validation
-    const hasRequiredData = () => {
-        // Check if all passengers have basic required fields
-        const passengersValid = passengerData.every(passenger =>
-            passenger.firstName?.trim() &&
-            passenger.lastName?.trim() &&
-            passenger.age &&
-            passenger.gender
-        );
-
-        // Check if contact info is provided
-        const contactValid = contactData.mobile?.trim() && contactData.email?.trim();
-
-        return passengersValid && contactValid;
-    };
-
-    // Modified handleContinue function - Navigate immediately after basic validation
+    // Modified handleContinue function with comprehensive validation
     const handleContinue = async () => {
-        // Clear any previous API errors
+        // Clear any previous errors
         setApiError(null);
 
-        // Only basic validation - check if required fields have values
-        if (!hasRequiredData()) {
-            setApiError("Please fill in all required fields before continuing.");
+        // Validate form
+        if (!validateForm()) {
+            setApiError("Please fix the validation errors before continuing.");
+            // Scroll to first error
+            const firstErrorElement = document.querySelector('.is-invalid');
+            if (firstErrorElement) {
+                firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
         }
 
         setIsSubmitting(true);
+
+  
 
         // Prepare the data to pass to review component
         const dataToPass = {
@@ -303,7 +535,7 @@ const BusTravellerinfo = () => {
 
         console.log("Passing data to review component:", dataToPass);
 
-        // Navigate to review page immediately after basic validation passes
+        // Navigate to review page immediately after validation passes
         navigate("/bus-review", {
             state: dataToPass
         });
@@ -325,9 +557,7 @@ const BusTravellerinfo = () => {
         }
     };
 
-    const handleGoBack = () => {
-        navigate(-1);
-    };
+
 
     if (!state) {
         return (
@@ -344,7 +574,7 @@ const BusTravellerinfo = () => {
     return (
         <div className="container my-4">
             <div className="row">
-                <div className=" ">
+                <div className="">                   
                     {/* Traveller Details */}
                     <Card className="mb-4 shadow-sm border-0">
                         <Card.Header className="bg-white border-bottom">
@@ -363,13 +593,19 @@ const BusTravellerinfo = () => {
                                             <Form.Group>
                                                 <Form.Select
                                                     value={passengerData[index]?.title || ''}
-                                                    onChange={(e) => handlePassengerChange(index, 'title', e.target.value)}
+                                                    onChange={(e) => handleTitleChange(index, e.target.value)}
+                                                    className={validationErrors[`passenger_${index}_title`] ? 'is-invalid' : ''}
                                                 >
-                                                    <option value="">Title</option>
+                                                    <option value="">Title *</option>
                                                     <option value="Mr">Mr</option>
                                                     <option value="Ms">Ms</option>
                                                     <option value="Mrs">Mrs</option>
                                                 </Form.Select>
+                                                {validationErrors[`passenger_${index}_title`] && (
+                                                    <div className="invalid-feedback">
+                                                        {validationErrors[`passenger_${index}_title`]}
+                                                    </div>
+                                                )}
                                             </Form.Group>
                                         </Col>
 
@@ -380,7 +616,14 @@ const BusTravellerinfo = () => {
                                                     placeholder="First Name *"
                                                     value={passengerData[index]?.firstName || ''}
                                                     onChange={(e) => handlePassengerChange(index, 'firstName', e.target.value)}
+                                                    className={validationErrors[`passenger_${index}_firstName`] ? 'is-invalid' : ''}
+                                                    maxLength={50}
                                                 />
+                                                {validationErrors[`passenger_${index}_firstName`] && (
+                                                    <div className="invalid-feedback">
+                                                        {validationErrors[`passenger_${index}_firstName`]}
+                                                    </div>
+                                                )}
                                             </Form.Group>
                                         </Col>
 
@@ -391,7 +634,14 @@ const BusTravellerinfo = () => {
                                                     placeholder="Last Name *"
                                                     value={passengerData[index]?.lastName || ''}
                                                     onChange={(e) => handlePassengerChange(index, 'lastName', e.target.value)}
+                                                    className={validationErrors[`passenger_${index}_lastName`] ? 'is-invalid' : ''}
+                                                    maxLength={50}
                                                 />
+                                                {validationErrors[`passenger_${index}_lastName`] && (
+                                                    <div className="invalid-feedback">
+                                                        {validationErrors[`passenger_${index}_lastName`]}
+                                                    </div>
+                                                )}
                                             </Form.Group>
                                         </Col>
                                     </Row>
@@ -400,13 +650,17 @@ const BusTravellerinfo = () => {
                                         <Col md={2}>
                                             <Form.Group>
                                                 <Form.Control
-                                                    type="number"
+                                                    type="text"
                                                     placeholder="Age *"
-                                                    min="1"
-                                                    max="120"
                                                     value={passengerData[index]?.age || ''}
                                                     onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
+                                                    className={validationErrors[`passenger_${index}_age`] ? 'is-invalid' : ''}
                                                 />
+                                                {validationErrors[`passenger_${index}_age`] && (
+                                                    <div className="invalid-feedback">
+                                                        {validationErrors[`passenger_${index}_age`]}
+                                                    </div>
+                                                )}
                                             </Form.Group>
                                         </Col>
 
@@ -414,12 +668,18 @@ const BusTravellerinfo = () => {
                                             <Form.Select
                                                 value={passengerData[index].gender}
                                                 onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
+                                                className={validationErrors[`passenger_${index}_gender`] ? 'is-invalid' : ''}
                                             >
                                                 <option value="">Gender *</option>
                                                 <option value="Male">Male</option>
                                                 <option value="Female">Female</option>
                                                 <option value="Other">Other</option>
                                             </Form.Select>
+                                            {validationErrors[`passenger_${index}_gender`] && (
+                                                <div className="invalid-feedback">
+                                                    {validationErrors[`passenger_${index}_gender`]}
+                                                </div>
+                                            )}
                                         </Col>
 
                                         <Col md={4}>
@@ -441,10 +701,20 @@ const BusTravellerinfo = () => {
                                             <Form.Group>
                                                 <Form.Control
                                                     type="text"
-                                                    placeholder="ID Number"
+                                                    placeholder={
+                                                        passengerData[index]?.idType === 'PAN Card' ? 'PAN Number (ABCDE1234F)' :
+                                                            passengerData[index]?.idType === 'Aadhaar Card' ? 'Aadhaar Number (12 digits)' :
+                                                                'ID Number'
+                                                    }
                                                     value={passengerData[index]?.idNumber || ''}
                                                     onChange={(e) => handlePassengerChange(index, 'idNumber', e.target.value)}
+                                                    className={validationErrors[`passenger_${index}_idNumber`] ? 'is-invalid' : ''}
                                                 />
+                                                {validationErrors[`passenger_${index}_idNumber`] && (
+                                                    <div className="invalid-feedback">
+                                                        {validationErrors[`passenger_${index}_idNumber`]}
+                                                    </div>
+                                                )}
                                             </Form.Group>
                                         </Col>
                                     </Row>
@@ -480,7 +750,14 @@ const BusTravellerinfo = () => {
                                         placeholder="Enter mobile number *"
                                         value={contactData.mobile}
                                         onChange={(e) => handleContactChange('mobile', e.target.value)}
+                                        className={validationErrors.contact_mobile ? 'is-invalid' : ''}
+                                        maxLength={10}
                                     />
+                                    {validationErrors.contact_mobile && (
+                                        <div className="invalid-feedback">
+                                            {validationErrors.contact_mobile}
+                                        </div>
+                                    )}
                                 </Col>
 
                                 <Col md={5}>
@@ -489,7 +766,13 @@ const BusTravellerinfo = () => {
                                         placeholder="Enter email address *"
                                         value={contactData.email}
                                         onChange={(e) => handleContactChange('email', e.target.value)}
+                                        className={validationErrors.contact_email ? 'is-invalid' : ''}
                                     />
+                                    {validationErrors.contact_email && (
+                                        <div className="invalid-feedback">
+                                            {validationErrors.contact_email}
+                                        </div>
+                                    )}
                                 </Col>
                             </Row>
                         </Card.Body>
@@ -521,48 +804,80 @@ const BusTravellerinfo = () => {
                                     <Col md={4}>
                                         <Form.Control
                                             type="text"
-                                            placeholder="GST Number"
+                                            placeholder="GST Number (15 digits) *"
                                             value={gstData.gstNumber}
-                                            onChange={(e) => handleGstChange('gstNumber', e.target.value.toUpperCase())}
+                                            onChange={(e) => handleGstChange('gstNumber', e.target.value)}
+                                            className={validationErrors.gst_gstNumber ? 'is-invalid' : ''}
                                             maxLength={15}
                                         />
+                                        {validationErrors.gst_gstNumber && (
+                                            <div className="invalid-feedback">
+                                                {validationErrors.gst_gstNumber}
+                                            </div>
+                                        )}
+                                        <small className="text-muted">Format: 22AAAAA0000A1Z5</small>
                                     </Col>
 
                                     <Col md={4}>
                                         <Form.Control
                                             type="text"
-                                            placeholder="Registered Company Name"
+                                            placeholder="Registered Company Name *"
                                             value={gstData.companyName}
                                             onChange={(e) => handleGstChange('companyName', e.target.value)}
+                                            className={validationErrors.gst_companyName ? 'is-invalid' : ''}
                                         />
+                                        {validationErrors.gst_companyName && (
+                                            <div className="invalid-feedback">
+                                                {validationErrors.gst_companyName}
+                                            </div>
+                                        )}
                                     </Col>
 
                                     <Col md={4}>
                                         <Form.Control
                                             type="tel"
-                                            placeholder="Registered Contact No"
+                                            placeholder="Registered Contact No *"
                                             value={gstData.contactNo}
                                             onChange={(e) => handleGstChange('contactNo', e.target.value)}
+                                            className={validationErrors.gst_contactNo ? 'is-invalid' : ''}
+                                            maxLength={10}
                                         />
+                                        {validationErrors.gst_contactNo && (
+                                            <div className="invalid-feedback">
+                                                {validationErrors.gst_contactNo}
+                                            </div>
+                                        )}
                                     </Col>
 
                                     <Col md={6}>
                                         <Form.Control
                                             type="email"
-                                            placeholder="Registered Email"
+                                            placeholder="Registered Email *"
                                             value={gstData.email}
                                             onChange={(e) => handleGstChange('email', e.target.value)}
+                                            className={validationErrors.gst_email ? 'is-invalid' : ''}
                                         />
+                                        {validationErrors.gst_email && (
+                                            <div className="invalid-feedback">
+                                                {validationErrors.gst_email}
+                                            </div>
+                                        )}
                                     </Col>
 
                                     <Col md={6}>
                                         <Form.Control
                                             as="textarea"
                                             rows={1}
-                                            placeholder="Registered Address"
+                                            placeholder="Registered Address *"
                                             value={gstData.address}
                                             onChange={(e) => handleGstChange('address', e.target.value)}
+                                            className={validationErrors.gst_address ? 'is-invalid' : ''}
                                         />
+                                        {validationErrors.gst_address && (
+                                            <div className="invalid-feedback">
+                                                {validationErrors.gst_address}
+                                            </div>
+                                        )}
                                     </Col>
                                 </Row>
                             </Card.Body>
@@ -570,37 +885,52 @@ const BusTravellerinfo = () => {
                     </Card>
 
                     {/* Action Buttons */}
-                    <div className="text-end mb-4 mt-4">
-                        <Button
-                            onClick={handleContinue}
-                            disabled={isSubmitting}
-                            className="btn-red px-5 py-2"
-                            style={{ fontSize: '1.1rem' }}
-                            type="button"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Spinner size="sm" className="me-2" />
-                                    Processing...
-                                </>
-                            ) : (
-                                'Continue to Review'
-                            )}
-                        </Button>
+                    <div className="d-flex justify-content-between mb-4 mt-4">
+
+
+                        <div>
+                         
+
+                            <Button
+                                onClick={handleContinue}
+                                disabled={isSubmitting}
+                                className="btn-red px-5 py-2"
+                                style={{ fontSize: '1.1rem' }}
+                                type="button"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Spinner size="sm" className="me-2" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    'Continue to Review'
+                                )}
+                            </Button>
+                        </div>
                     </div>
 
-                    {/* API Error Display - Only shows API response errors */}
+
+
+                    {/* API Error Display */}
                     {apiError && (
                         <Alert variant="danger" className="mb-4" dismissible onClose={() => setApiError(null)}>
                             <strong>Error:</strong> {apiError}
                         </Alert>
                     )}
+
+                    {/* Success Message */}
+                    {seatsBlocked && (
+                        <Alert variant="success" className="mb-4">
+                            <strong>Success!</strong> Seats have been blocked successfully. Proceed to review your booking.
+                        </Alert>
+                    )}
+
+
                 </div>
-
-
             </div>
         </div>
     );
 };
 
-export default BusTravellerinfo;
+export default BusTravellerinfo
