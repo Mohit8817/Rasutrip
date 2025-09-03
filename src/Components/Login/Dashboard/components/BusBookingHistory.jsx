@@ -768,8 +768,8 @@ const BusBookingHistory = () => {
                         onClick={() => setCurrentPage(currentPage - 1)}
                         disabled={currentPage === 1}
                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === 1
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                             }`}
                     >
                         Previous
@@ -782,10 +782,10 @@ const BusBookingHistory = () => {
                             onClick={() => page !== '...' && setCurrentPage(page)}
                             disabled={page === '...'}
                             className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${page === currentPage
-                                    ? 'bg-red-500 text-white'
-                                    : page === '...'
-                                        ? 'text-gray-400 cursor-default'
-                                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                                ? 'bg-red-500 text-white'
+                                : page === '...'
+                                    ? 'text-gray-400 cursor-default'
+                                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                                 }`}
                         >
                             {page}
@@ -797,8 +797,8 @@ const BusBookingHistory = () => {
                         onClick={() => setCurrentPage(currentPage + 1)}
                         disabled={currentPage === totalPages}
                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                             }`}
                     >
                         Next
@@ -1063,19 +1063,19 @@ const BusBookingHistory = () => {
             <div className="flex w-full mb-6 bg-gray-50 p-2 shadow-sm">
                 <button
                     className={`flex-1 text-center rounded-lg transition-all duration-300 font-semibold text-sm
-            ${bookingType === 'upcoming'
+                ${bookingType === 'upcoming'
                             ? 'bg-red-500 text-white shadow-sm'
                             : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
-        `}
+            `}
                     onClick={() => handleTabChange('upcoming')}
                 >
                     Upcoming Trips
                     {upcomingBookings.length > 0 && (
                         <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
-                ${bookingType === 'upcoming'
+                    ${bookingType === 'upcoming'
                                 ? 'bg-white text-red-500'
                                 : 'bg-red-100 text-red-600'}
-            `}>
+                `}>
                             {upcomingBookings.length}
                         </span>
                     )}
@@ -1083,19 +1083,19 @@ const BusBookingHistory = () => {
 
                 <button
                     className={`flex-1 text-center px-6 py-2 rounded-lg transition-all duration-300 font-semibold text-sm
-            ${bookingType === 'all'
+                ${bookingType === 'all'
                             ? 'bg-red-500 text-white shadow-md'
                             : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
-        `}
+            `}
                     onClick={() => handleTabChange('all')}
                 >
                     All Bookings
                     {allBookings.length > 0 && (
                         <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
-                ${bookingType === 'all'
+                    ${bookingType === 'all'
                                 ? 'bg-white text-red-500'
                                 : 'bg-red-100 text-red-600'}
-            `}>
+                `}>
                             {allBookings.length}
                         </span>
                     )}

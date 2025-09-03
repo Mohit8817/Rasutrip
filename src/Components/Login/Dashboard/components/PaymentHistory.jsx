@@ -245,8 +245,8 @@ const PaymentHistory = () => {
                             onClick={() => goToPage(currentPage - 1)}
                             disabled={currentPage === 1}
                             className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === 1
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                                 }`}
                         >
                             Previous
@@ -259,10 +259,10 @@ const PaymentHistory = () => {
                                 onClick={() => typeof page === 'number' ? goToPage(page) : null}
                                 disabled={page === '...'}
                                 className={`px-3 py-2 rounded-md text-sm font-medium ${page === currentPage
-                                        ? 'bg-red-500 text-white'
-                                        : page === '...'
-                                            ? 'bg-white text-gray-400 cursor-default'
-                                            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                                    ? 'bg-red-500 text-white'
+                                    : page === '...'
+                                        ? 'bg-white text-gray-400 cursor-default'
+                                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                                     }`}
                             >
                                 {page}
@@ -274,8 +274,8 @@ const PaymentHistory = () => {
                             onClick={() => goToPage(currentPage + 1)}
                             disabled={currentPage === totalPages}
                             className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === totalPages
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                                 }`}
                         >
                             Next
