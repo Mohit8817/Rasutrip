@@ -23,6 +23,8 @@ const RazorpayPayment = () => {
   const [fare, setfare] = useState(SelectedFare);
   const [journeyType, setjourneyType] = useState(null);
   const [modalShow, setModalShow] = useState(false);
+  const [IsBook, setIsBook] = useState(false);
+
 
   useEffect(() => {
     const journeyType = localStorage.getItem('tripType');
@@ -40,8 +42,6 @@ const RazorpayPayment = () => {
       }
     }
   }, []); // run only once on mount
-
-
   // const baseFare = journeyType=='roundtrip'? fare?.onward.Fare.PublishedPrice+fare?.return.Fare.PublishedPrice : fare?.PublishedPrice || 0;
   let totalReturn = 0;
   if (isRoundTrip) {
@@ -98,8 +98,8 @@ const RazorpayPayment = () => {
       passengersData = mergedPassengers.map(passenger => ({
         ...passenger,
         DateOfBirth: formatDateToISOString(passenger.DateOfBirth),
-        PassportExpiry: formatDateToISOString(passenger.PassportExpiry),
-        PassportIssue: formatDateToISOString(passenger.PassportIssue),
+        // PassportExpiry: formatDateToISOString(passenger.PassportExpiry),
+        // PassportIssue: formatDateToISOString(passenger.PassportIssue),
       }));
 
       const clean = (obj) => JSON.parse(JSON.stringify(obj));
@@ -179,7 +179,6 @@ const RazorpayPayment = () => {
         };
       }
 
-
       // if(journeyType=='roundtrip'){
       //   const payload = {
       //     UserIp: IP,
@@ -198,10 +197,19 @@ const RazorpayPayment = () => {
         toast.success("Flight booked successfully ");
         navigate('/booking/success', { state: { bookingId: response.bookingId, result: data } });
       } else {
+        // setModalShow(false);
+        //  setIsBook(true);
+        //    setTimeout(() => {
+          
+        // setModalShow(true);
+        // alert(IsBook)
+        // }, 1000);
         console.error("❌ Booking Failed:", response?.Error?.ErrorMessage || "Unknown error");
         toast.error(response?.Error?.ErrorMessage || "Booking failed");
+
       }
-      setModalShow(false)
+        setModalShow(false);
+
     } catch (error) {
       setModalShow(false)
 
@@ -224,7 +232,9 @@ const RazorpayPayment = () => {
         razorpay_signature: paymentData.razorpay_signature,
         bookingType: "FLIGHT",
         Flight: {
-          ResultIndex: SelectedFare?.FareId || '',
+          ResultIndex: journeyType === 'roundtrip'
+          ? (fare?.onward?.FareId || SelectedFare?.FareId || '')
+          : (SelectedFare?.FareId || ''),
           SearchTokenId: SearchTokenId || '',
           CouponDiscount: SelectedFare?.CouponDiscount || 0,
           Passengers: passengersData // No need to attach SSR data again
@@ -296,7 +306,7 @@ const RazorpayPayment = () => {
   return (
     <div className="container mt-5">
 
-      <MyVerticallyCenteredModal
+      <MyVerticallyCenteredModal IsBook={IsBook}
         show={modalShow}
       />
       <Card className="shadow-sm border-0">

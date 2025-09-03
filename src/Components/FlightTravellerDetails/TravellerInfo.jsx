@@ -65,7 +65,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
             Gender: '',               // now required for all
             PassportNo: '',
             PassportExpiry: '',
-            Nationality: '',
+            Nationality: 'IN',
             PassportIssue: '',
             PAN: '',
             AddressLine1: '',
@@ -81,6 +81,9 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
             GSTCompanyContactNumber: '',
             GSTNumber: '',
             GSTCompanyEmail: '',
+            FFAirline: "",
+            FFNumber: "",
+            documentId: "",
             Baggage: [],
             Meal: [],
             Seat: []
@@ -354,7 +357,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
                                                 ? moment().subtract(12, 'years').format('YYYY-MM-DD')
                                                 : p.PaxType === 2
                                                     ? moment().subtract(2, 'years').format('YYYY-MM-DD')
-                                                    : moment().format('YYYY-MM-DD')
+                                                    : moment().subtract(10, 'days').format('YYYY-MM-DD')
                                         }
                                     />
                                     <ErrorText show={!p.DateOfBirth} text="Please enter dob" />

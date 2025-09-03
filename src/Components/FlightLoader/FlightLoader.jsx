@@ -60,21 +60,26 @@ const styles = {
   `,
 };
 
-const FlightLoader = ({ message = "Please Wait...", subMessage = "We are looking for all available flights for you" }) => {
+const FlightLoader = ({ message = "Please Wait...", subMessage = "We are looking for all available flights for you", IsBook = false }) => {
   return (
     <>
       <style>{styles.keyframes}</style>
       <div style={styles.overlay}>
         <div style={styles.box}>
           <div style={styles.title}>{message}</div>
-          <div style={styles.subtitle}>{subMessage}</div>
-
-          <div style={styles.dotsWrapper}>
-            <div style={styles.dot("#5ca9ff", "0s")}></div>
-            <div style={styles.dot("#a0a0a0", "0.2s")}></div>
-            <div style={styles.dot("#f28b82", "0.4s")}></div>
-            <div style={styles.dot("#6d6d6d", "0.6s")}></div>
-          </div>
+          {IsBook ? (
+            <>
+            </>
+          ) : (
+            <>
+              <div style={styles.subtitle}>{subMessage}</div>
+              <div style={styles.dotsWrapper}>
+                <div style={styles.dot("#5ca9ff", "0s")}></div>
+                <div style={styles.dot("#a0a0a0", "0.2s")}></div>
+                <div style={styles.dot("#f28b82", "0.4s")}></div>
+                <div style={styles.dot("#6d6d6d", "0.6s")}></div>
+              </div></>
+          )}
         </div>
       </div>
     </>

@@ -18,7 +18,7 @@ const MultiCity = ({ FareData, fareRules, SelectedFare }) => {
     const farePayload = useMemo(() => ({
         UserIp: localStorage.getItem("UserIp") || "",
         ResultIndex: SelectedFare?.FareId || "",
-        PublishedPrice: SelectedFare?.PublishedPrice,
+        // PublishedPrice: SelectedFare?.PublishedPrice,
         SearchTokenId: localStorage.getItem("searchToken") || ""
     }), [SelectedFare]);
 
