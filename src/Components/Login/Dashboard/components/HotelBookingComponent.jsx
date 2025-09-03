@@ -22,6 +22,10 @@ const HotelBookingHistory = () => {
     const [userRole, setUserRole] = useState('customer');
     const [sortOrder, setSortOrder] = useState('desc');
 
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     // Real-time status states
     const [realTimeStatuses, setRealTimeStatuses] = useState({});
     const [loadingStatuses, setLoadingStatuses] = useState(new Set());
@@ -40,6 +44,11 @@ const HotelBookingHistory = () => {
         const role = getHotelUserType();
         setUserRole(role || 'customer');
     }, []);
+
+    // Reset pagination when booking type changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [bookingType]);
 
     // Handle opening status modal
     const handleOpenStatusModal = async (booking) => {
@@ -594,7 +603,39 @@ const HotelBookingHistory = () => {
         return allBookings;
     };
 
-    const currentBookings = getCurrentBookings();
+    // Pagination functions
+    const getCurrentPageBookings = () => {
+        const allBookings = getCurrentBookings();
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return allBookings.slice(startIndex, endIndex);
+    };
+
+    const getTotalPages = () => {
+        const totalBookings = getCurrentBookings().length;
+        return Math.ceil(totalBookings / itemsPerPage);
+    };
+
+    const goToPage = (page) => {
+        setCurrentPage(page);
+    };
+
+    const goToNextPage = () => {
+        const totalPages = getTotalPages();
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const goToPrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const currentBookings = getCurrentPageBookings();
+    const totalBookings = getCurrentBookings().length;
+    const totalPages = getTotalPages();
 
     const formatDate = (dateString) => {
         if (!dateString || dateString === 'N/A') return 'N/A';
@@ -619,6 +660,7 @@ const HotelBookingHistory = () => {
 
     const toggleSortOrder = () => {
         setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+        setCurrentPage(1); // Reset to first page when sorting changes
     };
 
     const getStatusColor = (status) => {
@@ -673,7 +715,106 @@ const HotelBookingHistory = () => {
         }
     };
 
+    // Pagination Component
+    const PaginationControls = ({ currentPage, totalPages, totalItems, onPageChange, onPrevious, onNext }) => {
+        const getPageNumbers = () => {
+            const pages = [];
+            const maxVisiblePages = 5;
+            
+            if (totalPages <= maxVisiblePages) {
+                // Show all pages if total pages are less than or equal to max visible
+                for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                }
+            } else {
+                // Show first page, current page with neighbors, and last page
+                if (currentPage <= 3) {
+                    for (let i = 1; i <= 4; i++) {
+                        pages.push(i);
+                    }
+                    pages.push('...');
+                    pages.push(totalPages);
+                } else if (currentPage >= totalPages - 2) {
+                    pages.push(1);
+                    pages.push('...');
+                    for (let i = totalPages - 3; i <= totalPages; i++) {
+                        pages.push(i);
+                    }
+                } else {
+                    pages.push(1);
+                    pages.push('...');
+                    for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                        pages.push(i);
+                    }
+                    pages.push('...');
+                    pages.push(totalPages);
+                }
+            }
+            
+            return pages;
+        };
 
+        if (totalPages <= 1) return null;
+
+        const startItem = (currentPage - 1) * itemsPerPage + 1;
+        const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+        return (
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-6 pt-4 border-t border-gray-200">
+                <div className="text-sm text-gray-600 mb-4 sm:mb-0">
+                    Showing {startItem} to {endItem} of {totalItems} bookings
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                    {/* Previous Button */}
+                    <button
+                        onClick={onPrevious}
+                        disabled={currentPage === 1}
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                            currentPage === 1
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }`}
+                    >
+                        Previous
+                    </button>
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center space-x-1">
+                        {getPageNumbers().map((page, index) => (
+                            <button
+                                key={index}
+                                onClick={() => page !== '...' && onPageChange(page)}
+                                disabled={page === '...'}
+                                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                                    page === currentPage
+                                        ? 'bg-red-500 text-white'
+                                        : page === '...'
+                                        ? 'text-gray-400 cursor-not-allowed'
+                                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Next Button */}
+                    <button
+                        onClick={onNext}
+                        disabled={currentPage === totalPages}
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                            currentPage === totalPages
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }`}
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
+        );
+    };
 
     // Status Modal Component
     const StatusModal = ({ booking, statusData, isLoading, onClose }) => {
@@ -755,7 +896,6 @@ const HotelBookingHistory = () => {
                             </div>
                         </div>  
 
-
                         {/* Timeline Section */}
                         <div className="mb-6">
                             <h3 className="font-semibold text-gray-800 mb-3">Booking Timeline</h3>
@@ -823,6 +963,11 @@ const HotelBookingHistory = () => {
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h5 className="text-2xl font-bold text-gray-800">My Hotel Bookings</h5>
+                        {totalBookings > 0 && (
+                            <p className="text-sm text-gray-500 mt-1">
+                                Total {totalBookings} bookings found
+                            </p>
+                        )}
                     </div>
                 </div>
 
@@ -935,6 +1080,8 @@ const HotelBookingHistory = () => {
                                                     Debug: Upcoming={upcomingBookings.length}, All={allBookings.length}, Current={currentBookings.length}
                                                     <br />
                                                     Sort Order: {sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
+                                                    <br />
+                                                    Page: {currentPage} of {totalPages}
                                                 </div>
                                                 <button
                                                     onClick={loadHotelBookings}
@@ -1009,8 +1156,6 @@ const HotelBookingHistory = () => {
                                                 </td>
                                                 <td className="px-4 py-3 text-sm">
                                                     <div className="flex flex-col space-y-1">
-
-
                                                         {/* Download Invoice Button */}
                                                         <button
                                                             onClick={() => handleInvoiceDownload(booking)}
@@ -1045,6 +1190,16 @@ const HotelBookingHistory = () => {
                         </table>
                     </div>
                 </div>
+
+                {/* Pagination Controls */}
+                <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalBookings}
+                    onPageChange={goToPage}
+                    onPrevious={goToPrevPage}
+                    onNext={goToNextPage}
+                />
             </div>
 
             {/* Status Modal */}
