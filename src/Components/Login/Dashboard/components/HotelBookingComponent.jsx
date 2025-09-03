@@ -753,9 +753,9 @@ const HotelBookingHistory = () => {
                                     </span>
                                 </div>
                             </div>
-                        </div>
+                        </div>  
 
-                       
+
                         {/* Timeline Section */}
                         <div className="mb-6">
                             <h3 className="font-semibold text-gray-800 mb-3">Booking Timeline</h3>

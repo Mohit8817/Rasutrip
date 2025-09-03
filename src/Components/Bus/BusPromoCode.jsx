@@ -10,6 +10,7 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
   const [loading, setLoading] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [debugInfo, setDebugInfo] = useState(""); // For debugging
 
   // Fetch offers from API
   useEffect(() => {
@@ -19,7 +20,6 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
         const data = await fetchSpecialOffers();
         console.log("✅ Special offers received:", data);
 
-        // Handle multiple response formats
         let offersArray = [];
         if (Array.isArray(data)) {
           offersArray = data;
@@ -28,7 +28,6 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
         } else if (data && data.data && Array.isArray(data.data)) {
           offersArray = data.data;
         } else if (data && typeof data === 'object') {
-          // If single offer object, convert to array
           offersArray = [data];
         }
 
@@ -42,58 +41,91 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
       } catch (error) {
         console.error("❌ Failed to load offers:", error);
         setMessage("Failed to load special offers");
-        setOffers([]); // Ensure offers is always an array
+        setOffers([]);
       }
     };
 
     if (totalPrice && totalPrice > 0) {
       loadOffers();
     }
-  }, [totalPrice]); // Add totalPrice as dependency
+  }, [totalPrice]);
 
-  // Apply coupon function with enhanced error handling
+
+
+  // Apply coupon function with enhanced debugging and preventing duplicate calls
   const handleApply = async (codeParam = null) => {
+    // Prevent multiple simultaneous API calls
+    if (loading) {
+      console.log("🚫 Already loading, preventing duplicate API call");
+      return;
+    }
+
     try {
       setLoading(true);
       setMessage("");
+      setDebugInfo("");
 
-      // Get the coupon code - either from parameter or manual input
       const appliedCode = codeParam || manualCode;
 
-      console.log("🎫 Attempting to apply coupon:", {
+      // Enhanced debugging
+      console.log("🎫 DEBUG - Coupon Application Details:", {
         codeParam,
         manualCode,
         appliedCode,
         totalPrice,
+        appliedCodeLength: appliedCode?.length,
+        appliedCodeType: typeof appliedCode,
+        totalPriceType: typeof totalPrice,
         hasCode: !!appliedCode,
-        hasPrice: !!totalPrice
+        hasPrice: !!totalPrice && totalPrice > 0
       });
 
-      // Enhanced validation checks
+      // Validation
       if (!appliedCode || appliedCode.trim() === "") {
-        setMessage("❌ Please enter or select a coupon code.");
-        setLoading(false);
+        const errorMsg = "❌ Please enter or select a coupon code.";
+        setMessage(errorMsg);
+        setDebugInfo("Error: No coupon code provided");
         return;
       }
 
       if (!totalPrice || totalPrice <= 0) {
-        setMessage("❌ Invalid total price for coupon application.");
-        setLoading(false);
+        const errorMsg = "❌ Invalid total price for coupon application.";
+        setMessage(errorMsg);
+        setDebugInfo(`Error: Invalid price - ${totalPrice}`);
         return;
       }
 
-      console.log("🚀 Applying coupon:", {
-        code: appliedCode.trim(),
-        totalPrice: totalPrice,
-        codeLength: appliedCode.trim().length
+      setDebugInfo(`Applying coupon: ${appliedCode.trim()} for amount: ${totalPrice}`);
+
+      console.log("🚀 DETAILED DEBUG - API Call Parameters:", {
+        function: 'applyBusCoupon',
+        parameter1: {
+          value: appliedCode.trim(),
+          type: typeof appliedCode.trim(),
+          length: appliedCode.trim().length
+        },
+        parameter2: {
+          value: totalPrice,
+          type: typeof totalPrice,
+          isNumber: !isNaN(totalPrice)
+        }
       });
 
       const result = await applyBusCoupon(appliedCode.trim(), totalPrice);
-      console.log("🎉 Coupon API response:", result);
+
+      console.log("🎉 Coupon API SUCCESS response:", {
+        result,
+        type: typeof result,
+        success: result?.success,
+        hasDiscountAmount: !!result?.discountAmount,
+        hasDiscount: !!result?.discount,
+        keys: Object.keys(result || {})
+      });
+
+      setDebugInfo(`API Response: ${JSON.stringify(result)}`);
 
       // Enhanced response handling
       if (result && result.success !== false && !result.error) {
-        // Calculate discount amount based on API response
         const discount = result.discountAmount ||
           result.discount ||
           result.savedAmount ||
@@ -103,10 +135,14 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
 
         console.log("💰 Calculated discount:", {
           discount,
-          discountAmount: result.discountAmount,
-          savedAmount: result.savedAmount,
-          discountPercent: result.discountPercent,
-          totalPrice
+          allDiscountFields: {
+            discountAmount: result.discountAmount,
+            discount: result.discount,
+            savedAmount: result.savedAmount,
+            discountValue: result.discountValue,
+            discountPercent: result.discountPercent,
+            discount_percent: result.discount_percent
+          }
         });
 
         if (discount > 0) {
@@ -118,7 +154,6 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
             description: result.description || result.message || `${appliedCode} applied successfully`
           });
 
-          // Notify parent component about the discount
           if (onDiscountApplied) {
             onDiscountApplied({
               couponCode: appliedCode.trim(),
@@ -131,9 +166,11 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
           setMessage(`✅ Coupon applied successfully! You saved ₹${discount.toFixed(2)}`);
           setSelectedCode(appliedCode.trim());
           setManualCode(appliedCode.trim());
+          setDebugInfo(`Success: Discount of ₹${discount.toFixed(2)} applied`);
         } else {
           console.warn("⚠️ No discount calculated from response:", result);
           setMessage("⚠️ Coupon applied but no discount amount received.");
+          setDebugInfo("Warning: No discount amount in response");
         }
       } else {
         const errorMsg = result?.message ||
@@ -142,15 +179,27 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
           "❌ Invalid or expired coupon.";
         console.error("❌ Coupon application failed:", result);
         setMessage(errorMsg);
+        setDebugInfo(`Failed: ${errorMsg}`);
         handleRemoveCoupon();
       }
 
     } catch (error) {
-      console.error("❌ Coupon application error:", {
-        error: error,
+      console.error("❌ DETAILED ERROR in coupon application:", {
+        error,
         message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status
+        name: error?.name,
+        stack: error?.stack,
+        response: {
+          status: error?.response?.status,
+          statusText: error?.response?.statusText,
+          data: error?.response?.data,
+          headers: error?.response?.headers
+        },
+        request: {
+          url: error?.config?.url,
+          method: error?.config?.method,
+          data: error?.config?.data
+        }
       });
 
       let errorMessage = "Failed to apply coupon. Please try again.";
@@ -166,6 +215,7 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
       }
 
       setMessage(`❌ ${errorMessage}`);
+      setDebugInfo(`Error: ${errorMessage} (Status: ${error?.response?.status || 'No status'})`);
       handleRemoveCoupon();
     } finally {
       setLoading(false);
@@ -179,7 +229,6 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
     setSelectedCode("");
     setManualCode("");
 
-    // Notify parent component about coupon removal
     if (onDiscountApplied) {
       onDiscountApplied({
         couponCode: null,
@@ -189,33 +238,33 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
       });
     }
 
-    setMessage(""); // Clear message when removing coupon
+    setMessage("");
+    setDebugInfo("");
   };
 
-  // When radio is selected, update both selectedCode + manualCode
   const handleSelectCoupon = (code) => {
     if (appliedCoupon && appliedCoupon.code === code) {
-      return; // Already applied
+      return;
     }
     console.log("📋 Selected coupon:", code);
     setSelectedCode(code);
     setManualCode(code);
-    setMessage(""); // Clear any previous messages
+    setMessage("");
+    setDebugInfo(`Selected: ${code}`);
 
-    // Auto-apply the selected coupon
     setTimeout(() => {
       handleApply(code);
     }, 100);
   };
 
-  // Handle manual input change
   const handleManualCodeChange = (e) => {
-    const value = e.target.value.toUpperCase(); // Convert to uppercase
+    const value = e.target.value.toUpperCase();
     setManualCode(value);
     if (value !== selectedCode) {
-      setSelectedCode(""); // Clear radio selection if manually typing different code
+      setSelectedCode("");
     }
-    setMessage(""); // Clear messages when typing
+    setMessage("");
+    setDebugInfo(`Typing: ${value}`);
   };
 
   return (
@@ -229,6 +278,7 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
         )}
       </Card.Header>
       <Card.Body className="p-3">
+
         {/* Applied Coupon Display */}
         {appliedCoupon && (
           <Alert variant="success" className="d-flex justify-content-between align-items-center mb-3">
@@ -280,7 +330,6 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
                 <div
                   className="promo-option border rounded p-2 mb-2 position-relative"
                   key={idx}
-
                   onClick={() => handleSelectCoupon(offer.code)}
                 >
                   <div className="d-flex align-items-center justify-content-between">
@@ -340,8 +389,8 @@ const BusPromoCode = ({ totalPrice, onDiscountApplied }) => {
         {/* Message Display */}
         {message && (
           <div className={`mt-3 p-2 rounded ${message.includes('successfully') || message.includes('saved') || message.includes('✅')
-              ? 'text-success bg-success bg-opacity-10'
-              : 'text-danger bg-danger bg-opacity-10'
+            ? 'text-success bg-success bg-opacity-10'
+            : 'text-danger bg-danger bg-opacity-10'
             }`}>
             <small className="fw-bold">{message}</small>
           </div>
