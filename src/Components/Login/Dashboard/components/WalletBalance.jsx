@@ -46,7 +46,7 @@ const WalletBalance = ({ className = '' }) => {
             <div className={`bg-white rounded-lg shadow-sm border p-4 ${className}`}>
                 <div className="d-flex align-items-center">
                     <div className="me-3">
-                      
+
                     </div>
                     <div className="flex-grow-1">
                         <h6 className="text-muted mb-1 fw-bold small">WALLET BALANCE</h6>
@@ -89,24 +89,11 @@ const WalletBalance = ({ className = '' }) => {
     return (
         <div className={`bg-white rounded-lg shadow-sm border p-4 ${className}`}>
             <div className="d-flex align-items-center">
-                <div className="me-3">
-                    <div className="p-2 bg-success bg-opacity-10 rounded-circle">
-                        <span className="text-success" style={{ fontSize: '1.2rem' }}>
-                            💰
-                        </span>
-                    </div>
-                </div>
+
                 <div className="flex-grow-1">
                     <div className="d-flex align-items-center justify-content-between mb-1">
                         <h6 className="text-muted mb-0 fw-bold small">WALLET BALANCE</h6>
-                        <button
-                            className="btn btn-sm btn-outline-secondary"
-                            onClick={fetchWalletBalance}
-                            style={{ fontSize: '0.75rem', padding: '2px 6px' }}
-                            title="Refresh Balance"
-                        >
-                            🔄
-                        </button>
+
                     </div>
                     <div className="d-flex align-items-center justify-content-between">
                         <h4 className="text-success fw-bold mb-0">

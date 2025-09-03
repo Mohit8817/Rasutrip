@@ -1,16 +1,18 @@
-// src/components/Bus/BusConfirmation.js - ENHANCED VERSION
+// src/components/Bus/BusConfirmation.js - ENHANCED VERSION WITH PDF GENERATION
 
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Button, Spinner, Alert, Row, Col, Badge } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaCheckCircle, FaDownload, FaRedo, FaBus, FaCalendarAlt, FaClock, FaUser, FaMapMarkerAlt, FaTicketAlt, FaEnvelope } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import jsPDF from 'jspdf';
 import { downloadBusInvoice } from '../../APIS/BusApi/BusApis';
 
 const Bookingconfirm = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [downloadingInvoice, setDownloadingInvoice] = useState(false);
     const [invoiceStatus, setInvoiceStatus] = useState('pending');
     const [retryCount, setRetryCount] = useState(0);
 
@@ -43,7 +45,7 @@ const Bookingconfirm = () => {
     // Extract BookingId from result with multiple fallback strategies
     const extractBookingIdFromResult = (result) => {
         const possiblePaths = [
-            extractedBookingId, // First check the extracted ID from payment flow
+            extractedBookingId,
             result?.BookingId,
             result?.bookingId,
             result?.data?.BookingId,
@@ -110,7 +112,234 @@ const Bookingconfirm = () => {
         }
     }, [isBooked, bookingResult]);
 
-    // Enhanced response processing for file downloads
+    // Generate PDF Invoice using jsPDF (similar to hotel implementation)
+    const generateBusPDFInvoice = () => {
+        const currentBookingId = bookingId || 'N/A';
+        const operatorName = bus?.operator || bus?.travels || 'Bus Service';
+        const bookingTime = new Date().toLocaleDateString();
+        const passengerName = passengerData.length > 0 ? 
+            `${passengerData[0].firstName || ''} ${passengerData[0].lastName || ''}`.trim() : 
+            'Passenger';
+        
+        const seatNumbers = selectedSeats.map((seat, index) => extractSeatName(seat, index)).join(', ');
+        const gstAmount = (totalPrice * 0.18);
+        const baseFare = finalAmount - gstAmount;
+
+        // Create new PDF document
+        const doc = new jsPDF();
+        
+        // Set font
+        doc.setFont("helvetica");
+        
+        // Header - Company Logo/Name
+        doc.setFontSize(24);
+        doc.setTextColor(40, 44, 52);
+        doc.text('BUS BOOKING INVOICE', 105, 30, { align: 'center' });
+        
+        // Add a line under header
+        doc.setDrawColor(0, 0, 0);
+        doc.line(20, 35, 190, 35);
+        
+        // Invoice details section
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        
+        // Left side - Invoice Info
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text('INVOICE DETAILS', 20, 55);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`, 20, 65);
+        doc.text(`Booking ID: ${currentBookingId}`, 20, 72);
+        doc.text(`Booking Date: ${bookingTime}`, 20, 79);
+        doc.text(`Booking Status: Confirmed`, 20, 86);
+        
+        // Right side - Travel Info
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text('TRAVEL INFORMATION', 120, 55);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`From: ${fromCity}`, 120, 65);
+        doc.text(`To: ${toCity}`, 120, 72);
+        doc.text(`Travel Date: ${departDate ? new Date(departDate).toLocaleDateString() : 'N/A'}`, 120, 79);
+        doc.text(`Operator: ${operatorName}`, 120, 86);
+        
+        // Bus Details Section
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text('BUS DETAILS', 20, 105);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Bus Type: ${bus?.busType || 'Standard'}`, 20, 115);
+        doc.text(`Seat Numbers: ${seatNumbers}`, 20, 122);
+        doc.text(`No. of Passengers: ${passengerData.length}`, 20, 129);
+        
+        // Passenger Information
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text('PASSENGER INFORMATION', 20, 145);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        let yPos = 155;
+        passengerData.forEach((passenger, index) => {
+            doc.text(`${index + 1}. ${passenger.firstName} ${passenger.lastName}`, 20, yPos);
+            doc.text(`Age: ${passenger.age}, Gender: ${passenger.gender}`, 25, yPos + 7);
+            yPos += 15;
+        });
+        
+        // Contact Information
+        const contactYPos = yPos + 5;
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text('CONTACT DETAILS', 20, contactYPos);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        if (contactData?.email) {
+            doc.text(`Email: ${contactData.email}`, 20, contactYPos + 10);
+        }
+        if (contactData?.mobile) {
+            doc.text(`Phone: ${contactData.mobile}`, 20, contactYPos + 17);
+        }
+        
+        // Boarding & Dropping Points
+        const boardingYPos = contactYPos + 30;
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text('BOARDING & DROPPING POINTS', 20, boardingYPos);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        if (selectedBoardingPoint?.BoardingPointName) {
+            doc.text(`Boarding: ${selectedBoardingPoint.BoardingPointName}`, 20, boardingYPos + 10);
+            if (selectedBoardingPoint?.Time) {
+                doc.text(`Time: ${selectedBoardingPoint.Time}`, 25, boardingYPos + 17);
+            }
+        }
+        
+        if (selectedDroppingPoint?.DroppingPointName) {
+            doc.text(`Dropping: ${selectedDroppingPoint.DroppingPointName}`, 20, boardingYPos + 25);
+            if (selectedDroppingPoint?.Time) {
+                doc.text(`Time: ${selectedDroppingPoint.Time}`, 25, boardingYPos + 32);
+            }
+        }
+        
+        // Payment Details Section
+        const paymentYPos = boardingYPos + 45;
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text('PAYMENT DETAILS', 20, paymentYPos);
+        
+        // Create a table-like structure for payment details
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(20, paymentYPos + 10, 170, 50); // Main rectangle
+        
+        // Table headers
+        doc.setFillColor(240, 240, 240);
+        doc.rect(20, paymentYPos + 10, 170, 10, 'F');
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text('Description', 25, paymentYPos + 17);
+        doc.text('Amount', 150, paymentYPos + 17);
+        
+        // Table content
+        doc.setFont("helvetica", "normal");
+        doc.text(`Base Fare (${selectedSeats.length} seats)`, 25, paymentYPos + 27);
+        doc.text(`₹${baseFare.toFixed(2)}`, 150, paymentYPos + 27);
+        
+        doc.text('Taxes & GST (18%)', 25, paymentYPos + 37);
+        doc.text(`₹${gstAmount.toFixed(2)}`, 150, paymentYPos + 37);
+        
+        if (paymentId) {
+            doc.text(`Payment ID: ${paymentId}`, 25, paymentYPos + 47);
+        }
+        
+        // Total amount - highlighted
+        doc.setFillColor(52, 168, 83);
+        doc.rect(20, paymentYPos + 50, 170, 10, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.text('TOTAL AMOUNT PAID:', 25, paymentYPos + 57);
+        doc.text(`₹${finalAmount.toFixed(2)}`, 150, paymentYPos + 57);
+        
+        // Reset text color
+        doc.setTextColor(0, 0, 0);
+        
+        // Terms and Conditions
+        const termsYPos = paymentYPos + 75;
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text('TERMS & CONDITIONS', 20, termsYPos);
+        
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text('• This invoice is computer generated and does not require signature.', 20, termsYPos + 10);
+        doc.text('• Please carry this invoice and a valid ID for boarding.', 20, termsYPos + 17);
+        doc.text('• Reach boarding point at least 15 minutes before departure time.', 20, termsYPos + 24);
+        doc.text('• Cancellation and modification policies apply as per booking terms.', 20, termsYPos + 31);
+        
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text('Thank you for choosing our service! Have a safe journey.', 105, 280, { align: 'center' });
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
+        
+        return doc;
+    };
+
+    // Enhanced PDF download handler
+    const handleDownloadPDFInvoice = async () => {
+        setDownloadingInvoice(true);
+
+        try {
+            const currentBookingId = bookingId || 'booking';
+            
+            // Generate PDF using jsPDF
+            const doc = generateBusPDFInvoice();
+            
+            // Save the PDF with a meaningful filename
+            const fileName = `Bus-Invoice-${currentBookingId}-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            toast.success('Bus invoice downloaded successfully!', {
+                position: "top-right",
+                autoClose: 5000
+            });
+
+            // Optional: Also send to email (keep the original API call)
+            try {
+                const payload = getInvoicePayload();
+                if (payload) {
+                    await downloadBusInvoice(payload);
+                    toast.info('Invoice also sent to your email!', {
+                        position: "top-right",
+                        autoClose: 3000
+                    });
+                }
+            } catch (emailError) {
+                console.log('Email sending failed, but PDF downloaded successfully:', emailError);
+            }
+
+        } catch (error) {
+            console.error('Invoice generation error:', error);
+            toast.error(`Failed to generate invoice: ${error.message}`, {
+                position: "top-right",
+                autoClose: 7000
+            });
+        } finally {
+            setDownloadingInvoice(false);
+        }
+    };
+
+    // Enhanced response processing for file downloads (kept for API fallback)
     const processApiResponse = async (result) => {
         console.log('Processing API response:', result);
 
@@ -229,7 +458,7 @@ const Bookingconfirm = () => {
         }
     };
 
-    // Enhanced invoice download handler with retry mechanism
+    // Original API-based invoice download (kept as fallback)
     const handleDownloadInvoice = async (isRetry = false) => {
         const payload = getInvoicePayload();
 
@@ -481,7 +710,7 @@ const Bookingconfirm = () => {
                 </Card.Body>
             </Card>
 
-            {/* Invoice Download Section */}
+            {/* Enhanced Invoice Download Section */}
             <Card className="shadow-sm mb-4">
                 <Card.Header className="bg-danger text-white">
                     <h6 className="fw-bold mb-0">📄 Download Your Invoice</h6>
@@ -515,10 +744,32 @@ const Bookingconfirm = () => {
                     )}
 
                     <div className="text-center">
+                        {/* Main PDF Download Button */}
                         <Button
                             variant="danger"
                             size="lg"
-                            className="fw-bold px-5"
+                            className="fw-bold px-5 me-3 mb-3"
+                            onClick={handleDownloadPDFInvoice}
+                            disabled={downloadingInvoice}
+                        >
+                            {downloadingInvoice ? (
+                                <>
+                                    <Spinner animation="border" size="sm" className="me-2" />
+                                    Generating PDF...
+                                </>
+                            ) : (
+                                <>
+                                    <FaDownload className="me-2" />
+                                    Download PDF Invoice
+                                </>
+                            )}
+                        </Button>
+
+                        {/* Fallback API Download Button */}
+                        <Button
+                            variant="outline-danger"
+                            size="lg"
+                            className="fw-bold px-5 mb-3"
                             onClick={() => handleDownloadInvoice()}
                             disabled={loading || !invoicePayload}
                         >
@@ -530,7 +781,7 @@ const Bookingconfirm = () => {
                             ) : (
                                 <>
                                     <FaDownload className="me-2" />
-                                    Download Invoice
+                                    Download via Email
                                 </>
                             )}
                         </Button>
@@ -538,16 +789,37 @@ const Bookingconfirm = () => {
                         {!invoicePayload && (
                             <div className="mt-3">
                                 <small className="text-danger">
-                                    ⚠️ Invoice download unavailable - missing booking information
+                                    ⚠️ Email invoice unavailable - missing booking information
                                 </small>
                             </div>
                         )}
 
                         <div className="mt-3">
-                            <small className="text-muted">
-                                📄 Click above to download your booking invoice as a PDF file.
-                                {retryCount > 0 && <><br />ℹ️ If first attempt fails, the system will automatically retry.</>}
-                            </small>
+                            <Alert variant="info" className="border-0 mb-0" style={{
+                                backgroundColor: '#e8f4fd',
+                                borderRadius: '10px'
+                            }}>
+                                <div className="d-flex align-items-start">
+                                    <div className="flex-grow-1">
+                                        <Alert.Heading as="h6" className="text-info mb-2 fw-bold">
+                                            📄 Invoice Download Options
+                                        </Alert.Heading>
+                                        <p className="mb-2 text-dark">
+                                            <strong>PDF Invoice:</strong> Click "Download PDF Invoice" to instantly generate and save a professional PDF invoice to your device.
+                                        </p>
+                                        <p className="mb-2 text-dark">
+                                            <strong>Email Invoice:</strong> Click "Download via Email" to receive invoice via email (may take a few minutes).
+                                        </p>
+                                        <small className="text-muted">
+                                            📧 Your booking ID{' '}
+                                            <Badge bg="info" className="mx-1 px-3 py-1">
+                                                {bookingId}
+                                            </Badge>
+                                            {' '}will be included in both formats. For any assistance, please contact our support team.
+                                        </small>
+                                    </div>
+                                </div>
+                            </Alert>
                         </div>
                     </div>
                 </Card.Body>

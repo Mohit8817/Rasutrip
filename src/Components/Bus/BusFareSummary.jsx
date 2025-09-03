@@ -40,8 +40,7 @@ const BusFareSummary = ({
   // Initialize fare calculation object with all API fields
   const fareData = {
     basePrice: 0,
-    publishedPrice: 0,
-    offeredPrice: 0,
+    publishedPrice: 0, // This is the main price - not showing OfferedPrice as requested
     tax: 0,
     otherCharges: 0,
     serviceCharges: 0,
@@ -50,8 +49,12 @@ const BusFareSummary = ({
     discount: 0,
     gst: {
       cgstAmount: 0,
+      cgstRate: 0,
       sgstAmount: 0,
+      sgstRate: 0,
       igstAmount: 0,
+      igstRate: 0,
+      taxableAmount: 0,
       total: 0
     },
     commissionPercentage: 0,
@@ -66,7 +69,6 @@ const BusFareSummary = ({
     let totals = {
       basePrice: 0,
       publishedPrice: 0,
-      offeredPrice: 0,
       tax: 0,
       otherCharges: 0,
       serviceCharges: 0,
@@ -74,8 +76,12 @@ const BusFareSummary = ({
       tds: 0,
       discount: 0,
       cgst: 0,
+      cgstRate: 0,
       sgst: 0,
-      igst: 0
+      sgstRate: 0,
+      igst: 0,
+      igstRate: 0,
+      taxableAmount: 0
     };
 
     selectedSeats.forEach(seat => {
@@ -85,7 +91,6 @@ const BusFareSummary = ({
       // Extract all API price fields dynamically
       totals.basePrice += Number(seatPriceObj?.BasePrice || 0);
       totals.publishedPrice += Number(seatPriceObj?.PublishedPrice || 0);
-      totals.offeredPrice += Number(seatPriceObj?.OfferedPrice || 0);
       totals.tax += Number(seatPriceObj?.Tax || 0);
       totals.otherCharges += Number(seatPriceObj?.OtherCharges || 0);
       totals.serviceCharges += Number(seatPriceObj?.ServiceCharges || 0);
@@ -93,11 +98,17 @@ const BusFareSummary = ({
       totals.tds += Number(seatPriceObj?.TDS || 0);
       totals.discount += Number(seatPriceObj?.Discount || 0);
 
-      // Handle GST object structure
+      // Handle GST object structure with all fields
       if (seatPriceObj?.GST && typeof seatPriceObj.GST === 'object') {
         totals.cgst += Number(seatPriceObj.GST.CGSTAmount || 0);
         totals.sgst += Number(seatPriceObj.GST.SGSTAmount || 0);
         totals.igst += Number(seatPriceObj.GST.IGSTAmount || 0);
+        totals.taxableAmount += Number(seatPriceObj.GST.TaxableAmount || 0);
+        
+        // Get rates from first seat (assuming all seats have same rate)
+        if (totals.cgstRate === 0) totals.cgstRate = Number(seatPriceObj.GST.CGSTRate || 0);
+        if (totals.sgstRate === 0) totals.sgstRate = Number(seatPriceObj.GST.SGSTRate || 0);
+        if (totals.igstRate === 0) totals.igstRate = Number(seatPriceObj.GST.IGSTRate || 0);
       } else {
         // If GST is a simple number, add to IGST
         totals.igst += Number(seatPriceObj?.GST || 0);
@@ -107,7 +118,6 @@ const BusFareSummary = ({
     // Set all fare data from calculated totals
     fareData.basePrice = totals.basePrice;
     fareData.publishedPrice = totals.publishedPrice;
-    fareData.offeredPrice = totals.offeredPrice;
     fareData.tax = totals.tax;
     fareData.otherCharges = totals.otherCharges;
     fareData.serviceCharges = totals.serviceCharges;
@@ -116,8 +126,12 @@ const BusFareSummary = ({
     fareData.discount = totals.discount;
     fareData.gst = {
       cgstAmount: totals.cgst,
+      cgstRate: totals.cgstRate,
       sgstAmount: totals.sgst,
+      sgstRate: totals.sgstRate,
       igstAmount: totals.igst,
+      igstRate: totals.igstRate,
+      taxableAmount: totals.taxableAmount,
       total: totals.cgst + totals.sgst + totals.igst
     };
 
@@ -140,7 +154,6 @@ const BusFareSummary = ({
     // Extract all API pricing fields exactly as they come
     fareData.basePrice = Number(busPriceObj.BasePrice || 0);
     fareData.publishedPrice = Number(busPriceObj.PublishedPrice || 0);
-    fareData.offeredPrice = Number(busPriceObj.OfferedPrice || 0);
     fareData.tax = Number(busPriceObj.Tax || 0);
     fareData.otherCharges = Number(busPriceObj.OtherCharges || 0);
     fareData.serviceCharges = Number(busPriceObj.ServiceCharges || 0);
@@ -148,12 +161,16 @@ const BusFareSummary = ({
     fareData.tds = Number(busPriceObj.TDS || 0);
     fareData.discount = Number(busPriceObj.Discount || 0);
 
-    // Handle GST object structure
+    // Handle GST object structure with all fields
     if (busPriceObj.GST && typeof busPriceObj.GST === 'object') {
       fareData.gst = {
         cgstAmount: Number(busPriceObj.GST.CGSTAmount || 0),
+        cgstRate: Number(busPriceObj.GST.CGSTRate || 0),
         sgstAmount: Number(busPriceObj.GST.SGSTAmount || 0),
+        sgstRate: Number(busPriceObj.GST.SGSTRate || 0),
         igstAmount: Number(busPriceObj.GST.IGSTAmount || 0),
+        igstRate: Number(busPriceObj.GST.IGSTRate || 0),
+        taxableAmount: Number(busPriceObj.GST.TaxableAmount || 0),
         total: Number(busPriceObj.GST.CGSTAmount || 0) +
           Number(busPriceObj.GST.SGSTAmount || 0) +
           Number(busPriceObj.GST.IGSTAmount || 0)
@@ -161,8 +178,12 @@ const BusFareSummary = ({
     } else {
       fareData.gst = {
         cgstAmount: 0,
+        cgstRate: 0,
         sgstAmount: 0,
+        sgstRate: 0,
         igstAmount: Number(busPriceObj.GST || 0),
+        igstRate: 0,
+        taxableAmount: 0,
         total: Number(busPriceObj.GST || 0)
       };
     }
@@ -181,7 +202,6 @@ const BusFareSummary = ({
     console.log("Using state total price:", stateTotalPrice);
     fareData.publishedPrice = Number(stateTotalPrice);
     fareData.basePrice = Number(stateTotalPrice);
-    fareData.offeredPrice = Number(stateTotalPrice);
 
     // Get dynamic commission percentage
     fareData.commissionPercentage = Number(
@@ -240,7 +260,7 @@ const BusFareSummary = ({
   });
 
   // Don't show component if no price data
-  if (fareData.publishedPrice === 0 && fareData.basePrice === 0 && fareData.offeredPrice === 0) {
+  if (fareData.publishedPrice === 0 && fareData.basePrice === 0) {
     return (
       <Card className="fare-card shadow-sm mt-3">
         <Card.Header className="fare-header">Fare Summary</Card.Header>
@@ -265,79 +285,112 @@ const BusFareSummary = ({
         </Card.Header>
         <Card.Body className="p-3">
 
-          {/* Base Price - Show only if different from Published Price and greater than 0 */}
-          {fareData.basePrice > 0 && fareData.basePrice !== fareData.publishedPrice && (
+          {/* Base Price - Always show if greater than 0 */}
+          {fareData.basePrice > 0 && (
             <div className="fare-row">
-              <span>Base Price {fareData.numberOfSeats > 0 ? `(${fareData.numberOfSeats} seats)` : ''}</span>
+              <span>Base Price{fareData.numberOfSeats > 0 ? ` (${fareData.numberOfSeats} seats)` : ''}</span>
               <span>₹ {fareData.basePrice.toFixed(2)}</span>
             </div>
           )}
 
-          {/* Published Price - Main price from API */}
-          {fareData.publishedPrice > 0 && (
+          {/* Published Price - Main price from API - Show if different from base price or if base price is 0 */}
+          {fareData.publishedPrice > 0 && (fareData.publishedPrice !== fareData.basePrice || fareData.basePrice === 0) && (
             <div className="fare-row">
-              <span>Base Fare{fareData.numberOfSeats > 0 ? ` (${fareData.numberOfSeats} seats)` : ''}</span>
+              <span>Bus Fare{fareData.numberOfSeats > 0 ? ` (${fareData.numberOfSeats} seats)` : ''}</span>
               <span>₹ {fareData.publishedPrice.toFixed(2)}</span>
             </div>
           )}
 
-          {/* Service Charges - Always show */}
-          <div className="fare-row">
-            <span>Service Charges</span>
-            <span>₹ {fareData.serviceCharges.toFixed(2)}</span>
-          </div>
+          {/* Service Charges - Always show if greater than 0 */}
+          {fareData.serviceCharges > 0 && (
+            <div className="fare-row">
+              <span>Service Charges</span>
+              <span>₹ {fareData.serviceCharges.toFixed(2)}</span>
+            </div>
+          )}
 
-          {/* Taxes - Always show */}
-          <div className="fare-row">
-            <span>Tax</span>
-            <span>₹ {fareData.tax.toFixed(2)}</span>
-          </div>
+          {/* Taxes - Always show if greater than 0 */}
+          {fareData.tax > 0 && (
+            <div className="fare-row">
+              <span>Tax</span>
+              <span>₹ {fareData.tax.toFixed(2)}</span>
+            </div>
+          )}
 
-          {/* Other Charges - Always show */}
-          <div className="fare-row">
-            <span>Other Charges</span>
-            <span>₹ {fareData.otherCharges.toFixed(2)}</span>
-          </div>
+          {/* Other Charges - Always show if greater than 0 */}
+          {fareData.otherCharges > 0 && (
+            <div className="fare-row">
+              <span>Other Charges</span>
+              <span>₹ {fareData.otherCharges.toFixed(2)}</span>
+            </div>
+          )}
 
-          {/* GST - Always show total GST */}
-          <div className="fare-row">
-            <span>GST</span>
-            <span>₹ {fareData.gst.total.toFixed(2)}</span>
-          </div>
+          {/* Agent Commission - Always show if greater than 0 */}
+          {fareData.agentCommission > 0 && (
+            <div className="fare-row">
+              <span>Agent Commission</span>
+              <span>₹ {fareData.agentCommission.toFixed(2)}</span>
+            </div>
+          )}
 
-          {/* GST Breakdown - Show individual components only if they have values */}
+          {/* GST - Show total GST if greater than 0 */}
+          {fareData.gst.total > 0 && (
+            <div className="fare-row">
+              <span>
+                GST Total
+                {(fareData.gst.cgstRate > 0 || fareData.gst.sgstRate > 0 || fareData.gst.igstRate > 0) && 
+                  ` (${Math.max(fareData.gst.cgstRate, fareData.gst.sgstRate, fareData.gst.igstRate)}%)`
+                }
+              </span>
+              <span>₹ {fareData.gst.total.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* GST Breakdown - Always show individual components if they have values */}
           {fareData.gst.cgstAmount > 0 && (
             <div className="fare-row text-muted small ms-3">
-              <span>• CGST</span>
+              <span>• CGST ({fareData.gst.cgstRate}%)</span>
               <span>₹ {fareData.gst.cgstAmount.toFixed(2)}</span>
             </div>
           )}
 
           {fareData.gst.sgstAmount > 0 && (
             <div className="fare-row text-muted small ms-3">
-              <span>• SGST</span>
+              <span>• SGST ({fareData.gst.sgstRate}%)</span>
               <span>₹ {fareData.gst.sgstAmount.toFixed(2)}</span>
             </div>
           )}
 
           {fareData.gst.igstAmount > 0 && (
             <div className="fare-row text-muted small ms-3">
-              <span>• IGST</span>
+              <span>• IGST ({fareData.gst.igstRate > 0 ? fareData.gst.igstRate + '%' : 'Applied'})</span>
               <span>₹ {fareData.gst.igstAmount.toFixed(2)}</span>
             </div>
           )}
 
-          {/* TDS Deduction - Always show */}
-          <div className="fare-row">
-            <span>TDS (-)</span>
-            <span>- ₹ {fareData.tds.toFixed(2)}</span>
-          </div>
+          {/* Taxable Amount - Show prominently if available and greater than 0 */}
+          {fareData.gst.taxableAmount > 0 && (
+            <div className="fare-row text-info small">
+              <span>Taxable Amount</span>
+              <span>₹ {fareData.gst.taxableAmount.toFixed(2)}</span>
+            </div>
+          )}
 
-          {/* API Discount - Always show */}
-          <div className="fare-row">
-            <span>Discount (-)</span>
-            <span>- ₹ {fareData.discount.toFixed(2)}</span>
-          </div>
+          {/* TDS Deduction - Always show if greater than 0 */}
+          {fareData.tds > 0 && (
+            <div className="fare-row text-danger">
+              <span>TDS Deduction (-)</span>
+              <span>- ₹ {fareData.tds.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* API Discount - Always show if greater than 0 */}
+          {fareData.discount > 0 && (
+            <div className="fare-row text-success">
+              <span>Discount (-)</span>
+              <span>- ₹ {fareData.discount.toFixed(2)}</span>
+            </div>
+          )}
 
           <hr className="my-2" />
 
@@ -347,15 +400,16 @@ const BusFareSummary = ({
             <span>₹ {subtotal.toFixed(2)}</span>
           </div>
 
-          {/* Convenience Fee - Show only if commission is configured and greater than 0 */}
+          {/* Convenience Fee - Always show if commission is configured and greater than 0 */}
           {showVendorCommission && convenienceFee > 0 && (
-            <div className="fare-row">
-              <span>Convenience Fee</span>
-              <span>₹ {convenienceFee.toFixed(2)}</span>
-            </div>
+            <>
+              <div className="fare-row">
+                <span>Convenience Fee ({fareData.commissionPercentage}%)</span>
+                <span>₹ {convenienceFee.toFixed(2)}</span>
+              </div>
+              <hr className="my-2" />
+            </>
           )}
-
-          <hr className="my-2" />
 
           {/* Total Before Coupon */}
           <div className="fare-row fw-bold">
@@ -363,24 +417,26 @@ const BusFareSummary = ({
             <span>₹ {totalBeforeCoupon.toFixed(2)}</span>
           </div>
 
-          {/* Coupon Discount - Show only if applied */}
+          {/* Coupon Discount - Always show if applied */}
           {couponDiscount > 0 && appliedCouponData && (
-            <div className="fare-row text-success">
-              <span>
-                Coupon Discount (-)
-                <small className="text-muted d-block">{appliedCouponData.code}</small>
-              </span>
-              <span>- ₹ {couponDiscount.toFixed(2)}</span>
-            </div>
+            <>
+              <div className="fare-row text-success">
+                <span>
+                  Coupon Discount (-)
+                  <small className="text-muted d-block">{appliedCouponData.code}</small>
+                </span>
+                <span>- ₹ {couponDiscount.toFixed(2)}</span>
+              </div>
+              <hr className="my-2" />
+            </>
           )}
-
-          <hr className="my-2" />
 
           {/* Final Total */}
           <div className="fare-total">
             <span>Total Amount</span>
             <span>₹ {finalTotal.toFixed(2)}</span>
           </div>
+
         </Card.Body>
       </Card>
     </div>
