@@ -59,7 +59,7 @@ const BusBookingHistory = () => {
         const currentPage = getCurrentPage();
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-        
+
         return {
             paginatedBookings: bookings.slice(startIndex, endIndex),
             totalPages: Math.ceil(bookings.length / itemsPerPage),
@@ -721,13 +721,13 @@ const BusBookingHistory = () => {
     // Pagination Component
     const PaginationComponent = () => {
         const { totalPages, currentPage, totalItems } = getPaginatedBookings();
-        
+
         if (totalPages <= 1) return null;
 
         const getPageNumbers = () => {
             const pages = [];
             const maxVisiblePages = 5;
-            
+
             if (totalPages <= maxVisiblePages) {
                 for (let i = 1; i <= totalPages; i++) {
                     pages.push(i);
@@ -755,54 +755,51 @@ const BusBookingHistory = () => {
                     pages.push(totalPages);
                 }
             }
-            
+
             return pages;
         };
 
         return (
-            <div className="float-right flex-col sm:flex-row  px-6 py-4 border-t border-gray-200 bg-gray-50">              
-                
+            <div className="float-right flex-col sm:flex-row  px-6 py-4 border-t border-gray-200 bg-gray-50">
+
                 <div className="flex items-center space-x-2">
                     {/* Previous Button */}
                     <button
                         onClick={() => setCurrentPage(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                            currentPage === 1
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === 1
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                        }`}
+                            }`}
                     >
                         Previous
                     </button>
-                    
+
                     {/* Page Numbers */}
                     {getPageNumbers().map((page, index) => (
                         <button
                             key={index}
                             onClick={() => page !== '...' && setCurrentPage(page)}
                             disabled={page === '...'}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                                page === currentPage
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${page === currentPage
                                     ? 'bg-red-500 text-white'
                                     : page === '...'
-                                    ? 'text-gray-400 cursor-default'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                            }`}
+                                        ? 'text-gray-400 cursor-default'
+                                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                                }`}
                         >
                             {page}
                         </button>
                     ))}
-                    
+
                     {/* Next Button */}
                     <button
                         onClick={() => setCurrentPage(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                            currentPage === totalPages
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                        }`}
+                            }`}
                     >
                         Next
                     </button>
@@ -816,16 +813,26 @@ const BusBookingHistory = () => {
         if (!statusPopup.isOpen) return null;
 
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-100 p-4">
-                <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+                style={{ zIndex: 9999 }} // Using inline style for maximum z-index
+            >
+                <div
+                    className="bg-white rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto"
+                    style={{
+                        maxWidth: 'min(95vw, 1024px)', // Responsive max width
+                        zIndex: 10000 // Even higher for the content
+                    }}
+                >
                     {/* Header */}
-                    <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                    <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
                         <h3 className="text-xl font-bold text-gray-800">
                             Booking Status Details
                         </h3>
                         <button
                             onClick={closeStatusPopup}
-                            className="text-gray-400 hover:text-gray-600 text-2xl"
+                            className="text-gray-400 hover:text-gray-600 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                            title="Close"
                         >
                             ×
                         </button>
@@ -988,15 +995,14 @@ const BusBookingHistory = () => {
                         )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+                    {/* Footer - now sticky at bottom */}
+                    <div className="flex justify-end gap-3 p-6 border-t border-gray-200 sticky bottom-0 bg-white">
                         <button
                             onClick={closeStatusPopup}
                             className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
                         >
                             Close
                         </button>
-
                     </div>
                 </div>
             </div>
@@ -1188,7 +1194,7 @@ const BusBookingHistory = () => {
                         </tbody>
                     </table>
                 </div>
-                
+
                 {/* Pagination */}
                 <PaginationComponent />
             </div>

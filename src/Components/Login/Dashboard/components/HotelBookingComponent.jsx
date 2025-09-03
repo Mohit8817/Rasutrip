@@ -720,7 +720,7 @@ const HotelBookingHistory = () => {
         const getPageNumbers = () => {
             const pages = [];
             const maxVisiblePages = 5;
-            
+
             if (totalPages <= maxVisiblePages) {
                 // Show all pages if total pages are less than or equal to max visible
                 for (let i = 1; i <= totalPages; i++) {
@@ -750,7 +750,7 @@ const HotelBookingHistory = () => {
                     pages.push(totalPages);
                 }
             }
-            
+
             return pages;
         };
 
@@ -764,17 +764,16 @@ const HotelBookingHistory = () => {
                 <div className="text-sm text-gray-600 mb-4 sm:mb-0">
                     Showing {startItem} to {endItem} of {totalItems} bookings
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                     {/* Previous Button */}
                     <button
                         onClick={onPrevious}
                         disabled={currentPage === 1}
-                        className={`px-3 py-2 rounded-md text-sm font-medium ${
-                            currentPage === 1
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === 1
                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                        }`}
+                            }`}
                     >
                         Previous
                     </button>
@@ -786,13 +785,12 @@ const HotelBookingHistory = () => {
                                 key={index}
                                 onClick={() => page !== '...' && onPageChange(page)}
                                 disabled={page === '...'}
-                                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                                    page === currentPage
+                                className={`px-3 py-2 rounded-md text-sm font-medium ${page === currentPage
                                         ? 'bg-red-500 text-white'
                                         : page === '...'
-                                        ? 'text-gray-400 cursor-not-allowed'
-                                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                                }`}
+                                            ? 'text-gray-400 cursor-not-allowed'
+                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                    }`}
                             >
                                 {page}
                             </button>
@@ -803,11 +801,10 @@ const HotelBookingHistory = () => {
                     <button
                         onClick={onNext}
                         disabled={currentPage === totalPages}
-                        className={`px-3 py-2 rounded-md text-sm font-medium ${
-                            currentPage === totalPages
+                        className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === totalPages
                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                        }`}
+                            }`}
                     >
                         Next
                     </button>
@@ -815,22 +812,31 @@ const HotelBookingHistory = () => {
             </div>
         );
     };
-
     // Status Modal Component
     const StatusModal = ({ booking, statusData, isLoading, onClose }) => {
         if (!booking) return null;
 
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                    {/* Modal Header */}
-                    <div className="flex justify-between items-center p-6 border-b border-gray-200">
+            <div
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+                style={{ zIndex: 9999 }} // Using inline style for maximum z-index
+            >
+                <div
+                    className="bg-white rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto"
+                    style={{
+                        maxWidth: 'min(95vw, 1024px)', // Responsive max width
+                        zIndex: 10000 // Even higher for the content
+                    }}
+                >
+                    {/* Modal Header - now sticky */}
+                    <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
                         <h2 className="text-xl font-semibold text-gray-800">
-                            Booking Status Details
+                            Hotel Booking Status Details
                         </h2>
                         <button
                             onClick={onClose}
-                            className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                            className="text-gray-400 hover:text-gray-600 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                            title="Close"
                         >
                             ×
                         </button>
@@ -838,104 +844,226 @@ const HotelBookingHistory = () => {
 
                     {/* Modal Content */}
                     <div className="p-6">
-                        {/* Booking Info */}
-                        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                            <h3 className="font-semibold text-gray-800 mb-3">Hotel Booking Information</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <span className="font-medium text-gray-600">Booking ID:</span>
-                                    <span className="ml-2 font-mono text-gray-800">{booking.bookingId}</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium text-gray-600">Confirmation No:</span>
-                                    <span className="ml-2 font-mono text-gray-800">{booking.confirmationNo}</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium text-gray-600">Hotel Name:</span>
-                                    <span className="ml-2 text-gray-800">{booking.hotelName}</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium text-gray-600">City:</span>
-                                    <span className="ml-2 text-gray-800">{booking.city}</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium text-gray-600">Check-in:</span>
-                                    <span className="ml-2 text-gray-800">{formatDate(booking.checkInDate)}</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium text-gray-600">Check-out:</span>
-                                    <span className="ml-2 text-gray-800">{formatDate(booking.checkOutDate)}</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium text-gray-600">Lead Guest:</span>
-                                    <span className="ml-2 text-gray-800">{booking.leadGuestName}</span>
-                                </div>
-                                <div>
-                                    <span className="font-medium text-gray-600">Total Amount:</span>
-                                    <span className="ml-2 text-gray-800 font-medium">{formatAmount(booking.totalAmount)}</span>
-                                </div>
+                        {isLoading ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                                <p className="text-gray-600">Loading booking details...</p>
                             </div>
-                        </div>
-
-                        {/* Current Status Section */}
-                        <div className="mb-6">
-                            <h3 className="font-semibold text-gray-800 mb-3">Current Status</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                                    <h4 className="font-medium text-gray-700 mb-2">Booking Status</h4>
-                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(booking.bookingStatus)}`}>
-                                        {booking.bookingStatus}
-                                    </span>
-                                </div>
-                                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                                    <h4 className="font-medium text-gray-700 mb-2">Payment Status</h4>
-                                    <span className={`font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
-                                        {booking.paymentStatus}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>  
-
-                        {/* Timeline Section */}
-                        <div className="mb-6">
-                            <h3 className="font-semibold text-gray-800 mb-3">Booking Timeline</h3>
-                            <div className="space-y-3">
-                                <div className="flex items-center">
-                                    <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-                                    <div className="flex-1">
-                                        <div className="text-sm font-medium text-gray-800">Booking Created</div>
-                                        <div className="text-xs text-gray-500">{booking.createdAt}</div>
+                        ) : (
+                            <>
+                                {/* Booking Info */}
+                                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                    <h3 className="font-semibold text-gray-800 mb-3">Hotel Booking Information</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <span className="font-medium text-gray-600">Booking ID:</span>
+                                            <span className="ml-2 font-mono text-gray-800">{booking.bookingId}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">Confirmation No:</span>
+                                            <span className="ml-2 font-mono text-gray-800">{booking.confirmationNo}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">Hotel Name:</span>
+                                            <span className="ml-2 text-gray-800">{booking.hotelName}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">City:</span>
+                                            <span className="ml-2 text-gray-800">{booking.city}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">Room Type:</span>
+                                            <span className="ml-2 text-gray-800">{booking.roomType}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">Rooms/Guests:</span>
+                                            <span className="ml-2 text-gray-800">{booking.numberOfRooms} room(s), {booking.numberOfGuests} guest(s)</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">Check-in:</span>
+                                            <span className="ml-2 text-gray-800">{formatDate(booking.checkInDate)}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">Check-out:</span>
+                                            <span className="ml-2 text-gray-800">{formatDate(booking.checkOutDate)}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">Nights:</span>
+                                            <span className="ml-2 text-gray-800">{booking.nights} night(s)</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">Lead Guest:</span>
+                                            <span className="ml-2 text-gray-800">{booking.leadGuestName}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">Contact:</span>
+                                            <span className="ml-2 text-gray-800">{booking.contactNumber}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium text-gray-600">Total Amount:</span>
+                                            <span className="ml-2 text-gray-800 font-bold text-green-600">{formatAmount(booking.totalAmount)}</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {booking.bookingStatus === 'Confirmed' && (
-                                    <div className="flex items-center">
-                                        <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
-                                        <div className="flex-1">
-                                            <div className="text-sm font-medium text-gray-800">Booking Confirmed</div>
-                                            <div className="text-xs text-gray-500">Confirmation No: {booking.confirmationNo}</div>
+                                {/* Current Status Section */}
+                                <div className="mb-6">
+                                    <h3 className="font-semibold text-gray-800 mb-3">Current Status</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                            <h4 className="font-medium text-gray-700 mb-2">Booking Status</h4>
+                                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(booking.bookingStatus)}`}>
+                                                {booking.bookingStatus}
+                                            </span>
+                                        </div>
+                                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                            <h4 className="font-medium text-gray-700 mb-2">Payment Status</h4>
+                                            <span className={`font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
+                                                {booking.paymentStatus}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Real-Time Status Section */}
+                                {statusData && (
+                                    <div className="mb-6">
+                                        <div className="bg-blue-50 rounded-lg p-4">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="font-semibold text-gray-800">Real-Time Status</h3>
+                                                <button
+                                                    onClick={() => handleRealTimeCheck(booking)}
+                                                    className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                                                    disabled={isLoading}
+                                                >
+                                                    {isLoading ? 'Refreshing...' : 'Refresh Status'}
+                                                </button>
+                                            </div>
+
+                                            {statusData.success ? (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <span className="font-medium text-gray-600">Current Status:</span>
+                                                        <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(statusData.status)}`}>
+                                                            {statusData.status}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium text-gray-600">Last Updated:</span>
+                                                        <span className="ml-2 text-gray-800">
+                                                            {statusData.lastUpdated ? new Date(statusData.lastUpdated).toLocaleString('en-IN') : 'Just now'}
+                                                        </span>
+                                                    </div>
+                                                    {statusData.location && (
+                                                        <div>
+                                                            <span className="font-medium text-gray-600">Hotel Location:</span>
+                                                            <span className="ml-2 text-gray-800">{statusData.location}</span>
+                                                        </div>
+                                                    )}
+                                                    {statusData.checkInTime && (
+                                                        <div>
+                                                            <span className="font-medium text-gray-600">Check-in Time:</span>
+                                                            <span className="ml-2 text-gray-800">{statusData.checkInTime}</span>
+                                                        </div>
+                                                    )}
+                                                    {statusData.checkOutTime && (
+                                                        <div>
+                                                            <span className="font-medium text-gray-600">Check-out Time:</span>
+                                                            <span className="ml-2 text-gray-800">{statusData.checkOutTime}</span>
+                                                        </div>
+                                                    )}
+                                                    {statusData.roomNumber && (
+                                                        <div>
+                                                            <span className="font-medium text-gray-600">Room Number:</span>
+                                                            <span className="ml-2 text-gray-800">{statusData.roomNumber}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8">
+                                                    <p className="text-gray-500">Real-time status not available</p>
+                                                    <p className="text-sm text-gray-400 mt-1">
+                                                        {statusData.error || 'Status tracking may not be supported for this hotel booking'}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
 
-                                {statusData?.status && statusData.success && statusData.status !== booking.bookingStatus && (
-                                    <div className="flex items-center">
-                                        <div className={`w-3 h-3 rounded-full mr-3 ${statusData.status.toLowerCase().includes('check') ? 'bg-purple-500' : 'bg-orange-500'}`}></div>
-                                        <div className="flex-1">
-                                            <div className="text-sm font-medium text-gray-800">Real-time Status: {statusData.status}</div>
-                                            <div className="text-xs text-gray-500">Updated: {statusData.lastUpdated.toLocaleString('en-IN')}</div>
+                                {/* Timeline Section */}
+                                <div className="mb-6">
+                                    <h3 className="font-semibold text-gray-800 mb-3">Booking Timeline</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center">
+                                            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                                            <div className="flex-1">
+                                                <div className="text-sm font-medium text-gray-800">Booking Created</div>
+                                                <div className="text-xs text-gray-500">{booking.createdAt}</div>
+                                            </div>
+                                        </div>
+
+                                        {booking.bookingStatus === 'Confirmed' && (
+                                            <div className="flex items-center">
+                                                <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-medium text-gray-800">Booking Confirmed</div>
+                                                    <div className="text-xs text-gray-500">Confirmation No: {booking.confirmationNo}</div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {statusData?.status && statusData.success && statusData.status !== booking.bookingStatus && (
+                                            <div className="flex items-center">
+                                                <div className={`w-3 h-3 rounded-full mr-3 ${statusData.status.toLowerCase().includes('check') ? 'bg-purple-500' : 'bg-orange-500'}`}></div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-medium text-gray-800">Real-time Status: {statusData.status}</div>
+                                                    <div className="text-xs text-gray-500">Updated: {statusData.lastUpdated ? new Date(statusData.lastUpdated).toLocaleString('en-IN') : 'Just now'}</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Important Information */}
+                                <div className="bg-yellow-50 rounded-lg p-4">
+                                    <h4 className="text-lg font-semibold text-gray-800 mb-4">Important Information</h4>
+                                    <div className="space-y-3">
+                                        <div className="flex items-start">
+                                            <div className="text-yellow-500 mr-3 mt-1">ℹ️</div>
+                                            <div>
+                                                <p className="text-sm text-gray-700">
+                                                    <strong>Hotel Check-in:</strong> Please carry a valid ID along with your booking confirmation during check-in.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start">
+                                            <div className="text-blue-500 mr-3 mt-1">📱</div>
+                                            <div>
+                                                <p className="text-sm text-gray-700">
+                                                    <strong>Contact Support:</strong> For immediate assistance, please contact our support team with your booking ID.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start">
+                                            <div className="text-green-500 mr-3 mt-1">🏨</div>
+                                            <div>
+                                                <p className="text-sm text-gray-700">
+                                                    <strong>Hotel Policies:</strong> Check-in and check-out times may vary. Please verify with the hotel directly.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                )}
-                            </div>
-                        </div>
+                                </div>
+                            </>
+                        )}
                     </div>
 
-                    {/* Modal Footer */}
-                    <div className="flex justify-end px-6 py-4 bg-gray-50 border-t border-gray-200">
+                    {/* Modal Footer - now sticky at bottom */}
+                    <div className="flex justify-end px-6 py-4 bg-gray-50 border-t border-gray-200 sticky bottom-0">
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                            className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
                         >
                             Close
                         </button>
