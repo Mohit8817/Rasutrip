@@ -1068,7 +1068,7 @@ const BusBookingHistory = () => {
             `}
                     onClick={() => handleTabChange('upcoming')}
                 >
-                    Upcoming Trips
+                    Upcoming Bookings
                     {upcomingBookings.length > 0 && (
                         <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
                     ${bookingType === 'upcoming'

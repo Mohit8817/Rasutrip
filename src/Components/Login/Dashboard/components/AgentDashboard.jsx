@@ -143,7 +143,7 @@ const AgentDashboard = () => {
                         <p className="text-muted mb-0">
                             Welcome back, {user?.name || 'Agent'}! Here's your booking overview.
                         </p>
-                      
+
                     </Col>
 
                 </Row>
