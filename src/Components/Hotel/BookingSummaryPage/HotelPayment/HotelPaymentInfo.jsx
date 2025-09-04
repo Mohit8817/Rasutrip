@@ -52,7 +52,7 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
       finalCouponData = priceDetails.couponData;
     }
 
-    // Calculate discount if not already calculated
+    // Calculate discount if not already calculated and we have coupon data
     if (finalCouponData && finalCouponDiscount <= 0) {
       const baseFare = getBaseFareForCoupon();
 
@@ -80,7 +80,7 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
 
     return {
       couponData: finalCouponData,
-      couponDiscount: Math.max(0, finalCouponDiscount)
+      couponDiscount: Math.max(0, finalCouponDiscount) // Ensure non-negative
     };
   };
 
@@ -95,27 +95,30 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
       priceDetails?.baseFare || 0;
   };
 
-  // UPDATED: Enhanced price calculation with proper coupon handling
+  // Updated calculateFinalPrice function in HotelPaymentInfo.js
+
   const calculateFinalPrice = () => {
-    // Get coupon information
+    // Get coupon information first
     const { couponData: activeCoupon, couponDiscount: activeCouponDiscount } = getCouponData();
 
     // Get data from blocked room response if available
     const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
     const priceData = roomData?.Price || {};
 
-    // Use blocked room data first, then fallback to priceDetails
-    const {
-      baseFare = priceData.RoomPrice || priceDetails?.baseFare || 0,
-      publishedPrice = priceData.PublishedPrice || priceDetails?.publishedPrice || 0,
-      tax = priceData.Tax || priceDetails?.tax || 0,
-      discount = priceData.Discount || priceDetails?.discount || 0,
-      serviceCharges = priceData.ServiceCharges || priceDetails?.serviceCharges || 0,
-      otherCharges = priceData.OtherCharges || priceDetails?.otherCharges || 0,
-      agentCommission = priceData.AgentCommission || priceDetails?.agentCommission || 0,
-      tds = priceData.TDS || priceDetails?.tds || 0,
-      vendorCommissionPercentage = priceDetails?.vendorCommissionPercentage || 12,
-    } = priceDetails || {};
+    console.log("🏷️ Payment - blockedRoomData:", blockedRoomData);
+    console.log("🏷️ Payment - priceData:", priceData);
+    console.log("🏷️ Payment - Active Coupon:", activeCoupon);
+    console.log("🏷️ Payment - Coupon Discount:", activeCouponDiscount);
+
+    // Extract all price fields from blocked room API response (source of truth)
+    const roomPrice = priceData.RoomPrice || 0;
+    const publishedPrice = priceData.PublishedPrice || priceDetails?.baseFare || 0;
+    const tax = priceData.Tax || priceDetails?.tax || 0;
+    const discount = priceData.Discount || priceDetails?.discount || 0;
+    const serviceCharges = priceData.ServiceCharges || priceDetails?.serviceCharges || 0;
+    const otherCharges = priceData.OtherCharges || priceDetails?.otherCharges || 0;
+    const agentCommission = priceData.AgentCommission || 0;
+    const tds = priceData.TDS || 0;
 
     // GST data from blocked room response
     const gstData = priceData.GST || {};
@@ -129,41 +132,53 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
     // Use PublishedPrice as main price (this includes room price + tax)
     const actualBaseFare = publishedPrice;
 
-    // Calculate vendor commission on published price
-    const vendorCommissionAmount = (actualBaseFare * vendorCommissionPercentage) / 100;
+    // Calculate vendor commission if not available from API
+    const vendorCommissionPercentage = priceDetails?.vendorCommissionPercentage || 12;
+    const vendorCommissionAmount = agentCommission || (actualBaseFare * vendorCommissionPercentage) / 100;
 
-    // Calculate GST
-    let totalGST = 0;
-    if (cgstAmount > 0 || sgstAmount > 0 || igstAmount > 0) {
-      totalGST = cgstAmount + sgstAmount + igstAmount;
-    } else if (cgstRate > 0 || sgstRate > 0 || igstRate > 0) {
+    // Calculate total GST
+    let totalGST = cgstAmount + sgstAmount + igstAmount;
+    if (totalGST === 0 && (cgstRate > 0 || sgstRate > 0 || igstRate > 0)) {
       // Calculate GST on (published price + commission) if not provided
       const gstBase = actualBaseFare + vendorCommissionAmount;
       totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
     }
 
-    // ENHANCED: Use the calculated coupon discount
-    const couponDiscountAmount = activeCouponDiscount;
+    // STEP 1: Calculate subtotal with all charges BEFORE any discounts
+    const subtotalBeforeDiscounts = actualBaseFare + tax + serviceCharges + otherCharges + vendorCommissionAmount + totalGST + tds;
 
-    // Final amount customer pays WITH coupon discount
-    const subtotal = actualBaseFare + vendorCommissionAmount + totalGST - discount;
-    const customerTotal = Math.max(0, subtotal - couponDiscountAmount);
+    // STEP 2: Apply hotel discount first (if any)
+    const subtotalAfterHotelDiscount = subtotalBeforeDiscounts - discount;
 
-    console.log('Price Calculation Details:', {
-      actualBaseFare,
-      vendorCommissionAmount,
-      totalGST,
-      discount,
-      couponDiscountAmount,
-      subtotal,
-      customerTotal,
+    // STEP 3: Apply coupon discount to the final amount (AFTER hotel discount)
+    const couponDiscountAmount = activeCouponDiscount || 0;
+
+    // FIXED: Ensure coupon discount is properly applied
+    const finalAmountAfterCoupon = Math.max(0, subtotalAfterHotelDiscount - couponDiscountAmount);
+
+    // Final customer pays this amount
+    const customerTotal = finalAmountAfterCoupon;
+
+    console.log('💰 CORRECTED Price Calculation Details:', {
+      step1_subtotalBeforeDiscounts: subtotalBeforeDiscounts,
+      step2_hotelDiscount: discount,
+      step2_subtotalAfterHotelDiscount: subtotalAfterHotelDiscount,
+      step3_couponDiscount: couponDiscountAmount,
+      step3_finalAmountAfterCoupon: finalAmountAfterCoupon,
+      finalCustomerTotal: customerTotal,
       activeCoupon: activeCoupon?.code || activeCoupon?.couponCode || 'None'
     });
 
     return {
+      roomPrice,
       actualBaseFare,
+      tax,
+      serviceCharges,
+      otherCharges,
       vendorCommissionAmount,
       vendorCommissionPercentage,
+      agentCommission,
+      tds,
       totalGST,
       cgstAmount,
       sgstAmount,
@@ -172,21 +187,26 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
       sgstRate,
       igstRate,
       discount,
-      serviceCharges,
-      otherCharges,
       couponDiscount: couponDiscountAmount,
       couponData: activeCoupon,
-      subtotal,
-      roundedTotal: parseFloat(customerTotal.toFixed(2))
+      subtotalBeforeDiscounts,
+      subtotalAfterHotelDiscount,
+      // FIXED: Return the correct final amount
+      roundedTotal: parseFloat(customerTotal.toFixed(2)) // This is what customer actually pays
     };
   };
-
   const priceCalculation = calculateFinalPrice();
   const {
+    roomPrice,
     roundedTotal,
     actualBaseFare,
+    tax,
+    serviceCharges,
+    otherCharges,
     vendorCommissionAmount,
     vendorCommissionPercentage,
+    agentCommission,
+    tds,
     totalGST,
     cgstAmount,
     sgstAmount,
@@ -195,11 +215,10 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
     sgstRate,
     igstRate,
     discount,
-    serviceCharges,
-    otherCharges,
     couponDiscount: finalCouponDiscount,
     couponData: activeCoupon,
-    subtotal
+    subtotalBeforeDiscount,
+    subtotalAfterHotelDiscount
   } = priceCalculation;
 
   // Custom Loading Popup Component
@@ -274,7 +293,7 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
 
   const getLeadPassengerEmail = (formattedBookingData) => {
     const leadPassenger = getLeadPassenger(formattedBookingData);
-    return leadPassenger?.Email || "mohitverma8817@gmail.com";
+    return leadPassenger?.Email || '';
   };
 
   // ENHANCED: Generate unique ClientReferenceNo to prevent duplicates
@@ -488,8 +507,6 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
       } : null
     };
 
-    console.log('Final booking payload:', JSON.stringify(finalPayload, null, 2));
-    console.log(`Customer Pays: ₹${roundedTotal} (Original: ₹${subtotal}, Coupon Discount: ₹${finalCouponDiscount})`);
 
     return finalPayload;
   };
@@ -1049,7 +1066,7 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
                   {/* Show processing status */}
                   {(loading || bookingInProgress) && (
                     <div className="ms-auto">
-                      <div className="spinner-border spinner-border-sm text-danger" role="status">
+                      <div className="spinner-border spinner-border-sm" role="status">
                         <span className="visually-hidden">Processing...</span>
                       </div>
                     </div>
@@ -1068,40 +1085,63 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
                       <div><strong>Adults:</strong> {adultPassengers.length} (PAN Required)</div>
                     </div>
                     <div className="col-md-4 text-end">
-                      <div className="fs-4 fw-bold text-danger">₹ {roundedTotal.toLocaleString()}</div>
+                      {/* Final price  */}
+                      <div className="fs-5 fw-bold ">₹ {roundedTotal.toLocaleString()}</div>
                       {/* ENHANCED: Show coupon savings prominently */}
                       {finalCouponDiscount > 0 && (
-                        <div className="text-success small fw-bold">
-                          <i className="bi bi-tag-fill me-1"></i>
+                        <div className="small fw-bold">
                           Coupon Savings: ₹{finalCouponDiscount.toFixed(2)}
                         </div>
                       )}
                       {/* Show original price if coupon applied */}
                       {finalCouponDiscount > 0 && (
                         <div className="text-muted small text-decoration-line-through">
-                          Original: ₹{subtotal.toFixed(2)}
+                          Original: ₹{subtotalAfterHotelDiscount.toFixed(2)}
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* ENHANCED: Price Breakdown with Better Coupon Display */}
-                <div className="mb-4 p-3 border rounded">
+                {/* // Complete Price Breakdown Component for HotelPaymentInfo */}
+                {/* // Add this inside your Card.Body in HotelPaymentInfo component */}
+
+                {/* ENHANCED: Complete Price Breakdown with all fields from blocked room API */}
+
+                {/* <div className="mb-4 p-3 border rounded">
                   <h6 className="fw-bold mb-3">
+                    <i className="bi bi-receipt me-2"></i>
                     Price Breakdown
                   </h6>
 
-                  {/* Hotel Total */}
+                  {roomPrice > 0 && (
+                    <div className="row mb-2">
+                      <div className="col">
+                        Room Price
+                        <small className="text-muted d-block">Base room rate</small>
+                      </div>
+                      <div className="col text-end">₹ {roomPrice.toLocaleString()}</div>
+                    </div>
+                  )}
+
                   <div className="row mb-2">
                     <div className="col">
-                      Hotel Total
-                      <small className="text-muted d-block">Published price (Room + Hotel taxes)</small>
+                      Published Price
+                      <small className="text-muted d-block">Hotel published rate (includes basic taxes)</small>
                     </div>
                     <div className="col text-end fw-bold">₹ {actualBaseFare.toLocaleString()}</div>
                   </div>
 
-                  {/* Service Charges */}
+                  {tax > 0 && (
+                    <div className="row mb-2">
+                      <div className="col">
+                        Hotel Taxes
+                        <small className="text-muted d-block">Property taxes & fees</small>
+                      </div>
+                      <div className="col text-end">₹ {tax.toFixed(2)}</div>
+                    </div>
+                  )}
+
                   {serviceCharges > 0 && (
                     <div className="row mb-2">
                       <div className="col">
@@ -1112,7 +1152,6 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
                     </div>
                   )}
 
-                  {/* Other Charges */}
                   {otherCharges > 0 && (
                     <div className="row mb-2">
                       <div className="col">
@@ -1123,15 +1162,34 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
                     </div>
                   )}
 
-                  {/* Booking Fee */}
+                  {agentCommission > 0 && (
+                    <div className="row mb-2">
+                      <div className="col">
+                        Agent Commission
+                        <small className="text-muted d-block">Commission from API</small>
+                      </div>
+                      <div className="col text-end">₹ {agentCommission.toFixed(2)}</div>
+                    </div>
+                  )}
+
                   <div className="row mb-2">
                     <div className="col">
                       Booking Fee
+                      <small className="text-muted d-block">Platform charges ({vendorCommissionPercentage}%)</small>
                     </div>
-                    <div className="col text-end text-success fw-bold">₹ {vendorCommissionAmount.toFixed(2)}</div>
+                    <div className="col text-end text-primary fw-bold">₹ {vendorCommissionAmount.toFixed(2)}</div>
                   </div>
 
-                  {/* GST Breakdown */}
+                  {tds > 0 && (
+                    <div className="row mb-2">
+                      <div className="col">
+                        TDS
+                        <small className="text-muted d-block">Tax deducted at source</small>
+                      </div>
+                      <div className="col text-end text-info">₹ {tds.toFixed(2)}</div>
+                    </div>
+                  )}
+
                   {totalGST > 0 && (
                     <>
                       {cgstAmount > 0 && (
@@ -1164,7 +1222,6 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
                         </div>
                       )}
 
-                      {/* Show calculated GST if not provided in response */}
                       {(cgstAmount === 0 && sgstAmount === 0 && igstAmount === 0) && totalGST > 0 && (
                         <div className="row mb-2">
                           <div className="col">
@@ -1177,75 +1234,116 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
                     </>
                   )}
 
-                  {/* Regular Discount */}
+                 
+
                   {discount > 0 && (
                     <div className="row mb-2 text-success">
                       <div className="col">
-                        Discount Applied
-                        <small className="text-muted d-block">Hotel discount</small>
-                      </div>
-                      <div className="col text-end">- ₹ {discount.toFixed(2)}</div>
-                    </div>
-                  )}
-
-                  {/* Subtotal before coupon */}
-                  {finalCouponDiscount > 0 && (
-                    <div className="row mb-2 border-top pt-2">
-                      <div className="col fw-bold">Subtotal</div>
-                      <div className="col text-end fw-bold">₹ {subtotal.toFixed(2)}</div>
-                    </div>
-                  )}
-
-                  {/* ENHANCED: Coupon Discount with Better Styling */}
-                  {finalCouponDiscount > 0 && (
-                    <div className="row mb-2 text-success bg-success-subtle p-2 rounded">
-                      <div className="col">
                         <div className="d-flex align-items-center">
                           <i className="bi bi-tag-fill me-2 text-success"></i>
-                          <strong>Coupon Discount</strong>
+                          Hotel Discount
                         </div>
-                        {activeCoupon && (
-                          <small className="text-success d-block mt-1">
-                            <strong>Code: {activeCoupon.code || activeCoupon.couponCode}</strong>
-                            {(activeCoupon.discountType === 'percentage' || activeCoupon.type === 'PERCENTAGE')
-                              ? ` (${activeCoupon.discount || activeCoupon.value}% off)`
-                              : ' (Flat Discount)'}
-                          </small>
-                        )}
+                        <small className="text-muted d-block">Discount from hotel</small>
+                      </div>
+                      <div className="col text-end text-success fw-bold">- ₹ {discount.toFixed(2)}</div>
+                    </div>
+                  )}
+
+                  {finalCouponDiscount > 0 && (
+                    <div className="row mb-2 border-top pt-2">
+                      <div className="col fw-bold">
+                        Amount after hotel discount
+                      </div>
+                      <div className="col text-end fw-bold">₹ {subtotalAfterHotelDiscount.toFixed(2)}</div>
+                    </div>
+                  )}
+
+                  {finalCouponDiscount > 0 && (
+                    <div className="row mb-2 text-success bg-success-subtle p-3 rounded border border-success">
+                      <div className="col">
+                        <div className="d-flex align-items-center">
+                          <i className="bi bi-percent me-2 text-success fs-5"></i>
+                          <div>
+                            <strong className="text-success fs-6">Coupon Discount Applied!</strong>
+                            {activeCoupon && (
+                              <div className="mt-1">
+                                <span className="badge bg-success me-2">{activeCoupon.code || activeCoupon.couponCode}</span>
+                                <small className="text-success fw-bold">
+                                  {(activeCoupon.discountType === 'percentage' || activeCoupon.type === 'PERCENTAGE')
+                                    ? `${activeCoupon.discount || activeCoupon.value}% OFF`
+                                    : 'FLAT DISCOUNT'}
+                                </small>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <div className="col text-end">
-                        <strong className="text-success fs-5">- ₹ {finalCouponDiscount.toFixed(2)}</strong>
+                        <div className="text-success fw-bold fs-5">- ₹ {finalCouponDiscount.toFixed(2)}</div>
+                        <small className="text-success d-block">You Save!</small>
                       </div>
                     </div>
                   )}
 
-                  <hr />
-                  <div className="row fw-bold">
-                    <div className="col fs-5">Total Amount</div>
-                    <div className="col text-end text-danger fs-4">₹ {roundedTotal.toLocaleString()}</div>
+                  <hr className="my-3" />
+
+                  <div className="row fw-bold bg-light p-3 rounded">
+                    <div className="col">
+                      <div className="fs-5 text-dark">
+                        <i className="bi bi-wallet2 me-2"></i>
+                        Final Amount to Pay
+                      </div>
+                      {finalCouponDiscount > 0 && (
+                        <small className="text-success fw-bold d-block mt-1">
+                          <i className="bi bi-check-circle-fill me-1"></i>
+                          Total Savings: ₹{(discount + finalCouponDiscount).toFixed(2)}
+                        </small>
+                      )}
+                    </div>
+                    <div className="col text-end">
+                      <div className="text-danger fs-3 fw-bold">₹ {roundedTotal.toLocaleString()}</div>
+                      {finalCouponDiscount > 0 && (
+                        <div className="text-muted small text-decoration-line-through">
+                          Was: ₹{subtotalAfterHotelDiscount.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* ENHANCED: Show savings summary if coupon applied */}
                   {finalCouponDiscount > 0 && (
-                    <div className="text-center mt-3 p-2 bg-success-subtle rounded">
+                    <div className="text-center mt-3 p-3 bg-success-subtle rounded border border-success-subtle">
                       <div className="text-success fw-bold">
-                        <i className="bi bi-check-circle-fill me-2"></i>
-                        Congratulations! You saved ₹{finalCouponDiscount.toFixed(2)} with this coupon!
+                        <i className="bi bi-trophy-fill me-2"></i>
+                        Congratulations! You saved ₹{finalCouponDiscount.toFixed(2)} with your coupon!
                       </div>
                       {activeCoupon && (
-                        <small className="text-muted d-block mt-1">
-                          Coupon "{activeCoupon.code || activeCoupon.couponCode}" applied successfully
+                        <small className="text-muted d-block mt-2">
+                          Coupon "{activeCoupon.code || activeCoupon.couponCode}" has been successfully applied to your booking
                         </small>
                       )}
                     </div>
                   )}
-                </div>
 
-                {/* Lead guest info */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="mt-3 p-2 bg-info-subtle rounded">
+                      <small className="text-dark">
+                        <strong>Debug Price Calculation:</strong><br />
+                        Published: ₹{actualBaseFare} | Tax: ₹{tax} | Service: ₹{serviceCharges} |
+                        Other: ₹{otherCharges} | Platform Fee: ₹{vendorCommissionAmount} |
+                        GST: ₹{totalGST} | TDS: ₹{tds}<br />
+                        <strong>Hotel Discount:</strong> -₹{discount} |
+                        <strong>Coupon Discount:</strong> -₹{finalCouponDiscount} |
+                        <strong>Final:</strong> ₹{roundedTotal}
+                      </small>
+                    </div>
+                  )}
+                </div> */}
+
+
+                {/* Lead Guest Information */}
                 {leadPassenger && (
                   <div className="mb-4 p-3 border rounded">
                     <h6 className="fw-bold mb-2">
-                      <i className="bi bi-person-fill me-2"></i>
                       Lead Guest Information
                     </h6>
                     <div className="row">
@@ -1291,20 +1389,12 @@ const HotelPaymentInfo = ({ appliedCoupon, couponDiscount }) => {
                         {bookingInProgress ? 'Processing Booking...' : 'Loading Payment...'}
                       </>
                     ) : bookingProcessed ? (
-                      <>
-                        Booking Processed
-                      </>
+                      <>Booking Processed</>
                     ) : (
-                      <>
-                        Pay ₹{roundedTotal.toLocaleString()}
-                        {finalCouponDiscount > 0 && (
-                          <small className="d-block mt-1">
-                            (Saved ₹{finalCouponDiscount.toFixed(2)} with coupon)
-                          </small>
-                        )}
-                      </>
+                      <>Pay ₹{roundedTotal.toLocaleString()}</>
                     )}
                   </Button>
+
                 </div>
               </Card.Footer>
             </Card>

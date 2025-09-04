@@ -23,6 +23,11 @@ const BusBookingHistory = () => {
     const [debugInfo, setDebugInfo] = useState(null);
     const [downloadingInvoices, setDownloadingInvoices] = useState(new Set());
 
+    // Pagination states
+    const [currentPageUpcoming, setCurrentPageUpcoming] = useState(1);
+    const [currentPageAll, setCurrentPageAll] = useState(1);
+    const itemsPerPage = 10;
+
     // Real-time status states
     const [realTimeStatuses, setRealTimeStatuses] = useState({});
     const [loadingStatuses, setLoadingStatuses] = useState(new Set());
@@ -35,6 +40,39 @@ const BusBookingHistory = () => {
         data: null,
         error: null
     });
+
+    // Pagination helper functions
+    const getCurrentPage = () => {
+        return bookingType === 'upcoming' ? currentPageUpcoming : currentPageAll;
+    };
+
+    const setCurrentPage = (page) => {
+        if (bookingType === 'upcoming') {
+            setCurrentPageUpcoming(page);
+        } else {
+            setCurrentPageAll(page);
+        }
+    };
+
+    const getPaginatedBookings = () => {
+        const bookings = bookingType === 'upcoming' ? upcomingBookings : allBookings;
+        const currentPage = getCurrentPage();
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+
+        return {
+            paginatedBookings: bookings.slice(startIndex, endIndex),
+            totalPages: Math.ceil(bookings.length / itemsPerPage),
+            totalItems: bookings.length,
+            currentPage: currentPage
+        };
+    };
+
+    // Reset to first page when switching tabs
+    const handleTabChange = (newBookingType) => {
+        setBookingType(newBookingType);
+        // Don't reset page - keep user's position in each tab
+    };
 
     // Function to fetch detailed booking status for popup
     const fetchDetailedBookingStatus = async (booking) => {
@@ -159,10 +197,10 @@ const BusBookingHistory = () => {
 
     // Auto-fetch real-time status for all current bookings
     const autoFetchRealTimeStatus = async () => {
-        const currentBookings = getCurrentBookings();
+        const { paginatedBookings } = getPaginatedBookings();
 
-        // Only fetch for confirmed/active bookings
-        const activeBookings = currentBookings.filter(booking =>
+        // Only fetch for confirmed/active bookings on current page
+        const activeBookings = paginatedBookings.filter(booking =>
             booking.bookingStatus?.toLowerCase() === 'confirmed' ||
             booking.status?.toLowerCase() === 'confirmed'
         );
@@ -350,9 +388,6 @@ const BusBookingHistory = () => {
         return formattedBookings;
     };
 
-
-
-
     // Main function to load bookings using services
     const loadBookings = async () => {
         setLoading(true);
@@ -425,6 +460,10 @@ const BusBookingHistory = () => {
             setAllBookings([...allData]);
             setDebugInfo(debugData);
 
+            // Reset pagination to first page when data loads
+            setCurrentPageUpcoming(1);
+            setCurrentPageAll(1);
+
             // Auto-fetch real-time status after loading bookings
             setTimeout(() => {
                 autoFetchRealTimeStatus();
@@ -454,14 +493,14 @@ const BusBookingHistory = () => {
         loadBookings();
     }, [user]); // Re-load when user context changes
 
-    // Auto-refresh real-time status every 3 minutes
+    // Auto-refresh real-time status every 3 minutes for current page only
     useEffect(() => {
         const interval = setInterval(() => {
             autoFetchRealTimeStatus();
         }, 180000); // 3 minutes
 
         return () => clearInterval(interval);
-    }, [allBookings, upcomingBookings]);
+    }, [allBookings, upcomingBookings, getCurrentPage()]);
 
     // Enhanced Invoice download function with better error handling
     const handleDownloadInvoice = async (booking) => {
@@ -549,16 +588,6 @@ const BusBookingHistory = () => {
             });
         }
     };
-
-    // Get current bookings based on selected type
-    const getCurrentBookings = () => {
-        if (bookingType === 'upcoming') {
-            return upcomingBookings;
-        }
-        return allBookings;
-    };
-
-    const currentBookings = getCurrentBookings();
 
     // Format date for display
     const formatDate = (dateString) => {
@@ -689,21 +718,121 @@ const BusBookingHistory = () => {
         );
     };
 
+    // Pagination Component
+    const PaginationComponent = () => {
+        const { totalPages, currentPage, totalItems } = getPaginatedBookings();
+
+        if (totalPages <= 1) return null;
+
+        const getPageNumbers = () => {
+            const pages = [];
+            const maxVisiblePages = 5;
+
+            if (totalPages <= maxVisiblePages) {
+                for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                }
+            } else {
+                if (currentPage <= 3) {
+                    for (let i = 1; i <= 4; i++) {
+                        pages.push(i);
+                    }
+                    pages.push('...');
+                    pages.push(totalPages);
+                } else if (currentPage >= totalPages - 2) {
+                    pages.push(1);
+                    pages.push('...');
+                    for (let i = totalPages - 3; i <= totalPages; i++) {
+                        pages.push(i);
+                    }
+                } else {
+                    pages.push(1);
+                    pages.push('...');
+                    for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                        pages.push(i);
+                    }
+                    pages.push('...');
+                    pages.push(totalPages);
+                }
+            }
+
+            return pages;
+        };
+
+        return (
+            <div className="float-right flex-col sm:flex-row  px-6 py-4 border-t border-gray-200 bg-gray-50">
+
+                <div className="flex items-center space-x-2">
+                    {/* Previous Button */}
+                    <button
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === 1
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                            }`}
+                    >
+                        Previous
+                    </button>
+
+                    {/* Page Numbers */}
+                    {getPageNumbers().map((page, index) => (
+                        <button
+                            key={index}
+                            onClick={() => page !== '...' && setCurrentPage(page)}
+                            disabled={page === '...'}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${page === currentPage
+                                ? 'bg-red-500 text-white'
+                                : page === '...'
+                                    ? 'text-gray-400 cursor-default'
+                                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                                }`}
+                        >
+                            {page}
+                        </button>
+                    ))}
+
+                    {/* Next Button */}
+                    <button
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                            }`}
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     // Status Popup Component
     const StatusPopup = () => {
         if (!statusPopup.isOpen) return null;
 
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+                style={{ zIndex: 9999 }} // Using inline style for maximum z-index
+            >
+                <div
+                    className="bg-white rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto"
+                    style={{
+                        maxWidth: 'min(95vw, 1024px)', // Responsive max width
+                        zIndex: 10000 // Even higher for the content
+                    }}
+                >
                     {/* Header */}
-                    <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                    <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
                         <h3 className="text-xl font-bold text-gray-800">
                             Booking Status Details
                         </h3>
                         <button
                             onClick={closeStatusPopup}
-                            className="text-gray-400 hover:text-gray-600 text-2xl"
+                            className="text-gray-400 hover:text-gray-600 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                            title="Close"
                         >
                             ×
                         </button>
@@ -866,15 +995,14 @@ const BusBookingHistory = () => {
                         )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+                    {/* Footer - now sticky at bottom */}
+                    <div className="flex justify-end gap-3 p-6 border-t border-gray-200 sticky bottom-0 bg-white">
                         <button
                             onClick={closeStatusPopup}
                             className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
                         >
                             Close
                         </button>
-
                     </div>
                 </div>
             </div>
@@ -893,6 +1021,8 @@ const BusBookingHistory = () => {
             </div>
         );
     }
+
+    const { paginatedBookings, totalPages, totalItems, currentPage } = getPaginatedBookings();
 
     return (
         <div className="bg-white rounded-lg shadow p-6">
@@ -933,19 +1063,19 @@ const BusBookingHistory = () => {
             <div className="flex w-full mb-6 bg-gray-50 p-2 shadow-sm">
                 <button
                     className={`flex-1 text-center rounded-lg transition-all duration-300 font-semibold text-sm
-            ${bookingType === 'upcoming'
+                ${bookingType === 'upcoming'
                             ? 'bg-red-500 text-white shadow-sm'
                             : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
-        `}
-                    onClick={() => setBookingType('upcoming')}
+            `}
+                    onClick={() => handleTabChange('upcoming')}
                 >
                     Upcoming Trips
                     {upcomingBookings.length > 0 && (
                         <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
-                ${bookingType === 'upcoming'
+                    ${bookingType === 'upcoming'
                                 ? 'bg-white text-red-500'
                                 : 'bg-red-100 text-red-600'}
-            `}>
+                `}>
                             {upcomingBookings.length}
                         </span>
                     )}
@@ -953,19 +1083,19 @@ const BusBookingHistory = () => {
 
                 <button
                     className={`flex-1 text-center px-6 py-2 rounded-lg transition-all duration-300 font-semibold text-sm
-            ${bookingType === 'all'
+                ${bookingType === 'all'
                             ? 'bg-red-500 text-white shadow-md'
                             : 'bg-transparent text-gray-500 hover:text-gray-700 hover:bg-white/70'}
-        `}
-                    onClick={() => setBookingType('all')}
+            `}
+                    onClick={() => handleTabChange('all')}
                 >
                     All Bookings
                     {allBookings.length > 0 && (
                         <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
-                ${bookingType === 'all'
+                    ${bookingType === 'all'
                                 ? 'bg-white text-red-500'
                                 : 'bg-red-100 text-red-600'}
-            `}>
+                `}>
                             {allBookings.length}
                         </span>
                     )}
@@ -992,7 +1122,7 @@ const BusBookingHistory = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-gray-50">
-                            {currentBookings.length === 0 ? (
+                            {paginatedBookings.length === 0 ? (
                                 <tr>
                                     <td colSpan="11" className="px-4 py-12 text-center">
                                         <div className="flex flex-col items-center">
@@ -1019,7 +1149,7 @@ const BusBookingHistory = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                currentBookings.map((booking, index) => (
+                                paginatedBookings.map((booking, index) => (
                                     <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
                                         <td className="px-4 py-3 text-sm text-gray-700">{booking.bookingId}</td>
                                         <td className="px-4 py-3 text-sm text-gray-700">
@@ -1064,6 +1194,9 @@ const BusBookingHistory = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination */}
+                <PaginationComponent />
             </div>
 
             {/* Status Popup */}

@@ -1,4 +1,4 @@
-// src/components/Bus/BusPaymentInfo.js - ENHANCED VERSION with Proper Fare Calculation
+// src/components/Bus/BusPaymentInfo.js - ENHANCED VERSION with Coupon Integration
 
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Alert, Modal } from 'react-bootstrap';
@@ -7,7 +7,7 @@ import { FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { createBusPaymentOrder, validateBusPayment, bookBus, downloadBusInvoice } from '../../APIS/BusApi/BusApis';
 
-const BusPaymentInfo = () => {
+const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
     const { state } = useLocation();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -43,13 +43,13 @@ const BusPaymentInfo = () => {
         selectedDroppingPoint = {},
         boardingPoint = {},
         droppingPoint = {},
-        couponDiscount = 0,
-        vendorCommission = 10.97
+        vendorCommission = ''
     } = state || {};
 
-    // Enhanced fare calculation function - similar to BusFareSummary
+    // Enhanced fare calculation function with coupon discount integration
     const calculateFareBreakdown = () => {
         console.log("Calculating fare breakdown from state:", state);
+        console.log("Coupon discount from props:", couponDiscount);
 
         // Initialize fare calculation object
         const fareData = {
@@ -69,7 +69,8 @@ const BusPaymentInfo = () => {
                 total: 0
             },
             commissionPercentage: 0,
-            numberOfSeats: selectedSeats?.length || 0
+            numberOfSeats: selectedSeats?.length || 0,
+            couponDiscount: Number(couponDiscount || 0)
         };
 
         // Method 1: Calculate from selected seats (most accurate)
@@ -193,7 +194,7 @@ const BusPaymentInfo = () => {
             0
         );
 
-        console.log("Final calculated fare data:", fareData);
+        console.log("Final calculated fare data with coupon:", fareData);
         return fareData;
     };
 
@@ -204,7 +205,7 @@ const BusPaymentInfo = () => {
     const convenienceFee = fareBreakdown.commissionPercentage > 0 ?
         (fareBreakdown.publishedPrice * fareBreakdown.commissionPercentage) / 100 : 0;
 
-    // Calculate subtotal (before convenience fee)
+    // Calculate subtotal (before convenience fee and coupon discount)
     const subtotal = fareBreakdown.publishedPrice +
         fareBreakdown.serviceCharges +
         fareBreakdown.tax +
@@ -212,13 +213,15 @@ const BusPaymentInfo = () => {
         fareBreakdown.gst.total +
         fareBreakdown.agentCommission -
         fareBreakdown.discount -
-        fareBreakdown.tds +
-        (couponDiscount ? -couponDiscount : 0);
+        fareBreakdown.tds;
 
-    // Calculate final amount
-    const finalAmount = (subtotal + convenienceFee).toFixed(2);
+    // Add convenience fee
+    const totalBeforeCoupon = subtotal + convenienceFee;
+    
+    // Apply coupon discount to get final amount
+    const finalAmount = Math.max(0, totalBeforeCoupon - fareBreakdown.couponDiscount).toFixed(2);
 
-    // ✅ Enhanced BookingId validation function
+    // BookingId validation function
     const isValidBookingId = (id) => {
         if (id === null || id === undefined || id === 'undefined' || id === 'null') {
             return false;
@@ -233,10 +236,10 @@ const BusPaymentInfo = () => {
         return !isNaN(numericValue) && numericValue > 0 && idString.length >= 1 && idString.length <= 20;
     };
 
-    // ✅ ENHANCED: BookingId extraction with comprehensive search
+    // ENHANCED: BookingId extraction with comprehensive search
     const extractBookingIdFromResponse = (response) => {
-        console.log('🔍 EXTRACTING BOOKING ID FROM RESPONSE:');
-        console.log('📊 Full Response:', JSON.stringify(response, null, 2));
+        console.log('Extracting BookingId from response:');
+        console.log('Full Response:', JSON.stringify(response, null, 2));
 
         const possiblePaths = [
             response?.BookingId,
@@ -266,19 +269,19 @@ const BusPaymentInfo = () => {
             Array.isArray(response?.data) ? response.data[0]?.BookingId : null,
         ];
 
-        console.log('🎯 Checking possible BookingId locations:', possiblePaths);
+        console.log('Checking possible BookingId locations:', possiblePaths);
 
         for (let i = 0; i < possiblePaths.length; i++) {
             const candidateId = possiblePaths[i];
-            console.log(`🔎 Checking path ${i}: ${candidateId} (type: ${typeof candidateId})`);
+            console.log(`Checking path ${i}: ${candidateId} (type: ${typeof candidateId})`);
 
             if (isValidBookingId(candidateId)) {
-                console.log(`✅ FOUND VALID BOOKING ID: ${candidateId}`);
+                console.log(`FOUND VALID BOOKING ID: ${candidateId}`);
                 return String(candidateId);
             }
         }
 
-        console.log('⚠️ No direct BookingId found, searching for numeric values...');
+        console.log('No direct BookingId found, searching for numeric values...');
 
         const searchForNumericIds = (obj, path = '') => {
             if (!obj || typeof obj !== 'object') return null;
@@ -287,9 +290,9 @@ const BusPaymentInfo = () => {
                 const currentPath = path ? `${path}.${key}` : key;
 
                 if (typeof value === 'number' && value > 0 && value < 999999) {
-                    console.log(`🔢 Found numeric value at ${currentPath}: ${value}`);
+                    console.log(`Found numeric value at ${currentPath}: ${value}`);
                     if (key.toLowerCase().includes('id') || key.toLowerCase().includes('booking')) {
-                        console.log(`✅ POTENTIAL BOOKING ID FOUND: ${value} at ${currentPath}`);
+                        console.log(`POTENTIAL BOOKING ID FOUND: ${value} at ${currentPath}`);
                         return String(value);
                     }
                 }
@@ -304,29 +307,29 @@ const BusPaymentInfo = () => {
 
         const numericId = searchForNumericIds(response);
         if (numericId) {
-            console.log(`✅ FOUND NUMERIC ID: ${numericId}`);
+            console.log(`FOUND NUMERIC ID: ${numericId}`);
             return numericId;
         }
 
-        console.error('❌ NO VALID BOOKING ID FOUND IN RESPONSE');
+        console.error('NO VALID BOOKING ID FOUND IN RESPONSE');
         return null;
     };
 
-    // ✅ NEW: Send Invoice Email Function
+    // NEW: Send Invoice Email Function
     const sendInvoiceEmail = async (bookingId, searchTokenId, userEmail) => {
         try {
-            console.log('📧 Sending invoice email...');
+            console.log('Sending invoice email...');
             setLoadingStep('Sending invoice to your email...');
 
             if (!bookingId || !isValidBookingId(bookingId)) {
-                console.error('❌ Invalid booking ID for invoice:', bookingId);
-                console.warn('⚠️ Skipping invoice email due to invalid booking ID');
+                console.error('Invalid booking ID for invoice:', bookingId);
+                console.warn('Skipping invoice email due to invalid booking ID');
                 return false;
             }
 
             if (!userEmail || !userEmail.includes('@')) {
-                console.error('❌ Invalid email for invoice:', userEmail);
-                console.warn('⚠️ Skipping invoice email due to invalid email address');
+                console.error('Invalid email for invoice:', userEmail);
+                console.warn('Skipping invoice email due to invalid email address');
                 return false;
             }
 
@@ -337,12 +340,12 @@ const BusPaymentInfo = () => {
                 receiverEmail: userEmail
             };
 
-            console.log('📤 Invoice email payload:', invoiceData);
+            console.log('Invoice email payload:', invoiceData);
 
             const invoiceResult = await downloadBusInvoice(invoiceData);
-            console.log('✅ Invoice email sent successfully:', invoiceResult);
+            console.log('Invoice email sent successfully:', invoiceResult);
 
-            toast.success('📧 Invoice sent to your email!', {
+            toast.success('Invoice sent to your email!', {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -353,9 +356,9 @@ const BusPaymentInfo = () => {
 
             return true;
         } catch (error) {
-            console.error('❌ Invoice email failed:', error);
+            console.error('Invoice email failed:', error);
 
-            toast.warn('⚠️ Invoice email failed. You can contact support for invoice.', {
+            toast.warn('Invoice email failed. You can contact support for invoice.', {
                 position: "top-right",
                 autoClose: 5000,
                 hideProgressBar: false,
@@ -368,7 +371,7 @@ const BusPaymentInfo = () => {
         }
     };
 
-    // ✅ Load Razorpay script dynamically
+    // Load Razorpay script dynamically
     const loadRazorpayScript = () =>
         new Promise((resolve) => {
             if (window.Razorpay) {
@@ -383,7 +386,7 @@ const BusPaymentInfo = () => {
             document.body.appendChild(script);
         });
 
-    // ✅ Enhanced API error handler
+    // Enhanced API error handler
     const handleApiError = (error, context = 'API') => {
         let errorMessage = `${context} failed. Please try again.`;
         let errorDetails = null;
@@ -445,7 +448,7 @@ const BusPaymentInfo = () => {
         return { message: errorMessage, details: errorDetails };
     };
 
-    // ✅ Show error toast function
+    // Show error toast function
     const showErrorToast = (message, additionalInfo = '') => {
         const toastMessage = additionalInfo ? `${message}\n${additionalInfo}` : message;
 
@@ -463,7 +466,7 @@ const BusPaymentInfo = () => {
         });
     };
 
-    // ✅ Show success toast function
+    // Show success toast function
     const showSuccessToast = (message) => {
         toast.success(message, {
             position: "top-right",
@@ -475,7 +478,7 @@ const BusPaymentInfo = () => {
         });
     };
 
-    // ✅ Helper function to get valid address
+    // Helper function to get valid address
     const getValidAddress = (passenger, contactData, fromCity, toCity) => {
         if (passenger?.address && passenger.address.trim()) {
             return passenger.address.trim();
@@ -488,12 +491,12 @@ const BusPaymentInfo = () => {
         return `${fromCity || 'Delhi'}, India`;
     };
 
-    // ✅ ENHANCED: Seat name extraction function with comprehensive fallback
+    // ENHANCED: Seat name extraction function with comprehensive fallback
     const extractSeatName = (seat, index) => {
-        debugLog(`🪑 Raw seat data for index ${index}:`, seat);
+        debugLog(`Raw seat data for index ${index}:`, seat);
 
         if (!seat) {
-            console.warn(`⚠️ No seat data for index ${index}, using fallback`);
+            console.warn(`No seat data for index ${index}, using fallback`);
             return `S${index + 1}`;
         }
 
@@ -505,25 +508,25 @@ const BusPaymentInfo = () => {
             seat.number ||
             seat;
 
-        debugLog(`🔍 Extracted seat name: "${seatName}" (type: ${typeof seatName})`);
+        debugLog(`Extracted seat name: "${seatName}" (type: ${typeof seatName})`);
 
         if (typeof seatName === 'string' && seatName.trim()) {
             const trimmedSeat = seatName.trim();
 
             if (/^[A-Z]\d+$|^\d+[A-Z]$|^[A-Z]\d+[A-Z]$|^[0-9]+$/.test(trimmedSeat)) {
-                debugLog(`✅ Valid seat format found: "${trimmedSeat}"`);
+                debugLog(`Valid seat format found: "${trimmedSeat}"`);
                 return trimmedSeat;
             }
 
             if (/[A-Za-z0-9]/.test(trimmedSeat)) {
-                debugLog(`✅ Alphanumeric seat name: "${trimmedSeat}"`);
+                debugLog(`Alphanumeric seat name: "${trimmedSeat}"`);
                 return trimmedSeat;
             }
         }
 
         if (typeof seatName === 'number' && !isNaN(seatName)) {
             const numSeat = seatName.toString();
-            debugLog(`✅ Number converted to string: "${numSeat}"`);
+            debugLog(`Number converted to string: "${numSeat}"`);
             return numSeat;
         }
 
@@ -531,17 +534,17 @@ const BusPaymentInfo = () => {
             const numberMatch = seatName.match(/\d+/);
             if (numberMatch) {
                 const extractedNumber = numberMatch[0];
-                debugLog(`📊 Extracted number from string: "${extractedNumber}"`);
+                debugLog(`Extracted number from string: "${extractedNumber}"`);
                 return extractedNumber;
             }
         }
 
         const fallbackSeat = `S${index + 1}`;
-        console.warn(`⚠️ Using fallback seat name: "${fallbackSeat}"`);
+        console.warn(`Using fallback seat name: "${fallbackSeat}"`);
         return fallbackSeat;
     };
 
-    // ✅ Format bus order data
+    // Format bus order data
     const formatBusOrderData = (bookingState, amount) => ({
         amount: parseFloat(amount),
         currency: 'INR',
@@ -566,23 +569,23 @@ const BusPaymentInfo = () => {
         }
     });
 
-    // ✅ ENHANCED: Format validate payment data with comprehensive validation
+    // ENHANCED: Format validate payment data with comprehensive validation and coupon discount
     const formatValidatePaymentData = (bookingState, paymentResponse, orderData) => {
-        console.log('🎫 Formatting validate payment data...');
-        console.log('🪑 Available seats:', bookingState.selectedSeats);
-        console.log('👥 Passenger count:', bookingState.passengerData?.length);
+        console.log('Formatting validate payment data with coupon...');
+        console.log('Available seats:', bookingState.selectedSeats);
+        console.log('Passenger count:', bookingState.passengerData?.length);
 
         const passengers = bookingState.passengerData?.map((passenger, index) => {
             const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
 
-            console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}"`);
+            console.log(`Final seat assignment for passenger ${index + 1}: "${seatName}"`);
 
             const validAddress = getValidAddress(passenger, bookingState.contactData, bookingState.fromCity, bookingState.toCity);
 
             const emailAddress = bookingState.contactData?.email || passenger.email || '';
             const phoneNumber = bookingState.contactData?.mobile || passenger.phone || '';
 
-            debugLog(`📧 Contact info for passenger ${index + 1}:`, {
+            debugLog(`Contact info for passenger ${index + 1}:`, {
                 email: emailAddress,
                 phone: phoneNumber,
                 isLead: index === 0
@@ -625,27 +628,27 @@ const BusPaymentInfo = () => {
                 SearchTokenId: bookingState.searchTokenId ||
                     bookingState.bus?.SearchTokenId ||
                     "",
-                CouponDiscount: bookingState.couponDiscount || 0,
+                CouponDiscount: fareBreakdown.couponDiscount || 0,
                 Passenger: passengers
             }
         };
 
-        console.log('📤 Final validation data:', JSON.stringify(validationData, null, 2));
-        console.log('🪑 Seat names in validation:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName })));
+        console.log('Final validation data:', JSON.stringify(validationData, null, 2));
+        console.log('Seat names in validation:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName })));
 
         return validationData;
     };
 
-    // ✅ ENHANCED: Format booking data with comprehensive validation
+    // ENHANCED: Format booking data with comprehensive validation and coupon discount
     const formatBookingData = (bookingState) => {
-        console.log('🎫 Formatting booking data...');
-        console.log('🪑 Available seats:', bookingState.selectedSeats);
-        console.log('👥 Passenger count:', bookingState.passengerData?.length);
+        console.log('Formatting booking data with coupon...');
+        console.log('Available seats:', bookingState.selectedSeats);
+        console.log('Passenger count:', bookingState.passengerData?.length);
 
         const passengers = bookingState.passengerData?.map((passenger, index) => {
             const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
 
-            console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}"`);
+            console.log(`Final seat assignment for passenger ${index + 1}: "${seatName}"`);
 
             const validAddress = getValidAddress(passenger, bookingState.contactData, bookingState.fromCity, bookingState.toCity);
 
@@ -675,17 +678,17 @@ const BusPaymentInfo = () => {
             BoardingPointId: bookingState.selectedBoardingPoint?.BoardingPointId || bookingState.boardingPoint?.BoardingPointId || bookingState.boardingPoint?.id || 1,
             DroppingPointId: bookingState.selectedDroppingPoint?.DroppingPointId || bookingState.droppingPoint?.DroppingPointId || bookingState.droppingPoint?.id || 1,
             vendorCommission: bookingState.vendorCommission || vendorCommission,
-            CouponDiscount: bookingState.couponDiscount || 0,
+            CouponDiscount: fareBreakdown.couponDiscount || 0,
             Passenger: passengers
         };
 
-        console.log('📤 Final booking data:', JSON.stringify(bookingData, null, 2));
-        console.log('🪑 Seat names in booking:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName })));
+        console.log('Final booking data:', JSON.stringify(bookingData, null, 2));
+        console.log('Seat names in booking:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName })));
 
         return bookingData;
     };
 
-    // ✅ Enhanced Razorpay options with better error handling
+    // Enhanced Razorpay options with better error handling
     const getRazorpayOptions = (orderId, orderAmount) => ({
         key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_glwdvx2PlFDStN',
         amount: orderAmount * 100,
@@ -712,23 +715,23 @@ const BusPaymentInfo = () => {
             ondismiss: function () {
                 setLoading(false);
                 setLoadingStep('');
-                showErrorToast('⚠️ Payment Cancelled', 'Payment was cancelled by user');
+                showErrorToast('Payment Cancelled', 'Payment was cancelled by user');
             }
         },
     });
 
-    // ✅ ENHANCED: Payment handler with invoice email integration
+    // ENHANCED: Payment handler with invoice email integration
     const handlePayment = async () => {
         setError(null);
         setLoading(true);
         setLoadingStep('Initializing payment gateway...');
 
         try {
-            console.log('🚀 Starting bus payment process...');
-            debugLog('🪑 Selected seats debug:', selectedSeats);
-            debugLog('👥 Passenger data debug:', passengerData);
+            console.log('Starting bus payment process...');
+            debugLog('Selected seats debug:', selectedSeats);
+            debugLog('Passenger data debug:', passengerData);
 
-            // ✅ Load Razorpay script
+            // Load Razorpay script
             setLoadingStep('Loading payment system...');
             const razorpayLoaded = await loadRazorpayScript();
             if (!razorpayLoaded) {
@@ -740,15 +743,15 @@ const BusPaymentInfo = () => {
                 return;
             }
 
-            // ✅ Create payment order
+            // Create payment order
             setLoadingStep('Creating payment order...');
             const orderData = formatBusOrderData(state, finalAmount);
-            console.log('📦 Creating payment order with data:', orderData);
+            console.log('Creating payment order with data:', orderData);
 
             const orderResponse = await createBusPaymentOrder(orderData);
-            console.log('📦 Order response received:', orderResponse);
+            console.log('Order response received:', orderResponse);
 
-            // ✅ Enhanced order ID extraction
+            // Enhanced order ID extraction
             let orderId, orderAmount, orderObject;
 
             if (orderResponse?.data?.order?.id) {
@@ -768,7 +771,7 @@ const BusPaymentInfo = () => {
                 orderId = orderResponse.id;
                 orderAmount = orderResponse.amount;
             } else {
-                console.error('❌ Unexpected order response structure:', {
+                console.error('Unexpected order response structure:', {
                     responseKeys: Object.keys(orderResponse || {}),
                     fullResponse: orderResponse
                 });
@@ -776,29 +779,29 @@ const BusPaymentInfo = () => {
             }
 
             if (!orderId) {
-                console.error('❌ No order ID found in response:', orderResponse);
+                console.error('No order ID found in response:', orderResponse);
                 throw new Error('Failed to create payment order - No order ID received');
             }
 
             if (!orderAmount) {
-                console.warn('⚠️ No amount in order response, using calculated amount:', finalAmount);
+                console.warn('No amount in order response, using calculated amount:', finalAmount);
                 orderAmount = parseFloat(finalAmount);
             }
 
-            console.log('✅ Payment order created:', { orderId, orderAmount });
+            console.log('Payment order created:', { orderId, orderAmount });
             setLoadingStep('Opening payment gateway...');
 
-            // ✅ ENHANCED: Success handler with invoice email integration
+            // ENHANCED: Success handler with invoice email integration
             const handleSuccess = async (response) => {
                 try {
-                    console.log('✅ Payment successful, validating...', response);
+                    console.log('Payment successful, validating...', response);
                     setLoadingStep('Validating payment...');
 
                     const validateData = formatValidatePaymentData(state, response, orderObject);
-                    console.log('📤 Validation data being sent:', validateData);
+                    console.log('Validation data being sent:', validateData);
 
                     const validationResult = await validateBusPayment(validateData);
-                    console.log('✅ Payment validation result:', validationResult);
+                    console.log('Payment validation result:', validationResult);
 
                     const isValidationSuccessful =
                         validationResult?.message === 'Payment verified successfully' ||
@@ -807,50 +810,50 @@ const BusPaymentInfo = () => {
                         validationResult?.success === true;
 
                     if (isValidationSuccessful) {
-                        // ✅ Proceed to book bus after successful validation
-                        console.log('🎫 Proceeding to book bus...');
+                        // Proceed to book bus after successful validation
+                        console.log('Proceeding to book bus...');
                         setLoadingStep('Confirming your booking...');
 
                         const bookingData = formatBookingData(state);
 
-                        // ✅ Final validation before booking API call
+                        // Final validation before booking API call
                         const invalidSeats = bookingData.Passenger.filter(p => !p.SeatName || p.SeatName.trim() === '');
                         if (invalidSeats.length > 0) {
-                            console.error('❌ Invalid seat names found:', invalidSeats);
+                            console.error('Invalid seat names found:', invalidSeats);
                             throw new Error('Invalid seat assignment. Please try booking again.');
                         }
 
-                        console.log('📤 Booking data being sent:', JSON.stringify(bookingData, null, 2));
+                        console.log('Booking data being sent:', JSON.stringify(bookingData, null, 2));
 
                         const bookingResult = await bookBus(bookingData);
-                        console.log('✅ Bus booking result:', bookingResult);
+                        console.log('Bus booking result:', bookingResult);
 
-                        // ✅ ENHANCED: BookingId extraction with comprehensive fallback strategies
+                        // ENHANCED: BookingId extraction with comprehensive fallback strategies
                         setLoadingStep('Generating booking confirmation...');
                         const extractedBookingId = extractBookingIdFromResponse(bookingResult);
 
-                        console.log('🎯 EXTRACTED BOOKING ID:', extractedBookingId);
+                        console.log('EXTRACTED BOOKING ID:', extractedBookingId);
 
-                        // ✅ NEW: Send invoice email after successful booking
+                        // NEW: Send invoice email after successful booking
                         const userEmail = contactData?.email;
                         const currentSearchTokenId = searchTokenId || bookingData.SearchTokenId;
 
                         if (extractedBookingId && userEmail && currentSearchTokenId) {
-                            console.log('📧 Attempting to send invoice email...');
+                            console.log('Attempting to send invoice email...');
                             await sendInvoiceEmail(extractedBookingId, currentSearchTokenId, userEmail);
                         } else {
-                            console.warn('⚠️ Missing data for invoice email:', {
+                            console.warn('Missing data for invoice email:', {
                                 bookingId: extractedBookingId,
                                 email: userEmail,
                                 searchTokenId: currentSearchTokenId
                             });
                         }
 
-                        // ✅ Show success message
+                        // Show success message
                         setLoadingStep('Booking confirmed successfully!');
-                        showSuccessToast('🎉 Bus booking confirmed successfully!');
+                        showSuccessToast('Bus booking confirmed successfully!');
 
-                        // ✅ Navigate to confirmation page with all necessary data
+                        // Navigate to confirmation page with all necessary data including coupon information
                         navigate('/bus-confirm', {
                             state: {
                                 paymentId: response.razorpay_payment_id,
@@ -864,7 +867,9 @@ const BusPaymentInfo = () => {
                                 isValidated: true,
                                 isBooked: true,
                                 bookingType: 'bus',
-                                extractedBookingId: extractedBookingId
+                                extractedBookingId: extractedBookingId,
+                                appliedCouponData: appliedCouponData,
+                                couponDiscount: fareBreakdown.couponDiscount
                             },
                         });
 
@@ -874,19 +879,19 @@ const BusPaymentInfo = () => {
                             'Payment validation failed';
 
                         setError(`Payment completed but validation failed: ${validationError}`);
-                        showErrorToast('❌ Payment Validation Failed', validationError);
+                        showErrorToast('Payment Validation Failed', validationError);
                     }
 
                 } catch (err) {
-                    console.error('❌ Payment validation/booking error:', err);
+                    console.error('Payment validation/booking error:', err);
 
                     if (err.message && err.message.includes('bookBus')) {
                         setError(`Payment validated but booking failed: ${err.message}`);
-                        showErrorToast('❌ Booking Failed', 'Payment was successful but booking could not be completed');
+                        showErrorToast('Booking Failed', 'Payment was successful but booking could not be completed');
                     } else {
                         const { message: errorMessage } = handleApiError(err, 'Payment Validation/Booking');
                         setError(`Payment completed but processing failed: ${errorMessage}`);
-                        showErrorToast('❌ Booking Process Failed', errorMessage);
+                        showErrorToast('Booking Process Failed', errorMessage);
                     }
                 } finally {
                     setLoading(false);
@@ -894,37 +899,37 @@ const BusPaymentInfo = () => {
                 }
             };
 
-            // ✅ Create Razorpay instance with enhanced error handling
+            // Create Razorpay instance with enhanced error handling
             const options = getRazorpayOptions(orderId, orderAmount);
             options.handler = handleSuccess;
 
             const rzp = new window.Razorpay(options);
 
-            // ✅ Enhanced payment failure handler
+            // Enhanced payment failure handler
             rzp.on('payment.failed', function (response) {
-                console.error('❌ Payment failed:', response);
+                console.error('Payment failed:', response);
                 const failureMessage = response?.error?.description || 'Payment failed due to unknown error';
                 setError(`Payment failed: ${failureMessage}`);
-                showErrorToast('❌ Payment Failed', failureMessage);
+                showErrorToast('Payment Failed', failureMessage);
                 setLoading(false);
                 setLoadingStep('');
             });
 
-            // ✅ Open Razorpay modal
+            // Open Razorpay modal
             setLoadingStep('');
             rzp.open();
 
         } catch (err) {
-            console.error('❌ Payment initialization error:', err);
+            console.error('Payment initialization error:', err);
             const { message: errorMessage } = handleApiError(err, 'Payment Initialization');
             setError(errorMessage);
-            showErrorToast('❌ Payment Initialization Failed', errorMessage);
+            showErrorToast('Payment Initialization Failed', errorMessage);
             setLoading(false);
             setLoadingStep('');
         }
     };
 
-    // ✅ Enhanced error boundary check
+    // Enhanced error boundary check
     if (!state || Object.keys(state).length === 0) {
         return (
             <Container className="py-4">
@@ -944,7 +949,7 @@ const BusPaymentInfo = () => {
 
     return (
         <Container className="py-4">
-            {/* ✅ Loading Overlay Modal */}
+            {/* Loading Overlay Modal */}
             <Modal
                 show={loading}
                 backdrop="static"
@@ -962,7 +967,7 @@ const BusPaymentInfo = () => {
                     )}
                     <div className="mt-4 p-3 bg-light rounded">
                         <small className="text-danger fw-bold">
-                            ⚠️ Please don't close or refresh this page
+                            Please don't close or refresh this page
                         </small>
                         <br />
                         <small className="text-muted">
@@ -972,7 +977,7 @@ const BusPaymentInfo = () => {
                 </Modal.Body>
             </Modal>
 
-            {/* ✅ Enhanced Travel Summary */}
+            {/* Enhanced Travel Summary */}
             <Card className="mb-4 shadow-sm">
                 <Card.Header className="">
                     <div className="d-flex align-items-center">
@@ -1008,7 +1013,7 @@ const BusPaymentInfo = () => {
                 </Card.Body>
             </Card>
 
-            {/* ✅ ENHANCED Payment Summary with Detailed Breakdown */}
+            {/* ENHANCED Payment Summary with Detailed Breakdown and Coupon Discount */}
             <Card className="mb-4 shadow-sm">
                 <Card.Header className="bg-white">
                     <h6 className="fw-bold mb-0">
@@ -1097,8 +1102,6 @@ const BusPaymentInfo = () => {
                         </Row>
                     )}
 
-
-
                     {/* TDS Deduction */}
                     {fareBreakdown.tds > 0 && (
                         <Row className="mb-2 text-danger">
@@ -1108,10 +1111,10 @@ const BusPaymentInfo = () => {
                     )}
 
                     {/* Discount */}
-                    {(fareBreakdown.discount > 0 || couponDiscount > 0) && (
+                    {fareBreakdown.discount > 0 && (
                         <Row className="mb-2 text-success">
                             <Col xs={8}>Discount (-)</Col>
-                            <Col xs={4} className="text-end">-₹{(fareBreakdown.discount + (couponDiscount || 0)).toFixed(2)}</Col>
+                            <Col xs={4} className="text-end">-₹{fareBreakdown.discount.toFixed(2)}</Col>
                         </Row>
                     )}
 
@@ -1129,7 +1132,7 @@ const BusPaymentInfo = () => {
                             <Col xs={8}>
                                 Convenience Fee
                                 {fareBreakdown.commissionPercentage > 0 && (
-                                    <small className="text-muted"> ({fareBreakdown.commissionPercentage.toFixed(1)}%)</small>
+                                    <small className="text-muted"></small>
                                 )}
                             </Col>
                             <Col xs={4} className="text-end">₹{convenienceFee.toFixed(2)}</Col>
@@ -1138,17 +1141,34 @@ const BusPaymentInfo = () => {
 
                     <hr />
 
+                    {/* Total Before Coupon Discount */}
+                    <Row className="mb-2 fw-bold">
+                        <Col xs={8}>Total Before Discount</Col>
+                        <Col xs={4} className="text-end">₹{totalBeforeCoupon.toFixed(2)}</Col>
+                    </Row>
+
+                    {/* Coupon Discount - Show only if applied */}
+                    {fareBreakdown.couponDiscount > 0 && appliedCouponData && (
+                        <Row className="mb-2 text-success">
+                            <Col xs={8}>
+                                Coupon Discount (-)
+                                <small className="text-muted d-block">{appliedCouponData.code}</small>
+                            </Col>
+                            <Col xs={4} className="text-end">-₹{fareBreakdown.couponDiscount.toFixed(2)}</Col>
+                        </Row>
+                    )}
+
+                    <hr />
+
                     {/* Final Total */}
                     <Row className="fw-bold fs-5">
                         <Col xs={8}>Total Amount</Col>
-                        <Col xs={4} className="text-end text-danger">₹{finalAmount}</Col>
+                        <Col xs={4} className="text-end">₹{finalAmount}</Col>
                     </Row>
-
-
                 </Card.Body>
             </Card>
 
-            {/* ✅ Enhanced Payment Button Section */}
+            {/* Enhanced Payment Button Section */}
             <Card className="shadow-sm">
                 <Card.Body>
                     <div className="mb-3">
@@ -1157,7 +1177,6 @@ const BusPaymentInfo = () => {
                             <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Terms Of Use</a> and{' '}
                             <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Privacy Policy</a>
                         </p>
-
                     </div>
 
                     <div className="d-flex gap-3 justify-content-between align-items-center">
@@ -1177,7 +1196,7 @@ const BusPaymentInfo = () => {
                 </Card.Body>
             </Card>
 
-            {/* ✅ Enhanced Error Alert */}
+            {/* Enhanced Error Alert */}
             {error && (
                 <Alert variant="danger" className="mb-4 mt-3" dismissible onClose={() => setError(null)}>
                     <FaExclamationTriangle className="me-2" />

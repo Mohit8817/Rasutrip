@@ -14,7 +14,7 @@ const BusServices = {
   seatLayout: `${baseURL}/busservice/seatlayout`,
   boardingDroppingPoints: `${baseURL}/busservice/boardingpoint`,
   specialOffers: `${baseURL}/user/special-offer`,
-  applyCoupon: `${baseURL}/airservice/apply-coupon`,
+  applyCoupon: `${baseURL}/busservice/apply-coupon`,
   blockSeat: `${baseURL}/busservice/blockseat`,
   createOrder: `${baseURL}/busservice/create-order`,
   validatePayment: `${baseURL}/busservice/validate`,
@@ -31,12 +31,11 @@ const getAuthToken = () => {
 const createAuthHeaders = () => {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   return {
-    'Authorization': token ? `Bearer ${token}` : '',
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Accept': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
   };
 };
-
 // ─────────────────────────────────────────────────────────────
 // 📍 Fetch cities for autocomplete/search
 // ─────────────────────────────────────────────────────────────
@@ -221,40 +220,185 @@ export const blockSeats = async ({
   }
 };
 
+
 // ───────────────────────────────────────────────
 // 📍 Get special offers (coupon list)
 // ───────────────────────────────────────────────
 export const fetchSpecialOffers = async () => {
   try {
+    console.log("🔄 Fetching special offers from:", BusServices.specialOffers);
+
     const response = await axios.get(BusServices.specialOffers, {
       headers: createAuthHeaders(),
+      timeout: 10000,
     });
-    return response.data;
+
+    console.log("✅ Special offers response:", response.data);
+
+    if (response.data && response.data.success) {
+      return response.data.data || response.data.offers || response.data;
+    }
+
+    return response.data || [];
+
   } catch (err) {
-    console.error("❌ Error fetching special offers:", err.response?.data || err.message);
+    console.error("❌ Error fetching special offers:", {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data,
+      url: BusServices.specialOffers
+    });
+
     return [];
   }
 };
 
 // ───────────────────────────────────────────────
-// 🎟 Apply coupon with commission-aware amount calculation
+// 🎟 Apply coupon with enhanced debugging and multiple payload formats
 // ───────────────────────────────────────────────
 export const applyBusCoupon = async (couponCode, totalAmountWithCommission) => {
   try {
-    const response = await axios.post(
-      BusServices.applyCoupon,
+    console.log("🎫 Input parameters:", { couponCode, totalAmountWithCommission });
+
+    // Enhanced validation
+    if (!couponCode || typeof couponCode !== 'string' || couponCode.trim() === '') {
+      console.error("❌ Invalid coupon code:", couponCode);
+      throw new Error('Coupon code is required and must be a valid string');
+    }
+
+    if (!totalAmountWithCommission || totalAmountWithCommission <= 0) {
+      console.error("❌ Invalid amount:", totalAmountWithCommission);
+      throw new Error('Valid amount is required');
+    }
+
+    // Clean the coupon code
+    const cleanCouponCode = couponCode.trim().toUpperCase();
+    const cleanAmount = Number(totalAmountWithCommission);
+
+    // Try multiple payload formats as different APIs might expect different parameter names
+    const payloadOptions = [
+      // Format 1: Standard format
       {
-        coupon_code: couponCode,
-        amount: totalAmountWithCommission, // Use total amount including vendor commission
+        couponCode: cleanCouponCode,
+        amount: cleanAmount,
       },
-      { headers: createAuthHeaders() }
-    );
-    return response.data;
+      // Format 2: Alternative naming
+      {
+        code: cleanCouponCode,
+        totalAmount: cleanAmount,
+      },
+      // Format 3: Another common format
+      {
+        coupon_code: cleanCouponCode,
+        total_price: cleanAmount,
+      },
+      // Format 4: Simple format
+      {
+        couponCode: cleanCouponCode,
+        totalPrice: cleanAmount,
+      }
+    ];
+
+    let lastError = null;
+
+    // Try each payload format
+    for (let i = 0; i < payloadOptions.length; i++) {
+      const payload = payloadOptions[i];
+
+      try {
+        console.log(`🔄 Attempt ${i + 1} - Trying payload format:`, payload);
+        console.log("🌐 API endpoint:", BusServices.applyCoupon);
+
+        const headers = createAuthHeaders();
+        console.log("🔑 Headers:", headers);
+
+        const response = await axios.post(
+          BusServices.applyCoupon,
+          payload,
+          {
+            headers: headers,
+            timeout: 15000,
+          }
+        );
+
+        console.log(`✅ Success with payload format ${i + 1}:`, response.data);
+
+        // Handle different success response structures
+        if (response.data) {
+          // If API returns success: false, try next format
+          if (response.data.success === false) {
+            console.warn(`⚠️ Format ${i + 1} returned success: false:`, response.data.message);
+            lastError = new Error(response.data.message || 'Coupon application failed');
+            continue; // Try next format
+          }
+
+          // Success! Return the data
+          return response.data;
+        }
+
+        return response.data;
+
+      } catch (formatError) {
+        console.warn(`❌ Format ${i + 1} failed:`, {
+          message: formatError.message,
+          status: formatError.response?.status,
+          data: formatError.response?.data
+        });
+
+        lastError = formatError;
+
+        // If this is not the last attempt, continue to next format
+        if (i < payloadOptions.length - 1) {
+          continue;
+        }
+
+        // If this is the last attempt, throw the error
+        throw formatError;
+      }
+    }
+
+    // If we get here, all formats failed
+    throw lastError || new Error('All payload formats failed');
+
   } catch (err) {
-    console.error("❌ Error applying coupon:", err.response?.data || err.message);
-    throw err;
+    console.error("❌ Final error applying coupon:", {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data,
+      url: BusServices.applyCoupon
+    });
+
+    // Enhanced error handling
+    if (err.response) {
+      const errorData = err.response.data;
+      let errorMessage = 'Failed to apply coupon';
+
+      if (errorData) {
+        errorMessage = errorData.message ||
+          errorData.error ||
+          errorData.msg ||
+          `Server error: ${err.response.status}`;
+      }
+
+      // Create a more informative error object
+      const error = new Error(errorMessage);
+      error.status = err.response.status;
+      error.data = errorData;
+      throw error;
+
+    } else if (err.request) {
+      throw new Error('Network error: Unable to reach server');
+    } else {
+      throw new Error(err.message || 'Failed to apply coupon');
+    }
   }
 };
+
+
+
+
+
+
 
 // _____________________________________________________
 // ✅ Create bus Razorpay order with commission-inclusive amount
