@@ -404,7 +404,7 @@ const BusFareSummary = ({
           {showVendorCommission && convenienceFee > 0 && (
             <>
               <div className="fare-row">
-                <span>Convenience Fee ({fareData.commissionPercentage}%)</span>
+                <span>Convenience Fee</span>
                 <span>₹ {convenienceFee.toFixed(2)}</span>
               </div>
               <hr className="my-2" />
