@@ -160,28 +160,52 @@ const getBookingEndpoints = (userType, serviceType = 'bus') => {
     }
 };
 
-// ✅ Generic API request function with user type awareness
+// Updated makeAuthenticatedRequest function with better error handling
 const makeAuthenticatedRequest = async (url, method = 'GET', data = null, userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
         console.log(`🚀 Making ${method} request to:`, url);
         console.log('👤 Current user type:', currentUserType);
+        
+        // Log the request data for debugging
+        if (data) {
+            console.log('📤 Request payload:', JSON.stringify(data, null, 2));
+        }
 
         const headers = getAuthHeaders(currentUserType);
-        console.log('📤 Request headers:', headers);
+        console.log('📤 Request headers (sanitized):', {
+            ...headers,
+            'Authorization': headers.Authorization ? `Bearer ${headers.Authorization.substring(7, 20)}...` : 'None'
+        });
 
         const config = {
             method,
             headers,
             url,
-            ...(data && { data })
+            ...(data && { data }),
+            timeout: 30000, // 30 seconds timeout
+            validateStatus: (status) => {
+                // Accept status codes 200-299, but also let 400+ through for better error handling
+                return status < 500;
+            }
         };
 
         const response = await axios(config);
+        
         console.log('✅ API Response status:', response.status);
-        console.log('✅ API Response data:', response.data);
-
-        return response.data;
+        console.log('✅ API Response headers:', response.headers);
+        
+        // Handle different response status codes
+        if (response.status >= 200 && response.status < 300) {
+            console.log('✅ API Response data:', response.data);
+            return response.data;
+        } else {
+            // Handle 400, 401, etc. as errors but with response data
+            console.error('❌ API Error Response:', response.data);
+            const error = new Error(`Request failed with status ${response.status}`);
+            error.response = response;
+            throw error;
+        }
 
     } catch (error) {
         console.error('❌ API Request failed:', error);
@@ -189,22 +213,26 @@ const makeAuthenticatedRequest = async (url, method = 'GET', data = null, userTy
         // Enhanced error handling
         if (error.response) {
             const { status, data } = error.response;
-            console.error('❌ API Error response:', data);
+            console.error('❌ API Error response:', {
+                status,
+                data,
+                url,
+                method,
+                requestData: data
+            });
 
-            switch (status) {
-                case 401:
-                    throw new Error(`Authentication failed for ${userType || 'user'}. Please login again.`);
-                case 403:
-                    throw new Error(`Access denied. ${userType === 'agent' ? 'Agent' : 'Customer'} permissions required.`);
-                case 404:
-                    throw new Error('Booking service endpoint not found.');
-                default:
-                    throw new Error(data?.message || `Request failed with status ${status}`);
-            }
+            // Create a more descriptive error
+            const enhancedError = new Error();
+            enhancedError.response = error.response;
+            enhancedError.message = data?.message || `Request failed with status ${status}`;
+            
+            throw enhancedError;
         } else if (error.request) {
-            throw new Error('Network error. Please check your internet connection.');
+            console.error('❌ Network error - no response received:', error.request);
+            throw new Error('Network error. Please check your internet connection and try again.');
         } else {
-            throw new Error(error.message || 'An unexpected error occurred.');
+            console.error('❌ Request setup error:', error.message);
+            throw new Error(error.message || 'An unexpected error occurred while making the request.');
         }
     }
 };
@@ -669,28 +697,50 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
         const flightNumber = booking?.flightNumber || booking?.FlightNumber;
         const airlineCode = booking?.airline?.AirlineCode || booking?.airlineCode;
         const departureDate = booking?.departureTime || booking?.departureDate;
-        const arrivalDate = booking?.arrivalTime || booking?.arrivalDate;
 
         // Validate required fields
         if (!bookingId) {
             throw new Error('BookingId is required for flight real-time status check');
         }
 
-        // Prepare request data with all available fields for flight
+        // Create a cleaner request payload - only include non-null/non-empty values
         const requestData = {
-            BookingId: String(bookingId), // Use capital B as per API requirement
-            ...(searchTokenId && { SearchTokenId: String(searchTokenId) }),
-            ...(pnr && { PNR: String(pnr) }),
-            ...(flightNumber && { FlightNumber: String(flightNumber) }),
-            ...(airlineCode && { AirlineCode: String(airlineCode) }),
-            ...(departureDate && { DepartureDate: String(departureDate) }),
-            ...(arrivalDate && { ArrivalDate: String(arrivalDate) }),
-            UserType: currentUserType || 'customer',
-            ServiceType: 'flight' // Add service type identifier
+            BookingId: String(bookingId)
         };
+
+        // Add optional fields only if they have valid values
+        if (searchTokenId && searchTokenId.trim() !== '') {
+            requestData.SearchTokenId = String(searchTokenId).trim();
+        }
+        
+        if (pnr && pnr.trim() !== '') {
+            requestData.PNR = String(pnr).trim();
+        }
+
+        if (flightNumber && flightNumber.trim() !== '') {
+            requestData.FlightNumber = String(flightNumber).trim();
+        }
+
+        if (airlineCode && airlineCode.trim() !== '') {
+            requestData.AirlineCode = String(airlineCode).trim();
+        }
+
+        if (departureDate) {
+            // Format date properly if it exists
+            try {
+                const formattedDate = new Date(departureDate).toISOString().split('T')[0];
+                requestData.DepartureDate = formattedDate;
+            } catch (dateError) {
+                console.warn('Invalid departure date format:', departureDate);
+            }
+        }
+
+        // Always include user type
+        requestData.UserType = currentUserType || 'customer';
 
         console.log('📤 Flight real-time status request data:', requestData);
 
+        // Make the API call with improved error handling
         const response = await makeAuthenticatedRequest(
             FlightBookingServices.realTimeStatus,
             'POST',
@@ -714,7 +764,7 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
                 response.result?.status ||
                 response.cancelStatus ||
                 response.CancelStatus ||
-                'Unknown';
+                'Confirmed'; // Default fallback
         }
 
         return {
@@ -730,17 +780,36 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
         console.error('❌ Error fetching flight real-time status:', error);
 
         let errorMessage = 'Failed to fetch flight status';
+        let errorDetails = null;
+
         if (error.response) {
-            const { status } = error.response;
-            if (status === 401) {
-                errorMessage = 'Authentication failed';
-            } else if (status === 404) {
-                errorMessage = 'Flight booking not found';
-            } else if (status === 400) {
-                errorMessage = 'Invalid flight booking data';
+            const { status, data } = error.response;
+            console.error('API Error Details:', {
+                status,
+                data,
+                headers: error.response.headers
+            });
+
+            switch (status) {
+                case 400:
+                    errorMessage = data?.message || 'Invalid request data. Please check booking details.';
+                    errorDetails = data?.error || 'Bad Request - Invalid booking parameters';
+                    break;
+                case 401:
+                    errorMessage = 'Authentication failed. Please login again.';
+                    break;
+                case 404:
+                    errorMessage = 'Flight booking not found in the system.';
+                    break;
+                case 500:
+                    errorMessage = 'Server error. Please try again later.';
+                    break;
+                default:
+                    errorMessage = data?.message || `Request failed with status ${status}`;
             }
         } else if (error.request) {
-            errorMessage = 'Network error';
+            errorMessage = 'Network error. Please check your internet connection.';
+            errorDetails = 'No response received from server';
         } else if (error.message) {
             errorMessage = error.message;
         }
@@ -749,6 +818,7 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
             success: false,
             status: 'Error',
             error: errorMessage,
+            errorDetails: errorDetails,
             lastUpdated: new Date(),
             bookingId: booking?.bookingId || 'Unknown',
             serviceType: 'flight'
