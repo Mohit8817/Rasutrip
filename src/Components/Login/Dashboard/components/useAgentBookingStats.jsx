@@ -1,23 +1,20 @@
-// hooks/useAgentBookingStats.js
+// hooks/useAgentBookingStats.js - Simplified for booking history only
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../../Context/AuthContext';
 
 import {
-    fetchUpcomingBookings,
     fetchAllBookings,
     getUserType,
     isUserAuthenticated
 } from '../../services/bookingApi';
 
 import {
-    fetchUpcomingHotelBookings,
     fetchAllHotelBookings,
     getHotelUserType,
     isHotelUserAuthenticated
 } from '../../services/bookingApi';
 
 import {
-    fetchUpcomingFlightBookings,
     fetchAllFlightBookings,
     getFlightUserType,
     isFlightUserAuthenticated
@@ -31,26 +28,17 @@ const useAgentBookingStats = () => {
         busBookings: {
             total: 0,
             thisMonth: 0,
-            revenue: 0,
-            upcoming: 0,
-            completed: 0,
-            thisMonthRevenue: 0
+            revenue: 0
         },
         hotelBookings: {
             total: 0,
             thisMonth: 0,
-            revenue: 0,
-            upcoming: 0,
-            completed: 0,
-            thisMonthRevenue: 0
+            revenue: 0
         },
         flightBookings: {
             total: 0,
             thisMonth: 0,
-            revenue: 0,
-            upcoming: 0,
-            completed: 0,
-            thisMonthRevenue: 0
+            revenue: 0
         },
         lastUpdated: null
     });
@@ -92,8 +80,6 @@ const useAgentBookingStats = () => {
                 '0'
             ) || 0;
 
-            const bookingStatus = booking.Status || booking.status || booking.bookingStatus || 'Confirmed';
-
             const bookingDate = bookingWrapper.createdAt ||
                 booking.BookingDate ||
                 booking.bookingDate ||
@@ -102,20 +88,10 @@ const useAgentBookingStats = () => {
                 booking.created_at ||
                 new Date().toISOString();
 
-            const travelDate = booking.DateOfJourney ||
-                booking.TravelDate ||
-                booking.travelDate ||
-                booking.departureDate ||
-                booking.journeyDate ||
-                booking.date;
-
             return {
                 bookingId: String(bookingWrapper.bookingId || booking.BookingId || booking.bookingId || Date.now()),
                 totalAmount: totalAmount,
-                bookingStatus: String(bookingStatus),
-                bookingDate: new Date(bookingDate),
-                travelDate: travelDate ? new Date(travelDate) : null,
-                isUpcoming: travelDate ? new Date(travelDate) > new Date() : false
+                bookingDate: new Date(bookingDate)
             };
         });
     };
@@ -156,12 +132,6 @@ const useAgentBookingStats = () => {
                 '0'
             ) || 0;
 
-            const bookingStatus = booking.Status || 
-                booking.status || 
-                booking.bookingStatus || 
-                booking.BookingStatus ||
-                (booking.IsConfirmed === true || booking.isConfirmed === true ? 'Confirmed' : 'Pending');
-
             const bookingDate = bookingWrapper.createdAt ||
                 booking.BookingDate ||
                 booking.bookingDate ||
@@ -170,28 +140,10 @@ const useAgentBookingStats = () => {
                 booking.created_at ||
                 new Date().toISOString();
 
-            const checkInDate = booking.CheckIn ||
-                booking.checkInDate ||
-                booking.check_in_date ||
-                booking.arrivalDate ||
-                booking.CheckInDate ||
-                booking.fromDate;
-
-            const checkOutDate = booking.CheckOut ||
-                booking.checkOutDate ||
-                booking.check_out_date ||
-                booking.departureDate ||
-                booking.CheckOutDate ||
-                booking.toDate;
-
             return {
                 bookingId: String(bookingWrapper.bookingId || booking.BookingId || booking.bookingId || Date.now()),
                 totalAmount: totalAmount,
-                bookingStatus: String(bookingStatus),
-                bookingDate: new Date(bookingDate),
-                checkInDate: checkInDate ? new Date(checkInDate) : null,
-                checkOutDate: checkOutDate ? new Date(checkOutDate) : null,
-                isUpcoming: checkInDate ? new Date(checkInDate) > new Date() : false
+                bookingDate: new Date(bookingDate)
             };
         });
     };
@@ -231,36 +183,22 @@ const useAgentBookingStats = () => {
                 '0'
             ) || 0;
 
-            const bookingStatus = booking.status || 
-                booking.bookingStatus || 
-                booking.Status ||
-                booking.BookingStatus ||
-                'Confirmed';
-
             const bookingDate = booking.bookingDate ||
                 booking.createdAt ||
                 booking.created_at ||
                 booking.BookingDate ||
                 new Date().toISOString();
 
-            const departureTime = booking.departureTime ||
-                booking.DepartureTime ||
-                booking.departure ||
-                booking.flightDate;
-
             return {
                 bookingId: String(booking.bookingId || booking.BookingId || booking.booking_id || Date.now()),
                 totalAmount: totalAmount,
-                bookingStatus: String(bookingStatus),
-                bookingDate: new Date(bookingDate),
-                departureTime: departureTime ? new Date(departureTime) : null,
-                isUpcoming: departureTime ? new Date(departureTime) > new Date() : false
+                bookingDate: new Date(bookingDate)
             };
         });
     };
 
-    // Calculate statistics from booking data
-    const calculateBookingStats = (allBookings, upcomingBookings) => {
+    // Calculate statistics from booking data - only for booking history
+    const calculateBookingStats = (allBookings) => {
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
@@ -277,25 +215,10 @@ const useAgentBookingStats = () => {
             return sum + (booking.totalAmount || 0);
         }, 0);
 
-        // Calculate this month revenue
-        const thisMonthRevenue = thisMonthBookings.reduce((sum, booking) => {
-            return sum + (booking.totalAmount || 0);
-        }, 0);
-
-        // Count completed bookings (past travel/check-in/departure date)
-        const completedBookings = allBookings.filter(booking => {
-            const travelDate = booking.travelDate || booking.checkInDate || booking.departureTime;
-            if (!travelDate) return false;
-            return travelDate < now;
-        }).length;
-
         return {
             total: allBookings.length,
             thisMonth: thisMonthBookings.length,
-            revenue: totalRevenue,
-            thisMonthRevenue: thisMonthRevenue,
-            upcoming: upcomingBookings.length,
-            completed: completedBookings
+            revenue: totalRevenue
         };
     };
 
@@ -318,11 +241,8 @@ const useAgentBookingStats = () => {
             console.log('Fetching agent booking statistics...');
 
             let allBusBookingsData = [];
-            let upcomingBusBookingsData = [];
             let allHotelBookingsData = [];
-            let upcomingHotelBookingsData = [];
             let allFlightBookingsData = [];
-            let upcomingFlightBookingsData = [];
 
             // Fetch bus bookings if user is authenticated
             if (busUserType === 'agent' && isUserAuthenticated(busUserType)) {
@@ -333,15 +253,6 @@ const useAgentBookingStats = () => {
                     }
                 } catch (err) {
                     console.warn('Failed to fetch all bus bookings for stats:', err.message);
-                }
-
-                try {
-                    const upcomingBusResponse = await fetchUpcomingBookings(busUserType);
-                    if (upcomingBusResponse.success) {
-                        upcomingBusBookingsData = formatBusBookingDataForStats(upcomingBusResponse.data);
-                    }
-                } catch (err) {
-                    console.warn('Failed to fetch upcoming bus bookings for stats:', err.message);
                 }
             }
 
@@ -355,15 +266,6 @@ const useAgentBookingStats = () => {
                 } catch (err) {
                     console.warn('Failed to fetch all hotel bookings for stats:', err.message);
                 }
-
-                try {
-                    const upcomingHotelResponse = await fetchUpcomingHotelBookings(hotelUserType);
-                    if (upcomingHotelResponse.success) {
-                        upcomingHotelBookingsData = formatHotelBookingDataForStats(upcomingHotelResponse.data);
-                    }
-                } catch (err) {
-                    console.warn('Failed to fetch upcoming hotel bookings for stats:', err.message);
-                }
             }
 
             // Fetch flight bookings if user is authenticated
@@ -376,21 +278,12 @@ const useAgentBookingStats = () => {
                 } catch (err) {
                     console.warn('Failed to fetch all flight bookings for stats:', err.message);
                 }
-
-                try {
-                    const upcomingFlightResponse = await fetchUpcomingFlightBookings(flightUserType);
-                    if (upcomingFlightResponse.success) {
-                        upcomingFlightBookingsData = formatFlightBookingDataForStats(upcomingFlightResponse.data);
-                    }
-                } catch (err) {
-                    console.warn('Failed to fetch upcoming flight bookings for stats:', err.message);
-                }
             }
 
-            // Calculate statistics
-            const busStats = calculateBookingStats(allBusBookingsData, upcomingBusBookingsData);
-            const hotelStats = calculateBookingStats(allHotelBookingsData, upcomingHotelBookingsData);
-            const flightStats = calculateBookingStats(allFlightBookingsData, upcomingFlightBookingsData);
+            // Calculate statistics - only booking history related
+            const busStats = calculateBookingStats(allBusBookingsData);
+            const hotelStats = calculateBookingStats(allHotelBookingsData);
+            const flightStats = calculateBookingStats(allFlightBookingsData);
 
             // Update state
             setBookingStats({

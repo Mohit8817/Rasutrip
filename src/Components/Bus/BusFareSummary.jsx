@@ -104,7 +104,7 @@ const BusFareSummary = ({
         totals.sgst += Number(seatPriceObj.GST.SGSTAmount || 0);
         totals.igst += Number(seatPriceObj.GST.IGSTAmount || 0);
         totals.taxableAmount += Number(seatPriceObj.GST.TaxableAmount || 0);
-        
+
         // Get rates from first seat (assuming all seats have same rate)
         if (totals.cgstRate === 0) totals.cgstRate = Number(seatPriceObj.GST.CGSTRate || 0);
         if (totals.sgstRate === 0) totals.sgstRate = Number(seatPriceObj.GST.SGSTRate || 0);
@@ -338,7 +338,7 @@ const BusFareSummary = ({
             <div className="fare-row">
               <span>
                 GST Total
-                {(fareData.gst.cgstRate > 0 || fareData.gst.sgstRate > 0 || fareData.gst.igstRate > 0) && 
+                {(fareData.gst.cgstRate > 0 || fareData.gst.sgstRate > 0 || fareData.gst.igstRate > 0) &&
                   ` (${Math.max(fareData.gst.cgstRate, fareData.gst.sgstRate, fareData.gst.igstRate)}%)`
                 }
               </span>
