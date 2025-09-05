@@ -1037,7 +1037,6 @@ const BusBookingHistory = () => {
             {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <div className="flex items-center">
-                        <span className="text-red-500 text-xl mr-2">⚠️</span>
                         <div>
                             <h3 className="text-red-800 font-medium">Error Loading {getUserTypeDisplay()} Bookings</h3>
                             <p className="text-red-600 mt-1">{error}</p>
@@ -1069,7 +1068,7 @@ const BusBookingHistory = () => {
             `}
                     onClick={() => handleTabChange('upcoming')}
                 >
-                    Upcoming Trips
+                    Upcoming Bookings
                     {upcomingBookings.length > 0 && (
                         <span className={`ml-2 px-2.5 py-1 text-xs rounded-full font-bold
                     ${bookingType === 'upcoming'
