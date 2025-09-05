@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
-// Import the flight booking services
+// Import the simplified flight booking services
 import {
   fetchUpcomingFlightBookings,
   fetchAllFlightBookings,
-  fetchFlightRealTimeStatus,
-  fetchMultipleFlightRealTimeStatus,
   getFlightUserType,
   isFlightUserAuthenticated
 } from "../../services/bookingApi";
@@ -18,19 +16,64 @@ const FlightBookingComponent = () => {
   const [error, setError] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
   const [userRole, setUserRole] = useState('user');
-  const [realTimeStatuses, setRealTimeStatuses] = useState({});
-  const [statusLoading, setStatusLoading] = useState(false);
 
   // Get current bookings based on selected type
   const currentBookings = bookingType === 'upcoming' ? upcomingBookings : allBookings;
 
-  // Load flight bookings using the new service
+  // Transform API response to component-friendly format
+  const transformBookingData = (apiBookings) => {
+    if (!Array.isArray(apiBookings)) return [];
+
+    return apiBookings.map(booking => {
+      const result = booking.Result || {};
+      const segments = result.Segments?.[0] || [];
+      const firstSegment = segments[0] || {};
+      const lastSegment = segments[segments.length - 1] || {};
+      const passenger = result.Passenger?.[0] || {};
+
+      return {
+        bookingId: result.BookingId || booking.bookingId,
+        pnr: result.PNR,
+        airline: firstSegment.Airline,
+        airlineName: firstSegment.Airline?.AirlineName,
+        flightNumber: firstSegment.Airline?.FlightNumber,
+        origin: firstSegment.Origin,
+        destination: lastSegment.Destination || firstSegment.Destination,
+        from: firstSegment.Origin?.AirportCode,
+        to: (lastSegment.Destination || firstSegment.Destination)?.AirportCode,
+        fromCity: firstSegment.Origin?.CityName,
+        toCity: (lastSegment.Destination || firstSegment.Destination)?.CityName,
+        departureTime: firstSegment.Origin?.DepartTime,
+        arrivalTime: (lastSegment.Destination || firstSegment.Destination)?.ArrivalTime,
+        cabinClass: firstSegment.CabinClass,
+        class: firstSegment.CabinClass,
+        passengers: result.Passenger,
+        totalPassengers: result.Passenger?.length || 1,
+        totalAmount: result.InvoiceAmount || result.Fare?.PublishedPrice,
+        amount: result.InvoiceAmount || result.Fare?.PublishedPrice,
+        status: result.CancelStatus === 'none' ? 'Confirmed' : result.CancelStatus,
+        bookingStatus: result.CancelStatus === 'none' ? 'Confirmed' : result.CancelStatus,
+        paymentStatus: 'Completed', // Default since API doesn't provide this
+        bookingDate: booking.createdAt,
+        createdAt: booking.createdAt,
+        confirmationNo: result.PNR,
+        journeyType: result.JourneyType, // 1 = One Way, 2 = Round Trip
+        isDomestic: result.IsDomestic,
+        fareType: result.FareType,
+        segments: result.Segments,
+        invoiceNo: result.InvoiceNo,
+        invoiceAmount: result.InvoiceAmount
+      };
+    });
+  };
+
+  // Load flight bookings using the simplified service
   const loadFlightBookings = async () => {
     setLoading(true);
     setError('');
 
     try {
-      console.log('🛫 Loading flight bookings using service...');
+      console.log('🛫 Loading flight bookings using simplified service...');
 
       // Check if user is authenticated
       if (!isFlightUserAuthenticated()) {
@@ -43,19 +86,24 @@ const FlightBookingComponent = () => {
       // Fetch all bookings
       try {
         const allResponse = await fetchAllFlightBookings(currentUserType);
+        console.log('📦 All bookings raw response:', allResponse);
+
         if (allResponse.success && allResponse.data) {
-          // Handle different response structures
           let bookingsData = [];
 
-          if (allResponse.data?.Error?.ErrorCode === 0) {
-            bookingsData = allResponse.data.data || [];
-          } else if (allResponse.data?.data) {
+          // Handle the response structure based on your API format
+          if (allResponse.data.data && Array.isArray(allResponse.data.data)) {
             bookingsData = allResponse.data.data;
           } else if (Array.isArray(allResponse.data)) {
             bookingsData = allResponse.data;
           }
 
-          const sortedAll = bookingsData.sort((a, b) => {
+          console.log('📋 Raw all bookings data:', bookingsData);
+
+          const transformedBookings = transformBookingData(bookingsData);
+          console.log('✨ Transformed all bookings:', transformedBookings);
+
+          const sortedAll = transformedBookings.sort((a, b) => {
             const dateA = new Date(a.bookingDate || a.createdAt);
             const dateB = new Date(b.bookingDate || b.createdAt);
             return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
@@ -65,6 +113,7 @@ const FlightBookingComponent = () => {
           console.log('✅ All flight bookings loaded:', sortedAll.length);
         } else {
           console.warn('⚠️ All bookings response error:', allResponse.message);
+          setError(allResponse.message || 'Failed to fetch all bookings');
         }
       } catch (err) {
         console.error('❌ Error fetching all bookings:', err);
@@ -74,19 +123,31 @@ const FlightBookingComponent = () => {
       // Fetch upcoming bookings
       try {
         const upcomingResponse = await fetchUpcomingFlightBookings(currentUserType);
+        console.log('📦 Upcoming bookings raw response:', upcomingResponse);
+
         if (upcomingResponse.success && upcomingResponse.data) {
-          // Handle different response structures
           let bookingsData = [];
 
-          if (upcomingResponse.data?.Error?.ErrorCode === 0) {
-            bookingsData = upcomingResponse.data.data || [];
-          } else if (upcomingResponse.data?.data) {
+          // Handle the response structure based on your API format
+          if (upcomingResponse.data.data && Array.isArray(upcomingResponse.data.data)) {
             bookingsData = upcomingResponse.data.data;
           } else if (Array.isArray(upcomingResponse.data)) {
             bookingsData = upcomingResponse.data;
           }
 
-          const sortedUpcoming = bookingsData.sort((a, b) => {
+          console.log('📋 Raw upcoming bookings data:', bookingsData);
+
+          const transformedBookings = transformBookingData(bookingsData);
+          console.log('✨ Transformed upcoming bookings:', transformedBookings);
+
+          // Filter for future flights only
+          const now = new Date();
+          const futureBookings = transformedBookings.filter(booking => {
+            const departureDate = new Date(booking.departureTime);
+            return departureDate > now;
+          });
+
+          const sortedUpcoming = futureBookings.sort((a, b) => {
             const dateA = new Date(a.departureTime || a.bookingDate);
             const dateB = new Date(b.departureTime || b.bookingDate);
             return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
@@ -96,6 +157,7 @@ const FlightBookingComponent = () => {
           console.log('✅ Upcoming flight bookings loaded:', sortedUpcoming.length);
         } else {
           console.warn('⚠️ Upcoming bookings response error:', upcomingResponse.message);
+          // Don't set error for upcoming bookings as it's not critical
         }
       } catch (err) {
         console.error('❌ Error fetching upcoming bookings:', err);
@@ -107,24 +169,6 @@ const FlightBookingComponent = () => {
       setError(err.message || 'Failed to load flight bookings. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Load real-time status for visible bookings
-  const loadRealTimeStatuses = async (bookings) => {
-    if (bookings.length === 0) return;
-
-    setStatusLoading(true);
-    try {
-      console.log('🔄 Loading real-time statuses for flight bookings...');
-      const currentUserType = getFlightUserType();
-      const statuses = await fetchMultipleFlightRealTimeStatus(bookings, currentUserType);
-      setRealTimeStatuses(statuses);
-      console.log('✅ Real-time statuses loaded:', Object.keys(statuses).length);
-    } catch (error) {
-      console.error('❌ Error loading real-time statuses:', error);
-    } finally {
-      setStatusLoading(false);
     }
   };
 
@@ -144,13 +188,6 @@ const FlightBookingComponent = () => {
     // Load bookings
     loadFlightBookings();
   }, [sortOrder]);
-
-  // Load real-time statuses when current bookings change
-  useEffect(() => {
-    if (currentBookings.length > 0) {
-      loadRealTimeStatuses(currentBookings);
-    }
-  }, [currentBookings]);
 
   // Format date
   const formatDate = (dateString) => {
@@ -186,36 +223,48 @@ const FlightBookingComponent = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  // Get real-time status for booking
-  const getRealTimeStatus = (booking) => {
-    const bookingId = booking?.bookingId || booking?.BookingId || booking?.booking_id;
-    const statusInfo = realTimeStatuses[bookingId];
-
-    if (statusLoading) return { status: 'Loading...', className: 'text-blue-600' };
-
-    if (statusInfo) {
-      if (statusInfo.success) {
-        const status = statusInfo.status;
-        let className = 'text-green-600';
-
-        if (status.toLowerCase().includes('cancelled')) className = 'text-red-600';
-        else if (status.toLowerCase().includes('delayed')) className = 'text-orange-600';
-        else if (status.toLowerCase().includes('boarding')) className = 'text-blue-600';
-
-        return { status, className };
-      } else {
-        return { status: 'Error', className: 'text-gray-500' };
-      }
-    }
-
-    // Fallback to booking status
-    const fallbackStatus = booking.status || booking.bookingStatus || 'Confirmed';
+  // Get status with basic styling
+  const getBookingStatus = (booking) => {
+    const status = booking.status || booking.bookingStatus || 'Confirmed';
     let className = 'text-green-600';
 
-    if (fallbackStatus.toLowerCase() === 'cancelled') className = 'text-red-600';
-    else if (fallbackStatus.toLowerCase() === 'pending') className = 'text-orange-600';
+    if (status.toLowerCase() === 'cancelled') className = 'text-red-600';
+    else if (status.toLowerCase() === 'pending') className = 'text-orange-600';
 
-    return { status: fallbackStatus, className };
+    return { status, className };
+  };
+
+  // Get journey type display
+  const getJourneyType = (journeyType) => {
+    switch (journeyType) {
+      case 1: return 'One Way';
+      case 2: return 'Round Trip';
+      default: return 'One Way';
+    }
+  };
+
+  // Handle invoice download
+  const handleInvoiceDownload = (booking) => {
+    console.log('Download invoice for booking:', booking);
+    // Add your invoice download logic here
+    // You can make an API call to generate/download invoice
+    alert(`Invoice download initiated for booking: ${booking.bookingId || booking.pnr}`);
+  };
+
+  // Get real-time status
+  const getRealTimeStatus = (booking) => {
+    // This is a mock implementation - replace with actual real-time API call
+    const now = new Date();
+    const departureTime = new Date(booking.departureTime);
+    const arrivalTime = new Date(booking.arrivalTime);
+
+    if (now < departureTime) {
+      return { status: 'On Time', className: 'text-green-600 bg-green-100' };
+    } else if (now >= departureTime && now <= arrivalTime) {
+      return { status: 'In Flight', className: 'text-blue-600 bg-blue-100' };
+    } else {
+      return { status: 'Arrived', className: 'text-gray-600 bg-gray-100' };
+    }
   };
 
   return (
@@ -223,19 +272,8 @@ const FlightBookingComponent = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h5 className="text-2xl font-bold text-gray-800">My Flight Bookings</h5>
-          <p className="text-sm text-gray-500 mt-1">
-            User Type: {userRole?.charAt(0).toUpperCase() + userRole?.slice(1)} |
-            Status: {statusLoading ? ' Loading real-time data...' : ' Real-time data loaded'}
-          </p>
         </div>
-        <button
-          onClick={loadFlightBookings}
-          disabled={loading}
-          className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+
       </div>
 
       {/* Error Display */}
@@ -315,8 +353,19 @@ const FlightBookingComponent = () => {
             <table className="w-full">
               <thead className="bg-gray-100">
                 <tr className="border-b border-gray-200">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Booking ID</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Airline & Flight</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Route</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Departure</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Arrival</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Duration</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Passengers</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Class</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Journey Type</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">PNR</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real Time Status</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Amount</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payment Status</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200"
                     onClick={toggleSortOrder}
                     title="Click to change sort order">
@@ -329,7 +378,7 @@ const FlightBookingComponent = () => {
                 {console.log('✈️ Rendering table rows for:', currentBookings.length, 'flight bookings')}
                 {currentBookings.length === 0 ? (
                   <tr>
-                    <td colSpan="14" className="px-4 py-12 text-center">
+                    <td colSpan="15" className="px-4 py-12 text-center">
                       <div className="flex flex-col items-center">
                         <span className="text-lg font-medium text-gray-600">No flight bookings found</span>
                         <span className="text-sm text-gray-400 mt-1">
@@ -357,6 +406,7 @@ const FlightBookingComponent = () => {
                 ) : (
                   currentBookings.map((booking, index) => {
                     console.log(`Rendering flight booking row ${index + 1}:`, booking);
+                    const bookingStatus = getBookingStatus(booking);
                     const realTimeStatus = getRealTimeStatus(booking);
 
                     return (
@@ -365,8 +415,8 @@ const FlightBookingComponent = () => {
                           {booking.bookingId || booking.pnr}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                          <div className="max-w-xs truncate" title={`${booking.airline?.AirlineName || booking.airlineName} ${booking.flightNumber}`}>
-                            {booking.airline?.AirlineName || booking.airlineName}
+                          <div className="max-w-xs truncate" title={`${booking.airlineName} ${booking.flightNumber}`}>
+                            {booking.airlineName}
                           </div>
                           <div className="text-xs text-gray-500">
                             {booking.flightNumber}
@@ -374,10 +424,10 @@ const FlightBookingComponent = () => {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
                           <div className="font-medium">
-                            {booking.origin?.AirportCode || booking.from} → {booking.destination?.AirportCode || booking.to}
+                            {booking.from} → {booking.to}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {booking.origin?.CityName || booking.fromCity} - {booking.destination?.CityName || booking.toCity}
+                            {booking.fromCity} - {booking.toCity}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
@@ -393,46 +443,44 @@ const FlightBookingComponent = () => {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
                           <div className="font-medium">
-                            {booking.passengers?.length || booking.totalPassengers || 1}
+                            {booking.totalPassengers}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {booking.passengers?.length === 1 ? 'passenger' : 'passengers'}
+                            {booking.totalPassengers === 1 ? 'passenger' : 'passengers'}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
-                          <div className="max-w-xs truncate" title={booking.cabinClass || booking.class}>
-                            {booking.cabinClass || booking.class || 'Economy'}
+                          <div className="max-w-xs truncate" title={booking.class}>
+                            {booking.class || 'Economy'}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          <div className="max-w-xs truncate">
+                            {getJourneyType(booking.journeyType)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {booking.isDomestic ? 'Domestic' : 'International'}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 font-mono">
-                          {booking.pnr || booking.confirmationNo || 'N/A'}
+                          {booking.pnr || 'N/A'}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <span className={`font-medium ${realTimeStatus.className}`}>
+                          <span className={`font-medium ${bookingStatus.className}`}>
+                            {bookingStatus.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${realTimeStatus.className}`}>
                             {realTimeStatus.status}
                           </span>
-                          {statusLoading && (
-                            <div className="text-xs text-blue-500 mt-1">Updating...</div>
-                          )}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {formatAmount(booking.totalAmount || booking.amount)}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={`font-medium ${booking.paymentStatus?.toLowerCase() === 'completed' || booking.paymentStatus?.toLowerCase() === 'paid'
-                            ? 'text-green-600' :
-                            booking.paymentStatus?.toLowerCase() === 'processing'
-                              ? 'text-orange-600' :
-                              booking.paymentStatus?.toLowerCase() === 'failed'
-                                ? 'text-red-600' :
-                                'text-green-600'
-                            }`}>
-                            {booking.paymentStatus || 'Completed'}
-                          </span>
+                          {formatAmount(booking.totalAmount)}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
                           <div className="flex flex-col">
-                            <span className="font-medium">{formatDate(booking.bookingDate || booking.createdAt)}</span>
+                            <span className="font-medium">{formatDate(booking.bookingDate)}</span>
                             <span className="text-xs text-gray-400">
                               {sortOrder === 'desc' ? 'Latest First' : 'Oldest First'}
                             </span>
@@ -440,28 +488,14 @@ const FlightBookingComponent = () => {
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <button
-                            onClick={() => {
-                              console.log('View flight booking details:', booking);
-                              // You can add navigation logic here
-                            }}
-                            className="text-blue-500 hover:text-blue-700 font-medium flex items-center"
+                            onClick={() => handleInvoiceDownload(booking)}
+                            className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs "
                           >
-                            View
+                            Invoice
                           </button>
-                          <button
-                            onClick={async () => {
-                              console.log('Refreshing real-time status for:', booking.bookingId);
-                              const currentUserType = getFlightUserType();
-                              const result = await fetchFlightRealTimeStatus(booking, currentUserType);
-                              setRealTimeStatuses(prev => ({
-                                ...prev,
-                                [result.bookingId]: result
-                              }));
-                            }}
-                            className="text-green-500 hover:text-green-700 font-medium text-xs mt-1"
-                          >
-                            Refresh Status
-                          </button>
+
+
+
                         </td>
                       </tr>
                     );
@@ -476,4 +510,4 @@ const FlightBookingComponent = () => {
   );
 };
 
-export default FlightBookingComponent; 
+export default FlightBookingComponent;

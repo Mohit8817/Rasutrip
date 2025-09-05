@@ -40,23 +40,18 @@ const HotelBookingServices = {
     realTimeStatus: `${baseURL}/hotelservice/real-time-booking-details`
 };
 
-// ✅ Define flight booking service endpoints
+// ✅ Define flight booking service endpoints - SIMPLIFIED VERSION
 const FlightBookingServices = {
-    // Customer endpoints
+    // Customer endpoints - Only the two APIs you specified
     customer: {
         upcomingBookings: `${baseURL}/airservice/up-comming-bookings`,
-        allBookings: `${baseURL}/airservice/booking-details`,
+        allBookings: `${baseURL}/airservice/my-bookings`,
     },
-    // Agent endpoints
+    // Agent endpoints - using same endpoints for now
     agent: {
-        upcomingBookings: `${baseURL}/agent/flight-bookings/upcoming`,
-        allBookings: `${baseURL}/agent/flight-bookings/all`,
-        // Fallback to customer endpoints if agent endpoints don't exist
-        upcomingFallback: `${baseURL}/airservice/up-comming-bookings`,
-        allFallback: `${baseURL}/airservice/booking-details`,
-    },
-    // Real-time status endpoint for flights
-    realTimeStatus: `${baseURL}/airservice/real-time-booking-details`
+        upcomingBookings: `${baseURL}/airservice/up-comming-bookings`,
+        allBookings: `${baseURL}/airservice/my-bookings`,
+    }
 };
 
 // ✅ Helper function to detect user type from multiple sources
@@ -656,179 +651,28 @@ export const fetchAllHotelBookings = async (userType = null) => {
 };
 
 // ============================================================================
-// FLIGHT BOOKING FUNCTIONS
+// FLIGHT BOOKING FUNCTIONS - SIMPLIFIED TO ONLY 2 APIS
 // ============================================================================
-
-// ✅ Fetch real-time booking status for FLIGHT bookings
-export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
-    try {
-        const currentUserType = userType || detectUserType();
-        console.log('🔄 Fetching real-time status for flight booking:', booking);
-
-        // Extract flight booking details with enhanced validation
-        const bookingId = booking?.bookingId || booking?.BookingId || booking?.booking_id;
-        const searchTokenId = booking?.searchTokenId || booking?.SearchTokenId || booking?.token_id;
-        const pnr = booking?.pnr || booking?.PNR || booking?.confirmationNo;
-        const flightNumber = booking?.flightNumber || booking?.FlightNumber || booking?.flight_number;
-        const airlineCode = booking?.airlineCode || booking?.AirlineCode || booking?.airline_code;
-
-        // Validate required fields
-        if (!bookingId) {
-            throw new Error('BookingId is required for flight real-time status check');
-        }
-
-        // Prepare request data with all available fields for flight
-        const requestData = {
-            BookingId: String(bookingId), // Use capital B as per API requirement
-            ...(searchTokenId && { SearchTokenId: String(searchTokenId) }),
-            ...(pnr && { PNR: String(pnr) }),
-            ...(flightNumber && { FlightNumber: String(flightNumber) }),
-            ...(airlineCode && { AirlineCode: String(airlineCode) }),
-            UserType: currentUserType || 'customer',
-            ServiceType: 'flight' // Add service type identifier
-        };
-
-        console.log('📤 Flight real-time status request data:', requestData);
-
-        const response = await makeAuthenticatedRequest(
-            FlightBookingServices.realTimeStatus,
-            'POST',
-            requestData,
-            currentUserType
-        );
-
-        console.log('✅ Flight real-time status response:', response);
-
-        // Extract status from response with multiple fallbacks for flight
-        let status = 'Unknown';
-        if (response) {
-            status = response.status ||
-                response.Status ||
-                response.bookingStatus ||
-                response.BookingStatus ||
-                response.flightStatus ||
-                response.FlightStatus ||
-                response.realTimeStatus ||
-                response.data?.status ||
-                response.result?.status ||
-                'Unknown';
-        }
-
-        return {
-            success: true,
-            status: status,
-            data: response,
-            lastUpdated: new Date(),
-            bookingId: bookingId,
-            serviceType: 'flight'
-        };
-
-    } catch (error) {
-        console.error('❌ Error fetching flight real-time status:', error);
-
-        let errorMessage = 'Failed to fetch flight status';
-        if (error.response) {
-            const { status } = error.response;
-            if (status === 401) {
-                errorMessage = 'Authentication failed';
-            } else if (status === 404) {
-                errorMessage = 'Flight booking not found';
-            } else if (status === 400) {
-                errorMessage = 'Invalid flight booking data';
-            }
-        } else if (error.request) {
-            errorMessage = 'Network error';
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
-
-        return {
-            success: false,
-            status: 'Error',
-            error: errorMessage,
-            lastUpdated: new Date(),
-            bookingId: booking?.bookingId || 'Unknown',
-            serviceType: 'flight'
-        };
-    }
-};
-
-// ✅ Fetch real-time status for multiple FLIGHT bookings
-export const fetchMultipleFlightRealTimeStatus = async (bookings, userType = null) => {
-    console.log(`🔄 Fetching real-time status for ${bookings.length} flight bookings`);
-
-    const results = {};
-
-    // Process flight bookings in batches to avoid overwhelming the API
-    const batchSize = 3; // Conservative batch size for flight bookings
-    for (let i = 0; i < bookings.length; i += batchSize) {
-        const batch = bookings.slice(i, i + batchSize);
-
-        const batchPromises = batch.map(async (booking) => {
-            try {
-                const result = await fetchFlightRealTimeStatus(booking, userType);
-                return { bookingId: result.bookingId, result };
-            } catch (error) {
-                console.warn('⚠️ Failed to fetch status for flight booking:', booking.bookingId);
-                return {
-                    bookingId: booking.bookingId,
-                    result: {
-                        success: false,
-                        status: 'Error',
-                        error: 'Failed to fetch',
-                        lastUpdated: new Date(),
-                        bookingId: booking.bookingId,
-                        serviceType: 'flight'
-                    }
-                };
-            }
-        });
-
-        const batchResults = await Promise.all(batchPromises);
-
-        // Add results to the main results object
-        batchResults.forEach(({ bookingId, result }) => {
-            results[bookingId] = result;
-        });
-
-        // Add small delay between batches (longer for flight bookings)
-        if (i + batchSize < bookings.length) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-    }
-
-    console.log(`✅ Completed flight real-time status fetch for ${Object.keys(results).length} bookings`);
-    return results;
-};
 
 // ✅ Fetch upcoming FLIGHT bookings with user type awareness
 export const fetchUpcomingFlightBookings = async (userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
-        const endpoints = getBookingEndpoints(currentUserType, 'flight');
-
         console.log('🚀 Fetching upcoming flight bookings for:', currentUserType);
 
-        try {
-            const response = await makeAuthenticatedRequest(endpoints.upcomingBookings, 'GET', null, currentUserType);
-            return {
-                success: true,
-                data: response,
-                message: `Upcoming flight bookings fetched successfully for ${currentUserType}`
-            };
-        } catch (error) {
-            // Try fallback for agents if available
-            if (currentUserType === 'agent' && endpoints.upcomingFallback) {
-                console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackResponse = await makeAuthenticatedRequest(endpoints.upcomingFallback, 'GET', null, currentUserType);
-                return {
-                    success: true,
-                    data: fallbackResponse,
-                    message: `Upcoming flight bookings fetched successfully for ${currentUserType} (fallback)`
-                };
-            }
-            throw error;
-        }
+        const endpoint = currentUserType === 'agent' 
+            ? FlightBookingServices.agent.upcomingBookings 
+            : FlightBookingServices.customer.upcomingBookings;
+
+        const response = await makeAuthenticatedRequest(endpoint, 'GET', null, currentUserType);
+        
+        console.log('✅ Upcoming flight bookings response:', response);
+        
+        return {
+            success: true,
+            data: response,
+            message: `Upcoming flight bookings fetched successfully for ${currentUserType}`
+        };
     } catch (error) {
         console.error('❌ Error fetching upcoming flight bookings:', error.message);
         throw {
@@ -843,30 +687,21 @@ export const fetchUpcomingFlightBookings = async (userType = null) => {
 export const fetchAllFlightBookings = async (userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
-        const endpoints = getBookingEndpoints(currentUserType, 'flight');
-
         console.log('🚀 Fetching all flight bookings for:', currentUserType);
 
-        try {
-            const response = await makeAuthenticatedRequest(endpoints.allBookings, 'GET', null, currentUserType);
-            return {
-                success: true,
-                data: response,
-                message: `All flight bookings fetched successfully for ${currentUserType}`
-            };
-        } catch (error) {
-            // Try fallback for agents if available
-            if (currentUserType === 'agent' && endpoints.allFallback) {
-                console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackResponse = await makeAuthenticatedRequest(endpoints.allFallback, 'GET', null, currentUserType);
-                return {
-                    success: true,
-                    data: fallbackResponse,
-                    message: `All flight bookings fetched successfully for ${currentUserType} (fallback)`
-                };
-            }
-            throw error;
-        }
+        const endpoint = currentUserType === 'agent' 
+            ? FlightBookingServices.agent.allBookings 
+            : FlightBookingServices.customer.allBookings;
+
+        const response = await makeAuthenticatedRequest(endpoint, 'GET', null, currentUserType);
+        
+        console.log('✅ All flight bookings response:', response);
+        
+        return {
+            success: true,
+            data: response,
+            message: `All flight bookings fetched successfully for ${currentUserType}`
+        };
     } catch (error) {
         console.error('❌ Error fetching all flight bookings:', error.message);
         throw {
@@ -941,32 +776,6 @@ export const fetchAllBookingsByType = async (serviceType = 'bus', userType = nul
         case 'bus':
         default:
             return await fetchAllBookings(userType);
-    }
-};
-
-// ✅ Generic function to fetch real-time status for any service type
-export const fetchRealTimeStatusByType = async (booking, serviceType = 'bus', userType = null) => {
-    switch (serviceType.toLowerCase()) {
-        case 'hotel':
-            return await fetchHotelRealTimeStatus(booking, userType);
-        case 'flight':
-            return await fetchFlightRealTimeStatus(booking, userType);
-        case 'bus':
-        default:
-            return await fetchRealTimeStatus(booking, userType);
-    }
-};
-
-// ✅ Generic function to fetch multiple real-time statuses for any service type
-export const fetchMultipleRealTimeStatusByType = async (bookings, serviceType = 'bus', userType = null) => {
-    switch (serviceType.toLowerCase()) {
-        case 'hotel':
-            return await fetchMultipleHotelRealTimeStatus(bookings, userType);
-        case 'flight':
-            return await fetchMultipleFlightRealTimeStatus(bookings, userType);
-        case 'bus':
-        default:
-            return await fetchMultipleRealTimeStatus(bookings, userType);
     }
 };
 
