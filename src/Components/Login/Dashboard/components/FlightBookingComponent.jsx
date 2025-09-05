@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw } from 'lucide-react';
-// Import the simplified flight booking services
+import { RefreshCw, X, Clock, AlertCircle, CheckCircle, Info, Loader } from 'lucide-react';
+// Import the updated flight booking services with real-time status
 import {
   fetchUpcomingFlightBookings,
   fetchAllFlightBookings,
+  fetchFlightRealTimeStatus,
   getFlightUserType,
   isFlightUserAuthenticated
 } from "../../services/bookingApi";
@@ -16,6 +17,13 @@ const FlightBookingComponent = () => {
   const [error, setError] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
   const [userRole, setUserRole] = useState('user');
+
+  // Real-time status popup state
+  const [showStatusPopup, setShowStatusPopup] = useState(false);
+  const [currentBookingForStatus, setCurrentBookingForStatus] = useState(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusData, setStatusData] = useState(null);
+  const [statusError, setStatusError] = useState('');
 
   // Get current bookings based on selected type
   const currentBookings = bookingType === 'upcoming' ? upcomingBookings : allBookings;
@@ -62,9 +70,170 @@ const FlightBookingComponent = () => {
         fareType: result.FareType,
         segments: result.Segments,
         invoiceNo: result.InvoiceNo,
-        invoiceAmount: result.InvoiceAmount
+        invoiceAmount: result.InvoiceAmount,
+        // Additional fields for real-time status API
+        searchTokenId: booking.searchTokenId || booking.SearchTokenId,
+        airlineCode: firstSegment.Airline?.AirlineCode
       };
     });
+  };
+
+  // Handle real-time status check
+  const handleRealTimeStatusCheck = async (booking) => {
+    console.log('🚀 Checking real-time status for flight booking:', booking);
+
+    setCurrentBookingForStatus(booking);
+    setShowStatusPopup(true);
+    setStatusLoading(true);
+    setStatusError('');
+    setStatusData(null);
+
+    try {
+      const currentUserType = getFlightUserType();
+      console.log('👤 User type for status check:', currentUserType);
+
+      const statusResult = await fetchFlightRealTimeStatus(booking, currentUserType);
+      console.log('📋 Status result:', statusResult);
+
+      if (statusResult.success) {
+        setStatusData(statusResult);
+      } else {
+        setStatusError(statusResult.error || 'Failed to fetch real-time status');
+      }
+    } catch (error) {
+      console.error('❌ Error checking flight real-time status:', error);
+      setStatusError(error.message || 'Failed to check real-time status');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  // Close status popup
+  const closeStatusPopup = () => {
+    setShowStatusPopup(false);
+    setCurrentBookingForStatus(null);
+    setStatusData(null);
+    setStatusError('');
+    setStatusLoading(false);
+  };
+
+  // Get status icon and color
+  const getStatusDisplay = (status) => {
+    const statusLower = status.toLowerCase();
+
+    if (statusLower.includes('confirmed') || statusLower.includes('booked')) {
+      return {
+        icon: <CheckCircle className="w-4 h-4" />,
+        color: 'text-green-600',
+        bgColor: 'bg-green-100'
+      };
+    } else if (statusLower.includes('cancelled')) {
+      return {
+        icon: <X className="w-4 h-4" />,
+        color: 'text-red-600',
+        bgColor: 'bg-red-100'
+      };
+    } else if (statusLower.includes('pending')) {
+      return {
+        icon: <Clock className="w-4 h-4" />,
+        color: 'text-orange-600',
+        bgColor: 'bg-orange-100'
+      };
+    } else {
+      return {
+        icon: <Info className="w-4 h-4" />,
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-100'
+      };
+    }
+  };
+
+  // Format status data for display
+  const formatStatusData = (data) => {
+    if (!data || !data.data) return [];
+
+    const formatted = [];
+    const responseData = data.data;
+
+    // Basic information
+    formatted.push({
+      label: 'Booking ID',
+      value: data.bookingId || 'N/A'
+    });
+
+    formatted.push({
+      label: 'Status',
+      value: data.status || 'Unknown'
+    });
+
+    formatted.push({
+      label: 'Last Updated',
+      value: new Date(data.lastUpdated).toLocaleString()
+    });
+
+    // Extract additional data from response
+    if (responseData.PNR) {
+      formatted.push({
+        label: 'PNR',
+        value: responseData.PNR
+      });
+    }
+
+    if (responseData.FlightStatus) {
+      formatted.push({
+        label: 'Flight Status',
+        value: responseData.FlightStatus
+      });
+    }
+
+    if (responseData.DepartureTime) {
+      formatted.push({
+        label: 'Departure Time',
+        value: new Date(responseData.DepartureTime).toLocaleString()
+      });
+    }
+
+    if (responseData.ArrivalTime) {
+      formatted.push({
+        label: 'Arrival Time',
+        value: new Date(responseData.ArrivalTime).toLocaleString()
+      });
+    }
+
+    if (responseData.Gate) {
+      formatted.push({
+        label: 'Gate',
+        value: responseData.Gate
+      });
+    }
+
+    if (responseData.Terminal) {
+      formatted.push({
+        label: 'Terminal',
+        value: responseData.Terminal
+      });
+    }
+
+    if (responseData.Delay) {
+      formatted.push({
+        label: 'Delay',
+        value: responseData.Delay
+      });
+    }
+
+    // Add any other fields from the response
+    Object.keys(responseData).forEach(key => {
+      if (!['PNR', 'FlightStatus', 'DepartureTime', 'ArrivalTime', 'Gate', 'Terminal', 'Delay'].includes(key)) {
+        if (responseData[key] && typeof responseData[key] !== 'object') {
+          formatted.push({
+            label: key,
+            value: String(responseData[key])
+          });
+        }
+      }
+    });
+
+    return formatted;
   };
 
   // Load flight bookings using the simplified service
@@ -273,14 +442,13 @@ const FlightBookingComponent = () => {
         <div>
           <h5 className="text-2xl font-bold text-gray-800">My Flight Bookings</h5>
         </div>
-
       </div>
 
       {/* Error Display */}
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-center">
-            <span className="text-red-500 text-xl mr-2">⚠️</span>
+            <AlertCircle className="text-red-500 w-5 h-5 mr-2" />
             <div>
               <h3 className="text-red-800 font-medium">Error Loading Flight Bookings</h3>
               <p className="text-red-600 mt-1">{error}</p>
@@ -364,7 +532,6 @@ const FlightBookingComponent = () => {
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Journey Type</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">PNR</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real Time Status</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Amount</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200"
                     onClick={toggleSortOrder}
@@ -372,6 +539,7 @@ const FlightBookingComponent = () => {
                     Booked On {sortOrder === 'desc' ? '↓' : '↑'}
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real Time Status</th>
                 </tr>
               </thead>
               <tbody className="bg-gray-50">
@@ -470,11 +638,7 @@ const FlightBookingComponent = () => {
                             {bookingStatus.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${realTimeStatus.className}`}>
-                            {realTimeStatus.status}
-                          </span>
-                        </td>
+                      
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {formatAmount(booking.totalAmount)}
                         </td>
@@ -493,8 +657,16 @@ const FlightBookingComponent = () => {
                           >
                             Invoice
                           </button>
+                        </td>
 
-
+                          <td className="px-4 py-3 text-sm">
+                          <button
+                            onClick={() => handleRealTimeStatusCheck(booking)}
+                            className="px-2 py-1 text-green-600 hover:text-green-700 text-sm font-medium transition-colors duration-200 flex items-center space-x-1 bg-transparent"
+                            title="Check real-time flight status"
+                          >
+                            <span>Status</span>
+                          </button>
 
                         </td>
                       </tr>
@@ -503,6 +675,143 @@ const FlightBookingComponent = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Real-time Status Popup */}
+      {showStatusPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Info className="w-5 h-5 mr-2 text-blue-500" />
+                Real-time Flight Status
+              </h3>
+              <button
+                onClick={closeStatusPopup}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              {/* Booking Info */}
+              {currentBookingForStatus && (
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-semibold text-gray-800 mb-2">Flight Information</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Booking ID:</span>
+                      <span className="ml-2 font-mono">{currentBookingForStatus.bookingId}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">PNR:</span>
+                      <span className="ml-2 font-mono">{currentBookingForStatus.pnr}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Flight:</span>
+                      <span className="ml-2">{currentBookingForStatus.flightNumber}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Route:</span>
+                      <span className="ml-2">{currentBookingForStatus.from} → {currentBookingForStatus.to}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {statusLoading && (
+                <div className="text-center py-8">
+                  <Loader className="w-8 h-8 animate-spin mx-auto text-blue-500 mb-4" />
+                  <p className="text-gray-600">Fetching real-time status...</p>
+                </div>
+              )}
+
+              {/* Error State */}
+              {statusError && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                    <div>
+                      <h4 className="text-red-800 font-medium">Error</h4>
+                      <p className="text-red-600 text-sm mt-1">{statusError}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Success State */}
+              {statusData && !statusLoading && !statusError && (
+                <div className="space-y-4">
+                  {/* Status Header */}
+                  <div className="flex items-center p-4 bg-green-50 border border-green-200 rounded-lg">
+                    {(() => {
+                      const statusDisplay = getStatusDisplay(statusData.status);
+                      return (
+                        <div className={`flex items-center px-3 py-1 rounded-full ${statusDisplay.bgColor}`}>
+                          <span className={statusDisplay.color}>{statusDisplay.icon}</span>
+                          <span className={`ml-2 font-semibold ${statusDisplay.color}`}>
+                            {statusData.status}
+                          </span>
+                        </div>
+                      );
+                    })()}
+                    <div className="ml-auto text-xs text-gray-500">
+                      Last updated: {new Date(statusData.lastUpdated).toLocaleString()}
+                    </div>
+                  </div>
+
+                  {/* Status Details */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-gray-800">Status Details</h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      {formatStatusData(statusData).map((item, index) => (
+                        <div key={index} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0">
+                          <span className="text-gray-600 font-medium">{item.label}:</span>
+                          <span className="text-gray-900 font-mono text-sm">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Raw Data (Debug) */}
+                  {statusData.data && Object.keys(statusData.data).length > 0 && (
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                        View Raw API Response (Debug)
+                      </summary>
+                      <pre className="mt-2 p-3 bg-gray-100 rounded text-xs overflow-auto">
+                        {JSON.stringify(statusData.data, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end p-6 border-t bg-gray-50">
+              <button
+                onClick={closeStatusPopup}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
+              {currentBookingForStatus && !statusLoading && (
+                <button
+                  onClick={() => handleRealTimeStatusCheck(currentBookingForStatus)}
+                  className="ml-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh Status
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
