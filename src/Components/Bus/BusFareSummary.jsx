@@ -326,12 +326,12 @@ const BusFareSummary = ({
           )}
 
           {/* Agent Commission - Always show if greater than 0 */}
-          {fareData.agentCommission > 0 && (
+          {/* {fareData.agentCommission > 0 && (
             <div className="fare-row">
               <span>Agent Commission</span>
               <span>₹ {fareData.agentCommission.toFixed(2)}</span>
             </div>
-          )}
+          )} */}
 
           {/* GST - Show total GST if greater than 0 */}
           {fareData.gst.total > 0 && (
@@ -377,12 +377,12 @@ const BusFareSummary = ({
           )}
 
           {/* TDS Deduction - Always show if greater than 0 */}
-          {fareData.tds > 0 && (
+          {/* {fareData.tds > 0 && (
             <div className="fare-row text-danger">
               <span>TDS Deduction (-)</span>
               <span>- ₹ {fareData.tds.toFixed(2)}</span>
             </div>
-          )}
+          )} */}
 
           {/* API Discount - Always show if greater than 0 */}
           {fareData.discount > 0 && (
@@ -411,11 +411,11 @@ const BusFareSummary = ({
             </>
           )}
 
-          {/* Total Before Coupon */}
+          {/* Total Before Coupon
           <div className="fare-row fw-bold">
             <span>Total Before Discount</span>
             <span>₹ {totalBeforeCoupon.toFixed(2)}</span>
-          </div>
+          </div> */}
 
           {/* Coupon Discount - Always show if applied */}
           {couponDiscount > 0 && appliedCouponData && (
