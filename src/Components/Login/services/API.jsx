@@ -86,6 +86,177 @@ const extractBookingsArray = (apiResponse) => {
     return bookingsArray;
 };
 
+// ✅ NEW: Fetch flight bookings and convert to payment format
+const fetchFlightPayments = async () => {
+    try {
+        let allFlightBookings = [];
+
+        console.log('✈️ Fetching flight bookings...');
+
+        // Fetch upcoming flight bookings
+        try {
+            console.log('  Trying upcoming flight bookings endpoint...');
+            const upcomingResponse = await makeAuthenticatedRequest(`${API_BASE_URL}/airservice/up-comming-bookings`);
+            const upcomingBookings = extractBookingsArray(upcomingResponse);
+            allFlightBookings = [...allFlightBookings, ...upcomingBookings];
+            console.log('  Upcoming flight bookings found:', upcomingBookings.length);
+        } catch (error) {
+            console.warn('⚠️ Failed to fetch upcoming flight bookings:', error.message);
+        }
+
+        // Fetch all flight bookings
+        try {
+            console.log('  Trying all flight bookings endpoint...');
+            const allResponse = await makeAuthenticatedRequest(`${API_BASE_URL}/airservice/my-bookings`);
+            const allBookings = extractBookingsArray(allResponse);
+
+            // Remove duplicates by booking ID
+            const existingIds = new Set(allFlightBookings.map(b => {
+                const booking = b.Result || b;
+                return booking.BookingId || booking.bookingId || b.bookingId || b.BookingId;
+            }));
+
+            const newBookings = allBookings.filter(b => {
+                const booking = b.Result || b;
+                const bookingId = booking.BookingId || booking.bookingId || b.bookingId || b.BookingId;
+                return !existingIds.has(bookingId);
+            });
+
+            allFlightBookings = [...allFlightBookings, ...newBookings];
+            console.log('  All flight bookings found:', newBookings.length, 'new bookings added');
+        } catch (error) {
+            console.warn('⚠️ Failed to fetch all flight bookings:', error.message);
+        }
+
+        console.log('  Total flight bookings found:', allFlightBookings.length);
+
+        // Convert flight bookings to payment format
+        const flightPayments = allFlightBookings.map((bookingWrapper, index) => {
+            const booking = bookingWrapper.Result || bookingWrapper;
+
+            // Extract booking ID from various possible locations
+            const bookingId = bookingWrapper.bookingId ||
+                bookingWrapper.BookingId ||
+                booking.BookingId ||
+                booking.bookingId ||
+                booking.booking_id ||
+                booking.id ||
+                `FLT${Date.now()}${index}`;
+
+            // Extract flight details from segments
+            const segments = booking.Segments || [];
+            const firstSegment = segments[0]?.[0] || segments[0] || {};
+            const lastSegment = segments[0]?.[segments[0]?.length - 1] || firstSegment;
+
+            const airline = firstSegment.Airline || {};
+            const origin = firstSegment.Origin || {};
+            const destination = lastSegment.Destination || firstSegment.Destination || {};
+
+            const airlineName = airline.AirlineName || airline.airlineName || booking.airlineName || 'Flight Service';
+            const flightNumber = airline.FlightNumber || airline.flightNumber || booking.flightNumber || '';
+
+            const fromCity = origin.CityName || origin.cityName || booking.fromCity || 'Unknown';
+            const toCity = destination.CityName || destination.cityName || booking.toCity || 'Unknown';
+            const route = `${fromCity} → ${toCity}`;
+
+            // Extract amount from various possible locations
+            const totalAmount = bookingWrapper.RasuTripInvoiceAmount ||
+                booking.InvoiceAmount ||
+                booking.TotalAmount ||
+                booking.totalAmount ||
+                booking.amount ||
+                booking.fare ||
+                booking.price ||
+                booking.Fare?.PublishedPrice ||
+                booking.Fare?.OfferedPrice ||
+                0;
+
+            // Extract booking status
+            const bookingStatus = booking.Status || booking.status || booking.CancelStatus ||
+                booking.bookingStatus || booking.BookingStatus || 'Confirmed';
+
+            // Map booking status to payment status
+            let paymentStatus = 'SUCCESS';
+            if (bookingStatus && bookingStatus !== 'none') {
+                if (bookingStatus.toLowerCase().includes('cancel')) {
+                    paymentStatus = 'REFUNDED';
+                } else if (bookingStatus.toLowerCase().includes('pending')) {
+                    paymentStatus = 'PENDING';
+                } else if (bookingStatus.toLowerCase().includes('fail')) {
+                    paymentStatus = 'FAILED';
+                }
+            }
+
+            // Extract dates
+            const createdAt = bookingWrapper.createdAt ||
+                booking.BookingDate ||
+                booking.bookingDate ||
+                booking.InvoiceCreatedOn ||
+                booking.created_at ||
+                new Date().toISOString();
+
+            // Extract transaction/confirmation details
+            const transactionId = booking.PNR ||
+                booking.pnr ||
+                booking.ConfirmationNo ||
+                booking.confirmationNumber ||
+                booking.confirmation_no ||
+                booking.confirmationNo ||
+                booking.ConfirmationNumber ||
+                booking.referenceNumber ||
+                booking.ReferenceNumber ||
+                booking.BookingReference ||
+                booking.bookingReference ||
+                bookingId;
+
+            // Extract passenger count
+            const passengerCount = booking.Passenger?.length ||
+                booking.passengers?.length ||
+                booking.passengerCount ||
+                booking.totalPassengers || 1;
+
+            return {
+                id: `flight_${bookingId}`,
+                _id: `flight_${bookingId}`,
+                bookingId: String(bookingId),
+                type: 'FLIGHT',
+                serviceName: flightNumber ? `${airlineName} - ${flightNumber}` : airlineName,
+                amount: parseFloat(totalAmount) || 0,
+                status: paymentStatus,
+                date: createdAt,
+                createdAt: createdAt,
+                paymentMethod: 'Online Payment',
+                transactionId: String(transactionId),
+                serviceDetails: {
+                    airlineName: airlineName,
+                    flightNumber: flightNumber,
+                    route: route,
+                    from: origin.AirportCode || origin.airportCode || fromCity,
+                    to: destination.AirportCode || destination.airportCode || toCity,
+                    fromCity: fromCity,
+                    toCity: toCity,
+                    departureTime: origin.DepartTime || origin.departTime,
+                    arrivalTime: destination.ArrivalTime || destination.arrivalTime,
+                    passengers: passengerCount,
+                    cabinClass: firstSegment.CabinClass || firstSegment.cabinClass || 'Economy'
+                },
+                // Keep additional flight-specific data
+                pnr: booking.PNR || booking.pnr,
+                journeyType: booking.JourneyType || 1, // 1 = One Way, 2 = Round Trip
+                isDomestic: booking.IsDomestic,
+                rawData: bookingWrapper
+            };
+        });
+
+        console.log('✈️ Converted flight payments:', flightPayments);
+        return flightPayments;
+
+    } catch (error) {
+        console.error('❌ Error fetching flight payments:', error);
+        throw error;
+    }
+};
+
 // ✅ Fetch hotel bookings and convert to payment format
 const fetchHotelPayments = async () => {
     try {
@@ -372,16 +543,30 @@ const fetchBusPayments = async () => {
     }
 };
 
-// ✅ Enhanced payment history function that includes hotel and bus bookings
+// ✅ Enhanced payment history function that includes flight, hotel and bus bookings
 export const getPaymentHistory = async (type = null) => {
     try {
         let allPayments = [];
 
+        // If filtering for ALL or FLIGHT, fetch flight payments
+        if (!type || type === 'ALL' || type === 'FLIGHT') {
+            try {
+                console.log('✈️ Fetching flight payments...');
+                const flightPayments = await fetchFlightPayments();
+                allPayments = [...allPayments, ...flightPayments];
+                console.log('✅ Flight payments fetched:', flightPayments.length);
+            } catch (error) {
+                console.warn('⚠️ Failed to fetch flight payments:', error.message);
+            }
+        }
+
         // If filtering for ALL or HOTEL, fetch hotel payments
         if (!type || type === 'ALL' || type === 'HOTEL') {
             try {
+                console.log('🏨 Fetching hotel payments...');
                 const hotelPayments = await fetchHotelPayments();
                 allPayments = [...allPayments, ...hotelPayments];
+                console.log('✅ Hotel payments fetched:', hotelPayments.length);
             } catch (error) {
                 console.warn('⚠️ Failed to fetch hotel payments:', error.message);
             }
@@ -390,21 +575,24 @@ export const getPaymentHistory = async (type = null) => {
         // If filtering for ALL or BUS, fetch bus payments
         if (!type || type === 'ALL' || type === 'BUS') {
             try {
+                console.log('🚌 Fetching bus payments...');
                 const busPayments = await fetchBusPayments();
                 allPayments = [...allPayments, ...busPayments];
+                console.log('✅ Bus payments fetched:', busPayments.length);
             } catch (error) {
                 console.warn('⚠️ Failed to fetch bus payments:', error.message);
             }
         }
 
-        // If filtering for ALL or other types (like FLIGHT), fetch regular payments
-        if (!type || type === 'ALL' || (type !== 'BUS' && type !== 'HOTEL')) {
+        // If filtering for ALL or other types, fetch regular payments
+        if (!type || type === 'ALL' || (type !== 'BUS' && type !== 'HOTEL' && type !== 'FLIGHT')) {
             try {
+                console.log('💳 Fetching regular payments...');
                 // Get auth token - adjust based on your auth implementation
                 const token = localStorage.getItem('authToken') || localStorage.getItem('token');
 
                 // Build endpoint with type filter if provided
-                const endpoint = type && type !== 'ALL' && type !== 'BUS' && type !== 'HOTEL'
+                const endpoint = type && type !== 'ALL' && type !== 'BUS' && type !== 'HOTEL' && type !== 'FLIGHT'
                     ? `${FinancialServices.getPaymentHistory}?type=${type}`
                     : FinancialServices.getPaymentHistory;
 
@@ -482,7 +670,7 @@ export const getPaymentHistory = async (type = null) => {
                 });
 
                 allPayments = [...allPayments, ...paymentData];
-                console.log("✅ Processed regular payment data:", paymentData);
+                console.log("✅ Processed regular payment data:", paymentData.length);
 
             } catch (error) {
                 console.warn('⚠️ Failed to fetch regular payments:', error.message);
@@ -497,7 +685,13 @@ export const getPaymentHistory = async (type = null) => {
         // Sort by date (newest first)
         allPayments.sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
 
-        console.log("✅ Final processed payment data:", allPayments);
+        console.log("✅ Final processed payment data:", allPayments.length, "payments");
+        console.log("📊 Payment breakdown by type:", {
+            FLIGHT: allPayments.filter(p => p.type === 'FLIGHT').length,
+            HOTEL: allPayments.filter(p => p.type === 'HOTEL').length,
+            BUS: allPayments.filter(p => p.type === 'BUS').length,
+            OTHER: allPayments.filter(p => !['FLIGHT', 'HOTEL', 'BUS'].includes(p.type)).length
+        });
 
         return {
             success: true,
@@ -652,10 +846,10 @@ export const FinancialUtils = {
         const type = payment.bookingType?.toLowerCase() || payment.type?.toLowerCase();
 
         switch (type) {
+            case 'flight':
+                return `${details.airlineName || 'Flight'} ${details.flightNumber || ''}`.trim();
             case 'hotel':
                 return details.hotelName || 'Hotel Booking';
-            case 'flight':
-                return `${details.airline || 'Flight'} ${details.flightNumber || ''}`.trim();
             case 'bus':
                 return details.busName || 'Bus Booking';
             default:
@@ -672,19 +866,20 @@ export const FinancialUtils = {
         const info = [];
 
         switch (type) {
+            case 'flight':
+                if (details.from && details.to) info.push(`Route: ${details.from} → ${details.to}`);
+                if (details.departureTime) info.push(`Departure: ${FinancialUtils.formatDate(details.departureTime)}`);
+                if (details.arrivalTime) info.push(`Arrival: ${FinancialUtils.formatDate(details.arrivalTime)}`);
+                if (details.passengers) info.push(`Passengers: ${details.passengers}`);
+                if (details.cabinClass) info.push(`Class: ${details.cabinClass}`);
+                break;
+
             case 'hotel':
                 if (details.hotelLocation) info.push(`Location: ${details.hotelLocation}`);
                 if (details.checkIn) info.push(`Check-in: ${FinancialUtils.formatDate(details.checkIn)}`);
                 if (details.checkOut) info.push(`Check-out: ${FinancialUtils.formatDate(details.checkOut)}`);
                 if (details.rooms) info.push(`Rooms: ${details.rooms}`);
                 if (details.guests) info.push(`Guests: ${details.guests}`);
-                break;
-
-            case 'flight':
-                if (details.from && details.to) info.push(`Route: ${details.from} → ${details.to}`);
-                if (details.departureDate) info.push(`Departure: ${FinancialUtils.formatDate(details.departureDate)}`);
-                if (details.returnDate) info.push(`Return: ${FinancialUtils.formatDate(details.returnDate)}`);
-                if (details.passengers) info.push(`Passengers: ${details.passengers}`);
                 break;
 
             case 'bus':
@@ -704,8 +899,8 @@ export const FinancialUtils = {
             'WALLET_RECHARGE': 'Wallet Recharge',
             'PAYMENT': 'Payment',
             'BOOKING': 'Booking',
-            'HOTEL': 'Hotel Booking',
             'FLIGHT': 'Flight Booking',
+            'HOTEL': 'Hotel Booking',
             'BUS': 'Bus Booking',
             'REFUND': 'Refund',
             'WITHDRAWAL': 'Withdrawal',
