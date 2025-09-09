@@ -638,7 +638,7 @@ const FlightBookingComponent = () => {
                             {bookingStatus.status}
                           </span>
                         </td>
-                      
+
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {formatAmount(booking.totalAmount)}
                         </td>
@@ -659,7 +659,7 @@ const FlightBookingComponent = () => {
                           </button>
                         </td>
 
-                          <td className="px-4 py-3 text-sm">
+                        <td className="px-4 py-3 text-sm">
                           <button
                             onClick={() => handleRealTimeStatusCheck(booking)}
                             className="px-2 py-1 text-green-600 hover:text-green-700 text-sm font-medium transition-colors duration-200 flex items-center space-x-1 bg-transparent"

@@ -1,5 +1,3 @@
-// src/components/Bus/BusPaymentInfo.js - ENHANCED VERSION with Coupon Integration
-
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Alert, Modal } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -220,6 +218,188 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
     
     // Apply coupon discount to get final amount
     const finalAmount = Math.max(0, totalBeforeCoupon - fareBreakdown.couponDiscount).toFixed(2);
+
+    // Helper function to calculate dynamic vendor commission
+    const calculateDynamicVendorCommission = (bookingState) => {
+        // Try to get commission from multiple sources
+        const commissionSources = [
+            bookingState.vendorCommission,
+            bookingState.bus?.vendorCommission,
+            bookingState.bus?.vendorCommissionPercentage,
+            bookingState.bus?.originalBusPrice?.rasutripCommissionPercentage,
+            bookingState.busBookingData?.vendorCommission,
+            vendorCommission, // From component props/state
+            fareBreakdown.commissionPercentage
+        ];
+
+        let commission = 0;
+        
+        for (const source of commissionSources) {
+            if (source && !isNaN(parseFloat(source))) {
+                commission = parseFloat(source);
+                break;
+            }
+        }
+
+        // If commission is percentage, calculate amount
+        if (commission > 0 && commission <= 100) {
+            // Assume it's percentage, calculate amount from total price
+            const basePrice = bookingState.totalPrice || fareBreakdown.publishedPrice || 0;
+            commission = (basePrice * commission) / 100;
+        }
+
+        console.log('Calculated dynamic vendor commission:', commission);
+        return parseFloat(commission.toFixed(2));
+    };
+
+    // FIXED: Function to extract API-compatible seat names (returns numbers, not strings)
+    const extractSeatNameForAPI = (seat, index) => {
+        console.log(`🔍 Extracting API-compatible seat name for passenger ${index + 1}:`);
+        console.log('Raw seat data:', JSON.stringify(seat, null, 2));
+
+        if (!seat) {
+            console.warn(`No seat data for index ${index}, using fallback number`);
+            return index + 1; // Return number, not string
+        }
+
+        // Helper function to get numeric value from seat data
+        const getNumericSeatValue = (value) => {
+            if (value === null || value === undefined) return null;
+            
+            // If it's already a number, return it
+            if (typeof value === 'number' && !isNaN(value) && value > 0) {
+                return Math.floor(value); // Ensure integer
+            }
+            
+            // If it's a string, try to parse it
+            if (typeof value === 'string') {
+                const trimmed = value.trim();
+                
+                // Try direct numeric conversion
+                const numericValue = parseInt(trimmed, 10);
+                if (!isNaN(numericValue) && numericValue > 0) {
+                    return numericValue;
+                }
+                
+                // Extract numbers from string (e.g., "A1" -> 1, "Seat2" -> 2)
+                const numberMatch = trimmed.match(/\d+/);
+                if (numberMatch) {
+                    const extractedNumber = parseInt(numberMatch[0], 10);
+                    if (extractedNumber > 0) {
+                        return extractedNumber;
+                    }
+                }
+            }
+            
+            return null;
+        };
+
+        // Strategy 1: Direct seat name fields (API priority order)
+        const apiFields = [
+            'SeatName', 'SeatNo', 'Name', 'seatName', 'seatNo', 
+            'SeatNumber', 'Position', 'Code', 'SeatCode', 'id'
+        ];
+
+        for (const field of apiFields) {
+            const value = seat[field];
+            const numericValue = getNumericSeatValue(value);
+            if (numericValue !== null) {
+                console.log(`✅ Found API seat name using '${field}': ${numericValue} (number)`);
+                return numericValue;
+            }
+        }
+
+        // Strategy 2: Check nested Price object
+        if (seat.Price && typeof seat.Price === 'object') {
+            for (const field of apiFields) {
+                const value = seat.Price[field];
+                const numericValue = getNumericSeatValue(value);
+                if (numericValue !== null) {
+                    console.log(`✅ Found API seat name in Price.${field}: ${numericValue} (number)`);
+                    return numericValue;
+                }
+            }
+        }
+
+        // Strategy 3: If seat is direct value
+        const directValue = getNumericSeatValue(seat);
+        if (directValue !== null) {
+            console.log(`✅ Seat is valid numeric value: ${directValue}`);
+            return directValue;
+        }
+
+        // Final fallback: Use index-based numbering
+        const fallback = index + 1;
+        console.warn(`⚠️ Using numeric fallback: ${fallback} for seat:`, seat);
+        return fallback;
+    };
+
+    // Enhanced passenger formatter with proper dynamic data mapping
+    const formatPassengerWithValidSeatName = (passenger, correspondingSeat, index, contactData, fromCity, toCity) => {
+        const seatName = extractSeatNameForAPI(correspondingSeat, index);
+
+        if (seatName === null || seatName === undefined) {
+            throw new Error(`Unable to extract valid seat name for passenger ${index + 1}`);
+        }
+
+        // Get dynamic address with proper fallback
+        const validAddress = getValidAddress(passenger, contactData, fromCity, toCity);
+        
+        // Get dynamic email and phone with proper fallback
+        const emailAddress = contactData?.email || passenger.email || '';
+        const phoneNumber = contactData?.mobile || contactData?.phone || passenger.phone || '';
+
+        // Validate required fields
+        if (!passenger.firstName || !passenger.firstName.trim()) {
+            throw new Error(`First name is required for passenger ${index + 1}`);
+        }
+
+        if (!passenger.lastName || !passenger.lastName.trim()) {
+            throw new Error(`Last name is required for passenger ${index + 1}`);
+        }
+
+        if (!emailAddress || !emailAddress.includes('@')) {
+            throw new Error(`Valid email is required for booking`);
+        }
+
+        if (!phoneNumber || phoneNumber.trim() === '') {
+            throw new Error(`Phone number is required for booking`);
+        }
+
+        return {
+            LeadPassenger: index === 0, // First passenger is lead passenger
+            Title: passenger.title || (passenger.gender === 'Male' ? 'Mr' : passenger.gender === 'Female' ? 'Ms' : 'Mr'),
+            FirstName: passenger.firstName.trim(),
+            LastName: passenger.lastName.trim(),
+            Email: emailAddress.trim(),
+            Phoneno: phoneNumber.replace(/\D/g, ''), // Remove non-digits
+            Gender: passenger.gender === 'Male' ? '1' : passenger.gender === 'Female' ? '2' : '1',
+            IdType: passenger.idType || null,
+            IdNumber: passenger.idNumber || null,
+            Address: validAddress,
+            Age: passenger.age?.toString() || '25', // Convert to string as API expects
+            SeatName: seatName // THIS IS NOW A NUMBER, NOT A STRING
+        };
+    };
+
+    // Debug function for seats before booking
+    const debugSeatsBeforeBooking = (selectedSeats, passengerData) => {
+        console.log('🔍 Debug: Seats before booking formatting');
+        console.log('Selected seats count:', selectedSeats?.length);
+        console.log('Passenger data count:', passengerData?.length);
+        
+        if (selectedSeats && passengerData) {
+            selectedSeats.forEach((seat, index) => {
+                const passenger = passengerData[index];
+                console.log(`Seat ${index + 1}:`, {
+                    passenger: passenger ? `${passenger.firstName} ${passenger.lastName}` : 'N/A',
+                    seatData: seat,
+                    seatName: extractSeatNameForAPI(seat, index),
+                    seatNameType: typeof extractSeatNameForAPI(seat, index)
+                });
+            });
+        }
+    };
 
     // BookingId validation function
     const isValidBookingId = (id) => {
@@ -491,57 +671,18 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
         return `${fromCity || 'Delhi'}, India`;
     };
 
-    // ENHANCED: Seat name extraction function with comprehensive fallback
+    // FIXED: Seat name extraction function (returns numbers for display)
     const extractSeatName = (seat, index) => {
         debugLog(`Raw seat data for index ${index}:`, seat);
 
         if (!seat) {
             console.warn(`No seat data for index ${index}, using fallback`);
-            return `S${index + 1}`;
+            return `${index + 1}`;
         }
 
-        let seatName = seat.SeatName ||
-            seat.seatName ||
-            seat.seatNumber ||
-            seat.name ||
-            seat.id ||
-            seat.number ||
-            seat;
-
-        debugLog(`Extracted seat name: "${seatName}" (type: ${typeof seatName})`);
-
-        if (typeof seatName === 'string' && seatName.trim()) {
-            const trimmedSeat = seatName.trim();
-
-            if (/^[A-Z]\d+$|^\d+[A-Z]$|^[A-Z]\d+[A-Z]$|^[0-9]+$/.test(trimmedSeat)) {
-                debugLog(`Valid seat format found: "${trimmedSeat}"`);
-                return trimmedSeat;
-            }
-
-            if (/[A-Za-z0-9]/.test(trimmedSeat)) {
-                debugLog(`Alphanumeric seat name: "${trimmedSeat}"`);
-                return trimmedSeat;
-            }
-        }
-
-        if (typeof seatName === 'number' && !isNaN(seatName)) {
-            const numSeat = seatName.toString();
-            debugLog(`Number converted to string: "${numSeat}"`);
-            return numSeat;
-        }
-
-        if (typeof seatName === 'string') {
-            const numberMatch = seatName.match(/\d+/);
-            if (numberMatch) {
-                const extractedNumber = numberMatch[0];
-                debugLog(`Extracted number from string: "${extractedNumber}"`);
-                return extractedNumber;
-            }
-        }
-
-        const fallbackSeat = `S${index + 1}`;
-        console.warn(`Using fallback seat name: "${fallbackSeat}"`);
-        return fallbackSeat;
+        // Use the same logic as API function but return as string for display
+        const numericSeat = extractSeatNameForAPI(seat, index);
+        return String(numericSeat);
     };
 
     // Format bus order data
@@ -569,16 +710,16 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
         }
     });
 
-    // ENHANCED: Format validate payment data with comprehensive validation and coupon discount
+    // FIXED: Format validate payment data with numeric seat names
     const formatValidatePaymentData = (bookingState, paymentResponse, orderData) => {
         console.log('Formatting validate payment data with coupon...');
         console.log('Available seats:', bookingState.selectedSeats);
         console.log('Passenger count:', bookingState.passengerData?.length);
 
         const passengers = bookingState.passengerData?.map((passenger, index) => {
-            const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
+            const seatName = extractSeatNameForAPI(bookingState.selectedSeats?.[index], index);
 
-            console.log(`Final seat assignment for passenger ${index + 1}: "${seatName}"`);
+            console.log(`Final seat assignment for passenger ${index + 1}: ${seatName} (type: ${typeof seatName})`);
 
             const validAddress = getValidAddress(passenger, bookingState.contactData, bookingState.fromCity, bookingState.toCity);
 
@@ -603,7 +744,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                 IdNumber: passenger.idNumber || null,
                 Address: validAddress,
                 Age: passenger.age?.toString(),
-                SeatName: seatName
+                SeatName: seatName // THIS IS NOW A NUMBER, NOT A STRING
             };
         }) || [];
 
@@ -634,21 +775,21 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
         };
 
         console.log('Final validation data:', JSON.stringify(validationData, null, 2));
-        console.log('Seat names in validation:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName })));
+        console.log('Seat names in validation:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName, type: typeof p.SeatName })));
 
         return validationData;
     };
 
-    // ENHANCED: Format booking data with comprehensive validation and coupon discount
+    // FIXED: Format booking data with numeric seat names and proper vendor commission
     const formatBookingData = (bookingState) => {
         console.log('Formatting booking data with coupon...');
         console.log('Available seats:', bookingState.selectedSeats);
         console.log('Passenger count:', bookingState.passengerData?.length);
 
         const passengers = bookingState.passengerData?.map((passenger, index) => {
-            const seatName = extractSeatName(bookingState.selectedSeats?.[index], index);
+            const seatName = extractSeatNameForAPI(bookingState.selectedSeats?.[index], index);
 
-            console.log(`Final seat assignment for passenger ${index + 1}: "${seatName}"`);
+            console.log(`Final seat assignment for passenger ${index + 1}: ${seatName} (type: ${typeof seatName})`);
 
             const validAddress = getValidAddress(passenger, bookingState.contactData, bookingState.fromCity, bookingState.toCity);
 
@@ -667,9 +808,12 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                 IdNumber: passenger.idNumber || null,
                 Address: validAddress,
                 Age: passenger.age?.toString(),
-                SeatName: seatName
+                SeatName: seatName // THIS IS NOW A NUMBER, NOT A STRING
             };
         }) || [];
+
+        // Calculate vendor commission dynamically
+        const dynamicVendorCommission = calculateDynamicVendorCommission(bookingState);
 
         const bookingData = {
             UserIp: "122.161.64.143",
@@ -677,13 +821,13 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             ResultIndex: bookingState.busBookingData?.ResultIndex || bookingState.bus?.ResultIndex || "TB-1",
             BoardingPointId: bookingState.selectedBoardingPoint?.BoardingPointId || bookingState.boardingPoint?.BoardingPointId || bookingState.boardingPoint?.id || 1,
             DroppingPointId: bookingState.selectedDroppingPoint?.DroppingPointId || bookingState.droppingPoint?.DroppingPointId || bookingState.droppingPoint?.id || 1,
-            vendorCommission: bookingState.vendorCommission || vendorCommission,
+            vendorCommission: dynamicVendorCommission || 0,
             CouponDiscount: fareBreakdown.couponDiscount || 0,
             Passenger: passengers
         };
 
         console.log('Final booking data:', JSON.stringify(bookingData, null, 2));
-        console.log('Seat names in booking:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName })));
+        console.log('Seat names in booking:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName, type: typeof p.SeatName })));
 
         return bookingData;
     };
@@ -730,6 +874,9 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             console.log('Starting bus payment process...');
             debugLog('Selected seats debug:', selectedSeats);
             debugLog('Passenger data debug:', passengerData);
+            
+            // Debug seat names before booking
+            debugSeatsBeforeBooking(selectedSeats, passengerData);
 
             // Load Razorpay script
             setLoadingStep('Loading payment system...');
@@ -817,13 +964,20 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                         const bookingData = formatBookingData(state);
 
                         // Final validation before booking API call
-                        const invalidSeats = bookingData.Passenger.filter(p => !p.SeatName || p.SeatName.trim() === '');
+                        const invalidSeats = bookingData.Passenger.filter(p => 
+                            p.SeatName === null || 
+                            p.SeatName === undefined || 
+                            (typeof p.SeatName === 'string' && p.SeatName.trim() === '') ||
+                            (typeof p.SeatName === 'number' && (isNaN(p.SeatName) || p.SeatName <= 0))
+                        );
+                        
                         if (invalidSeats.length > 0) {
                             console.error('Invalid seat names found:', invalidSeats);
                             throw new Error('Invalid seat assignment. Please try booking again.');
                         }
 
                         console.log('Booking data being sent:', JSON.stringify(bookingData, null, 2));
+                        console.log('Seat names validation passed:', bookingData.Passenger.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName, type: typeof p.SeatName })));
 
                         const bookingResult = await bookBus(bookingData);
                         console.log('Bus booking result:', bookingResult);
@@ -1037,128 +1191,16 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                     {/* Published Price - Main price from API */}
                     {fareBreakdown.publishedPrice > 0 && (
                         <Row className="mb-2">
-                            <Col xs={8}>Published Price</Col>
+                            <Col xs={8}>Base Price</Col>
                             <Col xs={4} className="text-end">₹{fareBreakdown.publishedPrice.toFixed(2)}</Col>
                         </Row>
                     )}
 
-                    {/* Offered Price - Show only if different from Published Price and greater than 0 */}
-                    {fareBreakdown.offeredPrice > 0 && fareBreakdown.offeredPrice !== fareBreakdown.publishedPrice && (
-                        <Row className="mb-2 text-success">
-                            <Col xs={8}>Offered Price</Col>
-                            <Col xs={4} className="text-end">₹{fareBreakdown.offeredPrice.toFixed(2)}</Col>
-                        </Row>
-                    )}
+                 
 
-                    {/* Service Charges */}
-                    {fareBreakdown.serviceCharges > 0 && (
-                        <Row className="mb-2">
-                            <Col xs={8}>Service Charges</Col>
-                            <Col xs={4} className="text-end">₹{fareBreakdown.serviceCharges.toFixed(2)}</Col>
-                        </Row>
-                    )}
-
-                    {/* Tax */}
-                    {fareBreakdown.tax > 0 && (
-                        <Row className="mb-2">
-                            <Col xs={8}>Tax</Col>
-                            <Col xs={4} className="text-end">₹{fareBreakdown.tax.toFixed(2)}</Col>
-                        </Row>
-                    )}
-
-                    {/* Other Charges */}
-                    {fareBreakdown.otherCharges > 0 && (
-                        <Row className="mb-2">
-                            <Col xs={8}>Other Charges</Col>
-                            <Col xs={4} className="text-end">₹{fareBreakdown.otherCharges.toFixed(2)}</Col>
-                        </Row>
-                    )}
-
-                    {/* GST - Always show total GST */}
-                    <Row className="mb-2">
-                        <Col xs={8}>GST</Col>
-                        <Col xs={4} className="text-end">₹{fareBreakdown.gst.total.toFixed(2)}</Col>
-                    </Row>
-
-                    {/* GST Breakdown - Show individual components only if they have values */}
-                    {fareBreakdown.gst.cgstAmount > 0 && (
-                        <Row className="mb-1">
-                            <Col xs={8} className="text-muted small ps-4">• CGST</Col>
-                            <Col xs={4} className="text-end text-muted small">₹{fareBreakdown.gst.cgstAmount.toFixed(2)}</Col>
-                        </Row>
-                    )}
-
-                    {fareBreakdown.gst.sgstAmount > 0 && (
-                        <Row className="mb-1">
-                            <Col xs={8} className="text-muted small ps-4">• SGST</Col>
-                            <Col xs={4} className="text-end text-muted small">₹{fareBreakdown.gst.sgstAmount.toFixed(2)}</Col>
-                        </Row>
-                    )}
-
-                    {fareBreakdown.gst.igstAmount > 0 && (
-                        <Row className="mb-2">
-                            <Col xs={8} className="text-muted small ps-4">• IGST</Col>
-                            <Col xs={4} className="text-end text-muted small">₹{fareBreakdown.gst.igstAmount.toFixed(2)}</Col>
-                        </Row>
-                    )}
-
-                    {/* TDS Deduction */}
-                    {fareBreakdown.tds > 0 && (
-                        <Row className="mb-2 text-danger">
-                            <Col xs={8}>TDS (-)</Col>
-                            <Col xs={4} className="text-end">-₹{fareBreakdown.tds.toFixed(2)}</Col>
-                        </Row>
-                    )}
-
-                    {/* Discount */}
-                    {fareBreakdown.discount > 0 && (
-                        <Row className="mb-2 text-success">
-                            <Col xs={8}>Discount (-)</Col>
-                            <Col xs={4} className="text-end">-₹{fareBreakdown.discount.toFixed(2)}</Col>
-                        </Row>
-                    )}
-
-                    <hr />
-
-                    {/* Subtotal */}
-                    <Row className="mb-2 fw-bold">
-                        <Col xs={8}>Subtotal</Col>
-                        <Col xs={4} className="text-end">₹{subtotal.toFixed(2)}</Col>
-                    </Row>
-
-                    {/* Convenience Fee - Show only if commission is configured and greater than 0 */}
-                    {convenienceFee > 0 && (
-                        <Row className="mb-2">
-                            <Col xs={8}>
-                                Convenience Fee
-                                {fareBreakdown.commissionPercentage > 0 && (
-                                    <small className="text-muted"></small>
-                                )}
-                            </Col>
-                            <Col xs={4} className="text-end">₹{convenienceFee.toFixed(2)}</Col>
-                        </Row>
-                    )}
-
-                    <hr />
-
-                    {/* Total Before Coupon Discount */}
-                    <Row className="mb-2 fw-bold">
-                        <Col xs={8}>Total Before Discount</Col>
-                        <Col xs={4} className="text-end">₹{totalBeforeCoupon.toFixed(2)}</Col>
-                    </Row>
-
-                    {/* Coupon Discount - Show only if applied */}
-                    {fareBreakdown.couponDiscount > 0 && appliedCouponData && (
-                        <Row className="mb-2 text-success">
-                            <Col xs={8}>
-                                Coupon Discount (-)
-                                <small className="text-muted d-block">{appliedCouponData.code}</small>
-                            </Col>
-                            <Col xs={4} className="text-end">-₹{fareBreakdown.couponDiscount.toFixed(2)}</Col>
-                        </Row>
-                    )}
-
-                    <hr />
+                
+                  
+            
 
                     {/* Final Total */}
                     <Row className="fw-bold fs-5">

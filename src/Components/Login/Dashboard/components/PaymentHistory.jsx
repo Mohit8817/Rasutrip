@@ -72,7 +72,7 @@ const PaymentHistory = () => {
 
             if (result.success && result.data) {
                 // Sort by date (newest first)
-                const sortedPayments = result.data.sort((a, b) => new Date(b.date) - new Date(a.date));
+                const sortedPayments = result.data.sort((a, b) => new Date(b.date || b.createdAt || b.bookingDate) - new Date(a.date || a.createdAt || a.bookingDate));
                 setPayments(sortedPayments);
                 setCurrentPage(1); // Reset to first page when filter changes
             } else {
@@ -113,15 +113,16 @@ const PaymentHistory = () => {
     const getStatusBadge = (status) => {
         const statusStyles = {
             SUCCESS: 'bg-green-100 text-green-800',
-            FAILED: 'bg-red-100 text-red-800',
-            PENDING: 'bg-yellow-100 text-yellow-800',
-            REFUNDED: 'bg-blue-100 text-blue-800',
             COMPLETED: 'bg-green-100 text-green-800',
-            CANCELLED: 'bg-red-100 text-red-800'
+            CONFIRMED: 'bg-green-100 text-green-800',
+            FAILED: 'bg-red-100 text-red-800',
+            CANCELLED: 'bg-red-100 text-red-800',
+            PENDING: 'bg-yellow-100 text-yellow-800',
+            REFUNDED: 'bg-blue-100 text-blue-800'
         };
 
         return (
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[status] || 'bg-gray-100 text-gray-800'}`}>
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[status?.toUpperCase()] || 'bg-gray-100 text-gray-800'}`}>
                 {status || 'UNKNOWN'}
             </span>
         );
@@ -156,51 +157,79 @@ const PaymentHistory = () => {
             return value && value !== 'N/A' && value.toString().trim() ? value : fallback;
         };
 
-        switch (payment.type) {
+        // Determine payment type - check multiple possible fields
+        const paymentType = payment.type || payment.serviceType || 
+            (payment.flightNumber ? 'FLIGHT' : '') ||
+            (payment.hotelName ? 'HOTEL' : '') ||
+            (payment.busOperator ? 'BUS' : '') ||
+            'UNKNOWN';
+
+        switch (paymentType.toUpperCase()) {
             case 'FLIGHT':
-                const flightFrom = payment.serviceDetails?.from || payment.origin || payment.departure || '';
-                const flightTo = payment.serviceDetails?.to || payment.destination || payment.arrival || '';
+                // Handle flight data from your flight booking structure
+                const flightFrom = payment.from || payment.origin || payment.departure || 
+                    payment.serviceDetails?.from || payment.fromCity || '';
+                const flightTo = payment.to || payment.destination || payment.arrival || 
+                    payment.serviceDetails?.to || payment.toCity || '';
+                
+                // Create route string
                 const flightRoute = flightFrom && flightTo ? `${flightFrom} → ${flightTo}` :
                     payment.route || 'Route not specified';
 
+                // Get airline and flight info
+                const airlineInfo = payment.airlineName || payment.airline?.AirlineName || 
+                    payment.serviceName || payment.flightDetails || 'Flight Booking';
+                
+                const flightNumber = payment.flightNumber || payment.airline?.FlightNumber || '';
+
+                // Get passenger count
+                const passengerCount = payment.totalPassengers || payment.passengers || 
+                    payment.serviceDetails?.passengers || 
+                    (payment.Result?.Passenger ? payment.Result.Passenger.length : null) || 1;
+
                 return {
-                    title: getSafeValue(payment.flightDetails || payment.serviceName || payment.airline, 'Flight Booking'),
+                    title: getSafeValue(flightNumber ? `${airlineInfo} - ${flightNumber}` : airlineInfo, 'Flight Booking'),
                     subtitle: getSafeValue(flightRoute, 'Route not specified'),
-                    additionalInfo: payment.serviceDetails?.passengers ?
-                        `${payment.serviceDetails.passengers} Passenger${payment.serviceDetails.passengers > 1 ? 's' : ''}` :
-                        payment.passengers ? `${payment.passengers} Passenger${payment.passengers > 1 ? 's' : ''}` : null,
+                    additionalInfo: `${passengerCount} Passenger${passengerCount > 1 ? 's' : ''}`,
                     icon: '✈️'
                 };
 
             case 'HOTEL':
-                const hotelLocation = payment.serviceDetails?.hotelLocation || payment.city || payment.location || '';
+                const hotelLocation = payment.serviceDetails?.hotelLocation || payment.city || 
+                    payment.location || payment.toCity || '';
+                const hotelName = payment.hotelName || payment.serviceDetails?.hotelName || 
+                    payment.serviceName || 'Hotel Booking';
+                const roomCount = payment.serviceDetails?.rooms || payment.rooms || 1;
+
                 return {
-                    title: getSafeValue(payment.hotelName || payment.serviceDetails?.hotelName || payment.serviceName, 'Hotel Booking'),
+                    title: getSafeValue(hotelName, 'Hotel Booking'),
                     subtitle: getSafeValue(hotelLocation, 'Location not specified'),
-                    additionalInfo: payment.serviceDetails?.rooms ?
-                        `${payment.serviceDetails.rooms} Room${payment.serviceDetails.rooms > 1 ? 's' : ''}` :
-                        payment.rooms ? `${payment.rooms} Room${payment.rooms > 1 ? 's' : ''}` : null,
+                    additionalInfo: `${roomCount} Room${roomCount > 1 ? 's' : ''}`,
                     icon: '🏨'
                 };
 
             case 'BUS':
                 const busRoute = payment.route || payment.serviceDetails?.route ||
                     (payment.serviceDetails?.from && payment.serviceDetails?.to ?
-                        `${payment.serviceDetails.from} → ${payment.serviceDetails.to}` : '');
+                        `${payment.serviceDetails.from} → ${payment.serviceDetails.to}` : '') ||
+                    (payment.from && payment.to ? `${payment.from} → ${payment.to}` : '');
+
+                const busName = payment.busOperator || payment.serviceDetails?.busName || 
+                    payment.serviceName || 'Bus Booking';
+                const seatCount = payment.serviceDetails?.seats || payment.seats || 1;
 
                 return {
-                    title: getSafeValue(payment.busOperator || payment.serviceDetails?.busName || payment.serviceName, 'Bus Booking'),
+                    title: getSafeValue(busName, 'Bus Booking'),
                     subtitle: getSafeValue(busRoute, 'Route not specified'),
-                    additionalInfo: payment.serviceDetails?.seats ?
-                        `${payment.serviceDetails.seats} Seat${payment.serviceDetails.seats > 1 ? 's' : ''}` :
-                        payment.seats ? `${payment.seats} Seat${payment.seats > 1 ? 's' : ''}` : null,
+                    additionalInfo: `${seatCount} Seat${seatCount > 1 ? 's' : ''}`,
                     icon: '🚌'
                 };
 
             default:
                 return {
-                    title: getSafeValue(payment.serviceName || payment.description, 'Booking'),
-                    subtitle: getSafeValue(payment.serviceType, 'Service not specified'),
+                    title: getSafeValue(payment.serviceName || payment.description || 
+                        payment.airlineName || payment.hotelName || payment.busOperator, 'Booking'),
+                    subtitle: getSafeValue(payment.serviceType || payment.type, 'Service not specified'),
                     additionalInfo: null,
                     icon: '📋'
                 };
@@ -354,7 +383,7 @@ const PaymentHistory = () => {
                         {currentPayments.map((payment) => {
                             const serviceDetails = getServiceDetails(payment);
                             return (
-                                <div key={payment._id || payment.id} className=" rounded-lg card duration-200">
+                                <div key={payment._id || payment.id || payment.bookingId} className=" rounded-lg card duration-200">
                                     <div className="p-6">
                                         <div className="flex items-start justify-between">
                                             {/* Left Section */}
@@ -364,7 +393,7 @@ const PaymentHistory = () => {
                                                         <h5 className="text-lg font-semibold text-gray-900 truncate">
                                                             {serviceDetails.title}
                                                         </h5>
-                                                        {getStatusBadge(payment.status)}
+                                                        {getStatusBadge(payment.status || payment.bookingStatus)}
                                                     </div>
 
                                                     <p className="text-gray-600 mb-1">{serviceDetails.subtitle}</p>
@@ -380,7 +409,13 @@ const PaymentHistory = () => {
                                                     </div>
 
                                                     <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                                                        <span>Transaction ID: {payment.transactionId || payment.txnId || payment.paymentId || 'Not available'}</span>
+                                                        <span>
+                                                            {payment.pnr ? `PNR: ${payment.pnr}` : 
+                                                             payment.transactionId ? `Transaction ID: ${payment.transactionId}` :
+                                                             payment.txnId ? `Transaction ID: ${payment.txnId}` :
+                                                             payment.paymentId ? `Payment ID: ${payment.paymentId}` : 
+                                                             'Transaction ID: Not available'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -388,10 +423,10 @@ const PaymentHistory = () => {
                                             {/* Right Section */}
                                             <div className="flex-shrink-0 text-right ml-4">
                                                 <div className="text-xl font-bold text-gray-900 mb-1">
-                                                    {formatAmount(payment.amount || payment.totalAmount || payment.price)}
+                                                    {formatAmount(payment.amount || payment.totalAmount || payment.price || payment.invoiceAmount)}
                                                 </div>
                                                 <div className="text-sm text-gray-500">
-                                                    {formatDate(payment.createdAt || payment.date || payment.paymentDate || payment.timestamp)}
+                                                    {formatDate(payment.createdAt || payment.date || payment.paymentDate || payment.timestamp || payment.bookingDate)}
                                                 </div>
                                             </div>
                                         </div>
