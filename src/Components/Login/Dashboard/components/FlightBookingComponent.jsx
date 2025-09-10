@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, X, Clock, AlertCircle, CheckCircle, Info, Loader } from 'lucide-react';
-// Import the updated flight booking services with real-time status
+import { X, Clock, AlertCircle, CheckCircle, Info, Loader, Plane, Calendar, Users, CreditCard } from 'lucide-react';
+// Import the flight booking services WITH real-time status
 import {
   fetchUpcomingFlightBookings,
   fetchAllFlightBookings,
@@ -20,10 +20,10 @@ const FlightBookingComponent = () => {
 
   // Real-time status popup state
   const [showStatusPopup, setShowStatusPopup] = useState(false);
-  const [currentBookingForStatus, setCurrentBookingForStatus] = useState(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusData, setStatusData] = useState(null);
   const [statusError, setStatusError] = useState('');
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   // Get current bookings based on selected type
   const currentBookings = bookingType === 'upcoming' ? upcomingBookings : allBookings;
@@ -61,179 +61,95 @@ const FlightBookingComponent = () => {
         amount: result.InvoiceAmount || result.Fare?.PublishedPrice,
         status: result.CancelStatus === 'none' ? 'Confirmed' : result.CancelStatus,
         bookingStatus: result.CancelStatus === 'none' ? 'Confirmed' : result.CancelStatus,
-        paymentStatus: 'Completed', // Default since API doesn't provide this
+        paymentStatus: 'Completed',
         bookingDate: booking.createdAt,
         createdAt: booking.createdAt,
         confirmationNo: result.PNR,
-        journeyType: result.JourneyType, // 1 = One Way, 2 = Round Trip
+        journeyType: result.JourneyType,
         isDomestic: result.IsDomestic,
         fareType: result.FareType,
         segments: result.Segments,
         invoiceNo: result.InvoiceNo,
         invoiceAmount: result.InvoiceAmount,
-        // Additional fields for real-time status API
-        searchTokenId: booking.searchTokenId || booking.SearchTokenId,
         airlineCode: firstSegment.Airline?.AirlineCode
       };
     });
   };
 
-  // Handle real-time status check
-  const handleRealTimeStatusCheck = async (booking) => {
-    console.log('🚀 Checking real-time status for flight booking:', booking);
+  // Extract flight details from real-time status response
+  const extractFlightDetails = (apiResponse) => {
+    if (!apiResponse?.Result) return null;
 
-    setCurrentBookingForStatus(booking);
-    setShowStatusPopup(true);
-    setStatusLoading(true);
-    setStatusError('');
-    setStatusData(null);
+    const result = apiResponse.Result;
+    const segments = result.Segments?.[0] || [];
+    const firstSegment = segments[0] || {};
+    const passenger = result.Passenger?.[0] || {};
+    const fare = result.Fare || {};
 
-    try {
-      const currentUserType = getFlightUserType();
-      console.log('👤 User type for status check:', currentUserType);
+    return {
+      // Booking Information
+      bookingId: result.BookingId,
+      pnr: result.PNR,
+      journeyType: result.JourneyType === 1 ? 'One Way' : 'Round Trip',
+      isDomestic: result.IsDomestic ? 'Domestic' : 'International',
+      fareType: result.FareType,
+      isRefundable: result.IsRefundable ? 'Yes' : 'No',
 
-      const statusResult = await fetchFlightRealTimeStatus(booking, currentUserType);
-      console.log('📋 Status result:', statusResult);
-
-      if (statusResult.success) {
-        setStatusData(statusResult);
-      } else {
-        setStatusError(statusResult.error || 'Failed to fetch real-time status');
-      }
-    } catch (error) {
-      console.error('❌ Error checking flight real-time status:', error);
-      setStatusError(error.message || 'Failed to check real-time status');
-    } finally {
-      setStatusLoading(false);
-    }
-  };
-
-  // Close status popup
-  const closeStatusPopup = () => {
-    setShowStatusPopup(false);
-    setCurrentBookingForStatus(null);
-    setStatusData(null);
-    setStatusError('');
-    setStatusLoading(false);
-  };
-
-  // Get status icon and color
-  const getStatusDisplay = (status) => {
-    const statusLower = status.toLowerCase();
-
-    if (statusLower.includes('confirmed') || statusLower.includes('booked')) {
-      return {
-        icon: <CheckCircle className="w-4 h-4" />,
-        color: 'text-green-600',
-        bgColor: 'bg-green-100'
-      };
-    } else if (statusLower.includes('cancelled')) {
-      return {
-        icon: <X className="w-4 h-4" />,
-        color: 'text-red-600',
-        bgColor: 'bg-red-100'
-      };
-    } else if (statusLower.includes('pending')) {
-      return {
-        icon: <Clock className="w-4 h-4" />,
-        color: 'text-orange-600',
-        bgColor: 'bg-orange-100'
-      };
-    } else {
-      return {
-        icon: <Info className="w-4 h-4" />,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-100'
-      };
-    }
-  };
-
-  // Format status data for display
-  const formatStatusData = (data) => {
-    if (!data || !data.data) return [];
-
-    const formatted = [];
-    const responseData = data.data;
-
-    // Basic information
-    formatted.push({
-      label: 'Booking ID',
-      value: data.bookingId || 'N/A'
-    });
-
-    formatted.push({
-      label: 'Status',
-      value: data.status || 'Unknown'
-    });
-
-    formatted.push({
-      label: 'Last Updated',
-      value: new Date(data.lastUpdated).toLocaleString()
-    });
-
-    // Extract additional data from response
-    if (responseData.PNR) {
-      formatted.push({
-        label: 'PNR',
-        value: responseData.PNR
-      });
-    }
-
-    if (responseData.FlightStatus) {
-      formatted.push({
-        label: 'Flight Status',
-        value: responseData.FlightStatus
-      });
-    }
-
-    if (responseData.DepartureTime) {
-      formatted.push({
-        label: 'Departure Time',
-        value: new Date(responseData.DepartureTime).toLocaleString()
-      });
-    }
-
-    if (responseData.ArrivalTime) {
-      formatted.push({
-        label: 'Arrival Time',
-        value: new Date(responseData.ArrivalTime).toLocaleString()
-      });
-    }
-
-    if (responseData.Gate) {
-      formatted.push({
-        label: 'Gate',
-        value: responseData.Gate
-      });
-    }
-
-    if (responseData.Terminal) {
-      formatted.push({
-        label: 'Terminal',
-        value: responseData.Terminal
-      });
-    }
-
-    if (responseData.Delay) {
-      formatted.push({
-        label: 'Delay',
-        value: responseData.Delay
-      });
-    }
-
-    // Add any other fields from the response
-    Object.keys(responseData).forEach(key => {
-      if (!['PNR', 'FlightStatus', 'DepartureTime', 'ArrivalTime', 'Gate', 'Terminal', 'Delay'].includes(key)) {
-        if (responseData[key] && typeof responseData[key] !== 'object') {
-          formatted.push({
-            label: key,
-            value: String(responseData[key])
-          });
+      // Flight Information
+      airline: {
+        code: firstSegment.Airline?.AirlineCode,
+        name: firstSegment.Airline?.AirlineName,
+        flightNumber: firstSegment.Airline?.FlightNumber
+      },
+      route: {
+        origin: {
+          code: firstSegment.Origin?.AirportCode,
+          name: firstSegment.Origin?.AirportName,
+          city: firstSegment.Origin?.CityName,
+          terminal: firstSegment.Origin?.Terminal
+        },
+        destination: {
+          code: firstSegment.Destination?.AirportCode,
+          name: firstSegment.Destination?.AirportName,
+          city: firstSegment.Destination?.CityName,
+          terminal: firstSegment.Destination?.Terminal
         }
-      }
-    });
+      },
+      schedule: {
+        departure: firstSegment.Origin?.DepartTime,
+        arrival: firstSegment.Destination?.ArrivalTime,
+        duration: firstSegment.Duration
+      },
 
-    return formatted;
+      // Passenger Information
+      passenger: {
+        name: `${passenger.Title} ${passenger.FirstName} ${passenger.LastName}`,
+        email: passenger.Email,
+        phone: passenger.ContactNo,
+        ticketNumber: passenger.TicketNumber
+      },
+
+      // Fare Information
+      fare: {
+        baseFare: fare.BaseFare,
+        tax: fare.Tax,
+        otherCharges: fare.OtherCharges,
+        publishedPrice: fare.PublishedPrice,
+        totalAmount: result.InvoiceAmount
+      },
+
+      // Additional Details
+      cabinClass: firstSegment.CabinClass,
+      aircraft: firstSegment.Craft,
+      invoiceNo: result.InvoiceNo,
+      invoiceDate: result.InvoiceCreatedOn,
+
+      // Baggage and Seat Info
+      baggage: {
+        cabin: firstSegment.CabinBaggage,
+        checkIn: firstSegment.CheckInBaggage
+      }
+    };
   };
 
   // Load flight bookings using the simplified service
@@ -244,7 +160,6 @@ const FlightBookingComponent = () => {
     try {
       console.log('🛫 Loading flight bookings using simplified service...');
 
-      // Check if user is authenticated
       if (!isFlightUserAuthenticated()) {
         throw new Error('User is not authenticated. Please login again.');
       }
@@ -260,18 +175,13 @@ const FlightBookingComponent = () => {
         if (allResponse.success && allResponse.data) {
           let bookingsData = [];
 
-          // Handle the response structure based on your API format
           if (allResponse.data.data && Array.isArray(allResponse.data.data)) {
             bookingsData = allResponse.data.data;
           } else if (Array.isArray(allResponse.data)) {
             bookingsData = allResponse.data;
           }
 
-          console.log('📋 Raw all bookings data:', bookingsData);
-
           const transformedBookings = transformBookingData(bookingsData);
-          console.log('✨ Transformed all bookings:', transformedBookings);
-
           const sortedAll = transformedBookings.sort((a, b) => {
             const dateA = new Date(a.bookingDate || a.createdAt);
             const dateB = new Date(b.bookingDate || b.createdAt);
@@ -279,9 +189,7 @@ const FlightBookingComponent = () => {
           });
 
           setAllBookings(sortedAll);
-          console.log('✅ All flight bookings loaded:', sortedAll.length);
         } else {
-          console.warn('⚠️ All bookings response error:', allResponse.message);
           setError(allResponse.message || 'Failed to fetch all bookings');
         }
       } catch (err) {
@@ -292,24 +200,17 @@ const FlightBookingComponent = () => {
       // Fetch upcoming bookings
       try {
         const upcomingResponse = await fetchUpcomingFlightBookings(currentUserType);
-        console.log('📦 Upcoming bookings raw response:', upcomingResponse);
 
         if (upcomingResponse.success && upcomingResponse.data) {
           let bookingsData = [];
 
-          // Handle the response structure based on your API format
           if (upcomingResponse.data.data && Array.isArray(upcomingResponse.data.data)) {
             bookingsData = upcomingResponse.data.data;
           } else if (Array.isArray(upcomingResponse.data)) {
             bookingsData = upcomingResponse.data;
           }
 
-          console.log('📋 Raw upcoming bookings data:', bookingsData);
-
           const transformedBookings = transformBookingData(bookingsData);
-          console.log('✨ Transformed upcoming bookings:', transformedBookings);
-
-          // Filter for future flights only
           const now = new Date();
           const futureBookings = transformedBookings.filter(booking => {
             const departureDate = new Date(booking.departureTime);
@@ -323,14 +224,9 @@ const FlightBookingComponent = () => {
           });
 
           setUpcomingBookings(sortedUpcoming);
-          console.log('✅ Upcoming flight bookings loaded:', sortedUpcoming.length);
-        } else {
-          console.warn('⚠️ Upcoming bookings response error:', upcomingResponse.message);
-          // Don't set error for upcoming bookings as it's not critical
         }
       } catch (err) {
         console.error('❌ Error fetching upcoming bookings:', err);
-        // Don't set error for upcoming bookings as it's not critical
       }
 
     } catch (err) {
@@ -345,18 +241,84 @@ const FlightBookingComponent = () => {
   const toggleSortOrder = () => {
     const newOrder = sortOrder === 'desc' ? 'asc' : 'desc';
     setSortOrder(newOrder);
-    loadFlightBookings(); // Reload with new sort order
+    loadFlightBookings();
   };
 
   // Load data on component mount
   useEffect(() => {
-    // Get user type
     const userType = getFlightUserType();
     setUserRole(userType || 'customer');
-
-    // Load bookings
     loadFlightBookings();
   }, [sortOrder]);
+
+  // ✅ ENHANCED: Real-time status API call with proper data extraction
+  const fetchRealTimeStatus = async (booking) => {
+    setStatusLoading(true);
+    setStatusError('');
+    setSelectedBooking(booking);
+    setShowStatusPopup(true);
+
+    try {
+      console.log('🔄 Fetching flight real-time status...');
+
+      const currentUserType = getFlightUserType();
+      const result = await fetchFlightRealTimeStatus(booking, currentUserType);
+
+      console.log('✅ Flight real-time status result:', result);
+
+      if (result.success) {
+        // Extract flight details from the response
+        const flightDetails = extractFlightDetails(result.data);
+
+        setStatusData({
+          ...result,
+          flightDetails: flightDetails,
+          rawApiResponse: result.data // Keep raw response for debugging
+        });
+      } else {
+        throw new Error(result.error || 'Failed to fetch status');
+      }
+
+    } catch (error) {
+      console.error('❌ Error fetching flight real-time status:', error);
+
+      let errorMessage = 'Failed to fetch real-time status';
+
+      if (error.response) {
+        const { status } = error.response;
+        switch (status) {
+          case 400:
+            errorMessage = 'Invalid booking data. Please check booking details.';
+            break;
+          case 401:
+            errorMessage = 'Authentication failed. Please login again.';
+            break;
+          case 404:
+            errorMessage = 'Flight booking not found in the system.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Please try again later.';
+            break;
+          default:
+            errorMessage = `Request failed with status ${status}`;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setStatusError(errorMessage);
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  // Close status popup
+  const closeStatusPopup = () => {
+    setShowStatusPopup(false);
+    setStatusData(null);
+    setStatusError('');
+    setSelectedBooking(null);
+  };
 
   // Format date
   const formatDate = (dateString) => {
@@ -415,25 +377,7 @@ const FlightBookingComponent = () => {
   // Handle invoice download
   const handleInvoiceDownload = (booking) => {
     console.log('Download invoice for booking:', booking);
-    // Add your invoice download logic here
-    // You can make an API call to generate/download invoice
     alert(`Invoice download initiated for booking: ${booking.bookingId || booking.pnr}`);
-  };
-
-  // Get real-time status
-  const getRealTimeStatus = (booking) => {
-    // This is a mock implementation - replace with actual real-time API call
-    const now = new Date();
-    const departureTime = new Date(booking.departureTime);
-    const arrivalTime = new Date(booking.arrivalTime);
-
-    if (now < departureTime) {
-      return { status: 'On Time', className: 'text-green-600 bg-green-100' };
-    } else if (now >= departureTime && now <= arrivalTime) {
-      return { status: 'In Flight', className: 'text-blue-600 bg-blue-100' };
-    } else {
-      return { status: 'Arrived', className: 'text-gray-600 bg-gray-100' };
-    }
   };
 
   return (
@@ -539,11 +483,10 @@ const FlightBookingComponent = () => {
                     Booked On {sortOrder === 'desc' ? '↓' : '↑'}
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real Time Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-time Status</th>
                 </tr>
               </thead>
               <tbody className="bg-gray-50">
-                {console.log('✈️ Rendering table rows for:', currentBookings.length, 'flight bookings')}
                 {currentBookings.length === 0 ? (
                   <tr>
                     <td colSpan="15" className="px-4 py-12 text-center">
@@ -555,13 +498,6 @@ const FlightBookingComponent = () => {
                             : 'Your flight booking history will appear here'
                           }
                         </span>
-                        <div className="mt-2 text-xs text-gray-500">
-                          Debug: Upcoming={upcomingBookings.length}, All={allBookings.length}, Current={currentBookings.length}
-                          <br />
-                          Sort Order: {sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
-                          <br />
-                          User Role: {userRole}
-                        </div>
                         <button
                           onClick={loadFlightBookings}
                           className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -573,9 +509,7 @@ const FlightBookingComponent = () => {
                   </tr>
                 ) : (
                   currentBookings.map((booking, index) => {
-                    console.log(`Rendering flight booking row ${index + 1}:`, booking);
                     const bookingStatus = getBookingStatus(booking);
-                    const realTimeStatus = getRealTimeStatus(booking);
 
                     return (
                       <tr key={booking.bookingId || index} className="border-b border-gray-200 hover:bg-gray-100">
@@ -633,11 +567,13 @@ const FlightBookingComponent = () => {
                         <td className="px-4 py-3 text-sm text-gray-900 font-mono">
                           {booking.pnr || 'N/A'}
                         </td>
+
                         <td className="px-4 py-3 text-sm">
                           <span className={`font-medium ${bookingStatus.className}`}>
                             {bookingStatus.status}
                           </span>
                         </td>
+
 
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {formatAmount(booking.totalAmount)}
@@ -653,22 +589,20 @@ const FlightBookingComponent = () => {
                         <td className="px-4 py-3 text-sm">
                           <button
                             onClick={() => handleInvoiceDownload(booking)}
-                            className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs "
+                            className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs"
                           >
                             Invoice
                           </button>
                         </td>
-
                         <td className="px-4 py-3 text-sm">
                           <button
-                            onClick={() => handleRealTimeStatusCheck(booking)}
-                            className="px-2 py-1 text-green-600 hover:text-green-700 text-sm font-medium transition-colors duration-200 flex items-center space-x-1 bg-transparent"
-                            title="Check real-time flight status"
-                          >
-                            <span>Status</span>
+                            onClick={() => fetchRealTimeStatus(booking)}
+                            className="text-xs text-green-500 hover:text-green-700 fw-semibold">
+                            Status
                           </button>
-
                         </td>
+
+
                       </tr>
                     );
                   })
@@ -679,139 +613,324 @@ const FlightBookingComponent = () => {
         </div>
       )}
 
-      {/* Real-time Status Popup */}
+      {/* ✅ FIXED: Real-time Status Popup with HIGHEST z-index to appear above all elements including sidebar */}
       {showStatusPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Info className="w-5 h-5 mr-2 text-blue-500" />
-                Real-time Flight Status
-              </h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+          style={{ zIndex: 999999 }}>
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            style={{ zIndex: 999999 }}>
+            {/* Popup Header */}
+            <div className="flex items-center justify-between p-2 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center">
+                <div>
+                  <h4 className="text-xl font-semibold text-gray-900">Flight Status Details</h4>
+                  {selectedBooking && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      {selectedBooking.airlineName} {selectedBooking.flightNumber} • {selectedBooking.from} → {selectedBooking.to}
+                    </p>
+                  )}
+                </div>
+              </div>
               <button
                 onClick={closeStatusPopup}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X size={24} />
               </button>
             </div>
 
-            {/* Content */}
-            <div className="p-6">
-              {/* Booking Info */}
-              {currentBookingForStatus && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-semibold text-gray-800 mb-2">Flight Information</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Booking ID:</span>
-                      <span className="ml-2 font-mono">{currentBookingForStatus.bookingId}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">PNR:</span>
-                      <span className="ml-2 font-mono">{currentBookingForStatus.pnr}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Flight:</span>
-                      <span className="ml-2">{currentBookingForStatus.flightNumber}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Route:</span>
-                      <span className="ml-2">{currentBookingForStatus.from} → {currentBookingForStatus.to}</span>
-                    </div>
+            {/* Popup Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {statusLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader className="animate-spin w-8 h-8 text-blue-500" />
+                  <span className="ml-3 text-gray-600">Fetching real-time flight status...</span>
+                </div>
+              ) : statusError ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">Error Loading Flight Status</h4>
+                    <p className="text-gray-600 mb-4">{statusError}</p>
+                    <button
+                      onClick={() => fetchRealTimeStatus(selectedBooking)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                    >
+                      Try Again
+                    </button>
                   </div>
                 </div>
-              )}
+              ) : statusData?.flightDetails ? (
+                <div className="">
 
-              {/* Loading State */}
-              {statusLoading && (
-                <div className="text-center py-8">
-                  <Loader className="w-8 h-8 animate-spin mx-auto text-blue-500 mb-4" />
-                  <p className="text-gray-600">Fetching real-time status...</p>
-                </div>
-              )}
+                  {/* Flight Information Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-              {/* Error State */}
-              {statusError && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="flex items-center">
-                    <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                    <div>
-                      <h4 className="text-red-800 font-medium">Error</h4>
-                      <p className="text-red-600 text-sm mt-1">{statusError}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Success State */}
-              {statusData && !statusLoading && !statusError && (
-                <div className="space-y-4">
-                  {/* Status Header */}
-                  <div className="flex items-center p-4 bg-green-50 border border-green-200 rounded-lg">
-                    {(() => {
-                      const statusDisplay = getStatusDisplay(statusData.status);
-                      return (
-                        <div className={`flex items-center px-3 py-1 rounded-full ${statusDisplay.bgColor}`}>
-                          <span className={statusDisplay.color}>{statusDisplay.icon}</span>
-                          <span className={`ml-2 font-semibold ${statusDisplay.color}`}>
-                            {statusData.status}
+                    {/* Booking Details Card */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-5">
+                      <div className="flex items-center mb-4">
+                        <h5 className="font-semibold text-gray-900">Booking Information</h5>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Booking ID:</span>
+                          <span className="font-medium font-mono">{statusData.flightDetails.bookingId}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">PNR:</span>
+                          <span className="font-medium font-mono">{statusData.flightDetails.pnr}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Journey Type:</span>
+                          <span className="font-medium">{statusData.flightDetails.journeyType}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Route Type:</span>
+                          <span className="font-medium">{statusData.flightDetails.isDomestic}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Fare Type:</span>
+                          <span className="font-medium">{statusData.flightDetails.fareType}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Refundable:</span>
+                          <span className={`font-medium ${statusData.flightDetails.isRefundable === 'Yes' ? 'text-green-600' : 'text-red-600'}`}>
+                            {statusData.flightDetails.isRefundable}
                           </span>
                         </div>
-                      );
-                    })()}
-                    <div className="ml-auto text-xs text-gray-500">
-                      Last updated: {new Date(statusData.lastUpdated).toLocaleString()}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Status Details */}
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-800">Status Details</h4>
-                    <div className="grid grid-cols-1 gap-3">
-                      {formatStatusData(statusData).map((item, index) => (
-                        <div key={index} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0">
-                          <span className="text-gray-600 font-medium">{item.label}:</span>
-                          <span className="text-gray-900 font-mono text-sm">{item.value}</span>
+                    {/* Flight Details Card */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-5">
+                      <div className="flex items-center mb-4">
+                        <h5 className="font-semibold text-gray-900">Flight Details</h5>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Airline:</span>
+                          <span className="font-medium">{statusData.flightDetails.airline.name}</span>
                         </div>
-                      ))}
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Flight Number:</span>
+                          <span className="font-medium">{statusData.flightDetails.airline.code} {statusData.flightDetails.airline.flightNumber}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Aircraft:</span>
+                          <span className="font-medium">{statusData.flightDetails.aircraft || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Cabin Class:</span>
+                          <span className="font-medium">{statusData.flightDetails.cabinClass}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Cabin Baggage:</span>
+                          <span className="font-medium">{statusData.flightDetails.baggage.cabin || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Check-in Baggage:</span>
+                          <span className="font-medium">{statusData.flightDetails.baggage.checkIn || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Route Information */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-5">
+                      <div className="flex items-center mb-4">
+                        <h5 className="font-semibold text-gray-900">Route Information</h5>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <h6 className="font-medium text-gray-800 mb-2">Departure</h6>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Airport:</span>
+                              <span className="font-medium">{statusData.flightDetails.route.origin.code} - {statusData.flightDetails.route.origin.name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">City:</span>
+                              <span className="font-medium">{statusData.flightDetails.route.origin.city}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Terminal:</span>
+                              <span className="font-medium">{statusData.flightDetails.route.origin.terminal || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Time:</span>
+                              <span className="font-medium">{formatDate(statusData.flightDetails.schedule.departure)} at {formatTime(statusData.flightDetails.schedule.departure)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-4">
+                          <h6 className="font-medium text-gray-800 mb-2">Arrival</h6>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Airport:</span>
+                              <span className="font-medium">{statusData.flightDetails.route.destination.code} - {statusData.flightDetails.route.destination.name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">City:</span>
+                              <span className="font-medium">{statusData.flightDetails.route.destination.city}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Terminal:</span>
+                              <span className="font-medium">{statusData.flightDetails.route.destination.terminal || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Time:</span>
+                              <span className="font-medium">{formatDate(statusData.flightDetails.schedule.arrival)} at {formatTime(statusData.flightDetails.schedule.arrival)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-4">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Flight Duration:</span>
+                            <span className="font-medium">{statusData.flightDetails.schedule.duration} minutes</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Passenger Information */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-5">
+                      <div className="flex items-center mb-4">
+                        <h5 className="font-semibold text-gray-900">Passenger Information</h5>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Name:</span>
+                          <span className="font-medium">{statusData.flightDetails.passenger.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Email:</span>
+                          <span className="font-medium">{statusData.flightDetails.passenger.email}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Phone:</span>
+                          <span className="font-medium">{statusData.flightDetails.passenger.phone}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Ticket Number:</span>
+                          <span className="font-medium font-mono">{statusData.flightDetails.passenger.ticketNumber}</span>
+                        </div>
+                      </div>
+                    </div>
+
+
+
+                    {/* Invoice Information */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-5 md:col-span-2">
+                      <div className="flex items-center mb-4">
+                        <h5 className="font-semibold text-gray-900">Invoice & Additional Details</h5>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <div className="text-sm text-gray-600">Invoice Number</div>
+                          <div className="font-medium font-mono">{statusData.flightDetails.invoiceNo}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-600">Invoice Date</div>
+                          <div className="font-medium">{formatDate(statusData.flightDetails.invoiceDate)}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-600">Status</div>
+                          <div className="font-medium text-green-600">Success - 200 OK</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Raw Data (Debug) */}
-                  {statusData.data && Object.keys(statusData.data).length > 0 && (
-                    <details className="mt-4">
-                      <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
-                        View Raw API Response (Debug)
-                      </summary>
-                      <pre className="mt-2 p-3 bg-gray-100 rounded text-xs overflow-auto">
-                        {JSON.stringify(statusData.data, null, 2)}
-                      </pre>
-                    </details>
+
+                </div>
+              ) : statusData && statusData.isEmpty ? (
+                <div className="space-y-6">
+                  {/* Empty Response Info */}
+                  <div className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
+                    <div className="flex items-center">
+                      <Info className="text-yellow-500 w-6 h-6 mr-3" />
+                      <div>
+                        <h4 className="text-lg font-medium text-yellow-900">
+                          API Call Successful - No Data Available
+                        </h4>
+                        <p className="text-sm text-yellow-700">
+                          API returned 200 OK but no real-time data available for this booking
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                    <h5 className="font-medium text-blue-900 mb-3">Why might this happen?</h5>
+                    <div className="text-sm text-blue-800 space-y-2">
+                      <div>• Real-time tracking may not be available for this specific flight</div>
+                      <div>• The airline might not provide live status updates</div>
+                      <div>• Booking is too recent or too old for real-time tracking</div>
+                      <div>• Flight is not yet in the tracking system</div>
+                    </div>
+                  </div>
+
+                  {/* Show basic booking info from selectedBooking */}
+                  {selectedBooking && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h5 className="font-medium text-gray-900 mb-3">Booking Information</h5>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Booking ID:</span>
+                            <span className="font-medium">{selectedBooking.bookingId}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">PNR:</span>
+                            <span className="font-medium">{selectedBooking.pnr}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Airline:</span>
+                            <span className="font-medium">{selectedBooking.airlineName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Flight:</span>
+                            <span className="font-medium">{selectedBooking.flightNumber}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h5 className="font-medium text-gray-900 mb-3">Route Details</h5>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Route:</span>
+                            <span className="font-medium">{selectedBooking.from} → {selectedBooking.to}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Cities:</span>
+                            <span className="font-medium">{selectedBooking.fromCity} - {selectedBooking.toCity}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Departure:</span>
+                            <span className="font-medium">{formatDate(selectedBooking.departureTime)} {formatTime(selectedBooking.departureTime)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Amount:</span>
+                            <span className="font-medium">{formatAmount(selectedBooking.totalAmount)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Info className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Status Data</h4>
+                    <p className="text-gray-600">Click the Status button to fetch real-time flight information</p>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Footer */}
-            <div className="flex justify-end p-6 border-t bg-gray-50">
-              <button
-                onClick={closeStatusPopup}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-              >
-                Close
-              </button>
-              {currentBookingForStatus && !statusLoading && (
-                <button
-                  onClick={() => handleRealTimeStatusCheck(currentBookingForStatus)}
-                  className="ml-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh Status
-                </button>
-              )}
-            </div>
+
           </div>
         </div>
       )}

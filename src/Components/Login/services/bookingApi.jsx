@@ -166,7 +166,7 @@ const makeAuthenticatedRequest = async (url, method = 'GET', data = null, userTy
         const currentUserType = userType || detectUserType();
         console.log(`🚀 Making ${method} request to:`, url);
         console.log('👤 Current user type:', currentUserType);
-        
+
         // Log the request data for debugging
         if (data) {
             console.log('📤 Request payload:', JSON.stringify(data, null, 2));
@@ -191,10 +191,10 @@ const makeAuthenticatedRequest = async (url, method = 'GET', data = null, userTy
         };
 
         const response = await axios(config);
-        
+
         console.log('✅ API Response status:', response.status);
         console.log('✅ API Response headers:', response.headers);
-        
+
         // Handle different response status codes
         if (response.status >= 200 && response.status < 300) {
             console.log('✅ API Response data:', response.data);
@@ -225,7 +225,7 @@ const makeAuthenticatedRequest = async (url, method = 'GET', data = null, userTy
             const enhancedError = new Error();
             enhancedError.response = error.response;
             enhancedError.message = data?.message || `Request failed with status ${status}`;
-            
+
             throw enhancedError;
         } else if (error.request) {
             console.error('❌ Network error - no response received:', error.request);
@@ -681,66 +681,78 @@ export const fetchAllHotelBookings = async (userType = null) => {
 };
 
 // ============================================================================
-// FLIGHT BOOKING FUNCTIONS - WITH REAL-TIME STATUS
+// FLIGHT BOOKING FUNCTIONS - CLEANED UP AND MERGED
 // ============================================================================
 
-// ✅ NEW: Fetch real-time booking status for FLIGHT bookings
+// ✅ MAIN Flight Real-Time Status Function - Merged and Enhanced
 export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
-        console.log('🔄 Fetching real-time status for flight booking:', booking);
+        console.log('🛫 Fetching real-time status for flight booking:', booking);
+        console.log('👤 User type:', currentUserType);
 
-        // Extract flight booking details with enhanced validation
-        const bookingId = booking?.bookingId || booking?.BookingId || booking?.booking_id;
-        const searchTokenId = booking?.searchTokenId || booking?.SearchTokenId || booking?.token_id;
-        const pnr = booking?.pnr || booking?.PNR || booking?.confirmationNo;
-        const flightNumber = booking?.flightNumber || booking?.FlightNumber;
-        const airlineCode = booking?.airline?.AirlineCode || booking?.airlineCode;
-        const departureDate = booking?.departureTime || booking?.departureDate;
+        // Enhanced booking details extraction with multiple fallback options
+        const bookingId = booking?.bookingId ||
+            booking?.BookingId ||
+            booking?.booking_id ||
+            booking?.id;
+
+        const pnr = booking?.pnr ||
+            booking?.PNR ||
+            booking?.confirmationNo ||
+            booking?.ConfirmationNo;
+
+        const searchTokenId = booking?.searchTokenId ||
+            booking?.SearchTokenId ||
+            booking?.token_id ||
+            booking?.tokenId;
+
+        // Additional flight-specific fields that might help
+        const flightNumber = booking?.flightNumber ||
+            booking?.FlightNumber ||
+            booking?.airline?.FlightNumber;
+
+        const airlineCode = booking?.airlineCode ||
+            booking?.AirlineCode ||
+            booking?.airline?.AirlineCode;
 
         // Validate required fields
         if (!bookingId) {
             throw new Error('BookingId is required for flight real-time status check');
         }
 
-        // Create a cleaner request payload - only include non-null/non-empty values
+        console.log('📋 Extracted booking details:', {
+            BookingId: bookingId,
+            PNR: pnr,
+            SearchTokenId: searchTokenId,
+            FlightNumber: flightNumber,
+            AirlineCode: airlineCode
+        });
+
+        // Enhanced request payload with all available booking information
         const requestData = {
-            BookingId: String(bookingId)
+            // Primary identifier (required)
+            BookingId: String(bookingId),
+
+            // Optional identifiers that might help locate the booking
+            ...(pnr && { PNR: String(pnr) }),
+            ...(searchTokenId && { SearchTokenId: String(searchTokenId) }),
+            ...(flightNumber && { FlightNumber: String(flightNumber) }),
+            ...(airlineCode && { AirlineCode: String(airlineCode) }),
+
+            // User context
+            UserType: currentUserType || 'customer',
+            ServiceType: 'flight',
+
+            // Additional context that might help
+            ...(booking?.invoiceNo && { InvoiceNo: String(booking.invoiceNo) }),
+            ...(booking?.journeyType && { JourneyType: booking.journeyType }),
+            ...(booking?.isDomestic !== undefined && { IsDomestic: booking.isDomestic })
         };
 
-        // Add optional fields only if they have valid values
-        if (searchTokenId && searchTokenId.trim() !== '') {
-            requestData.SearchTokenId = String(searchTokenId).trim();
-        }
-        
-        if (pnr && pnr.trim() !== '') {
-            requestData.PNR = String(pnr).trim();
-        }
+        console.log('📤 Flight real-time status request payload:', requestData);
 
-        if (flightNumber && flightNumber.trim() !== '') {
-            requestData.FlightNumber = String(flightNumber).trim();
-        }
-
-        if (airlineCode && airlineCode.trim() !== '') {
-            requestData.AirlineCode = String(airlineCode).trim();
-        }
-
-        if (departureDate) {
-            // Format date properly if it exists
-            try {
-                const formattedDate = new Date(departureDate).toISOString().split('T')[0];
-                requestData.DepartureDate = formattedDate;
-            } catch (dateError) {
-                console.warn('Invalid departure date format:', departureDate);
-            }
-        }
-
-        // Always include user type
-        requestData.UserType = currentUserType || 'customer';
-
-        console.log('📤 Flight real-time status request data:', requestData);
-
-        // Make the API call with improved error handling
+        // Make API call with enhanced error handling
         const response = await makeAuthenticatedRequest(
             FlightBookingServices.realTimeStatus,
             'POST',
@@ -748,32 +760,57 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
             currentUserType
         );
 
-        console.log('✅ Flight real-time status response:', response);
+        console.log('✅ Flight real-time status API response:', response);
 
-        // Extract status from response with multiple fallbacks for flight
+        // Enhanced response processing
         let status = 'Unknown';
+        let isEmpty = false;
+
         if (response) {
-            status = response.status ||
-                response.Status ||
-                response.bookingStatus ||
-                response.BookingStatus ||
-                response.flightStatus ||
-                response.FlightStatus ||
-                response.realTimeStatus ||
-                response.data?.status ||
-                response.result?.status ||
-                response.cancelStatus ||
-                response.CancelStatus ||
-                'Confirmed'; // Default fallback
+            // Check if response is empty or null
+            if (!response ||
+                (typeof response === 'object' && Object.keys(response).length === 0) ||
+                response === null ||
+                response === undefined) {
+                isEmpty = true;
+                status = 'No Data Available';
+            } else {
+                // Try multiple status field variations
+                status = response.status ||
+                    response.Status ||
+                    response.bookingStatus ||
+                    response.BookingStatus ||
+                    response.flightStatus ||
+                    response.FlightStatus ||
+                    response.realTimeStatus ||
+                    response.RealTimeStatus ||
+                    response.data?.status ||
+                    response.result?.status ||
+                    response.cancelStatus ||
+                    response.CancelStatus ||
+                    (response.success ? 'Confirmed' : 'Unknown');
+            }
+        } else {
+            isEmpty = true;
+            status = 'No Response';
         }
 
         return {
             success: true,
             status: status,
             data: response,
+            isEmpty: isEmpty,
             lastUpdated: new Date(),
             bookingId: bookingId,
-            serviceType: 'flight'
+            serviceType: 'flight',
+            // Add debug information
+            debugInfo: {
+                requestPayload: requestData,
+                responseReceived: !!response,
+                responseKeys: response ? Object.keys(response) : [],
+                userType: currentUserType,
+                endpoint: FlightBookingServices.realTimeStatus
+            }
         };
 
     } catch (error) {
@@ -784,34 +821,45 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
 
         if (error.response) {
             const { status, data } = error.response;
-            console.error('API Error Details:', {
+            console.error('🔍 API Error Details:', {
                 status,
                 data,
+                url: FlightBookingServices.realTimeStatus,
                 headers: error.response.headers
             });
 
             switch (status) {
                 case 400:
                     errorMessage = data?.message || 'Invalid request data. Please check booking details.';
-                    errorDetails = data?.error || 'Bad Request - Invalid booking parameters';
+                    errorDetails = `Bad Request (400): ${data?.error || 'Invalid booking parameters'}`;
                     break;
                 case 401:
                     errorMessage = 'Authentication failed. Please login again.';
+                    errorDetails = 'Unauthorized (401): Check authentication token';
                     break;
                 case 404:
-                    errorMessage = 'Flight booking not found in the system.';
+                    if (data?.message?.includes('Booking not found in local DB')) {
+                        errorMessage = 'Booking not found in local database for API credentials';
+                        errorDetails = 'This booking exists but may not be synced to the real-time tracking system yet';
+                    } else {
+                        errorMessage = 'Flight booking not found in the system.';
+                        errorDetails = 'Not Found (404): Booking does not exist';
+                    }
                     break;
                 case 500:
                     errorMessage = 'Server error. Please try again later.';
+                    errorDetails = 'Internal Server Error (500): Backend service issue';
                     break;
                 default:
                     errorMessage = data?.message || `Request failed with status ${status}`;
+                    errorDetails = `HTTP ${status}: ${data?.error || 'Unknown error'}`;
             }
         } else if (error.request) {
             errorMessage = 'Network error. Please check your internet connection.';
-            errorDetails = 'No response received from server';
+            errorDetails = 'Network timeout or connection refused';
         } else if (error.message) {
             errorMessage = error.message;
+            errorDetails = 'Request setup error';
         }
 
         return {
@@ -820,10 +868,114 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
             error: errorMessage,
             errorDetails: errorDetails,
             lastUpdated: new Date(),
-            bookingId: booking?.bookingId || 'Unknown',
-            serviceType: 'flight'
+            bookingId: booking?.bookingId || booking?.BookingId || 'Unknown',
+            serviceType: 'flight',
+            debugInfo: {
+                errorType: error.response ? 'API_ERROR' : error.request ? 'NETWORK_ERROR' : 'REQUEST_ERROR',
+                httpStatus: error.response?.status,
+                endpoint: FlightBookingServices.realTimeStatus,
+                bookingData: {
+                    bookingId: booking?.bookingId,
+                    pnr: booking?.pnr,
+                    flightNumber: booking?.flightNumber
+                }
+            }
         };
     }
+};
+
+// ✅ Alternative approach - Try different booking identifiers
+export const fetchFlightRealTimeStatusWithRetry = async (booking, userType = null) => {
+    const currentUserType = userType || detectUserType();
+
+    // Strategy 1: Try with BookingId
+    try {
+        console.log('🔄 Strategy 1: Using BookingId');
+        return await fetchFlightRealTimeStatus(booking, currentUserType);
+    } catch (error) {
+        if (error.response?.status !== 404) {
+            throw error; // If it's not a 404, don't retry
+        }
+        console.log('⚠️ Strategy 1 failed with 404, trying alternative approaches...');
+    }
+
+    // Strategy 2: Try with PNR if available
+    if (booking?.pnr || booking?.PNR) {
+        try {
+            console.log('🔄 Strategy 2: Using PNR as primary identifier');
+            const pnrBooking = {
+                ...booking,
+                bookingId: booking.pnr || booking.PNR,
+                BookingId: booking.pnr || booking.PNR
+            };
+            return await fetchFlightRealTimeStatus(pnrBooking, currentUserType);
+        } catch (error) {
+            console.log('⚠️ Strategy 2 failed, trying next approach...');
+        }
+    }
+
+    // Strategy 3: Try minimal payload
+    try {
+        console.log('🔄 Strategy 3: Minimal payload approach');
+        const minimalBooking = {
+            bookingId: booking?.bookingId || booking?.BookingId,
+            BookingId: booking?.bookingId || booking?.BookingId
+        };
+        return await fetchFlightRealTimeStatus(minimalBooking, currentUserType);
+    } catch (error) {
+        console.log('⚠️ All strategies failed');
+        throw error;
+    }
+};
+
+// ✅ Debug function to test the API with different payloads
+export const debugFlightRealTimeStatus = async (booking, userType = null) => {
+    const currentUserType = userType || detectUserType();
+    const results = [];
+
+    // Test 1: Original payload
+    try {
+        console.log('🧪 Debug Test 1: Original payload');
+        const result1 = await fetchFlightRealTimeStatus(booking, currentUserType);
+        results.push({ test: 'Original Payload', success: result1.success, result: result1 });
+    } catch (error) {
+        results.push({ test: 'Original Payload', success: false, error: error.message });
+    }
+
+    // Test 2: Minimal payload
+    try {
+        console.log('🧪 Debug Test 2: Minimal payload');
+        const minimalPayload = { BookingId: String(booking?.bookingId || booking?.BookingId) };
+        const response = await makeAuthenticatedRequest(
+            FlightBookingServices.realTimeStatus,
+            'POST',
+            minimalPayload,
+            currentUserType
+        );
+        results.push({ test: 'Minimal Payload', success: true, result: { data: response } });
+    } catch (error) {
+        results.push({ test: 'Minimal Payload', success: false, error: error.message });
+    }
+
+    // Test 3: PNR as BookingId
+    if (booking?.pnr) {
+        try {
+            console.log('🧪 Debug Test 3: PNR as BookingId');
+            const pnrPayload = { BookingId: String(booking.pnr) };
+            const response = await makeAuthenticatedRequest(
+                FlightBookingServices.realTimeStatus,
+                'POST',
+                pnrPayload,
+                currentUserType
+            );
+            results.push({ test: 'PNR as BookingId', success: true, result: { data: response } });
+        } catch (error) {
+            results.push({ test: 'PNR as BookingId', success: false, error: error.message });
+        }
+    }
+
+    console.log('🧪 Debug Results:', results);
+    return results;
 };
 
 // ✅ Fetch real-time status for multiple FLIGHT bookings
@@ -880,14 +1032,14 @@ export const fetchUpcomingFlightBookings = async (userType = null) => {
         const currentUserType = userType || detectUserType();
         console.log('🚀 Fetching upcoming flight bookings for:', currentUserType);
 
-        const endpoint = currentUserType === 'agent' 
-            ? FlightBookingServices.agent.upcomingBookings 
+        const endpoint = currentUserType === 'agent'
+            ? FlightBookingServices.agent.upcomingBookings
             : FlightBookingServices.customer.upcomingBookings;
 
         const response = await makeAuthenticatedRequest(endpoint, 'GET', null, currentUserType);
-        
+
         console.log('✅ Upcoming flight bookings response:', response);
-        
+
         return {
             success: true,
             data: response,
@@ -909,14 +1061,14 @@ export const fetchAllFlightBookings = async (userType = null) => {
         const currentUserType = userType || detectUserType();
         console.log('🚀 Fetching all flight bookings for:', currentUserType);
 
-        const endpoint = currentUserType === 'agent' 
-            ? FlightBookingServices.agent.allBookings 
+        const endpoint = currentUserType === 'agent'
+            ? FlightBookingServices.agent.allBookings
             : FlightBookingServices.customer.allBookings;
 
         const response = await makeAuthenticatedRequest(endpoint, 'GET', null, currentUserType);
-        
+
         console.log('✅ All flight bookings response:', response);
-        
+
         return {
             success: true,
             data: response,
@@ -931,6 +1083,7 @@ export const fetchAllFlightBookings = async (userType = null) => {
         };
     }
 };
+
 
 // ============================================================================
 // UTILITY FUNCTIONS
