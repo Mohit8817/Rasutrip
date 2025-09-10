@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, X, Clock, AlertCircle, CheckCircle, Info, Loader } from 'lucide-react';
-// Import the updated flight booking services with real-time status
+import { X, Clock, AlertCircle, CheckCircle, Info, Loader } from 'lucide-react';
+// Import the flight booking services WITH real-time status
 import {
   fetchUpcomingFlightBookings,
   fetchAllFlightBookings,
@@ -20,10 +20,10 @@ const FlightBookingComponent = () => {
 
   // Real-time status popup state
   const [showStatusPopup, setShowStatusPopup] = useState(false);
-  const [currentBookingForStatus, setCurrentBookingForStatus] = useState(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusData, setStatusData] = useState(null);
   const [statusError, setStatusError] = useState('');
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   // Get current bookings based on selected type
   const currentBookings = bookingType === 'upcoming' ? upcomingBookings : allBookings;
@@ -71,169 +71,9 @@ const FlightBookingComponent = () => {
         segments: result.Segments,
         invoiceNo: result.InvoiceNo,
         invoiceAmount: result.InvoiceAmount,
-        // Additional fields for real-time status API
-        searchTokenId: booking.searchTokenId || booking.SearchTokenId,
         airlineCode: firstSegment.Airline?.AirlineCode
       };
     });
-  };
-
-  // Handle real-time status check
-  const handleRealTimeStatusCheck = async (booking) => {
-    console.log('🚀 Checking real-time status for flight booking:', booking);
-
-    setCurrentBookingForStatus(booking);
-    setShowStatusPopup(true);
-    setStatusLoading(true);
-    setStatusError('');
-    setStatusData(null);
-
-    try {
-      const currentUserType = getFlightUserType();
-      console.log('👤 User type for status check:', currentUserType);
-
-      const statusResult = await fetchFlightRealTimeStatus(booking, currentUserType);
-      console.log('📋 Status result:', statusResult);
-
-      if (statusResult.success) {
-        setStatusData(statusResult);
-      } else {
-        setStatusError(statusResult.error || 'Failed to fetch real-time status');
-      }
-    } catch (error) {
-      console.error('❌ Error checking flight real-time status:', error);
-      setStatusError(error.message || 'Failed to check real-time status');
-    } finally {
-      setStatusLoading(false);
-    }
-  };
-
-  // Close status popup
-  const closeStatusPopup = () => {
-    setShowStatusPopup(false);
-    setCurrentBookingForStatus(null);
-    setStatusData(null);
-    setStatusError('');
-    setStatusLoading(false);
-  };
-
-  // Get status icon and color
-  const getStatusDisplay = (status) => {
-    const statusLower = status.toLowerCase();
-
-    if (statusLower.includes('confirmed') || statusLower.includes('booked')) {
-      return {
-        icon: <CheckCircle className="w-4 h-4" />,
-        color: 'text-green-600',
-        bgColor: 'bg-green-100'
-      };
-    } else if (statusLower.includes('cancelled')) {
-      return {
-        icon: <X className="w-4 h-4" />,
-        color: 'text-red-600',
-        bgColor: 'bg-red-100'
-      };
-    } else if (statusLower.includes('pending')) {
-      return {
-        icon: <Clock className="w-4 h-4" />,
-        color: 'text-orange-600',
-        bgColor: 'bg-orange-100'
-      };
-    } else {
-      return {
-        icon: <Info className="w-4 h-4" />,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-100'
-      };
-    }
-  };
-
-  // Format status data for display
-  const formatStatusData = (data) => {
-    if (!data || !data.data) return [];
-
-    const formatted = [];
-    const responseData = data.data;
-
-    // Basic information
-    formatted.push({
-      label: 'Booking ID',
-      value: data.bookingId || 'N/A'
-    });
-
-    formatted.push({
-      label: 'Status',
-      value: data.status || 'Unknown'
-    });
-
-    formatted.push({
-      label: 'Last Updated',
-      value: new Date(data.lastUpdated).toLocaleString()
-    });
-
-    // Extract additional data from response
-    if (responseData.PNR) {
-      formatted.push({
-        label: 'PNR',
-        value: responseData.PNR
-      });
-    }
-
-    if (responseData.FlightStatus) {
-      formatted.push({
-        label: 'Flight Status',
-        value: responseData.FlightStatus
-      });
-    }
-
-    if (responseData.DepartureTime) {
-      formatted.push({
-        label: 'Departure Time',
-        value: new Date(responseData.DepartureTime).toLocaleString()
-      });
-    }
-
-    if (responseData.ArrivalTime) {
-      formatted.push({
-        label: 'Arrival Time',
-        value: new Date(responseData.ArrivalTime).toLocaleString()
-      });
-    }
-
-    if (responseData.Gate) {
-      formatted.push({
-        label: 'Gate',
-        value: responseData.Gate
-      });
-    }
-
-    if (responseData.Terminal) {
-      formatted.push({
-        label: 'Terminal',
-        value: responseData.Terminal
-      });
-    }
-
-    if (responseData.Delay) {
-      formatted.push({
-        label: 'Delay',
-        value: responseData.Delay
-      });
-    }
-
-    // Add any other fields from the response
-    Object.keys(responseData).forEach(key => {
-      if (!['PNR', 'FlightStatus', 'DepartureTime', 'ArrivalTime', 'Gate', 'Terminal', 'Delay'].includes(key)) {
-        if (responseData[key] && typeof responseData[key] !== 'object') {
-          formatted.push({
-            label: key,
-            value: String(responseData[key])
-          });
-        }
-      }
-    });
-
-    return formatted;
   };
 
   // Load flight bookings using the simplified service
@@ -358,6 +198,72 @@ const FlightBookingComponent = () => {
     loadFlightBookings();
   }, [sortOrder]);
 
+  // ✅ FIXED: Real-time status API call using the proper service function
+  const fetchRealTimeStatus = async (booking) => {
+    setStatusLoading(true);
+    setStatusError('');
+    setSelectedBooking(booking);
+    setShowStatusPopup(true);
+
+    try {
+      console.log('🔄 Fetching flight real-time status using service function...');
+      console.log('📋 Booking data:', booking);
+
+      // Use the proper service function from bookingApi
+      const currentUserType = getFlightUserType();
+      const result = await fetchFlightRealTimeStatus(booking, currentUserType);
+
+      console.log('✅ Flight real-time status result:', result);
+
+      if (result.success) {
+        setStatusData(result);
+        console.log('✅ Status fetched successfully:', result.status);
+      } else {
+        throw new Error(result.error || 'Failed to fetch status');
+      }
+
+    } catch (error) {
+      console.error('❌ Error fetching flight real-time status:', error);
+
+      let errorMessage = 'Failed to fetch real-time status';
+
+      // Handle different types of errors
+      if (error.response) {
+        const { status } = error.response;
+        switch (status) {
+          case 400:
+            errorMessage = 'Invalid booking data. Please check booking details.';
+            break;
+          case 401:
+            errorMessage = 'Authentication failed. Please login again.';
+            break;
+          case 404:
+            errorMessage = 'Flight booking not found in the system.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Please try again later.';
+            break;
+          default:
+            errorMessage = `Request failed with status ${status}`;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setStatusError(errorMessage);
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  // Close status popup
+  const closeStatusPopup = () => {
+    setShowStatusPopup(false);
+    setStatusData(null);
+    setStatusError('');
+    setSelectedBooking(null);
+  };
+
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -418,22 +324,6 @@ const FlightBookingComponent = () => {
     // Add your invoice download logic here
     // You can make an API call to generate/download invoice
     alert(`Invoice download initiated for booking: ${booking.bookingId || booking.pnr}`);
-  };
-
-  // Get real-time status
-  const getRealTimeStatus = (booking) => {
-    // This is a mock implementation - replace with actual real-time API call
-    const now = new Date();
-    const departureTime = new Date(booking.departureTime);
-    const arrivalTime = new Date(booking.arrivalTime);
-
-    if (now < departureTime) {
-      return { status: 'On Time', className: 'text-green-600 bg-green-100' };
-    } else if (now >= departureTime && now <= arrivalTime) {
-      return { status: 'In Flight', className: 'text-blue-600 bg-blue-100' };
-    } else {
-      return { status: 'Arrived', className: 'text-gray-600 bg-gray-100' };
-    }
   };
 
   return (
@@ -532,6 +422,7 @@ const FlightBookingComponent = () => {
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Journey Type</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">PNR</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-time Status</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Amount</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-200"
                     onClick={toggleSortOrder}
@@ -539,11 +430,9 @@ const FlightBookingComponent = () => {
                     Booked On {sortOrder === 'desc' ? '↓' : '↑'}
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real Time Status</th>
                 </tr>
               </thead>
               <tbody className="bg-gray-50">
-                {console.log('✈️ Rendering table rows for:', currentBookings.length, 'flight bookings')}
                 {currentBookings.length === 0 ? (
                   <tr>
                     <td colSpan="15" className="px-4 py-12 text-center">
@@ -573,9 +462,7 @@ const FlightBookingComponent = () => {
                   </tr>
                 ) : (
                   currentBookings.map((booking, index) => {
-                    console.log(`Rendering flight booking row ${index + 1}:`, booking);
                     const bookingStatus = getBookingStatus(booking);
-                    const realTimeStatus = getRealTimeStatus(booking);
 
                     return (
                       <tr key={booking.bookingId || index} className="border-b border-gray-200 hover:bg-gray-100">
@@ -638,7 +525,14 @@ const FlightBookingComponent = () => {
                             {bookingStatus.status}
                           </span>
                         </td>
-
+                        <td className="px-4 py-3 text-sm">
+                          <button
+                            onClick={() => fetchRealTimeStatus(booking)}
+                            className="bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-white text-xs font-medium transition-colors duration-200"
+                          >
+                            Status
+                          </button>
+                        </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {formatAmount(booking.totalAmount)}
                         </td>
@@ -653,21 +547,10 @@ const FlightBookingComponent = () => {
                         <td className="px-4 py-3 text-sm">
                           <button
                             onClick={() => handleInvoiceDownload(booking)}
-                            className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs "
+                            className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs"
                           >
                             Invoice
                           </button>
-                        </td>
-
-                        <td className="px-4 py-3 text-sm">
-                          <button
-                            onClick={() => handleRealTimeStatusCheck(booking)}
-                            className="px-2 py-1 text-green-600 hover:text-green-700 text-sm font-medium transition-colors duration-200 flex items-center space-x-1 bg-transparent"
-                            title="Check real-time flight status"
-                          >
-                            <span>Status</span>
-                          </button>
-
                         </td>
                       </tr>
                     );
@@ -679,138 +562,292 @@ const FlightBookingComponent = () => {
         </div>
       )}
 
-      {/* Real-time Status Popup */}
+      {/* ✅ ENHANCED Real-time Status Popup with better status display */}
       {showStatusPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Info className="w-5 h-5 mr-2 text-blue-500" />
-                Real-time Flight Status
-              </h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            {/* Popup Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Real-time Flight Status</h3>
+                {selectedBooking && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Booking ID: {selectedBooking.bookingId} | PNR: {selectedBooking.pnr}
+                  </p>
+                )}
+              </div>
               <button
                 onClick={closeStatusPopup}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X size={24} />
               </button>
             </div>
 
-            {/* Content */}
+            {/* Popup Content */}
             <div className="p-6">
-              {/* Booking Info */}
-              {currentBookingForStatus && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-semibold text-gray-800 mb-2">Flight Information</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Booking ID:</span>
-                      <span className="ml-2 font-mono">{currentBookingForStatus.bookingId}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">PNR:</span>
-                      <span className="ml-2 font-mono">{currentBookingForStatus.pnr}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Flight:</span>
-                      <span className="ml-2">{currentBookingForStatus.flightNumber}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Route:</span>
-                      <span className="ml-2">{currentBookingForStatus.from} → {currentBookingForStatus.to}</span>
-                    </div>
+              {statusLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader className="animate-spin w-8 h-8 text-blue-500" />
+                  <span className="ml-3 text-gray-600">Fetching real-time flight status...</span>
+                </div>
+              ) : statusError ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">Error Loading Flight Status</h4>
+                    <p className="text-gray-600 mb-4">{statusError}</p>
+                    <button
+                      onClick={() => fetchRealTimeStatus(selectedBooking)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                    >
+                      Try Again
+                    </button>
                   </div>
                 </div>
-              )}
-
-              {/* Loading State */}
-              {statusLoading && (
-                <div className="text-center py-8">
-                  <Loader className="w-8 h-8 animate-spin mx-auto text-blue-500 mb-4" />
-                  <p className="text-gray-600">Fetching real-time status...</p>
-                </div>
-              )}
-
-              {/* Error State */}
-              {statusError && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="flex items-center">
-                    <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                    <div>
-                      <h4 className="text-red-800 font-medium">Error</h4>
-                      <p className="text-red-600 text-sm mt-1">{statusError}</p>
+              ) : statusData ? (
+                <div className="space-y-6">
+                  {/* Status Success/Info Indicator */}
+                  <div className={`border rounded-lg p-4 ${statusData.success
+                    ? statusData.isEmpty
+                      ? 'bg-yellow-50 border-yellow-200'
+                      : 'bg-green-50 border-green-200'
+                    : 'bg-red-50 border-red-200'
+                    }`}>
+                    <div className="flex items-center">
+                      {statusData.success ? (
+                        statusData.isEmpty ? (
+                          <Info className="text-yellow-500 w-6 h-6 mr-3" />
+                        ) : (
+                          <CheckCircle className="text-green-500 w-6 h-6 mr-3" />
+                        )
+                      ) : (
+                        <AlertCircle className="text-red-500 w-6 h-6 mr-3" />
+                      )}
+                      <div>
+                        <h4 className={`text-lg font-medium ${statusData.success
+                          ? statusData.isEmpty
+                            ? 'text-yellow-900'
+                            : 'text-green-900'
+                          : 'text-red-900'
+                          }`}>
+                          {statusData.success
+                            ? statusData.isEmpty
+                              ? 'API Call Successful - No Data'
+                              : 'Status Retrieved Successfully'
+                            : 'Status Error'
+                          }
+                        </h4>
+                        <p className={`text-sm ${statusData.success
+                          ? statusData.isEmpty
+                            ? 'text-yellow-700'
+                            : 'text-green-700'
+                          : 'text-red-700'
+                          }`}>
+                          {statusData.success
+                            ? statusData.isEmpty
+                              ? 'API returned 200 OK but no real-time data available'
+                              : `Current Status: ${statusData.status}`
+                            : statusData.error
+                          }
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Last Updated: {new Date(statusData.lastUpdated).toLocaleString('en-IN')}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Success State */}
-              {statusData && !statusLoading && !statusError && (
-                <div className="space-y-4">
-                  {/* Status Header */}
-                  <div className="flex items-center p-4 bg-green-50 border border-green-200 rounded-lg">
-                    {(() => {
-                      const statusDisplay = getStatusDisplay(statusData.status);
-                      return (
-                        <div className={`flex items-center px-3 py-1 rounded-full ${statusDisplay.bgColor}`}>
-                          <span className={statusDisplay.color}>{statusDisplay.icon}</span>
-                          <span className={`ml-2 font-semibold ${statusDisplay.color}`}>
-                            {statusData.status}
-                          </span>
+                  {/* Empty Response Info */}
+                  {statusData.isEmpty && (
+                    <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                      <h5 className="font-medium text-blue-900 mb-3">Why might this happen?</h5>
+                      <div className="text-sm text-blue-800 space-y-2">
+                        <div>• Real-time tracking may not be available for this specific flight</div>
+                        <div>• The airline might not provide live status updates</div>
+                        <div>• Booking is too recent or too old for real-time tracking</div>
+                        <div>• Flight is not yet in the tracking system</div>
+                        <div>• API payload was correct but no matching data found</div>
+                      </div>
+                      <div className="mt-3 p-3 bg-white rounded border">
+                        <div className="text-xs text-gray-600">
+                          <strong>Request Details:</strong>
+                          <br />✅ Booking ID: {statusData.bookingId}
+                          <br />✅ API Endpoint: /airservice/real-time-booking-details
+                          <br />✅ Response Status: 200 OK
+                          <br />❌ Response Data: Empty or Null
                         </div>
-                      );
-                    })()}
-                    <div className="ml-auto text-xs text-gray-500">
-                      Last updated: {new Date(statusData.lastUpdated).toLocaleString()}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Status Details */}
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-800">Status Details</h4>
-                    <div className="grid grid-cols-1 gap-3">
-                      {formatStatusData(statusData).map((item, index) => (
-                        <div key={index} className="flex justify-between py-2 border-b border-gray-100 last:border-b-0">
-                          <span className="text-gray-600 font-medium">{item.label}:</span>
-                          <span className="text-gray-900 font-mono text-sm">{item.value}</span>
+                  {/* Flight Details */}
+                  {selectedBooking && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <h5 className="font-medium text-gray-900">Flight Information</h5>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">API Status:</span>
+                            <span className={`font-medium ${statusData.success ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                              {statusData.success ? '200 OK' : 'Error'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Data Available:</span>
+                            <span className={`font-medium ${statusData.isEmpty ? 'text-yellow-600' : 'text-green-600'
+                              }`}>
+                              {statusData.isEmpty ? 'No' : 'Yes'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Service Type:</span>
+                            <span className="font-medium">Flight</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Booking ID:</span>
+                            <span className="font-medium font-mono">{statusData.bookingId}</span>
+                          </div>
                         </div>
-                      ))}
+                      </div>
+
+                      <div className="space-y-3">
+                        <h5 className="font-medium text-gray-900">Flight Details</h5>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Airline:</span>
+                            <span className="font-medium">{selectedBooking.airlineName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Flight Number:</span>
+                            <span className="font-medium">{selectedBooking.flightNumber}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Route:</span>
+                            <span className="font-medium">{selectedBooking.from} → {selectedBooking.to}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">PNR:</span>
+                            <span className="font-medium font-mono">{selectedBooking.pnr}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* API Response Data */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h5 className="font-medium text-gray-900 mb-3">
+                      API Response Data
+                      <span className="ml-2 text-xs text-gray-500">
+                        (Status Code: {statusData.success ? '200 OK' : 'Error'})
+                      </span>
+                    </h5>
+                    <div className="bg-gray-50 rounded p-3 max-h-64 overflow-auto">
+                      {statusData.data && Object.keys(statusData.data).length > 0 ? (
+                        <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                          {JSON.stringify(statusData.data, null, 2)}
+                        </pre>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          <Info className="w-8 h-8 mx-auto mb-2" />
+                          <div className="text-sm">No data returned from API</div>
+                          <div className="text-xs mt-1">Response was successful but empty</div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Raw Data (Debug) */}
-                  {statusData.data && Object.keys(statusData.data).length > 0 && (
-                    <details className="mt-4">
-                      <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
-                        View Raw API Response (Debug)
-                      </summary>
-                      <pre className="mt-2 p-3 bg-gray-100 rounded text-xs overflow-auto">
-                        {JSON.stringify(statusData.data, null, 2)}
-                      </pre>
-                    </details>
+                  {/* Debug Information */}
+                  {statusData.debugInfo && (
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h5 className="font-medium text-gray-900 mb-3">Debug Information</h5>
+                      <div className="bg-gray-50 rounded p-3 max-h-48 overflow-auto">
+                        <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                          {JSON.stringify(statusData.debugInfo, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error Details if any */}
+                  {(statusData?.errorDetails || statusData?.debugInfo) && (
+                    <div className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
+                      <h5 className="font-medium text-yellow-900 mb-3 flex items-center">
+                        <AlertCircle className="w-5 h-5 mr-2" />
+                        Debugging Information
+                      </h5>
+
+                      {statusData.errorDetails && (
+                        <div className="text-sm text-yellow-800 mb-4 whitespace-pre-line">
+                          {statusData.errorDetails}
+                        </div>
+                      )}
+
+                      {statusData.debugInfo && (
+                        <div className="text-xs text-gray-600">
+                          <strong>Debug Data:</strong>
+                          <pre className="mt-2 bg-white p-2 rounded border overflow-auto max-h-32">
+                            {JSON.stringify(statusData.debugInfo, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Possible Solutions */}
+                  {statusError && statusError.includes('Booking not found in local DB') && (
+                    <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                      <h5 className="font-medium text-blue-900 mb-3">Possible Solutions</h5>
+                      <div className="text-sm text-blue-800 space-y-2">
+                        <div>• Wait a few minutes and try again (database sync issue)</div>
+                        <div>• Check if you're logged in with the correct account</div>
+                        <div>• Verify the booking exists in your "All Flights" list</div>
+                        <div>• Contact support with Booking ID: <code className="bg-white px-1 rounded">{selectedBooking?.bookingId || 'N/A'}</code></div>
+                      </div>
+                    </div>
                   )}
                 </div>
+              ) : (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Info className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Status Data</h4>
+                    <p className="text-gray-600">Click the Status button to fetch real-time flight information</p>
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Footer */}
-            <div className="flex justify-end p-6 border-t bg-gray-50">
-              <button
-                onClick={closeStatusPopup}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-              >
-                Close
-              </button>
-              {currentBookingForStatus && !statusLoading && (
+            {/* Popup Footer */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="text-xs text-gray-500">
+                {statusData && (
+                  <span>
+                    API Endpoint: /airservice/real-time-booking-details |
+                    Response: {statusData.success ? '200 OK' : 'Error'}
+                  </span>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                {selectedBooking && (
+                  <button
+                    onClick={() => fetchRealTimeStatus(selectedBooking)}
+                    disabled={statusLoading}
+                    className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+                  >
+                    {statusLoading ? 'Refreshing...' : 'Refresh Status'}
+                  </button>
+                )}
+
                 <button
-                  onClick={() => handleRealTimeStatusCheck(currentBookingForStatus)}
-                  className="ml-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center"
+                  onClick={closeStatusPopup}
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh Status
+                  Close
                 </button>
-              )}
+              </div>
             </div>
           </div>
         </div>

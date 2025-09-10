@@ -166,7 +166,7 @@ const makeAuthenticatedRequest = async (url, method = 'GET', data = null, userTy
         const currentUserType = userType || detectUserType();
         console.log(`🚀 Making ${method} request to:`, url);
         console.log('👤 Current user type:', currentUserType);
-        
+
         // Log the request data for debugging
         if (data) {
             console.log('📤 Request payload:', JSON.stringify(data, null, 2));
@@ -191,10 +191,10 @@ const makeAuthenticatedRequest = async (url, method = 'GET', data = null, userTy
         };
 
         const response = await axios(config);
-        
+
         console.log('✅ API Response status:', response.status);
         console.log('✅ API Response headers:', response.headers);
-        
+
         // Handle different response status codes
         if (response.status >= 200 && response.status < 300) {
             console.log('✅ API Response data:', response.data);
@@ -225,7 +225,7 @@ const makeAuthenticatedRequest = async (url, method = 'GET', data = null, userTy
             const enhancedError = new Error();
             enhancedError.response = error.response;
             enhancedError.message = data?.message || `Request failed with status ${status}`;
-            
+
             throw enhancedError;
         } else if (error.request) {
             console.error('❌ Network error - no response received:', error.request);
@@ -684,7 +684,6 @@ export const fetchAllHotelBookings = async (userType = null) => {
 // FLIGHT BOOKING FUNCTIONS - WITH REAL-TIME STATUS
 // ============================================================================
 
-// ✅ NEW: Fetch real-time booking status for FLIGHT bookings
 export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
@@ -692,57 +691,22 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
 
         // Extract flight booking details with enhanced validation
         const bookingId = booking?.bookingId || booking?.BookingId || booking?.booking_id;
-        const searchTokenId = booking?.searchTokenId || booking?.SearchTokenId || booking?.token_id;
-        const pnr = booking?.pnr || booking?.PNR || booking?.confirmationNo;
-        const flightNumber = booking?.flightNumber || booking?.FlightNumber;
-        const airlineCode = booking?.airline?.AirlineCode || booking?.airlineCode;
-        const departureDate = booking?.departureTime || booking?.departureDate;
 
         // Validate required fields
         if (!bookingId) {
             throw new Error('BookingId is required for flight real-time status check');
         }
 
-        // Create a cleaner request payload - only include non-null/non-empty values
+        // Create minimal payload - only BookingId as per your requirement
         const requestData = {
             BookingId: String(bookingId)
         };
 
-        // Add optional fields only if they have valid values
-        if (searchTokenId && searchTokenId.trim() !== '') {
-            requestData.SearchTokenId = String(searchTokenId).trim();
-        }
-        
-        if (pnr && pnr.trim() !== '') {
-            requestData.PNR = String(pnr).trim();
-        }
-
-        if (flightNumber && flightNumber.trim() !== '') {
-            requestData.FlightNumber = String(flightNumber).trim();
-        }
-
-        if (airlineCode && airlineCode.trim() !== '') {
-            requestData.AirlineCode = String(airlineCode).trim();
-        }
-
-        if (departureDate) {
-            // Format date properly if it exists
-            try {
-                const formattedDate = new Date(departureDate).toISOString().split('T')[0];
-                requestData.DepartureDate = formattedDate;
-            } catch (dateError) {
-                console.warn('Invalid departure date format:', departureDate);
-            }
-        }
-
-        // Always include user type
-        requestData.UserType = currentUserType || 'customer';
-
         console.log('📤 Flight real-time status request data:', requestData);
 
-        // Make the API call with improved error handling
+        // ✅ FIXED: Use the corrected FlightBookingServices endpoint
         const response = await makeAuthenticatedRequest(
-            FlightBookingServices.realTimeStatus,
+            FlightBookingServices.realTimeStatus,  // This now correctly points to airservice
             'POST',
             requestData,
             currentUserType
@@ -764,7 +728,7 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
                 response.result?.status ||
                 response.cancelStatus ||
                 response.CancelStatus ||
-                'Confirmed'; // Default fallback
+                'Confirmed'; // Default fallback for flights
         }
 
         return {
@@ -787,7 +751,7 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
             console.error('API Error Details:', {
                 status,
                 data,
-                headers: error.response.headers
+                url: FlightBookingServices.realTimeStatus
             });
 
             switch (status) {
@@ -809,7 +773,7 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
             }
         } else if (error.request) {
             errorMessage = 'Network error. Please check your internet connection.';
-            errorDetails = 'No response received from server';
+            errorDetails = 'Could not connect to server';
         } else if (error.message) {
             errorMessage = error.message;
         }
@@ -880,14 +844,14 @@ export const fetchUpcomingFlightBookings = async (userType = null) => {
         const currentUserType = userType || detectUserType();
         console.log('🚀 Fetching upcoming flight bookings for:', currentUserType);
 
-        const endpoint = currentUserType === 'agent' 
-            ? FlightBookingServices.agent.upcomingBookings 
+        const endpoint = currentUserType === 'agent'
+            ? FlightBookingServices.agent.upcomingBookings
             : FlightBookingServices.customer.upcomingBookings;
 
         const response = await makeAuthenticatedRequest(endpoint, 'GET', null, currentUserType);
-        
+
         console.log('✅ Upcoming flight bookings response:', response);
-        
+
         return {
             success: true,
             data: response,
@@ -909,14 +873,14 @@ export const fetchAllFlightBookings = async (userType = null) => {
         const currentUserType = userType || detectUserType();
         console.log('🚀 Fetching all flight bookings for:', currentUserType);
 
-        const endpoint = currentUserType === 'agent' 
-            ? FlightBookingServices.agent.allBookings 
+        const endpoint = currentUserType === 'agent'
+            ? FlightBookingServices.agent.allBookings
             : FlightBookingServices.customer.allBookings;
 
         const response = await makeAuthenticatedRequest(endpoint, 'GET', null, currentUserType);
-        
+
         console.log('✅ All flight bookings response:', response);
-        
+
         return {
             success: true,
             data: response,
