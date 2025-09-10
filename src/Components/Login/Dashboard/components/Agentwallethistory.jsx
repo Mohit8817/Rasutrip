@@ -295,6 +295,7 @@ const AgentWalletHistory = () => {
 
           
 
+
            
             {/* Transaction History */}
             <Card className="border-0 shadow-sm">
@@ -380,18 +381,7 @@ const AgentWalletHistory = () => {
                     )}
                 </Card.Body>
 
-                {filteredTransactions.length > 0 && (
-                    <Card.Footer className="bg-white border-top">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <small className="text-muted">
-                                Showing {filteredTransactions.length} of {transactions.length} transactions
-                            </small>
-                            <Button variant="outline-primary" size="sm">
-                                Load More
-                            </Button>
-                        </div>
-                    </Card.Footer>
-                )}
+               
             </Card>
 
             <style jsx>{`

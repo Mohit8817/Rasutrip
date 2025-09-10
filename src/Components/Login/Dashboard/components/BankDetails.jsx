@@ -1,7 +1,9 @@
-// components/BankDetails.js - Bank Details Component for Agents
+// components/BankDetails.js - Bank Details Component for Agents (Updated to use Financial Service)
 import React, { useState, useContext, useEffect } from 'react';
 import { Button, Alert, Row, Col, Form, Card } from 'react-bootstrap';
 import { AuthContext } from '../../../Context/AuthContext';
+import { BankService, BankUtils } from '../../services/API';
+
 
 const BankDetails = () => {
     const { user } = useContext(AuthContext);
@@ -20,9 +22,7 @@ const BankDetails = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
-
-    // Base URL - replace with your actual base URL
-    const baseURL = process.env.REACT_APP_RASU_TRIP_LOCAL || 'https://api.rasutrip.com/api/v1';
+    const [validationErrors, setValidationErrors] = useState({});
 
     // Fetch existing bank details on component mount
     useEffect(() => {
@@ -32,32 +32,23 @@ const BankDetails = () => {
     const fetchBankDetails = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${baseURL}/agent/bank-info`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${user?.token}`, // Adjust based on your auth implementation
-                    'Content-Type': 'application/json',
-                },
-            });
+            setError('');
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data && data.data) {
-                    setBankDetails({
-                        accHolderName: data.data.accHolderName || '',
-                        bankName: data.data.bankName || '',
-                        accountNumber: data.data.accountNumber || '',
-                        ifscCode: data.data.ifscCode || '',
-                        branchName: data.data.branchName || '',
-                        accountType: data.data.accountType || 'savings'
-                    });
-                }
-            } else {
-                console.error('Failed to fetch bank details');
+            const response = await BankService.getBankDetails();
+
+            if (response.success && response.data) {
+                setBankDetails({
+                    accHolderName: response.data.accHolderName || '',
+                    bankName: response.data.bankName || '',
+                    accountNumber: response.data.accountNumber || '',
+                    ifscCode: response.data.ifscCode || '',
+                    branchName: response.data.branchName || '',
+                    accountType: response.data.accountType || 'savings'
+                });
             }
         } catch (error) {
             console.error('Error fetching bank details:', error);
-            setError('Failed to load bank details');
+            setError(error.message || 'Failed to load bank details');
         } finally {
             setLoading(false);
         }
@@ -65,23 +56,59 @@ const BankDetails = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+
+        // Format specific fields
+        let formattedValue = value;
+        if (name === 'ifscCode') {
+            formattedValue = BankUtils.formatIFSCCode(value);
+        } else if (name === 'accountNumber') {
+            formattedValue = BankUtils.formatAccountNumber(value);
+        }
+
         setBankDetails(prev => ({
             ...prev,
-            [name]: value
+            [name]: formattedValue
         }));
+
+        // Clear validation error for this field
+        if (validationErrors[name]) {
+            setValidationErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
     };
 
     const handleFileChange = (e) => {
-        setSelectedFile(e.target.files[0]);
+        const file = e.target.files[0];
+
+        if (file) {
+            // Validate file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                setError('File size should be less than 5MB');
+                return;
+            }
+
+            // Validate file type
+            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            if (!allowedTypes.includes(file.type)) {
+                setError('Please select a valid file format (PDF, JPG, PNG, DOC, DOCX)');
+                return;
+            }
+        }
+
+        setSelectedFile(file);
+        setError(''); // Clear any previous file errors
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Basic validation
-        if (!bankDetails.accHolderName || !bankDetails.bankName ||
-            !bankDetails.accountNumber || !bankDetails.ifscCode) {
-            setError('Please fill in all required fields.');
+        // Validate bank details
+        const validation = BankUtils.validateBankDetails(bankDetails);
+        if (!validation.isValid) {
+            setValidationErrors(validation.errors);
+            setError('Please fix the validation errors below');
             setMessage('');
             return;
         }
@@ -90,31 +117,22 @@ const BankDetails = () => {
             setLoading(true);
             setError('');
             setMessage('');
+            setValidationErrors({});
 
-            // Create FormData for file upload
-            const formData = new FormData();
-            formData.append('bankName', bankDetails.bankName);
-            formData.append('accountNumber', bankDetails.accountNumber);
-            formData.append('ifscCode', bankDetails.ifscCode);
-            formData.append('accHolderName', bankDetails.accHolderName);
+            // Prepare bank data
+            const bankData = {
+                bankName: bankDetails.bankName,
+                accountNumber: bankDetails.accountNumber,
+                ifscCode: bankDetails.ifscCode,
+                accHolderName: bankDetails.accHolderName,
+                branchName: bankDetails.branchName,
+                accountType: bankDetails.accountType
+            };
 
-            // Add file if selected
-            if (selectedFile) {
-                formData.append('file', selectedFile);
-            }
+            const response = await BankService.uploadBankDetails(bankData, selectedFile);
 
-            const response = await fetch(`${baseURL}/agent/upload-bank-details`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${user?.token}`, // Adjust based on your auth implementation
-                    // Don't set Content-Type for FormData, let browser set it with boundary
-                },
-                body: formData,
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setMessage('Bank details saved successfully!');
+            if (response.success) {
+                setMessage(response.message || 'Bank details saved successfully!');
                 setIsEditing(false);
                 setSelectedFile(null);
 
@@ -124,12 +142,11 @@ const BankDetails = () => {
                 // Clear message after 3 seconds
                 setTimeout(() => setMessage(''), 3000);
             } else {
-                const errorData = await response.json();
-                setError(errorData.message || 'Failed to save bank details');
+                setError(response.message || 'Failed to save bank details');
             }
         } catch (error) {
             console.error('Error saving bank details:', error);
-            setError('Failed to save bank details. Please try again.');
+            setError(error.message || 'Failed to save bank details. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -139,12 +156,14 @@ const BankDetails = () => {
         setIsEditing(true);
         setMessage('');
         setError('');
+        setValidationErrors({});
     };
 
     const handleCancel = () => {
         setIsEditing(false);
         setError('');
         setSelectedFile(null);
+        setValidationErrors({});
         // Reset form data to original values
         fetchBankDetails();
     };
@@ -169,11 +188,7 @@ const BankDetails = () => {
                             <h4 className="text-2xl font-bold mb-1 text-gray-800">Bank Details</h4>
                             <p className="text-gray-600">Manage your banking information for payments</p>
                         </div>
-                        <div className="text-end">
-                            <span className="badge bg-primary text-xs px-3 py-2">
-                                🏦 Agent Banking
-                            </span>
-                        </div>
+                       
                     </div>
                 </div>
 
@@ -200,7 +215,11 @@ const BankDetails = () => {
                                     disabled={!isEditing}
                                     placeholder="Enter account holder name"
                                     className={!isEditing ? 'bg-light' : ''}
+                                    isInvalid={!!validationErrors.accHolderName}
                                 />
+                                <Form.Control.Feedback type="invalid">
+                                    {validationErrors.accHolderName}
+                                </Form.Control.Feedback>
                             </Col>
 
                             {/* Bank Name */}
@@ -216,7 +235,11 @@ const BankDetails = () => {
                                     disabled={!isEditing}
                                     placeholder="Enter bank name"
                                     className={!isEditing ? 'bg-light' : ''}
+                                    isInvalid={!!validationErrors.bankName}
                                 />
+                                <Form.Control.Feedback type="invalid">
+                                    {validationErrors.bankName}
+                                </Form.Control.Feedback>
                             </Col>
 
                             {/* Account Number */}
@@ -232,7 +255,12 @@ const BankDetails = () => {
                                     disabled={!isEditing}
                                     placeholder="Enter account number"
                                     className={!isEditing ? 'bg-light' : ''}
+                                    isInvalid={!!validationErrors.accountNumber}
+                                    maxLength="18"
                                 />
+                                <Form.Control.Feedback type="invalid">
+                                    {validationErrors.accountNumber}
+                                </Form.Control.Feedback>
                             </Col>
 
                             {/* IFSC Code */}
@@ -248,7 +276,16 @@ const BankDetails = () => {
                                     disabled={!isEditing}
                                     placeholder="Enter IFSC code"
                                     className={!isEditing ? 'bg-light' : ''}
+                                    isInvalid={!!validationErrors.ifscCode}
+                                    maxLength="11"
+                                    style={{ textTransform: 'uppercase' }}
                                 />
+                                <Form.Control.Feedback type="invalid">
+                                    {validationErrors.ifscCode}
+                                </Form.Control.Feedback>
+                                <Form.Text className="text-muted">
+                                    Example: SBIN0001234
+                                </Form.Text>
                             </Col>
 
                             {/* Branch Name */}
@@ -303,7 +340,7 @@ const BankDetails = () => {
                                     {selectedFile && (
                                         <div className="mt-2">
                                             <small className="text-success">
-                                                ✅ Selected: {selectedFile.name}
+                                                ✅ Selected: {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
                                             </small>
                                         </div>
                                     )}
@@ -315,11 +352,10 @@ const BankDetails = () => {
                         <div className="d-flex gap-3 mt-4">
                             {!isEditing ? (
                                 <Button
-                                    variant="primary"
+                                    variant="danger"
                                     onClick={handleEdit}
-                                    className="px-4"
+                                    className="px-4 btn-red"
                                 >
-                                    <span className="me-2">✏️</span>
                                     Edit Bank Details
                                 </Button>
                             ) : (
@@ -353,11 +389,49 @@ const BankDetails = () => {
                                 </>
                             )}
                         </div>
+
+                        {/* Bank Details Summary - Only show when not editing and have data */}
+                        {!isEditing && (bankDetails.accHolderName || bankDetails.bankName) && (
+                            <div className="mt-4 p-3 bg-light rounded">
+                                <h6 className="text-muted mb-2">Current Bank Details:</h6>
+                                <div className="row">
+                                    <div className="col-md-6">
+                                        <small className="text-muted d-block">Account Holder:</small>
+                                        <strong>{bankDetails.accHolderName || 'N/A'}</strong>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <small className="text-muted d-block">Bank Name:</small>
+                                        <strong>{bankDetails.bankName || 'N/A'}</strong>
+                                    </div>
+                                    <div className="col-md-6 mt-2">
+                                        <small className="text-muted d-block">Account Number:</small>
+                                        <strong>
+                                            {bankDetails.accountNumber ?
+                                                `****${bankDetails.accountNumber.slice(-4)}` : 'N/A'}
+                                        </strong>
+                                    </div>
+                                    <div className="col-md-6 mt-2">
+                                        <small className="text-muted d-block">IFSC Code:</small>
+                                        <strong>{bankDetails.ifscCode || 'N/A'}</strong>
+                                    </div>
+                                    {bankDetails.branchName && (
+                                        <div className="col-md-6 mt-2">
+                                            <small className="text-muted d-block">Branch:</small>
+                                            <strong>{bankDetails.branchName}</strong>
+                                        </div>
+                                    )}
+                                    <div className="col-md-6 mt-2">
+                                        <small className="text-muted d-block">Account Type:</small>
+                                        <strong className="text-capitalize">
+                                            {bankDetails.accountType.replace('_', ' ')}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </Form>
                 </div>
             </div>
-
-
         </div>
     );
 };

@@ -1,10 +1,13 @@
 import axios from "axios";
 import baseURL from "../../../Services/Config";
 
-// ✅ Define financial service endpoints - REMOVED AGENT ENDPOINTS
+// ✅ Define financial service endpoints - INCLUDING BANK DETAILS ENDPOINTS
 const FinancialServices = {
     getPaymentHistory: `${baseURL}/user/payment-history`,
     getWalletBalance: `${baseURL}/user/wallet-balance`,
+    // Bank Details Endpoints
+    getBankInfo: `${baseURL}/agent/bank-info`,
+    uploadBankDetails: `${baseURL}/agent/upload-bank-details`,
 };
 
 // ✅ API configuration
@@ -772,6 +775,86 @@ export const getWalletBalance = async () => {
     }
 };
 
+// ✅ NEW: Get Bank Details (Agent Bank Info API)
+export const getBankDetails = async () => {
+    try {
+        console.log('🏦 Fetching bank details...');
+        
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+
+        const res = await axios.get(FinancialServices.getBankInfo, {
+            headers: {
+                "Content-Type": "application/json",
+                ...(token && { "Authorization": `Bearer ${token}` })
+            },
+        });
+
+        console.log('✅ Bank details fetched successfully');
+        
+        return {
+            success: true,
+            data: res.data.data || res.data,
+            message: "Bank details fetched successfully"
+        };
+    } catch (err) {
+        console.error("❌ Error fetching bank details:", err.response?.data || err.message);
+        throw {
+            success: false,
+            message: err.response?.data?.message || err.message || "Failed to fetch bank details",
+            error: err,
+            data: null
+        };
+    }
+};
+
+// ✅ NEW: Upload/Update Bank Details (Agent Bank Details Upload API)
+export const uploadBankDetails = async (bankData, file = null) => {
+    try {
+        console.log('🏦 Uploading bank details...');
+        
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+
+        // Create FormData for file upload
+        const formData = new FormData();
+        
+        // Add bank details to FormData
+        if (bankData.bankName) formData.append('bankName', bankData.bankName);
+        if (bankData.accountNumber) formData.append('accountNumber', bankData.accountNumber);
+        if (bankData.ifscCode) formData.append('ifscCode', bankData.ifscCode);
+        if (bankData.accHolderName) formData.append('accHolderName', bankData.accHolderName);
+        if (bankData.branchName) formData.append('branchName', bankData.branchName);
+        if (bankData.accountType) formData.append('accountType', bankData.accountType);
+
+        // Add file if provided
+        if (file) {
+            formData.append('file', file);
+        }
+
+        const res = await axios.patch(FinancialServices.uploadBankDetails, formData, {
+            headers: {
+                // Don't set Content-Type for FormData, let axios set it with boundary
+                ...(token && { "Authorization": `Bearer ${token}` })
+            },
+        });
+
+        console.log('✅ Bank details uploaded successfully');
+        
+        return {
+            success: true,
+            data: res.data.data || res.data,
+            message: res.data.message || "Bank details uploaded successfully"
+        };
+    } catch (err) {
+        console.error("❌ Error uploading bank details:", err.response?.data || err.message);
+        throw {
+            success: false,
+            message: err.response?.data?.message || err.message || "Failed to upload bank details",
+            error: err,
+            data: null
+        };
+    }
+};
+
 // ✅ Financial utility functions (SIMPLIFIED - NO AGENT LOGIC)
 export const FinancialUtils = {
     // Format currency for display
@@ -917,6 +1000,48 @@ export const FinancialUtils = {
             payment.transactionId !== 'N/A' ||
             payment.serviceName !== 'N/A'
         );
+    },
+
+    // Validate bank details format
+    validateBankDetails: (bankDetails) => {
+        const errors = {};
+        
+        if (!bankDetails.accHolderName || bankDetails.accHolderName.trim() === '') {
+            errors.accHolderName = 'Account holder name is required';
+        }
+        
+        if (!bankDetails.bankName || bankDetails.bankName.trim() === '') {
+            errors.bankName = 'Bank name is required';
+        }
+        
+        if (!bankDetails.accountNumber || bankDetails.accountNumber.trim() === '') {
+            errors.accountNumber = 'Account number is required';
+        } else if (!/^\d{9,18}$/.test(bankDetails.accountNumber.replace(/\s/g, ''))) {
+            errors.accountNumber = 'Account number should be 9-18 digits';
+        }
+        
+        if (!bankDetails.ifscCode || bankDetails.ifscCode.trim() === '') {
+            errors.ifscCode = 'IFSC code is required';
+        } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode.toUpperCase())) {
+            errors.ifscCode = 'Invalid IFSC code format';
+        }
+        
+        return {
+            isValid: Object.keys(errors).length === 0,
+            errors
+        };
+    },
+
+    // Format IFSC code
+    formatIFSCCode: (ifsc) => {
+        if (!ifsc) return '';
+        return ifsc.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    },
+
+    // Format account number
+    formatAccountNumber: (accountNo) => {
+        if (!accountNo) return '';
+        return accountNo.replace(/[^0-9]/g, '');
     }
 };
 
@@ -940,7 +1065,15 @@ export const WalletUtils = {
     hasSufficientBalance: FinancialUtils.hasSufficientBalance
 };
 
-// ✅ Export comprehensive financial service (SIMPLIFIED - USER ONLY)
+export const BankUtils = {
+    validateBankDetails: FinancialUtils.validateBankDetails,
+    formatIFSCCode: FinancialUtils.formatIFSCCode,
+    formatAccountNumber: FinancialUtils.formatAccountNumber,
+    formatCurrency: FinancialUtils.formatCurrency,
+    formatDate: FinancialUtils.formatDate
+};
+
+// ✅ Export comprehensive financial service (INCLUDES BANK DETAILS)
 const FinancialService = {
     // Payment methods
     getPaymentHistory,
@@ -948,6 +1081,10 @@ const FinancialService = {
 
     // Wallet methods (USER ONLY)
     getWalletBalance,
+
+    // Bank Details methods
+    getBankDetails,
+    uploadBankDetails,
 
     // Utility methods
     formatCurrency: FinancialUtils.formatCurrency,
@@ -961,9 +1098,12 @@ const FinancialService = {
     getBookingDetails: FinancialUtils.getBookingDetails,
     getDetailedBookingInfo: FinancialUtils.getDetailedBookingInfo,
     hasValidBookingDetails: FinancialUtils.hasValidBookingDetails,
+    validateBankDetails: FinancialUtils.validateBankDetails,
+    formatIFSCCode: FinancialUtils.formatIFSCCode,
+    formatAccountNumber: FinancialUtils.formatAccountNumber
 };
 
-// ✅ Export backward compatibility objects (SIMPLIFIED)
+// ✅ Export backward compatibility objects (INCLUDES BANK DETAILS)
 export const PaymentService = {
     getPaymentHistory,
     getPaymentById,
@@ -980,6 +1120,16 @@ export const WalletService = {
     formatCurrency: WalletUtils.formatCurrency,
     formatAmount: WalletUtils.formatAmount,
     hasSufficientBalance: WalletUtils.hasSufficientBalance,
+};
+
+export const BankService = {
+    getBankDetails,
+    uploadBankDetails,
+    validateBankDetails: BankUtils.validateBankDetails,
+    formatIFSCCode: BankUtils.formatIFSCCode,
+    formatAccountNumber: BankUtils.formatAccountNumber,
+    formatCurrency: BankUtils.formatCurrency,
+    formatDate: BankUtils.formatDate
 };
 
 export default FinancialService;
