@@ -60,7 +60,7 @@ const BusPayment = () => {
                         />
                     </Col>
                     <Col lg={3}>
-                        <BusFareSummary 
+                        <BusFareSummary     
                             totalPrice={totalPrice}
                             couponDiscount={couponDiscount}
                             appliedCouponData={appliedCouponData}
