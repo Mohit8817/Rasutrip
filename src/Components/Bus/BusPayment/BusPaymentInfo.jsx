@@ -383,8 +383,8 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             IdType: passenger.idType || null,
             IdNumber: passenger.idNumber || null,
             Address: validAddress,
-            Age: passenger.age?.toString() || '25',
-            SeatName: seatName // Keep as string, preserve original format
+            Age: passenger.age?.toString() || '',
+            SeatName: seatName 
         };
     };
 
