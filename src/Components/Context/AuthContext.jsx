@@ -364,36 +364,80 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout function
+  // Improved logout function - immediate and synchronous
   const logout = () => {
     try {
       console.log(`🔓 Logging out ${userType} user...`);
 
-      // Clear tokens using tokenUtils
-      removeToken(userType);
+      const currentUserType = userType; // Store before clearing
 
-      // Additional cleanup for agent
-      if (userType === 'agent') {
-        localStorage.removeItem('agent_token');
-        localStorage.removeItem('agentToken');
-        localStorage.removeItem('isAgent');
-        localStorage.removeItem('agentId');
-        localStorage.removeItem('agentMobile');
+      // Clear tokens using tokenUtils
+      removeToken(currentUserType);
+
+      // Complete cleanup for all auth data
+      const keysToRemove = [
+        // General auth tokens
+        'token', 'authToken', 'accessToken', 'refreshToken',
+
+        // Agent specific
+        'agent_token', 'agentToken', 'isAgent', 'agentId', 'agentMobile',
+        'agent', 'agentData',
+
+        // User data
+        'user', 'currentUser', 'userData',
+        'userType', 'user_type',
+
+        // Additional cleanup
+        'userName', 'loginData', 'authData'
+      ];
+
+      // Remove all auth-related items from localStorage
+      keysToRemove.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {
+          console.warn(`Failed to remove ${key}:`, e);
+        }
+      });
+
+      // Clear sessionStorage as well
+      try {
+        sessionStorage.clear();
+      } catch (e) {
+        console.warn('Failed to clear sessionStorage:', e);
       }
 
-      // Clear state
-      clearAuth();
+      // Clear cookies
+      try {
+        document.cookie.split(";").forEach((c) => {
+          const eqPos = c.indexOf("=");
+          const name = eqPos > -1 ? c.substr(0, eqPos).trim() : c.trim();
+          if (name) {
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
+          }
+        });
+      } catch (e) {
+        console.warn('Failed to clear cookies:', e);
+      }
 
-      console.log('✅ Logout successful');
+      // Immediately clear auth state
+      setUser(null);
+      setUserType(null);
+      setIsLoggedIn(false);
 
-      // Redirect to home
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
+      console.log('✅ Logout completed successfully');
 
+      // Return success immediately - no setTimeout or window.location
       return true;
     } catch (error) {
       console.error('❌ Logout error:', error);
+
+      // Even if there's an error, clear the state
+      setUser(null);
+      setUserType(null);
+      setIsLoggedIn(false);
+
       return false;
     }
   };

@@ -265,7 +265,7 @@ const BusResultPage = () => {
                 </div>
 
                 {/* Sidebar filter (only show on lg and above) */}
-                <div className="hidden lg:block lg:col-span-3 mt-3">
+                <div className="hidden lg:block lg:col-span-3">
                     <BusSidebarFilter
                         priceRange={priceRange}
                         onPriceChange={setPriceRange}

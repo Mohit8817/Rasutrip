@@ -21,10 +21,6 @@ const BusBooking = () => {
 
                     </Col>
                 </Row>
-
-
-
-
             </Container>
 
 

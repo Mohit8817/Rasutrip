@@ -1,6 +1,6 @@
-// src/components/common/Login.js - Updated to work with cleaned AuthContext
-import React, { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/components/common/Login.js - Improved with single-click logout
+import React, { useContext, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Dropdown } from 'react-bootstrap';
 import { BsPersonCircle, BsPersonBadge } from 'react-icons/bs';
 import { AuthContext } from '../Context/AuthContext';
@@ -8,6 +8,7 @@ import '../../Style/user.css';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     user,
     userType,
@@ -24,9 +25,23 @@ const Login = () => {
     else if (type === 'agent') navigate('/login/agent');
   };
 
-  const handleLogout = () => {
-    logout(); // This will automatically redirect to home page
-  };
+  // Improved logout handler with proper cleanup
+  const handleLogout = useCallback(async () => {
+    try {
+      // Call logout function from context
+      await logout();
+      
+      // Force navigation to home page
+      navigate('/', { replace: true });
+      
+      // Optional: Force page reload if needed (uncomment if required)
+      // window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, navigate to home
+      navigate('/', { replace: true });
+    }
+  }, [logout, navigate]);
 
   const formatMobileForDisplay = (mobile) => {
     if (!mobile) return 'User';
@@ -106,7 +121,11 @@ const Login = () => {
 
                 <Dropdown.Divider />
 
-                <Dropdown.Item onClick={handleLogout} className="text-danger">
+                <Dropdown.Item 
+                  onClick={handleLogout} 
+                  className="text-danger"
+                  style={{ cursor: 'pointer' }}
+                >
                   <i className="fas fa-sign-out-alt me-2"></i>
                   Logout
                 </Dropdown.Item>
