@@ -784,7 +784,7 @@ const GuestDetailsInfo = () => {
                             handleInputChange(roomIndex, "children", i, "title", e.target.value)
                           }
                         >
-                          {/* <option value="Master">Master</option> */}
+                          <option value="Master">Mstr</option>
                           <option value="Miss">Miss</option>
                         </Form.Select>
                       </Col>
