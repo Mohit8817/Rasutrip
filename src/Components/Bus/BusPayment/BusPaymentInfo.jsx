@@ -215,7 +215,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
 
     // Add convenience fee
     const totalBeforeCoupon = subtotal + convenienceFee;
-    
+
     // Apply coupon discount to get final amount
     const finalAmount = Math.max(0, totalBeforeCoupon - fareBreakdown.couponDiscount).toFixed(2);
 
@@ -233,7 +233,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
         ];
 
         let commission = 0;
-        
+
         for (const source of commissionSources) {
             if (source && !isNaN(parseFloat(source))) {
                 commission = parseFloat(source);
@@ -252,109 +252,115 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
         return parseFloat(commission.toFixed(2));
     };
 
-    // FIXED: Function to extract API-compatible seat names (returns numbers, not strings)
+
+
+
+
+    // FIXED: Enhanced seat name extraction that preserves original seat identifiers
     const extractSeatNameForAPI = (seat, index) => {
         console.log(`🔍 Extracting API-compatible seat name for passenger ${index + 1}:`);
         console.log('Raw seat data:', JSON.stringify(seat, null, 2));
 
         if (!seat) {
-            console.warn(`No seat data for index ${index}, using fallback number`);
-            return index + 1; // Return number, not string
+            console.warn(`No seat data for index ${index}`);
+            return null; // Return null instead of fallback to avoid invalid seat names
         }
 
-        // Helper function to get numeric value from seat data
-        const getNumericSeatValue = (value) => {
-            if (value === null || value === undefined) return null;
-            
-            // If it's already a number, return it
-            if (typeof value === 'number' && !isNaN(value) && value > 0) {
-                return Math.floor(value); // Ensure integer
+        // Strategy 1: Direct seat identifier fields (PRESERVE ORIGINAL VALUES)
+        const seatIdentifierFields = [
+            'SeatName', 'SeatNo', 'Name', 'seatName', 'seatNo',
+            'SeatNumber', 'Position', 'Code', 'SeatCode', 'id', 'SeatId'
+        ];
+
+        // Check direct properties first
+        for (const field of seatIdentifierFields) {
+            const value = seat[field];
+            if (value !== null && value !== undefined && value !== '') {
+                console.log(`✅ Found seat identifier using '${field}': ${value}`);
+                // IMPORTANT: Return the original value, don't convert to number
+                return String(value); // Convert to string but preserve original format
             }
-            
-            // If it's a string, try to parse it
-            if (typeof value === 'string') {
-                const trimmed = value.trim();
-                
-                // Try direct numeric conversion
-                const numericValue = parseInt(trimmed, 10);
-                if (!isNaN(numericValue) && numericValue > 0) {
-                    return numericValue;
-                }
-                
-                // Extract numbers from string (e.g., "A1" -> 1, "Seat2" -> 2)
-                const numberMatch = trimmed.match(/\d+/);
-                if (numberMatch) {
-                    const extractedNumber = parseInt(numberMatch[0], 10);
-                    if (extractedNumber > 0) {
-                        return extractedNumber;
+        }
+
+        // Strategy 2: Check nested objects (like seat.Price, seat.Seat, etc.)
+        const nestedObjects = ['Price', 'Seat', 'Details', 'Info'];
+        for (const objKey of nestedObjects) {
+            if (seat[objKey] && typeof seat[objKey] === 'object') {
+                for (const field of seatIdentifierFields) {
+                    const value = seat[objKey][field];
+                    if (value !== null && value !== undefined && value !== '') {
+                        console.log(`✅ Found seat identifier in ${objKey}.${field}: ${value}`);
+                        return String(value);
                     }
                 }
             }
-            
+        }
+
+        // Strategy 3: Look for any property containing seat information
+        const searchForSeatInfo = (obj, path = '') => {
+            if (!obj || typeof obj !== 'object') return null;
+
+            for (const [key, value] of Object.entries(obj)) {
+                const currentPath = path ? `${path}.${key}` : key;
+
+                // If key suggests it's a seat identifier
+                if (key.toLowerCase().includes('seat') &&
+                    value !== null && value !== undefined && value !== '') {
+                    console.log(`✅ Found potential seat info at ${currentPath}: ${value}`);
+                    return String(value);
+                }
+
+                // Recursively search nested objects
+                if (typeof value === 'object' && value !== null) {
+                    const nestedResult = searchForSeatInfo(value, currentPath);
+                    if (nestedResult) return nestedResult;
+                }
+            }
             return null;
         };
 
-        // Strategy 1: Direct seat name fields (API priority order)
-        const apiFields = [
-            'SeatName', 'SeatNo', 'Name', 'seatName', 'seatNo', 
-            'SeatNumber', 'Position', 'Code', 'SeatCode', 'id'
-        ];
+        const foundSeatInfo = searchForSeatInfo(seat);
+        if (foundSeatInfo) {
+            return foundSeatInfo;
+        }
 
-        for (const field of apiFields) {
-            const value = seat[field];
-            const numericValue = getNumericSeatValue(value);
-            if (numericValue !== null) {
-                console.log(`✅ Found API seat name using '${field}': ${numericValue} (number)`);
-                return numericValue;
+        // Strategy 4: If seat is a direct value that looks like a seat identifier
+        if (typeof seat === 'string' || typeof seat === 'number') {
+            const seatValue = String(seat);
+            if (seatValue.trim() !== '' && seatValue !== '0') {
+                console.log(`✅ Using seat as direct value: ${seatValue}`);
+                return seatValue;
             }
         }
 
-        // Strategy 2: Check nested Price object
-        if (seat.Price && typeof seat.Price === 'object') {
-            for (const field of apiFields) {
-                const value = seat.Price[field];
-                const numericValue = getNumericSeatValue(value);
-                if (numericValue !== null) {
-                    console.log(`✅ Found API seat name in Price.${field}: ${numericValue} (number)`);
-                    return numericValue;
-                }
-            }
-        }
-
-        // Strategy 3: If seat is direct value
-        const directValue = getNumericSeatValue(seat);
-        if (directValue !== null) {
-            console.log(`✅ Seat is valid numeric value: ${directValue}`);
-            return directValue;
-        }
-
-        // Final fallback: Use index-based numbering
-        const fallback = index + 1;
-        console.warn(`⚠️ Using numeric fallback: ${fallback} for seat:`, seat);
-        return fallback;
+        console.error(`❌ No valid seat identifier found for index ${index}:`, seat);
+        return null; // Return null to trigger error handling
     };
 
-    // Enhanced passenger formatter with proper dynamic data mapping
+    // Enhanced passenger formatter with better error handling
     const formatPassengerWithValidSeatName = (passenger, correspondingSeat, index, contactData, fromCity, toCity) => {
+        // Extract seat name - this is critical for the API
         const seatName = extractSeatNameForAPI(correspondingSeat, index);
 
-        if (seatName === null || seatName === undefined) {
-            throw new Error(`Unable to extract valid seat name for passenger ${index + 1}`);
+        if (seatName === null || seatName === undefined || seatName === '') {
+            throw new Error(`Unable to extract valid seat name for passenger ${index + 1}. Seat data: ${JSON.stringify(correspondingSeat)}`);
         }
 
-        // Get dynamic address with proper fallback
+        console.log(`✅ Final seat assignment for passenger ${index + 1}: "${seatName}" (type: ${typeof seatName})`);
+
+        // Get address with proper fallback
         const validAddress = getValidAddress(passenger, contactData, fromCity, toCity);
-        
-        // Get dynamic email and phone with proper fallback
+
+        // Get contact details with validation
         const emailAddress = contactData?.email || passenger.email || '';
         const phoneNumber = contactData?.mobile || contactData?.phone || passenger.phone || '';
 
-        // Validate required fields
-        if (!passenger.firstName || !passenger.firstName.trim()) {
+        // Validate required fields before API call
+        if (!passenger.firstName?.trim()) {
             throw new Error(`First name is required for passenger ${index + 1}`);
         }
 
-        if (!passenger.lastName || !passenger.lastName.trim()) {
+        if (!passenger.lastName?.trim()) {
             throw new Error(`Last name is required for passenger ${index + 1}`);
         }
 
@@ -362,24 +368,112 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             throw new Error(`Valid email is required for booking`);
         }
 
-        if (!phoneNumber || phoneNumber.trim() === '') {
+        if (!phoneNumber?.trim()) {
             throw new Error(`Phone number is required for booking`);
         }
 
         return {
-            LeadPassenger: index === 0, // First passenger is lead passenger
-            Title: passenger.title || (passenger.gender === 'Male' ? 'Mr' : passenger.gender === 'Female' ? 'Ms' : 'Mr'),
+            LeadPassenger: index === 0,
+            Title: passenger.title || (passenger.gender === 'Male' ? 'Mr' : 'Ms'),
             FirstName: passenger.firstName.trim(),
             LastName: passenger.lastName.trim(),
             Email: emailAddress.trim(),
             Phoneno: phoneNumber.replace(/\D/g, ''), // Remove non-digits
-            Gender: passenger.gender === 'Male' ? '1' : passenger.gender === 'Female' ? '2' : '1',
+            Gender: passenger.gender === 'Male' ? '1' : '2',
             IdType: passenger.idType || null,
             IdNumber: passenger.idNumber || null,
             Address: validAddress,
-            Age: passenger.age?.toString() || '25', // Convert to string as API expects
-            SeatName: seatName // THIS IS NOW A NUMBER, NOT A STRING
+            Age: passenger.age?.toString() || '',
+            SeatName: seatName 
         };
+    };
+
+    // Debug function to validate seat data before booking
+    const validateSeatDataBeforeBooking = (selectedSeats, passengerData) => {
+        console.log('🔍 Validating seat data before booking...');
+        console.log('Selected seats:', selectedSeats);
+        console.log('Passengers:', passengerData?.length);
+
+        if (!selectedSeats || !Array.isArray(selectedSeats)) {
+            throw new Error('No seats selected');
+        }
+
+        if (!passengerData || !Array.isArray(passengerData)) {
+            throw new Error('No passenger data provided');
+        }
+
+        if (selectedSeats.length !== passengerData.length) {
+            throw new Error(`Seat count (${selectedSeats.length}) doesn't match passenger count (${passengerData.length})`);
+        }
+
+        // Validate each seat has a valid identifier
+        const seatValidationResults = selectedSeats.map((seat, index) => {
+            const seatName = extractSeatNameForAPI(seat, index);
+            return {
+                index,
+                seat,
+                extractedSeatName: seatName,
+                isValid: seatName !== null && seatName !== undefined && seatName !== ''
+            };
+        });
+
+        console.table(seatValidationResults);
+
+        const invalidSeats = seatValidationResults.filter(result => !result.isValid);
+        if (invalidSeats.length > 0) {
+            console.error('Invalid seats found:', invalidSeats);
+            throw new Error(`Invalid seat identifiers found for passengers: ${invalidSeats.map(s => s.index + 1).join(', ')}`);
+        }
+
+        console.log('✅ All seats validated successfully');
+        return true;
+    };
+
+    // Updated formatBookingData function with validation
+    const formatBookingData = (bookingState) => {
+        console.log('Formatting booking data...');
+
+        // Validate seat data first
+        validateSeatDataBeforeBooking(bookingState.selectedSeats, bookingState.passengerData);
+
+        const passengers = bookingState.passengerData?.map((passenger, index) => {
+            const correspondingSeat = bookingState.selectedSeats?.[index];
+            return formatPassengerWithValidSeatName(
+                passenger,
+                correspondingSeat,
+                index,
+                bookingState.contactData,
+                bookingState.fromCity,
+                bookingState.toCity
+            );
+        }) || [];
+
+        // Calculate vendor commission
+        const dynamicVendorCommission = calculateDynamicVendorCommission(bookingState);
+
+        const bookingData = {
+            UserIp: "122.161.64.143",
+            SearchTokenId: bookingState.searchTokenId || bookingState.bus?.SearchTokenId || "",
+            ResultIndex: bookingState.busBookingData?.ResultIndex || bookingState.bus?.ResultIndex || "TB-1",
+            BoardingPointId: bookingState.selectedBoardingPoint?.BoardingPointId ||
+                bookingState.boardingPoint?.BoardingPointId ||
+                bookingState.boardingPoint?.id || 1,
+            DroppingPointId: bookingState.selectedDroppingPoint?.DroppingPointId ||
+                bookingState.droppingPoint?.DroppingPointId ||
+                bookingState.droppingPoint?.id || 1,
+            vendorCommission: dynamicVendorCommission || 0,
+            CouponDiscount: fareBreakdown.couponDiscount || 0,
+            Passenger: passengers
+        };
+
+        console.log('Final booking data with seat validation:', JSON.stringify(bookingData, null, 2));
+        console.log('Seat assignments summary:', passengers.map(p => ({
+            name: `${p.FirstName} ${p.LastName}`,
+            seat: p.SeatName,
+            type: typeof p.SeatName
+        })));
+
+        return bookingData;
     };
 
     // Debug function for seats before booking
@@ -387,7 +481,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
         console.log('🔍 Debug: Seats before booking formatting');
         console.log('Selected seats count:', selectedSeats?.length);
         console.log('Passenger data count:', passengerData?.length);
-        
+
         if (selectedSeats && passengerData) {
             selectedSeats.forEach((seat, index) => {
                 const passenger = passengerData[index];
@@ -780,57 +874,6 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
         return validationData;
     };
 
-    // FIXED: Format booking data with numeric seat names and proper vendor commission
-    const formatBookingData = (bookingState) => {
-        console.log('Formatting booking data with coupon...');
-        console.log('Available seats:', bookingState.selectedSeats);
-        console.log('Passenger count:', bookingState.passengerData?.length);
-
-        const passengers = bookingState.passengerData?.map((passenger, index) => {
-            const seatName = extractSeatNameForAPI(bookingState.selectedSeats?.[index], index);
-
-            console.log(`Final seat assignment for passenger ${index + 1}: ${seatName} (type: ${typeof seatName})`);
-
-            const validAddress = getValidAddress(passenger, bookingState.contactData, bookingState.fromCity, bookingState.toCity);
-
-            const emailAddress = bookingState.contactData?.email || passenger.email || '';
-            const phoneNumber = bookingState.contactData?.mobile || passenger.phone || '';
-
-            return {
-                LeadPassenger: index === 0,
-                Title: passenger.title || (passenger.gender === 'Male' ? 'Mr' : 'Ms'),
-                FirstName: passenger.firstName,
-                LastName: passenger.lastName,
-                Email: emailAddress.trim(),
-                Phoneno: phoneNumber.replace(/\D/g, ''),
-                Gender: passenger.gender === 'Male' ? '1' : '2',
-                IdType: passenger.idType || null,
-                IdNumber: passenger.idNumber || null,
-                Address: validAddress,
-                Age: passenger.age?.toString(),
-                SeatName: seatName // THIS IS NOW A NUMBER, NOT A STRING
-            };
-        }) || [];
-
-        // Calculate vendor commission dynamically
-        const dynamicVendorCommission = calculateDynamicVendorCommission(bookingState);
-
-        const bookingData = {
-            UserIp: "122.161.64.143",
-            SearchTokenId: bookingState.searchTokenId || bookingState.bus?.SearchTokenId || "",
-            ResultIndex: bookingState.busBookingData?.ResultIndex || bookingState.bus?.ResultIndex || "TB-1",
-            BoardingPointId: bookingState.selectedBoardingPoint?.BoardingPointId || bookingState.boardingPoint?.BoardingPointId || bookingState.boardingPoint?.id || 1,
-            DroppingPointId: bookingState.selectedDroppingPoint?.DroppingPointId || bookingState.droppingPoint?.DroppingPointId || bookingState.droppingPoint?.id || 1,
-            vendorCommission: dynamicVendorCommission || 0,
-            CouponDiscount: fareBreakdown.couponDiscount || 0,
-            Passenger: passengers
-        };
-
-        console.log('Final booking data:', JSON.stringify(bookingData, null, 2));
-        console.log('Seat names in booking:', passengers.map(p => ({ name: `${p.FirstName} ${p.LastName}`, seat: p.SeatName, type: typeof p.SeatName })));
-
-        return bookingData;
-    };
 
     // Enhanced Razorpay options with better error handling
     const getRazorpayOptions = (orderId, orderAmount) => ({
@@ -874,7 +917,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             console.log('Starting bus payment process...');
             debugLog('Selected seats debug:', selectedSeats);
             debugLog('Passenger data debug:', passengerData);
-            
+
             // Debug seat names before booking
             debugSeatsBeforeBooking(selectedSeats, passengerData);
 
@@ -964,13 +1007,13 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                         const bookingData = formatBookingData(state);
 
                         // Final validation before booking API call
-                        const invalidSeats = bookingData.Passenger.filter(p => 
-                            p.SeatName === null || 
-                            p.SeatName === undefined || 
+                        const invalidSeats = bookingData.Passenger.filter(p =>
+                            p.SeatName === null ||
+                            p.SeatName === undefined ||
                             (typeof p.SeatName === 'string' && p.SeatName.trim() === '') ||
                             (typeof p.SeatName === 'number' && (isNaN(p.SeatName) || p.SeatName <= 0))
                         );
-                        
+
                         if (invalidSeats.length > 0) {
                             console.error('Invalid seat names found:', invalidSeats);
                             throw new Error('Invalid seat assignment. Please try booking again.');
@@ -1196,11 +1239,11 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                         </Row>
                     )}
 
-                 
 
-                
-                  
-            
+
+
+
+
 
                     {/* Final Total */}
                     <Row className="fw-bold fs-5">
