@@ -20,7 +20,7 @@ const Bookingconfirm = () => {
     // Session storage keys
     const BOOKING_DATA_KEY = 'bus_booking_confirmation_data';
     const BOOKING_TIMESTAMP_KEY = 'bus_booking_timestamp';
-    
+
     // Data expiry time (24 hours)
     const DATA_EXPIRY_TIME = 24 * 60 * 60 * 1000;
 
@@ -43,11 +43,11 @@ const Bookingconfirm = () => {
         try {
             const savedData = sessionStorage.getItem(BOOKING_DATA_KEY);
             const savedTimestamp = sessionStorage.getItem(BOOKING_TIMESTAMP_KEY);
-            
+
             if (savedData && savedTimestamp) {
                 const timestamp = parseInt(savedTimestamp);
                 const now = Date.now();
-                
+
                 // Check if data is not expired (24 hours)
                 if (now - timestamp < DATA_EXPIRY_TIME) {
                     return JSON.parse(savedData);
@@ -79,7 +79,7 @@ const Bookingconfirm = () => {
             setBookingData(state);
             // Save to session storage for future access
             saveBookingData(state);
-            
+
             // Show success toast
             toast.success('Bus booking confirmed successfully!', {
                 position: "top-right",
@@ -190,10 +190,10 @@ const Bookingconfirm = () => {
     const generateBusPDFInvoice = () => {
         const currentBookingId = bookingId || 'N/A';
         const operatorName = bus?.operator || bus?.travels || 'Bus Service';
-        const passengerName = passengerData.length > 0 ? 
-            `${passengerData[0].firstName || ''} ${passengerData[0].lastName || ''}`.trim() : 
+        const passengerName = passengerData.length > 0 ?
+            `${passengerData[0].firstName || ''} ${passengerData[0].lastName || ''}`.trim() :
             'Passenger';
-        
+
         const seatNumbers = selectedSeats.map((seat, index) => extractSeatName(seat, index)).join(', ');
         const baseFare = totalPrice || finalAmount;
         const taxes = 0;
@@ -205,16 +205,16 @@ const Bookingconfirm = () => {
 
         // Create new PDF document
         const doc = new jsPDF();
-        
+
         // Set font
         doc.setFont("helvetica");
-        
+
         // Header Section - Title
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
         doc.text('Tax Invoice (Bus Booking)', 105, 25, { align: 'center' });
-        
+
         // Company Details - Left Column
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
@@ -224,59 +224,59 @@ const Bookingconfirm = () => {
         doc.text('PAN Number : ABLFR7635L', 20, 66);
         doc.text('State : Uttar Pradesh', 20, 73);
         doc.text('Company Registered No. : ACP-7218', 20, 80);
-        
+
         // Passenger Information - Right Column
         doc.text(`Passenger Name : ${passengerName}`, 110, 45);
         doc.text(`Phone : ${contactData?.mobile || 'N/A'}`, 110, 52);
-        
+
         // Create table structure for invoice details
         const tableStartY = 95;
-        
+
         // Draw table borders and fill
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(0.5);
-        
+
         // Invoice details table
         const invoiceRows = [
             ['Invoice Number : ' + Math.floor(Math.random() * 99999).toString().padStart(5, '0'), 'Invoice Date : ' + new Date().toLocaleDateString('en-GB')],
             ['Booking ID : ' + currentBookingId, 'Ticket No : RASUTRIP' + Math.random().toString(36).substr(2, 4).toUpperCase()],
             ['From : ' + fromCity, 'To : ' + toCity],
-            ['Departure : ' + (departDate ? new Date(departDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')) + ', ' + (selectedBoardingPoint?.Time || '5:00:00 PM'), 
-             'Arrival : ' + (departDate ? new Date(new Date(departDate).getTime() + 8 * 60 * 60 * 1000).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')) + ', ' + (selectedDroppingPoint?.Time || '8:00:00 AM')],
+            ['Departure : ' + (departDate ? new Date(departDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')) + ', ' + (selectedBoardingPoint?.Time || '5:00:00 PM'),
+            'Arrival : ' + (departDate ? new Date(new Date(departDate).getTime() + 8 * 60 * 60 * 1000).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')) + ', ' + (selectedDroppingPoint?.Time || '8:00:00 AM')],
             ['Bus Type : ' + (bus?.busType || 'Volvo Multiaxle A/C Sleeper/Semi Sleeper (2+1)'), '']
         ];
-        
+
         let currentY = tableStartY;
-        
+
         // Draw invoice details table
         invoiceRows.forEach((row, index) => {
             // Draw cell borders
             doc.rect(20, currentY, 85, 12);
             doc.rect(105, currentY, 85, 12);
-            
+
             // Add text
             doc.setFontSize(9);
             doc.text(row[0], 22, currentY + 8);
             if (row[1]) {
                 doc.text(row[1], 107, currentY + 8);
             }
-            
+
             currentY += 12;
         });
-        
+
         // Passenger Details Section
         currentY += 10;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text('PASSENGER DETAILS', 20, currentY);
-        
+
         currentY += 10;
-        
+
         // Passenger details table header
         doc.setFillColor(240, 240, 240);
         doc.rect(20, currentY, 170, 12, 'F');
         doc.rect(20, currentY, 170, 12);
-        
+
         // Header subdivisions
         const headerWidths = [25, 40, 40, 15, 20, 30];
         let headerX = 20;
@@ -284,7 +284,7 @@ const Bookingconfirm = () => {
             doc.line(headerX + width, currentY, headerX + width, currentY + 12);
             headerX += width;
         });
-        
+
         // Header text
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
@@ -294,19 +294,19 @@ const Bookingconfirm = () => {
         doc.text('Age', 127, currentY + 8);
         doc.text('Seat No', 147, currentY + 8);
         doc.text('Fare (₹)', 167, currentY + 8);
-        
+
         currentY += 12;
-        
+
         // Passenger details rows
         doc.setFont("helvetica", "normal");
         passengerData.forEach((passenger, index) => {
             const seatName = extractSeatName(selectedSeats[index], index);
             const passengerFare = Math.floor(baseFare / passengerData.length);
             const ticketNo = 'RASUTRIP' + Math.random().toString(36).substr(2, 4).toUpperCase();
-            
+
             // Draw row border
             doc.rect(20, currentY, 170, 12);
-            
+
             // Draw column separators
             let cellX = 20;
             headerWidths.forEach((width, cellIndex) => {
@@ -315,7 +315,7 @@ const Bookingconfirm = () => {
                 }
                 cellX += width;
             });
-            
+
             // Add passenger data
             doc.text(ticketNo, 22, currentY + 8);
             doc.text(`${fromCity} - ${toCity}`, 27, currentY + 8);
@@ -323,20 +323,20 @@ const Bookingconfirm = () => {
             doc.text(passenger.age.toString(), 127, currentY + 8);
             doc.text(seatName, 147, currentY + 8);
             doc.text(`₹ ${passengerFare}`, 167, currentY + 8);
-            
+
             currentY += 12;
         });
-        
+
         // Payment Details Section
         currentY += 15;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text('PAYMENT DETAILS', 20, currentY);
-        
+
         currentY += 10;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        
+
         const paymentDetails = [
             ['No. of Seats:', selectedSeats.length.toString()],
             ['Base Fare:', `₹ ${baseFare}`],
@@ -347,7 +347,7 @@ const Bookingconfirm = () => {
             ['IGST Rate:', igstRate],
             ['Total Payable:', `₹ ${totalPayable}`]
         ];
-        
+
         paymentDetails.forEach((detail, index) => {
             if (index === paymentDetails.length - 1) {
                 doc.setFont("helvetica", "bold");
@@ -356,17 +356,17 @@ const Bookingconfirm = () => {
             doc.text(detail[1], 120, currentY);
             currentY += 8;
         });
-        
+
         // Boarding & Dropping Details Section
         currentY += 10;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text('BOARDING & DROPPING DETAILS', 20, currentY);
-        
+
         currentY += 15;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        
+
         // Boarding details
         doc.setFont("helvetica", "bold");
         doc.text('Boarding:', 35, currentY);
@@ -379,7 +379,7 @@ const Bookingconfirm = () => {
         doc.text(`Time: ${departDate ? new Date(departDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedBoardingPoint?.Time || '4:00:00 PM'}`, 35, currentY);
         currentY += 6;
         doc.text(`Contact: ${contactData?.mobile || '9090909090'}`, 35, currentY);
-        
+
         // Dropping details - Right side
         const droppingY = currentY - 24;
         doc.setFont("helvetica", "bold");
@@ -387,30 +387,30 @@ const Bookingconfirm = () => {
         doc.setFont("helvetica", "normal");
         doc.text(selectedDroppingPoint?.DroppingPointName || 'A S Rajnagar, A S Rajnagar', 120, droppingY + 8);
         doc.text(`Time: ${departDate ? new Date(new Date(departDate).getTime() + 8 * 60 * 60 * 1000).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedDroppingPoint?.Time || '8:00:00 AM'}`, 120, droppingY + 14);
-        
+
         currentY += 20;
-        
+
         // Terms & Conditions Section
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text('TERMS & CONDITIONS', 20, currentY);
-        
+
         currentY += 10;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
-        
+
         const terms = [
             '• This is a computer-generated invoice; no signature required.',
             '• All disputes are subject to jurisdiction of New Delhi.',
             '• Please report at the boarding point at least 30 minutes before departure.',
             '• Ensure correct contact number for updates on schedule or cancellation.'
         ];
-        
+
         terms.forEach(term => {
             doc.text(term, 25, currentY);
             currentY += 7;
         });
-        
+
         return doc;
     };
 
@@ -420,10 +420,10 @@ const Bookingconfirm = () => {
 
         try {
             const currentBookingId = bookingId || 'booking';
-            
+
             // Generate PDF using jsPDF with the enhanced format
             const doc = generateBusPDFInvoice();
-            
+
             // Save the PDF with a meaningful filename
             const fileName = `Bus-Invoice-${currentBookingId}-${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(fileName);
@@ -463,12 +463,12 @@ const Bookingconfirm = () => {
         // Clear booking data from session storage
         clearBookingData();
         setBookingData(null);
-        
+
         toast.success('Thank you! Booking data cleared for security.', {
             position: "top-right",
             autoClose: 3000
         });
-        
+
         // Navigate to home
         navigate('/');
     };
@@ -510,10 +510,10 @@ const Bookingconfirm = () => {
                         <Card.Body className="text-center p-5">
                             <h4 className="text-warning mb-3">No Recent Booking Found</h4>
                             <p className="text-muted mb-4">
-                                It seems like there's no recent booking data available or it has expired. 
+                                It seems like there's no recent booking data available or it has expired.
                                 Please start the booking process again or check if you have a recent booking.
                             </p>
-                            
+
                             <div className="d-flex flex-column gap-3">
                                 <Button
                                     variant="primary"
@@ -525,7 +525,7 @@ const Bookingconfirm = () => {
                                     <FaHome className="me-2" />
                                     Back to Home
                                 </Button>
-                                
+
                                 <Button
                                     variant="outline-secondary"
                                     size="sm"
@@ -558,7 +558,7 @@ const Bookingconfirm = () => {
                             borderRadius: '15px'
                         }}>
                             <Card.Body className="">
-                             
+
                                 <h3 className=" fw-bold display-6 text-white">Booking Confirmed!</h3>
                                 <p className="mb-0 fs-5 text-white">Your bus ticket has been booked successfully</p>
                                 {bookingId && (
@@ -667,7 +667,7 @@ const Bookingconfirm = () => {
                                                             {passengerData.map((passenger, index) => (
                                                                 <div key={index} className="mb-1">
                                                                     <Badge bg="light" text="dark" className="me-2">
-                                                                        {index + 1}. {passenger.firstName} {passenger.lastName} 
+                                                                        {index + 1}. {passenger.firstName} {passenger.lastName}
                                                                         ({passenger.age}y, {passenger.gender})
                                                                     </Badge>
                                                                 </div>
@@ -753,7 +753,7 @@ const Bookingconfirm = () => {
                                                     Booking Completed Successfully
                                                 </Alert.Heading>
                                                 <p className="mb-2 text-dark">
-                                                    Your booking has been confirmed successfully. Download your invoice now as the booking data 
+                                                    Your booking has been confirmed successfully. Download your invoice now as the booking data
                                                     will be automatically cleared when you return to the home page for security purposes.
                                                 </p>
                                                 <small className="text-muted">
@@ -762,7 +762,7 @@ const Bookingconfirm = () => {
                                             </div>
                                         </div>
                                     </Alert>
-                                    
+
                                     <Alert variant="info" className="border-0 mb-0" style={{
                                         backgroundColor: '#e8f4fd',
                                         borderRadius: '10px'
@@ -773,7 +773,7 @@ const Bookingconfirm = () => {
                                                     PDF Invoice Download
                                                 </Alert.Heading>
                                                 <p className="mb-2 text-dark">
-                                                    Click "Download PDF Invoice" to generate and save a professional PDF invoice matching your booking format. 
+                                                    Click "Download PDF Invoice" to generate and save a professional PDF invoice matching your booking format.
                                                     Your booking ID{' '}
                                                     <Badge bg="info" className="mx-1 px-3 py-1">
                                                         {bookingId}
