@@ -1094,8 +1094,8 @@ const BusBookingHistory = () => {
                                         <td className="px-4 py-3 text-sm text-gray-500">
                                             <div>
                                                 <Button
-                                                 onClick={() => handleInvoiceSend(booking.rawData.bookingId, booking.rawData.UserIp, booking.rawData.SearchTokenId, booking.rawData.Result.Passenger?.[0].Email)}
-                                                 className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs btn-red"
+                                                    onClick={() => handleInvoiceSend(booking.rawData.bookingId, booking.rawData.UserIp, booking.rawData.SearchTokenId, booking.rawData.Result.Passenger?.[0].Email)}
+                                                    className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs btn-red"
                                                 >Invoice</Button>
                                             </div>
                                         </td>
