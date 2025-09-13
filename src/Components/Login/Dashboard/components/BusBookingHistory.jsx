@@ -11,7 +11,8 @@ import {
     getUserType,
     isUserAuthenticated,
     fetchRealTimeStatus,
-    fetchMultipleRealTimeStatus
+    fetchMultipleRealTimeStatus,
+    busInvoiceServices
 } from '../../services/bookingApi';
 
 const BusBookingHistory = () => {
@@ -61,6 +62,8 @@ const BusBookingHistory = () => {
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
 
+        console.log("bookingsssssssssssssssss", bookings)
+
         return {
             paginatedBookings: bookings.slice(startIndex, endIndex),
             totalPages: Math.ceil(bookings.length / itemsPerPage),
@@ -74,6 +77,16 @@ const BusBookingHistory = () => {
         setBookingType(newBookingType);
         // Don't reset page - keep user's position in each tab
     };
+
+    const handleInvoiceSend = (bookingIdForInvoice, UserIpForInvoice, SearchTokenIdForInvoice, passengerEmailForInvoice) => {
+        busInvoiceServices({
+            bookingId: bookingIdForInvoice,
+            userIp: UserIpForInvoice,
+            searchTokenId: SearchTokenIdForInvoice,
+            receiverEmail: passengerEmailForInvoice
+        });
+        alert(`Invoice download initiated for booking: ${bookingIdForInvoice}`);
+    }
 
     // Function to fetch detailed booking status for popup
     const fetchDetailedBookingStatus = async (booking) => {
@@ -1081,6 +1094,7 @@ const BusBookingHistory = () => {
                                         <td className="px-4 py-3 text-sm text-gray-500">
                                             <div>
                                                 <Button
+                                                 onClick={() => handleInvoiceSend(booking.rawData.bookingId, booking.rawData.UserIp, booking.rawData.SearchTokenId, booking.rawData.Result.Passenger?.[0].Email)}
                                                  className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs btn-red"
                                                 >Invoice</Button>
                                             </div>

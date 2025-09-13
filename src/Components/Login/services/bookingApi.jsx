@@ -56,8 +56,12 @@ const FlightBookingServices = {
     realTimeStatus: `${baseURL}/airservice/real-time-booking-details`
 };
 
-const Invoice = {
+const FlightInvoice = {
     invoice: "airservice/invoice"
+}
+
+const BusInvoice = {
+    invoice: "busservice/invoice"
 }
 
 // ✅ Helper function to detect user type from multiple sources
@@ -1171,13 +1175,12 @@ export const fetchRealTimeStatusByType = async (booking, serviceType = 'bus', us
 
 export const flightInvoiceServices = async (data) => {
     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-    console.log("token", token);
-    const url = `${baseURL}/${Invoice.invoice}`;
+    const url = `${baseURL}/${FlightInvoice.invoice}`;
 
     const headers = {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+    };
 
     const body = {
         BookingId: data.bookingId,
@@ -1188,10 +1191,10 @@ export const flightInvoiceServices = async (data) => {
     console.log("body", body);
 
     try {
-    const response = await axios.post(url, body, { headers });
+        const response = await axios.post(url, body, { headers });
 
-    console.log("✅ Invoice download response:", response.data);
-    return response.data;
+        console.log("✅ Invoice download response:", response.data);
+        return response.data;
 
     } catch (error) {
         console.error('❌ Error downloading invoice:', error.message);
@@ -1203,5 +1206,37 @@ export const flightInvoiceServices = async (data) => {
     }
 }
 
+export const busInvoiceServices = async (data) => {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    const url = `${baseURL}/${BusInvoice.invoice}`;
+
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+    };
+
+    const body = {
+        BookingId: data.bookingId,
+        UserIp: data.userIp,
+        SearchTokenId: data.searchTokenId,
+        receiverEmail: data.receiverEmail
+    };
+    console.log("body", body);
+
+    try {
+        const response = await axios.post(url, body, { headers });
+
+        console.log("✅ Invoice download response:", response.data);
+        return response.data;
+
+    } catch (error) {
+        console.error('❌ Error downloading invoice:', error.message);
+        return {
+            success: false,
+            message: error.message || "Failed to download invoice",
+            error
+        };
+    }
+}
 // ✅ Export service endpoints for external use if needed
 export { BusBookingServices, HotelBookingServices, FlightBookingServices };
