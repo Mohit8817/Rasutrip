@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from '../../../Context/AuthContext';
-import { downloadBusInvoice } from '../../../APIS/BusApi/BusApis';
 import { toast } from 'react-toastify';
+import { Button } from "react-bootstrap";
+
+
 
 import {
     fetchUpcomingBookings,
@@ -21,7 +23,6 @@ const BusBookingHistory = () => {
     const [allBookings, setAllBookings] = useState([]);
     const [userType, setUserType] = useState(null);
     const [debugInfo, setDebugInfo] = useState(null);
-    const [downloadingInvoices, setDownloadingInvoices] = useState(new Set());
 
     // Pagination states
     const [currentPageUpcoming, setCurrentPageUpcoming] = useState(1);
@@ -351,13 +352,6 @@ const BusBookingHistory = () => {
                 }
             };
 
-            // Extract SearchTokenId for invoice download
-            const searchTokenId = bookingWrapper.SearchTokenId ||
-                booking.SearchTokenId ||
-                booking.searchTokenId ||
-                booking.token_id ||
-                null;
-
             const formattedBooking = {
                 bookingId: String(bookingId),
                 from: String(fromCity),
@@ -376,7 +370,6 @@ const BusBookingHistory = () => {
                 createdAt: formatCreatedDate(createdAt),
                 bookingDate: formatCreatedDate(createdAt),
                 userType: userType || 'customer', // Add user type to booking data
-                searchTokenId: searchTokenId, // Add for invoice download
                 rawData: bookingWrapper // Keep original data for debugging
             };
 
@@ -501,93 +494,6 @@ const BusBookingHistory = () => {
 
         return () => clearInterval(interval);
     }, [allBookings, upcomingBookings, getCurrentPage()]);
-
-    // Enhanced Invoice download function with better error handling
-    const handleDownloadInvoice = async (booking) => {
-        const bookingId = booking.bookingId;
-
-        console.log('Starting invoice download process for booking:', bookingId);
-        console.log('Booking data:', booking);
-
-        // Validation checks
-        if (!booking.searchTokenId) {
-            console.error('SearchTokenId not available for booking:', bookingId);
-            toast.error('Cannot download invoice - SearchTokenId not available for this booking');
-            return;
-        }
-
-        // Check if already downloading
-        if (downloadingInvoices.has(bookingId)) {
-            console.warn('Invoice already being downloaded for booking:', bookingId);
-            return;
-        }
-
-        // Add booking to downloading set
-        setDownloadingInvoices(prev => new Set(prev.add(bookingId)));
-
-        try {
-            // Prepare invoice data with enhanced information
-            const invoiceData = {
-                UserIp: "122.161.64.143", // You might want to get actual user IP
-                SearchTokenId: booking.searchTokenId,
-                BookingId: String(bookingId),
-                receiverEmail: user?.email ||
-                    user?.mail ||
-                    booking.contactNumber ||
-                    "support@rasutrip.com"
-            };
-
-            console.log('Invoice download data prepared:', invoiceData);
-
-            // Show loading toast
-            const loadingToastId = toast.loading('Downloading invoice...');
-
-            // Call your existing API
-            const result = await downloadBusInvoice(invoiceData);
-
-            console.log('Invoice download API result:', result);
-
-            // Dismiss loading toast
-            toast.dismiss(loadingToastId);
-
-            // Handle different response scenarios
-            if (result && result.success) {
-                if (result.downloaded) {
-                    toast.success('Invoice downloaded successfully!');
-                } else if (result.alreadyExists) {
-                    toast.success('Invoice already generated and sent to email!');
-                } else if (result.sent) {
-                    toast.success('Invoice has been sent to your email!');
-                } else {
-                    toast.success('Invoice processed successfully!');
-                }
-            } else if (result && result.message) {
-                // Handle API error messages
-                toast.error(`Invoice download failed: ${result.message}`);
-            } else {
-                toast.error('Failed to download invoice. Please try again.');
-            }
-
-        } catch (error) {
-            console.error('Invoice download error:', error);
-
-            // Handle different error types
-            if (error.message) {
-                toast.error(`Failed to download invoice: ${error.message}`);
-            } else if (error.response?.data?.message) {
-                toast.error(`Invoice download failed: ${error.response.data.message}`);
-            } else {
-                toast.error('Failed to download invoice. Please check your internet connection and try again.');
-            }
-        } finally {
-            // Remove booking from downloading set
-            setDownloadingInvoices(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(bookingId);
-                return newSet;
-            });
-        }
-    };
 
     // Format date for display
     const formatDate = (dateString) => {
@@ -1116,14 +1022,14 @@ const BusBookingHistory = () => {
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Amount</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Created</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-Time Status</th>
                             </tr>
                         </thead>
                         <tbody className="bg-gray-50">
                             {paginatedBookings.length === 0 ? (
                                 <tr>
-                                    <td colSpan="11" className="px-4 py-12 text-center">
+                                    <td colSpan="10" className="px-4 py-12 text-center">
                                         <div className="flex flex-col items-center">
                                             <span className="text-4xl mb-4">🚌</span>
                                             <span className="text-lg font-medium text-gray-600">
@@ -1172,17 +1078,12 @@ const BusBookingHistory = () => {
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-500">{booking.createdAt}</td>
-                                        <td className="px-4 py-3 text-sm">
-                                            <button
-                                                onClick={() => handleDownloadInvoice(booking)}
-                                                disabled={downloadingInvoices.has(booking.bookingId)}
-                                                className={`px-3 py-1 rounded text-white text-xs ${downloadingInvoices.has(booking.bookingId)
-                                                    ? "bg-gray-400 cursor-not-allowed"
-                                                    : "bg-red-500 hover:bg-red-600"
-                                                    }`}
-                                            >
-                                                {downloadingInvoices.has(booking.bookingId) ? "Downloading..." : "Invoice"}
-                                            </button>
+                                        <td className="px-4 py-3 text-sm text-gray-500">
+                                            <div>
+                                                <Button
+                                                 className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs btn-red"
+                                                >Invoice</Button>
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 text-sm">
                                             {renderRealTimeStatus(booking)}
