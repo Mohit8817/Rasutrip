@@ -167,14 +167,11 @@
 
 /* Mobile Header Styles */
 .mobile-header {
+    position: relative !important; /* Change from fixed */
+    top: auto;
+    padding: 8px 0;
     background: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 10px 0;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1030;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-header .Header_logo {
@@ -196,11 +193,12 @@
     bottom: 0;
     left: 0;
     right: 0;
+    height: 60px !important; /* Fixed height */
+    padding: 0 !important;
     background: white;
     border-top: 1px solid #e0e0e0;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
     z-index: 1020;
-    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
 }
 
 .bottom-nav-container {
@@ -209,6 +207,8 @@
     align-items: center;
     max-width: 100%;
     margin: 0 auto;
+    height: 100%;
+    padding: 8px 0;
 }
 
 .bottom-nav-item {
@@ -225,7 +225,7 @@
     color: #666;
     font-size: 12px;
     font-weight: 500;
-    padding: 8px 4px;
+    padding: 4px !important;
     transition: all 0.2s ease;
     min-width: 60px;
 }
@@ -318,34 +318,17 @@
     margin-top: 10px;
 }
 
-/* Add padding to body for mobile fixed header and bottom nav */
+/* Keep the mobile adjustments but modify the body padding */
 @media (max-width: 991px) {
     body {
-        padding-top: 70px; /* Height of mobile header */
-        padding-bottom: 80px; /* Height of bottom navigation */
+        padding-top: 0 !important; /* Remove top padding */
+        padding-bottom: 60px !important; /* Reduce bottom padding */
     }
 
-    .top-bar {
-        display: none !important;
-    }
-
-    /* Main content area adjustments for mobile */
+    /* Main content area adjustments */
     .main-content {
-        min-height: calc(100vh - 150px);
-    }
-
-    /* Hide desktop elements on mobile */
-    .d-lg-block {
-        display: none !important;
-    }
-
-    /* Ensure mobile elements are shown */
-    .d-lg-none {
-        display: block !important;
-    }
-
-    .mobile-bottom-nav.d-lg-none {
-        display: block !important;
+        padding-top: 0 !important;
+        /* padding-bottom: 60px !important; Space for bottom nav */
     }
 }
 
@@ -401,4 +384,15 @@
 /* Fix for Bootstrap offcanvas backdrop */
 .offcanvas-backdrop {
     z-index: 1025;
+}
+
+/* Fix spacing issues */
+.container-fluid {
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+}
+
+/* Remove any unwanted margins */
+.row {
+    margin: 0 !important;
 }

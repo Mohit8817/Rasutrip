@@ -1,8 +1,16 @@
 // components/Sidebar.js - Updated with Dashboard and Wallet History tabs for agents
-import React, { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../../Context/AuthContext';
-import { User, Calendar, CreditCard, Building, LogOut, BarChart3, Wallet } from 'lucide-react';
+import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../../../Context/AuthContext";
+import {
+  User,
+  Calendar,
+  CreditCard,
+  Building,
+  LogOut,
+  BarChart3,
+  Wallet,
+} from "lucide-react";
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
   const {
@@ -13,14 +21,14 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     getUserFirstName,
     getUserFullName,
     getUserInitials,
-    getTimeBasedGreeting
+    getTimeBasedGreeting,
   } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const formatMobile = (mobile) => {
-    if (!mobile) return '';
+    if (!mobile) return "";
     // Remove country code and format
-    const cleaned = mobile.replace(/^\+?91/, '').replace(/\D/g, '');
+    const cleaned = mobile.replace(/^\+?91/, "").replace(/\D/g, "");
     if (cleaned.length >= 10) {
       return `+91 ${cleaned.slice(-10, -5)} ${cleaned.slice(-5)}`;
     }
@@ -29,13 +37,18 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/'); // Redirect to home page
+    navigate("/"); // Redirect to home page
   };
 
   // Determine if user is an agent
   const isAgent = () => {
     if (!user) return false;
-    return user.role === 'agent' || user.userType === 'agent' || user.type === 'agent' || userType === 'agent';
+    return (
+      user.role === "agent" ||
+      user.userType === "agent" ||
+      user.type === "agent" ||
+      userType === "agent"
+    );
   };
 
   // If no user is logged in, show login prompt with clean design
@@ -46,9 +59,11 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           <div className="w-20 h-20 mx-auto rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-2xl font-bold mb-6">
             ?
           </div>
-          <h3 className="text-lg font-medium text-gray-700 mb-6">Please Login</h3>
+          <h3 className="text-lg font-medium text-gray-700 mb-6">
+            Please Login
+          </h3>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             className="w-full bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-lg transition-colors"
           >
             Go to Login
@@ -56,23 +71,23 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         </div>
       </div>
     );
-  };
+  }
 
   // Define menu items based on user type
   const getMenuItems = () => {
     const baseMenuItems = [
-      { id: 'profile', label: 'Profile', icon: User },
-      { id: 'bookings', label: 'Booking', icon: Calendar },
-      { id: 'payment-history', label: 'Payment History', icon: CreditCard },
+      { id: "profile", label: "Profile", icon: User },
+      { id: "bookings", label: "Booking", icon: Calendar },
+      { id: "payment-history", label: "Payment History", icon: CreditCard },
     ];
 
     if (isAgent()) {
       // Agent menu items in specific order
       return [
-        { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+        { id: "dashboard", label: "Dashboard", icon: BarChart3 },
         ...baseMenuItems,
-        { id: 'wallet-history', label: 'Wallet History', icon: Wallet },
-        { id: 'bank-details', label: 'Bank Details', icon: Building },
+        { id: "wallet-history", label: "Wallet History", icon: Wallet },
+        { id: "bank-details", label: "Bank Details", icon: Building },
       ];
     }
 
@@ -82,37 +97,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   const menuItems = getMenuItems();
 
   return (
-    <div className="h-screen w-80 bg-white border-r border-gray-200 flex flex-col">
+    <div className="h-100 w-80 bg-white border-r border-gray-200 flex flex-col">
       {/* User Profile Section */}
       <div className="px-6 py-6 border-b border-gray-200">
-        <div className="text-center">
-          <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-content text-white text-2xl font-bold mb-4 bg-red-500">
-            {getUserInitials()}
-          </div>
-
-          {/* Enhanced Name Display */}
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">
-            {getUserDisplayName()}
-          </h3>
-
-          {/* User Type Badge */}
-          {isAgent() && (
-            <div className="inline-block px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full mb-2">
-              Agent
-            </div>
-          )}
-
-          {/* Additional User Info */}
-          <div className="text-sm text-gray-600 mt-1">
-            {formatMobile(user?.mobile)}
-          </div>
-
-          {user?.email && (
-            <div className="text-sm text-gray-600 mt-1 truncate">
-              {user.email}
-            </div>
-          )}
-        </div>
+        <div className="text-center"></div>
       </div>
 
       {/* Navigation Menu */}
@@ -123,10 +111,11 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center px-6 py-2 text-left transition-colors duration-200 ${activeTab === item.id
-                ? 'bg-red-500 text-white'
-                : 'text-gray-600 hover:bg-gray-50'
-                }`}
+              className={`w-full flex items-center px-6 py-2 text-left transition-colors duration-200 ${
+                activeTab === item.id
+                  ? "bg-red-500 text-white"
+                  : "text-gray-600 hover:bg-gray-50"
+              }`}
             >
               <IconComponent className="w-5 h-5 mr-3" />
               <span className="font-medium">{item.label}</span>
