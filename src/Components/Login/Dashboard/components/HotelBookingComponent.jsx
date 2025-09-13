@@ -484,92 +484,102 @@ const HotelBookingHistory = () => {
         return sortedBookings;
     };
 
-    // Main function to load hotel bookings using the service
-    const loadHotelBookings = async () => {
-        setLoading(true);
-        setError(null);
-        setDebugInfo(null);
-        setInitialStatusLoaded(false);
+// Updated loadHotelBookings function - replace this in your component
 
-        if (!isHotelUserAuthenticated()) {
-            setError('Please login to view your hotel booking history.');
-            setLoading(false);
-            return;
-        }
+const loadHotelBookings = async () => {
+    setLoading(true);
+    setError(null);
+    setDebugInfo(null);
+    setInitialStatusLoaded(false);
 
+    if (!isHotelUserAuthenticated()) {
+        setError('Please login to view your hotel booking history.');
+        setLoading(false);
+        return;
+    }
+
+    try {
+        console.log('Starting to load ALL hotel bookings using service...');
+
+        let upcomingData = [];
+        let allData = [];
+        let debugData = {
+            upcomingSuccess: false,
+            allBookingsSuccess: false,
+            upcomingTotal: 0,
+            allTotal: 0,
+            errors: []
+        };
+
+        // Fetch upcoming bookings with all pages
         try {
-            console.log('Starting to load hotel bookings using service...');
+            console.log('Fetching ALL upcoming hotel bookings...');
+            const upcomingResponse = await fetchUpcomingHotelBookings(userRole);
 
-            let upcomingData = [];
-            let allData = [];
-            let debugData = {
-                upcomingSuccess: false,
-                allBookingsSuccess: false,
-                errors: []
-            };
-
-            try {
-                console.log('Fetching upcoming hotel bookings...');
-                const upcomingResponse = await fetchUpcomingHotelBookings(userRole);
-
-                if (upcomingResponse.success) {
-                    upcomingData = formatHotelBookingData(upcomingResponse.data, true);
-                    upcomingData = sortBookingsByDate(upcomingData, sortOrder);
-                    debugData.upcomingSuccess = true;
-                    debugData.upcomingResponse = upcomingResponse.data;
-                    console.log('Upcoming hotel bookings loaded:', upcomingData.length, 'bookings');
-                }
-            } catch (err) {
-                console.warn('Failed to fetch upcoming hotel bookings:', err.message);
-                debugData.errors.push(`Upcoming: ${err.message || 'Unknown error'}`);
+            if (upcomingResponse.success) {
+                upcomingData = formatHotelBookingData(upcomingResponse.data, true);
+                upcomingData = sortBookingsByDate(upcomingData, sortOrder);
+                debugData.upcomingSuccess = true;
+                debugData.upcomingTotal = upcomingResponse.totalBookings || upcomingData.length;
+                debugData.upcomingResponse = upcomingResponse.data;
+                console.log(`✅ Upcoming hotel bookings loaded: ${upcomingData.length} total bookings`);
             }
-
-            try {
-                console.log('Fetching all hotel bookings...');
-                const allResponse = await fetchAllHotelBookings(userRole);
-
-                if (allResponse.success) {
-                    allData = formatHotelBookingData(allResponse.data, false);
-                    allData = sortBookingsByDate(allData, sortOrder);
-                    debugData.allBookingsSuccess = true;
-                    debugData.allResponse = allResponse.data;
-                    console.log('All hotel bookings loaded:', allData.length, 'bookings');
-                }
-            } catch (err) {
-                console.warn('Failed to fetch all hotel bookings:', err.message);
-                debugData.errors.push(`All bookings: ${err.message || 'Unknown error'}`);
-            }
-
-            console.log('Updating state with hotel booking data...');
-            setUpcomingBookings([...upcomingData]);
-            setAllBookings([...allData]);
-            setDebugInfo(debugData);
-
-            const allLoadedBookings = [...upcomingData, ...allData];
-            if (allLoadedBookings.length > 0) {
-                console.log('Immediately fetching real-time status for loaded hotel bookings...');
-                setTimeout(() => {
-                    autoFetchRealTimeStatus(allLoadedBookings);
-                }, 500);
-            } else {
-                setInitialStatusLoaded(true);
-            }
-
-            if (upcomingData.length > 0 || allData.length > 0) {
-                console.log('Successfully loaded hotel booking data - Upcoming:', upcomingData.length, 'All:', allData.length);
-            } else if (debugData.errors.length === 0) {
-                console.log('No hotel bookings found in API response');
-            }
-
-        } catch (error) {
-            console.error('Error loading hotel bookings:', error);
-            setError(error.message || 'Failed to load hotel booking history. Please try again.');
-            setDebugInfo({ error: error.message, fullError: error });
-            setInitialStatusLoaded(true);
-        } finally {
-            setLoading(false);
+        } catch (err) {
+            console.warn('Failed to fetch upcoming hotel bookings:', err.message);
+            debugData.errors.push(`Upcoming: ${err.message || 'Unknown error'}`);
         }
-    };
+
+        // Fetch all bookings with all pages
+        try {
+            console.log('Fetching ALL hotel bookings...');
+            const allResponse = await fetchAllHotelBookings(userRole);
+
+            if (allResponse.success) {
+                allData = formatHotelBookingData(allResponse.data, false);
+                allData = sortBookingsByDate(allData, sortOrder);
+                debugData.allBookingsSuccess = true;
+                debugData.allTotal = allResponse.totalBookings || allData.length;
+                debugData.allResponse = allResponse.data;
+                console.log(`✅ All hotel bookings loaded: ${allData.length} total bookings`);
+            }
+        } catch (err) {
+            console.warn('Failed to fetch all hotel bookings:', err.message);
+            debugData.errors.push(`All bookings: ${err.message || 'Unknown error'}`);
+        }
+
+        console.log('Updating state with ALL hotel booking data...');
+        setUpcomingBookings([...upcomingData]);
+        setAllBookings([...allData]);
+        setDebugInfo(debugData);
+
+        const allLoadedBookings = [...upcomingData, ...allData];
+        if (allLoadedBookings.length > 0) {
+            console.log('Immediately fetching real-time status for ALL loaded hotel bookings...');
+            setTimeout(() => {
+                autoFetchRealTimeStatus(allLoadedBookings);
+            }, 500);
+        } else {
+            setInitialStatusLoaded(true);
+        }
+
+        if (upcomingData.length > 0 || allData.length > 0) {
+            console.log(`🎉 Successfully loaded ALL hotel booking data:
+                - Upcoming: ${upcomingData.length} bookings
+                - All: ${allData.length} bookings  
+                - Total fetched from API: Upcoming=${debugData.upcomingTotal}, All=${debugData.allTotal}`);
+        } else if (debugData.errors.length === 0) {
+            console.log('No hotel bookings found in API response');
+        }
+
+    } catch (error) {
+        console.error('Error loading hotel bookings:', error);
+        setError(error.message || 'Failed to load hotel booking history. Please try again.');
+        setDebugInfo({ error: error.message, fullError: error });
+        setInitialStatusLoaded(true);
+    } finally {
+        setLoading(false);
+    }
+};
 
     useEffect(() => {
         loadHotelBookings();

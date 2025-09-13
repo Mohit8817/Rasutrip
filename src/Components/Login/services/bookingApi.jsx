@@ -386,29 +386,45 @@ export const fetchMultipleRealTimeStatus = async (bookings, userType = null) => 
     return results;
 };
 
-// ✅ Fetch upcoming BUS bookings with user type awareness
-export const fetchUpcomingBookings = async (userType = null) => {
+// ✅ Fetch upcoming BUS bookings with pagination support
+export const fetchUpcomingBookings = async (userType = null, page = 1, limit = 10) => {
     try {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType, 'bus');
 
-        console.log('🚀 Fetching upcoming bus bookings for:', currentUserType);
+        console.log('🚀 Fetching upcoming bus bookings for:', currentUserType, `Page: ${page}, Limit: ${limit}`);
+
+        // Add pagination parameters to the request
+        const url = `${endpoints.upcomingBookings}?page=${page}&limit=${limit}`;
 
         try {
-            const response = await makeAuthenticatedRequest(endpoints.upcomingBookings, 'GET', null, currentUserType);
+            const response = await makeAuthenticatedRequest(url, 'GET', null, currentUserType);
             return {
                 success: true,
-                data: response,
+                data: response.data || response, // Handle both response.data and direct response
+                pagination: {
+                    page: response.page || page,
+                    limit: response.limit || limit,
+                    total: response.total || 0,
+                    totalPages: response.totalPages || Math.ceil((response.total || 0) / limit)
+                },
                 message: `Upcoming bus bookings fetched successfully for ${currentUserType}`
             };
         } catch (error) {
             // Try fallback for agents if available
             if (currentUserType === 'agent' && endpoints.upcomingFallback) {
                 console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackResponse = await makeAuthenticatedRequest(endpoints.upcomingFallback, 'GET', null, currentUserType);
+                const fallbackUrl = `${endpoints.upcomingFallback}?page=${page}&limit=${limit}`;
+                const fallbackResponse = await makeAuthenticatedRequest(fallbackUrl, 'GET', null, currentUserType);
                 return {
                     success: true,
-                    data: fallbackResponse,
+                    data: fallbackResponse.data || fallbackResponse,
+                    pagination: {
+                        page: fallbackResponse.page || page,
+                        limit: fallbackResponse.limit || limit,
+                        total: fallbackResponse.total || 0,
+                        totalPages: fallbackResponse.totalPages || Math.ceil((fallbackResponse.total || 0) / limit)
+                    },
                     message: `Upcoming bus bookings fetched successfully for ${currentUserType} (fallback)`
                 };
             }
@@ -424,29 +440,45 @@ export const fetchUpcomingBookings = async (userType = null) => {
     }
 };
 
-// ✅ Fetch all BUS bookings with user type awareness
-export const fetchAllBookings = async (userType = null) => {
+// ✅ Fetch all BUS bookings with pagination support
+export const fetchAllBookings = async (userType = null, page = 1, limit = 10) => {
     try {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType, 'bus');
 
-        console.log('🚀 Fetching all bus bookings for:', currentUserType);
+        console.log('🚀 Fetching all bus bookings for:', currentUserType, `Page: ${page}, Limit: ${limit}`);
+
+        // Add pagination parameters to the request
+        const url = `${endpoints.allBookings}?page=${page}&limit=${limit}`;
 
         try {
-            const response = await makeAuthenticatedRequest(endpoints.allBookings, 'GET', null, currentUserType);
+            const response = await makeAuthenticatedRequest(url, 'GET', null, currentUserType);
             return {
                 success: true,
-                data: response,
+                data: response.data || response, // Handle both response.data and direct response
+                pagination: {
+                    page: response.page || page,
+                    limit: response.limit || limit,
+                    total: response.total || 0,
+                    totalPages: response.totalPages || Math.ceil((response.total || 0) / limit)
+                },
                 message: `All bus bookings fetched successfully for ${currentUserType}`
             };
         } catch (error) {
             // Try fallback for agents if available
             if (currentUserType === 'agent' && endpoints.allFallback) {
                 console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackResponse = await makeAuthenticatedRequest(endpoints.allFallback, 'GET', null, currentUserType);
+                const fallbackUrl = `${endpoints.allFallback}?page=${page}&limit=${limit}`;
+                const fallbackResponse = await makeAuthenticatedRequest(fallbackUrl, 'GET', null, currentUserType);
                 return {
                     success: true,
-                    data: fallbackResponse,
+                    data: fallbackResponse.data || fallbackResponse,
+                    pagination: {
+                        page: fallbackResponse.page || page,
+                        limit: fallbackResponse.limit || limit,
+                        total: fallbackResponse.total || 0,
+                        totalPages: fallbackResponse.totalPages || Math.ceil((fallbackResponse.total || 0) / limit)
+                    },
                     message: `All bus bookings fetched successfully for ${currentUserType} (fallback)`
                 };
             }
@@ -457,6 +489,63 @@ export const fetchAllBookings = async (userType = null) => {
         throw {
             success: false,
             message: error.message || "Failed to fetch all bus bookings",
+            error: error
+        };
+    }
+};
+
+// ✅ Fetch all bookings from all pages (if you want to get everything at once)
+export const fetchAllBookingsComplete = async (userType = null, limit = 50) => {
+    try {
+        const currentUserType = userType || detectUserType();
+        console.log('🚀 Fetching complete bus bookings for:', currentUserType);
+
+        // First, get the first page to know total pages
+        const firstPageResponse = await fetchAllBookings(currentUserType, 1, limit);
+
+        if (!firstPageResponse.success) {
+            throw new Error(firstPageResponse.message);
+        }
+
+        const { pagination } = firstPageResponse;
+        let allBookings = firstPageResponse.data || [];
+
+        // If there are more pages, fetch them
+        if (pagination.totalPages > 1) {
+            const remainingPages = [];
+            for (let page = 2; page <= pagination.totalPages; page++) {
+                remainingPages.push(fetchAllBookings(currentUserType, page, limit));
+            }
+
+            try {
+                const remainingResponses = await Promise.all(remainingPages);
+                remainingResponses.forEach(response => {
+                    if (response.success && response.data) {
+                        allBookings = [...allBookings, ...response.data];
+                    }
+                });
+            } catch (error) {
+                console.warn('⚠️ Some pages failed to load, returning partial data');
+            }
+        }
+
+        return {
+            success: true,
+            data: allBookings,
+            pagination: {
+                page: 1,
+                limit: allBookings.length,
+                total: pagination.total,
+                totalPages: 1 // Since we're returning all data in one response
+            },
+            message: `Complete bus bookings fetched successfully for ${currentUserType}`
+        };
+
+    } catch (error) {
+        console.error('❌ Error fetching complete bus bookings:', error.message);
+        throw {
+            success: false,
+            message: error.message || "Failed to fetch complete bus bookings",
             error: error
         };
     }
@@ -612,34 +701,75 @@ export const fetchMultipleHotelRealTimeStatus = async (bookings, userType = null
     return results;
 };
 
-// ✅ Fetch upcoming HOTEL bookings with user type awareness
+// Updated booking API service functions to handle pagination
+
+// ✅ Fetch all pages of upcoming HOTEL bookings
 export const fetchUpcomingHotelBookings = async (userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType, 'hotel');
 
-        console.log('🚀 Fetching upcoming hotel bookings for:', currentUserType);
+        console.log('🚀 Fetching ALL upcoming hotel bookings for:', currentUserType);
 
-        try {
-            const response = await makeAuthenticatedRequest(endpoints.upcomingBookings, 'GET', null, currentUserType);
-            return {
-                success: true,
-                data: response,
-                message: `Upcoming hotel bookings fetched successfully for ${currentUserType}`
-            };
-        } catch (error) {
-            // Try fallback for agents if available
-            if (currentUserType === 'agent' && endpoints.upcomingFallback) {
-                console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackResponse = await makeAuthenticatedRequest(endpoints.upcomingFallback, 'GET', null, currentUserType);
-                return {
-                    success: true,
-                    data: fallbackResponse,
-                    message: `Upcoming hotel bookings fetched successfully for ${currentUserType} (fallback)`
-                };
+        let allBookings = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        do {
+            try {
+                const response = await makeAuthenticatedRequest(
+                    `${endpoints.upcomingBookings}?page=${currentPage}&limit=50`,
+                    'GET',
+                    null,
+                    currentUserType
+                );
+
+                console.log(`📄 Page ${currentPage} response:`, response);
+
+                // Extract data and pagination info
+                let pageData = [];
+                if (response.data && Array.isArray(response.data)) {
+                    pageData = response.data;
+                } else if (Array.isArray(response)) {
+                    pageData = response;
+                } else if (response.bookings && Array.isArray(response.bookings)) {
+                    pageData = response.bookings;
+                } else if (response.results && Array.isArray(response.results)) {
+                    pageData = response.results;
+                }
+
+                // Add page data to all bookings
+                allBookings = [...allBookings, ...pageData];
+
+                // Update pagination info
+                totalPages = response.totalPages || response.total_pages || Math.ceil((response.total || 0) / (response.limit || 10));
+
+                console.log(`✅ Page ${currentPage}: Found ${pageData.length} bookings, Total pages: ${totalPages}`);
+
+                currentPage++;
+
+                // Add small delay between requests to avoid rate limiting
+                if (currentPage <= totalPages) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+
+            } catch (pageError) {
+                console.warn(`⚠️ Error fetching page ${currentPage}:`, pageError);
+                break;
             }
-            throw error;
-        }
+
+        } while (currentPage <= totalPages);
+
+        console.log(`🎉 Total upcoming hotel bookings fetched: ${allBookings.length}`);
+
+        return {
+            success: true,
+            data: allBookings,
+            totalBookings: allBookings.length,
+            totalPages: totalPages,
+            message: `${allBookings.length} upcoming hotel bookings fetched successfully for ${currentUserType}`
+        };
+
     } catch (error) {
         console.error('❌ Error fetching upcoming hotel bookings:', error.message);
         throw {
@@ -650,39 +780,159 @@ export const fetchUpcomingHotelBookings = async (userType = null) => {
     }
 };
 
-// ✅ Fetch all HOTEL bookings with user type awareness
+// ✅ Fetch all pages of HOTEL bookings
 export const fetchAllHotelBookings = async (userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType, 'hotel');
 
-        console.log('🚀 Fetching all hotel bookings for:', currentUserType);
+        console.log('🚀 Fetching ALL hotel bookings for:', currentUserType);
 
-        try {
-            const response = await makeAuthenticatedRequest(endpoints.allBookings, 'GET', null, currentUserType);
-            return {
-                success: true,
-                data: response,
-                message: `All hotel bookings fetched successfully for ${currentUserType}`
-            };
-        } catch (error) {
-            // Try fallback for agents if available
-            if (currentUserType === 'agent' && endpoints.allFallback) {
-                console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackResponse = await makeAuthenticatedRequest(endpoints.allFallback, 'GET', null, currentUserType);
-                return {
-                    success: true,
-                    data: fallbackResponse,
-                    message: `All hotel bookings fetched successfully for ${currentUserType} (fallback)`
-                };
+        let allBookings = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        do {
+            try {
+                const response = await makeAuthenticatedRequest(
+                    `${endpoints.allBookings}?page=${currentPage}&limit=50`,
+                    'GET',
+                    null,
+                    currentUserType
+                );
+
+                console.log(`📄 Page ${currentPage} response:`, response);
+
+                // Extract data and pagination info from API response
+                let pageData = [];
+                if (response.data && Array.isArray(response.data)) {
+                    pageData = response.data;
+                } else if (Array.isArray(response)) {
+                    pageData = response;
+                } else if (response.bookings && Array.isArray(response.bookings)) {
+                    pageData = response.bookings;
+                } else if (response.results && Array.isArray(response.results)) {
+                    pageData = response.results;
+                }
+
+                // Add page data to all bookings
+                allBookings = [...allBookings, ...pageData];
+
+                // Extract pagination info from response
+                totalPages = response.totalPages || response.total_pages || Math.ceil((response.total || 0) / (response.limit || 10));
+                const hasMorePages = response.hasNextPage || response.has_next_page || (currentPage < totalPages);
+
+                console.log(`✅ Page ${currentPage}: Found ${pageData.length} bookings, Total pages: ${totalPages}, Has more: ${hasMorePages}`);
+
+                currentPage++;
+
+                // Add small delay between requests to avoid rate limiting
+                if (currentPage <= totalPages) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+
+            } catch (pageError) {
+                console.warn(`⚠️ Error fetching page ${currentPage}:`, pageError);
+                // Try fallback for agents if available
+                if (currentUserType === 'agent' && endpoints.allFallback) {
+                    try {
+                        console.log('🔄 Trying fallback endpoint for agent...');
+                        const fallbackResponse = await makeAuthenticatedRequest(
+                            `${endpoints.allFallback}?page=${currentPage}&limit=50`,
+                            'GET',
+                            null,
+                            currentUserType
+                        );
+
+                        let fallbackData = [];
+                        if (fallbackResponse.data && Array.isArray(fallbackResponse.data)) {
+                            fallbackData = fallbackResponse.data;
+                        } else if (Array.isArray(fallbackResponse)) {
+                            fallbackData = fallbackResponse;
+                        }
+
+                        allBookings = [...allBookings, ...fallbackData];
+                        totalPages = fallbackResponse.totalPages || totalPages;
+
+                    } catch (fallbackError) {
+                        console.error('❌ Fallback also failed:', fallbackError);
+                        break;
+                    }
+                } else {
+                    break;
+                }
             }
-            throw error;
-        }
+
+        } while (currentPage <= totalPages);
+
+        console.log(`🎉 Total hotel bookings fetched: ${allBookings.length}`);
+
+        return {
+            success: true,
+            data: allBookings,
+            totalBookings: allBookings.length,
+            totalPages: totalPages,
+            message: `${allBookings.length} hotel bookings fetched successfully for ${currentUserType}`
+        };
+
     } catch (error) {
         console.error('❌ Error fetching all hotel bookings:', error.message);
         throw {
             success: false,
             message: error.message || "Failed to fetch all hotel bookings",
+            error: error
+        };
+    }
+};
+
+// Alternative function that fetches specific page with pagination info
+export const fetchHotelBookingsWithPagination = async (page = 1, limit = 50, userType = null) => {
+    try {
+        const currentUserType = userType || detectUserType();
+        const endpoints = getBookingEndpoints(currentUserType, 'hotel');
+
+        console.log(`🚀 Fetching hotel bookings page ${page} (limit: ${limit}) for:`, currentUserType);
+
+        const response = await makeAuthenticatedRequest(
+            `${endpoints.allBookings}?page=${page}&limit=${limit}`,
+            'GET',
+            null,
+            currentUserType
+        );
+
+        console.log('📄 Paginated response:', response);
+
+        // Extract data from response
+        let bookings = [];
+        if (response.data && Array.isArray(response.data)) {
+            bookings = response.data;
+        } else if (Array.isArray(response)) {
+            bookings = response;
+        } else if (response.bookings && Array.isArray(response.bookings)) {
+            bookings = response.bookings;
+        } else if (response.results && Array.isArray(response.results)) {
+            bookings = response.results;
+        }
+
+        return {
+            success: true,
+            data: bookings,
+            pagination: {
+                currentPage: response.page || page,
+                totalPages: response.totalPages || response.total_pages || 1,
+                totalItems: response.total || bookings.length,
+                limit: response.limit || limit,
+                hasNextPage: response.hasNextPage || response.has_next_page || false,
+                hasPrevPage: response.hasPrevPage || response.has_prev_page || false
+            },
+            message: `Page ${page} of hotel bookings fetched successfully`
+        };
+
+    } catch (error) {
+        console.error('❌ Error fetching paginated hotel bookings:', error.message);
+        throw {
+            success: false,
+            message: error.message || "Failed to fetch hotel bookings",
             error: error
         };
     }
@@ -1240,3 +1490,5 @@ export const busInvoiceServices = async (data) => {
 }
 // ✅ Export service endpoints for external use if needed
 export { BusBookingServices, HotelBookingServices, FlightBookingServices };
+
+
