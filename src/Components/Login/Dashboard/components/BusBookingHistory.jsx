@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from '../../../Context/AuthContext';
-import { downloadBusInvoice } from '../../../APIS/BusApi/BusApis';
 import { toast } from 'react-toastify';
+import { Button } from "react-bootstrap";
 
 import {
     fetchUpcomingBookings,
     fetchAllBookings,
+    fetchAllBookingsComplete, // Import the new complete fetch function
     getUserType,
     isUserAuthenticated,
     fetchRealTimeStatus,
-    fetchMultipleRealTimeStatus
+    fetchMultipleRealTimeStatus,
+    busInvoiceServices
 } from '../../services/bookingApi';
 
 const BusBookingHistory = () => {
@@ -21,9 +23,22 @@ const BusBookingHistory = () => {
     const [allBookings, setAllBookings] = useState([]);
     const [userType, setUserType] = useState(null);
     const [debugInfo, setDebugInfo] = useState(null);
-    const [downloadingInvoices, setDownloadingInvoices] = useState(new Set());
 
-    // Pagination states
+    // API Pagination states - track pagination from API response
+    const [upcomingPagination, setUpcomingPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 1
+    });
+    const [allPagination, setAllPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 1
+    });
+
+    // Client-side pagination states - for displaying the current data
     const [currentPageUpcoming, setCurrentPageUpcoming] = useState(1);
     const [currentPageAll, setCurrentPageAll] = useState(1);
     const itemsPerPage = 10;
@@ -41,11 +56,17 @@ const BusBookingHistory = () => {
         error: null
     });
 
-    // Pagination helper functions
+    // Get current pagination info based on active tab
+    const getCurrentPagination = () => {
+        return bookingType === 'upcoming' ? upcomingPagination : allPagination;
+    };
+
+    // Get current page based on active tab
     const getCurrentPage = () => {
         return bookingType === 'upcoming' ? currentPageUpcoming : currentPageAll;
     };
 
+    // Set current page based on active tab
     const setCurrentPage = (page) => {
         if (bookingType === 'upcoming') {
             setCurrentPageUpcoming(page);
@@ -54,11 +75,19 @@ const BusBookingHistory = () => {
         }
     };
 
+    // Get current bookings based on active tab
+    const getCurrentBookings = () => {
+        return bookingType === 'upcoming' ? upcomingBookings : allBookings;
+    };
+
+    // Get paginated bookings for display
     const getPaginatedBookings = () => {
-        const bookings = bookingType === 'upcoming' ? upcomingBookings : allBookings;
+        const bookings = getCurrentBookings();
         const currentPage = getCurrentPage();
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
+
+        console.log("Current bookings for display:", bookings.length);
 
         return {
             paginatedBookings: bookings.slice(startIndex, endIndex),
@@ -68,10 +97,133 @@ const BusBookingHistory = () => {
         };
     };
 
-    // Reset to first page when switching tabs
+    // Handle tab change
     const handleTabChange = (newBookingType) => {
         setBookingType(newBookingType);
-        // Don't reset page - keep user's position in each tab
+        // Reset to first page when switching tabs
+        if (newBookingType === 'upcoming') {
+            setCurrentPageUpcoming(1);
+        } else {
+            setCurrentPageAll(1);
+        }
+    };
+
+    // Handle pagination change - this will trigger new API calls
+    const handleApiPaginationChange = (page) => {
+        if (bookingType === 'upcoming') {
+            setUpcomingPagination(prev => ({ ...prev, page }));
+            loadUpcomingBookings(page);
+        } else {
+            setAllPagination(prev => ({ ...prev, page }));
+            loadAllBookings(page);
+        }
+    };
+
+    // Load all bookings from all pages (for complete data)
+    const loadAllBookingsComplete = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const detectedUserType = getUserType();
+            setUserType(detectedUserType);
+
+            if (!detectedUserType || !isUserAuthenticated(detectedUserType)) {
+                throw new Error(`Please login as ${detectedUserType || 'user'} to view booking history.`);
+            }
+
+            console.log('Loading complete bus bookings for user type:', detectedUserType);
+
+            // Fetch all bookings from all pages
+            const allResponse = await fetchAllBookingsComplete(detectedUserType, 50); // Higher limit per page
+            
+            if (allResponse.success) {
+                const formattedBookings = formatBookingData(allResponse.data, false);
+                setAllBookings(formattedBookings);
+                setAllPagination({
+                    page: 1,
+                    limit: formattedBookings.length,
+                    total: allResponse.pagination.total,
+                    totalPages: 1 // Since we have all data
+                });
+                console.log(`All ${formattedBookings.length} bookings loaded successfully`);
+            } else {
+                throw new Error(allResponse.message);
+            }
+
+            // Also load upcoming bookings
+            await loadUpcomingBookings(1);
+
+        } catch (error) {
+            console.error('Error loading complete bookings:', error);
+            setError(error.message || 'Failed to load booking history. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Load upcoming bookings with API pagination
+    const loadUpcomingBookings = async (page = 1) => {
+        try {
+            const detectedUserType = getUserType();
+            console.log('Loading upcoming bookings - Page:', page);
+
+            const upcomingResponse = await fetchUpcomingBookings(detectedUserType, page, 10);
+            
+            if (upcomingResponse.success) {
+                const formattedBookings = formatBookingData(upcomingResponse.data, true);
+                
+                if (page === 1) {
+                    // Replace data for first page
+                    setUpcomingBookings(formattedBookings);
+                } else {
+                    // Append data for subsequent pages
+                    setUpcomingBookings(prev => [...prev, ...formattedBookings]);
+                }
+                
+                setUpcomingPagination(upcomingResponse.pagination);
+                console.log(`Upcoming bookings loaded - Page ${page}:`, formattedBookings.length);
+            }
+        } catch (error) {
+            console.warn('Failed to fetch upcoming bookings:', error.message);
+        }
+    };
+
+    // Load all bookings with API pagination
+    const loadAllBookings = async (page = 1) => {
+        try {
+            const detectedUserType = getUserType();
+            console.log('Loading all bookings - Page:', page);
+
+            const allResponse = await fetchAllBookings(detectedUserType, page, 10);
+            
+            if (allResponse.success) {
+                const formattedBookings = formatBookingData(allResponse.data, false);
+                
+                if (page === 1) {
+                    // Replace data for first page
+                    setAllBookings(formattedBookings);
+                } else {
+                    // Append data for subsequent pages
+                    setAllBookings(prev => [...prev, ...formattedBookings]);
+                }
+                
+                setAllPagination(allResponse.pagination);
+                console.log(`All bookings loaded - Page ${page}:`, formattedBookings.length);
+            }
+        } catch (error) {
+            console.warn('Failed to fetch all bookings:', error.message);
+        }
+    };
+
+    const handleInvoiceSend = (bookingIdForInvoice, UserIpForInvoice, SearchTokenIdForInvoice, passengerEmailForInvoice) => {
+        busInvoiceServices({
+            bookingId: bookingIdForInvoice,
+            userIp: UserIpForInvoice,
+            searchTokenId: SearchTokenIdForInvoice,
+            receiverEmail: passengerEmailForInvoice
+        });
+        alert(`Invoice download initiated for booking: ${bookingIdForInvoice}`);
     };
 
     // Function to fetch detailed booking status for popup
@@ -79,10 +231,8 @@ const BusBookingHistory = () => {
         setStatusPopup(prev => ({ ...prev, loading: true, error: null }));
 
         try {
-            // You can call your existing real-time status API or create a new detailed one
             const result = await fetchRealTimeStatus(booking, userType);
 
-            // Create detailed status data
             const detailedData = {
                 bookingInfo: {
                     bookingId: booking.bookingId,
@@ -142,8 +292,6 @@ const BusBookingHistory = () => {
             data: null,
             error: null
         });
-
-        // Fetch detailed data
         fetchDetailedBookingStatus(booking);
     };
 
@@ -199,7 +347,6 @@ const BusBookingHistory = () => {
     const autoFetchRealTimeStatus = async () => {
         const { paginatedBookings } = getPaginatedBookings();
 
-        // Only fetch for confirmed/active bookings on current page
         const activeBookings = paginatedBookings.filter(booking =>
             booking.bookingStatus?.toLowerCase() === 'confirmed' ||
             booking.status?.toLowerCase() === 'confirmed'
@@ -228,7 +375,6 @@ const BusBookingHistory = () => {
         console.log('Formatting booking data for user type:', userType);
         console.log('Raw API response:', apiResponse);
 
-        // Handle different response structures
         let bookingsArray = [];
 
         if (Array.isArray(apiResponse)) {
@@ -257,10 +403,8 @@ const BusBookingHistory = () => {
         console.log('Bookings array extracted:', bookingsArray.length, 'items');
 
         const formattedBookings = bookingsArray.map((bookingWrapper, index) => {
-            // Extract booking data (might be nested in "Result" field)
             const booking = bookingWrapper.Result || bookingWrapper;
 
-            // Enhanced booking ID extraction with user type prefix
             const rawBookingId = bookingWrapper.bookingId ||
                 bookingWrapper.BookingId ||
                 booking.BookingId ||
@@ -274,21 +418,17 @@ const BusBookingHistory = () => {
 
             const bookingId = String(rawBookingId);
 
-            // Extract route information
             const fromCity = booking.Origin || booking.FromCity || booking.fromCity ||
                 booking.from || booking.origin || booking.source || 'N/A';
             const toCity = booking.Destination || booking.ToCity || booking.toCity ||
                 booking.to || booking.destination || 'N/A';
 
-            // Extract travel date
             const travelDate = booking.DateOfJourney || booking.TravelDate || booking.travelDate ||
                 booking.departureDate || booking.journeyDate || booking.date || 'N/A';
 
-            // Extract bus information
             const busType = booking.BusType || booking.busType || booking.TravelName ||
                 booking.operator || booking.busName || booking.serviceName || 'N/A';
 
-            // Extract seat information from Passenger array
             let seatNumber = 'N/A';
             if (booking.Passenger && Array.isArray(booking.Passenger) && booking.Passenger.length > 0) {
                 const seats = booking.Passenger.map(p => p.SeatName || p.seatName).filter(Boolean);
@@ -298,20 +438,17 @@ const BusBookingHistory = () => {
                     booking.seatNumber || booking.SeatName || 'N/A';
             }
 
-            // Extract other booking details
             const ticketNo = booking.TicketNo || booking.ticketNo || booking.ticketNumber ||
                 booking.ticket || 'N/A';
             const pnr = booking.TravelOperatorPNR || booking.PNR || booking.pnr ||
                 booking.referenceNumber || booking.confirmationNumber || 'N/A';
             const bookingStatus = booking.Status || booking.status || booking.bookingStatus || 'Confirmed';
 
-            // Extract amount information
             const totalAmount = bookingWrapper.RasuTripInvoiceAmount || booking.InvoiceAmount ||
                 booking.TotalAmount || booking.totalAmount || booking.amount ||
                 booking.fare || booking.price || booking.Price?.PublishedPrice ||
                 booking.Price?.OfferedPrice || '0';
 
-            // Extract passenger information
             let passengerName = 'N/A';
             let contactNumber = 'N/A';
             if (booking.Passenger && Array.isArray(booking.Passenger) && booking.Passenger.length > 0) {
@@ -326,14 +463,12 @@ const BusBookingHistory = () => {
                     booking.mobile || booking.phone || 'N/A';
             }
 
-            // Extract payment and booking dates
             const paymentStatus = booking.PaymentStatus || booking.paymentStatus ||
                 (bookingStatus === 'Confirmed' ? 'Completed' : 'Processing');
             const createdAt = bookingWrapper.createdAt || booking.BookingDate || booking.bookingDate ||
                 booking.InvoiceCreatedOn || booking.createdAt || booking.created_at ||
                 new Date().toISOString();
 
-            // Format created date
             const formatCreatedDate = (dateString) => {
                 try {
                     const date = new Date(dateString);
@@ -351,13 +486,6 @@ const BusBookingHistory = () => {
                 }
             };
 
-            // Extract SearchTokenId for invoice download
-            const searchTokenId = bookingWrapper.SearchTokenId ||
-                booking.SearchTokenId ||
-                booking.searchTokenId ||
-                booking.token_id ||
-                null;
-
             const formattedBooking = {
                 bookingId: String(bookingId),
                 from: String(fromCity),
@@ -369,15 +497,14 @@ const BusBookingHistory = () => {
                 pnr: String(pnr),
                 bookingStatus: String(bookingStatus),
                 totalAmount: String(totalAmount),
-                status: String(bookingStatus), // For backward compatibility
+                status: String(bookingStatus),
                 passengerName: String(passengerName),
                 contactNumber: String(contactNumber),
                 paymentStatus: String(paymentStatus),
                 createdAt: formatCreatedDate(createdAt),
                 bookingDate: formatCreatedDate(createdAt),
-                userType: userType || 'customer', // Add user type to booking data
-                searchTokenId: searchTokenId, // Add for invoice download
-                rawData: bookingWrapper // Keep original data for debugging
+                userType: userType || 'customer',
+                rawData: bookingWrapper
             };
 
             console.log(`Formatted booking ${index + 1} for ${userType}:`, formattedBooking);
@@ -388,110 +515,10 @@ const BusBookingHistory = () => {
         return formattedBookings;
     };
 
-    // Main function to load bookings using services
-    const loadBookings = async () => {
-        setLoading(true);
-        setError(null);
-        setDebugInfo(null);
-
-        try {
-            // Detect and set user type using service function
-            const detectedUserType = getUserType();
-            setUserType(detectedUserType);
-
-            console.log('Loading bookings for user type:', detectedUserType);
-
-            // Check authentication using service function
-            if (!detectedUserType) {
-                throw new Error('Unable to determine user type. Please login again.');
-            }
-
-            if (!isUserAuthenticated(detectedUserType)) {
-                throw new Error(`Please login as ${detectedUserType} to view booking history.`);
-            }
-
-            let upcomingData = [];
-            let allData = [];
-            let debugData = {
-                userType: detectedUserType,
-                upcomingSuccess: false,
-                allBookingsSuccess: false,
-                errors: []
-            };
-
-            // Fetch upcoming bookings using service
-            try {
-                console.log('Fetching upcoming bookings using service...');
-                const upcomingResponse = await fetchUpcomingBookings(detectedUserType);
-
-                if (upcomingResponse.success) {
-                    upcomingData = formatBookingData(upcomingResponse.data, true);
-                    debugData.upcomingSuccess = true;
-                    debugData.upcomingResponse = upcomingResponse.data;
-                    console.log(`Upcoming bookings loaded for ${detectedUserType}:`, upcomingData.length);
-                } else {
-                    throw new Error(upcomingResponse.message);
-                }
-            } catch (err) {
-                console.warn('Failed to fetch upcoming bookings:', err.message);
-                debugData.errors.push(`Upcoming: ${err.message}`);
-            }
-
-            // Fetch all bookings using service
-            try {
-                console.log('Fetching all bookings using service...');
-                const allResponse = await fetchAllBookings(detectedUserType);
-
-                if (allResponse.success) {
-                    allData = formatBookingData(allResponse.data, false);
-                    debugData.allBookingsSuccess = true;
-                    debugData.allResponse = allResponse.data;
-                    console.log(`All bookings loaded for ${detectedUserType}:`, allData.length);
-                } else {
-                    throw new Error(allResponse.message);
-                }
-            } catch (err) {
-                console.warn('Failed to fetch all bookings:', err.message);
-                debugData.errors.push(`All bookings: ${err.message}`);
-            }
-
-            // Update state
-            setUpcomingBookings([...upcomingData]);
-            setAllBookings([...allData]);
-            setDebugInfo(debugData);
-
-            // Reset pagination to first page when data loads
-            setCurrentPageUpcoming(1);
-            setCurrentPageAll(1);
-
-            // Auto-fetch real-time status after loading bookings
-            setTimeout(() => {
-                autoFetchRealTimeStatus();
-            }, 1000);
-
-            if (upcomingData.length > 0 || allData.length > 0) {
-                console.log(`Successfully loaded ${detectedUserType} booking data - Upcoming: ${upcomingData.length}, All: ${allData.length}`);
-            } else if (debugData.errors.length === 0) {
-                console.log(`No bookings found for ${detectedUserType}`);
-            }
-
-        } catch (error) {
-            console.error(`Error loading bookings:`, error);
-            setError(error.message || error.error?.message || `Failed to load booking history. Please try again.`);
-            setDebugInfo({
-                userType: userType,
-                error: error.message,
-                fullError: error
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
     // Load bookings when component mounts or user changes
     useEffect(() => {
-        loadBookings();
-    }, [user]); // Re-load when user context changes
+        loadAllBookingsComplete(); // Load all bookings from all pages
+    }, [user]);
 
     // Auto-refresh real-time status every 3 minutes for current page only
     useEffect(() => {
@@ -501,93 +528,6 @@ const BusBookingHistory = () => {
 
         return () => clearInterval(interval);
     }, [allBookings, upcomingBookings, getCurrentPage()]);
-
-    // Enhanced Invoice download function with better error handling
-    const handleDownloadInvoice = async (booking) => {
-        const bookingId = booking.bookingId;
-
-        console.log('Starting invoice download process for booking:', bookingId);
-        console.log('Booking data:', booking);
-
-        // Validation checks
-        if (!booking.searchTokenId) {
-            console.error('SearchTokenId not available for booking:', bookingId);
-            toast.error('Cannot download invoice - SearchTokenId not available for this booking');
-            return;
-        }
-
-        // Check if already downloading
-        if (downloadingInvoices.has(bookingId)) {
-            console.warn('Invoice already being downloaded for booking:', bookingId);
-            return;
-        }
-
-        // Add booking to downloading set
-        setDownloadingInvoices(prev => new Set(prev.add(bookingId)));
-
-        try {
-            // Prepare invoice data with enhanced information
-            const invoiceData = {
-                UserIp: "122.161.64.143", // You might want to get actual user IP
-                SearchTokenId: booking.searchTokenId,
-                BookingId: String(bookingId),
-                receiverEmail: user?.email ||
-                    user?.mail ||
-                    booking.contactNumber ||
-                    "support@rasutrip.com"
-            };
-
-            console.log('Invoice download data prepared:', invoiceData);
-
-            // Show loading toast
-            const loadingToastId = toast.loading('Downloading invoice...');
-
-            // Call your existing API
-            const result = await downloadBusInvoice(invoiceData);
-
-            console.log('Invoice download API result:', result);
-
-            // Dismiss loading toast
-            toast.dismiss(loadingToastId);
-
-            // Handle different response scenarios
-            if (result && result.success) {
-                if (result.downloaded) {
-                    toast.success('Invoice downloaded successfully!');
-                } else if (result.alreadyExists) {
-                    toast.success('Invoice already generated and sent to email!');
-                } else if (result.sent) {
-                    toast.success('Invoice has been sent to your email!');
-                } else {
-                    toast.success('Invoice processed successfully!');
-                }
-            } else if (result && result.message) {
-                // Handle API error messages
-                toast.error(`Invoice download failed: ${result.message}`);
-            } else {
-                toast.error('Failed to download invoice. Please try again.');
-            }
-
-        } catch (error) {
-            console.error('Invoice download error:', error);
-
-            // Handle different error types
-            if (error.message) {
-                toast.error(`Failed to download invoice: ${error.message}`);
-            } else if (error.response?.data?.message) {
-                toast.error(`Invoice download failed: ${error.response.data.message}`);
-            } else {
-                toast.error('Failed to download invoice. Please check your internet connection and try again.');
-            }
-        } finally {
-            // Remove booking from downloading set
-            setDownloadingInvoices(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(bookingId);
-                return newSet;
-            });
-        }
-    };
 
     // Format date for display
     const formatDate = (dateString) => {
@@ -760,17 +700,37 @@ const BusBookingHistory = () => {
         };
 
         return (
-            <div className="float-right flex-col sm:flex-row  px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="float-right flex-col sm:flex-row px-6 py-4 border-t border-gray-200 bg-gray-50">
+                {/* Show API pagination info */}
+                <div className="flex justify-between items-center mb-4">
+                    <div className="text-sm text-gray-600">
+                        Showing {getCurrentBookings().length} of {getCurrentPagination().total} total bookings
+                        {getCurrentPagination().totalPages > 1 && (
+                            <span className="ml-2">
+                                (API has {getCurrentPagination().totalPages} pages total)
+                            </span>
+                        )}
+                    </div>
+                    {getCurrentPagination().totalPages > 1 && getCurrentBookings().length < getCurrentPagination().total && (
+                        <button
+                            onClick={() => loadAllBookingsComplete()}
+                            className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                        >
+                            Load All Bookings ({getCurrentPagination().total})
+                        </button>
+                    )}
+                </div>
 
                 <div className="flex items-center space-x-2">
                     {/* Previous Button */}
                     <button
                         onClick={() => setCurrentPage(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === 1
-                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                            }`}
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                            currentPage === 1
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                        }`}
                     >
                         Previous
                     </button>
@@ -781,12 +741,13 @@ const BusBookingHistory = () => {
                             key={index}
                             onClick={() => page !== '...' && setCurrentPage(page)}
                             disabled={page === '...'}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${page === currentPage
-                                ? 'bg-red-500 text-white'
-                                : page === '...'
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                                page === currentPage
+                                    ? 'bg-red-500 text-white'
+                                    : page === '...'
                                     ? 'text-gray-400 cursor-default'
                                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                                }`}
+                            }`}
                         >
                             {page}
                         </button>
@@ -796,10 +757,11 @@ const BusBookingHistory = () => {
                     <button
                         onClick={() => setCurrentPage(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages
-                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                            }`}
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                            currentPage === totalPages
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                        }`}
                     >
                         Next
                     </button>
@@ -815,13 +777,13 @@ const BusBookingHistory = () => {
         return (
             <div
                 className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
-                style={{ zIndex: 9999 }} // Using inline style for maximum z-index
+                style={{ zIndex: 9999 }}
             >
                 <div
                     className="bg-white rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto"
                     style={{
-                        maxWidth: 'min(95vw, 1024px)', // Responsive max width
-                        zIndex: 10000 // Even higher for the content
+                        maxWidth: 'min(95vw, 1024px)',
+                        zIndex: 10000
                     }}
                 >
                     {/* Header */}
@@ -995,7 +957,7 @@ const BusBookingHistory = () => {
                         )}
                     </div>
 
-                    {/* Footer - now sticky at bottom */}
+                    {/* Footer */}
                     <div className="flex justify-end gap-3 p-6 border-t border-gray-200 sticky bottom-0 bg-white">
                         <button
                             onClick={closeStatusPopup}
@@ -1041,7 +1003,7 @@ const BusBookingHistory = () => {
                             <h3 className="text-red-800 font-medium">Error Loading {getUserTypeDisplay()} Bookings</h3>
                             <p className="text-red-600 mt-1">{error}</p>
                             <button
-                                onClick={loadBookings}
+                                onClick={loadAllBookingsComplete}
                                 className="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
                             >
                                 Try Again
@@ -1116,7 +1078,7 @@ const BusBookingHistory = () => {
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Amount</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Created</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-Time Status</th>
                             </tr>
                         </thead>
@@ -1139,7 +1101,7 @@ const BusBookingHistory = () => {
                                                 Type: {userType} | Upcoming: {upcomingBookings.length} | All: {allBookings.length}
                                             </div>
                                             <button
-                                                onClick={loadBookings}
+                                                onClick={loadAllBookingsComplete}
                                                 className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                             >
                                                 Refresh Bookings
@@ -1172,17 +1134,13 @@ const BusBookingHistory = () => {
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-500">{booking.createdAt}</td>
-                                        <td className="px-4 py-3 text-sm">
-                                            <button
-                                                onClick={() => handleDownloadInvoice(booking)}
-                                                disabled={downloadingInvoices.has(booking.bookingId)}
-                                                className={`px-3 py-1 rounded text-white text-xs ${downloadingInvoices.has(booking.bookingId)
-                                                    ? "bg-gray-400 cursor-not-allowed"
-                                                    : "bg-red-500 hover:bg-red-600"
-                                                    }`}
-                                            >
-                                                {downloadingInvoices.has(booking.bookingId) ? "Downloading..." : "Invoice"}
-                                            </button>
+                                        <td className="px-4 py-3 text-sm text-gray-500">
+                                            <div>
+                                                <Button
+                                                    onClick={() => handleInvoiceSend(booking.rawData.bookingId, booking.rawData.UserIp, booking.rawData.SearchTokenId, booking.rawData.Result.Passenger?.[0].Email)}
+                                                    className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs btn-red"
+                                                >Invoice</Button>
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 text-sm">
                                             {renderRealTimeStatus(booking)}

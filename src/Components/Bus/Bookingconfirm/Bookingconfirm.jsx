@@ -1,4 +1,4 @@
-// src/components/Bus/BusConfirmation.js - AUTO CLEAR VERSION
+// Updated BusConfirmation.js with enhanced PDF invoice matching your email template
 
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Button, Spinner, Alert, Row, Col, Badge } from 'react-bootstrap';
@@ -186,231 +186,281 @@ const Bookingconfirm = () => {
         return `S${index + 1}`;
     };
 
-    // Enhanced PDF Invoice generation matching the exact format from your sample
+    // Enhanced PDF Invoice generation matching your email template format exactly
     const generateBusPDFInvoice = () => {
         const currentBookingId = bookingId || 'N/A';
-        const operatorName = bus?.operator || bus?.travels || 'Bus Service';
-        const passengerName = passengerData.length > 0 ?
-            `${passengerData[0].firstName || ''} ${passengerData[0].lastName || ''}`.trim() :
-            'Passenger';
-
-        const seatNumbers = selectedSeats.map((seat, index) => extractSeatName(seat, index)).join(', ');
-        const baseFare = totalPrice || finalAmount;
-        const taxes = 0;
-        const igstRate = '36%';
-        const platformFee = 0;
-        const serviceCharges = 0;
+        const ticketNo = `RASUTRIP${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+        
+        // Calculate fare breakdown matching your template
+        const totalBaseFare = totalPrice || finalAmount || 0;
+        const taxes = Math.floor(totalBaseFare * 0.05); // 5% tax
+        const serviceCharges = Math.floor(totalBaseFare * 0.02); // 2% service charges
         const couponDiscount = 500;
-        const totalPayable = baseFare - couponDiscount;
+        const igstRate = 5; // 5%
+        const totalPayable = totalBaseFare + taxes + serviceCharges - couponDiscount;
 
         // Create new PDF document
         const doc = new jsPDF();
-
+        
         // Set font
         doc.setFont("helvetica");
-
-        // Header Section - Title
-        doc.setFontSize(16);
+        
+        // Title - matching your email template
+        doc.setFontSize(18);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(0, 0, 0);
-        doc.text('Tax Invoice (Bus Booking)', 105, 25, { align: 'center' });
-
-        // Company Details - Left Column
+        doc.text('Tax Invoice (Bus Booking)', 105, 20, { align: 'center' });
+        
+        // Supplier and Receiver Details Section - matching your format exactly
+        let yPos = 40;
+        
+        // Supplier Details (Left Column) - exactly as in your template
         doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text('From :', 20, yPos);
         doc.setFont("helvetica", "normal");
-        doc.text('From : RASUTRIP WEBSOFT TECHNOLOGIES LLP', 20, 45);
-        doc.text('Mobile : +91 9266424809', 20, 52);
-        doc.text('Email : booking@rasutrip.com', 20, 59);
-        doc.text('PAN Number : ABLFR7635L', 20, 66);
-        doc.text('State : Uttar Pradesh', 20, 73);
-        doc.text('Company Registered No. : ACP-7218', 20, 80);
-
-        // Passenger Information - Right Column
-        doc.text(`Passenger Name : ${passengerName}`, 110, 45);
-        doc.text(`Phone : ${contactData?.mobile || 'N/A'}`, 110, 52);
-
-        // Create table structure for invoice details
-        const tableStartY = 95;
-
-        // Draw table borders and fill
+        doc.text('RASUTRIP WEBSOFT TECHNOLOGIES LLP', 35, yPos);
+        yPos += 7;
+        
+        doc.setFont("helvetica", "bold");
+        doc.text('Mobile :', 20, yPos);
+        doc.setFont("helvetica", "normal");
+        doc.text('+91 9266424809', 35, yPos);
+        yPos += 7;
+        
+        doc.setFont("helvetica", "bold");
+        doc.text('Email :', 20, yPos);
+        doc.setFont("helvetica", "normal");
+        doc.text('booking@rasutrip.com', 35, yPos);
+        yPos += 7;
+        
+        doc.setFont("helvetica", "bold");
+        doc.text('PAN Number :', 20, yPos);
+        doc.setFont("helvetica", "normal");
+        doc.text('ABLFR7635L', 50, yPos);
+        yPos += 7;
+        
+        doc.setFont("helvetica", "bold");
+        doc.text('State :', 20, yPos);
+        doc.setFont("helvetica", "normal");
+        doc.text('Uttar Pradesh', 35, yPos);
+        yPos += 7;
+        
+        doc.setFont("helvetica", "bold");
+        doc.text('Company Registered No. :', 20, yPos);
+        doc.setFont("helvetica", "normal");
+        doc.text('ACP-7218', 70, yPos);
+        
+        // Receiver Details (Right Column) - matching your template
+        const receiverYStart = 40;
+        const passengerName = passengerData.length > 0 
+            ? `${passengerData[0].firstName || ''} ${passengerData[0].lastName || ''}`.trim()
+            : 'Passenger';
+            
+        doc.setFont("helvetica", "bold");
+        doc.text('Passenger Name :', 120, receiverYStart);
+        doc.setFont("helvetica", "normal");
+        doc.text(passengerName, 160, receiverYStart);
+        
+        doc.setFont("helvetica", "bold");
+        doc.text('Phone :', 120, receiverYStart + 7);
+        doc.setFont("helvetica", "normal");
+        doc.text(contactData?.mobile || 'N/A', 140, receiverYStart + 7);
+        
+        // Invoice Details Table - exactly matching your template structure
+        yPos = 85;
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(0.5);
-
-        // Invoice details table
-        const invoiceRows = [
-            ['Invoice Number : ' + Math.floor(Math.random() * 99999).toString().padStart(5, '0'), 'Invoice Date : ' + new Date().toLocaleDateString('en-GB')],
-            ['Booking ID : ' + currentBookingId, 'Ticket No : RASUTRIP' + Math.random().toString(36).substr(2, 4).toUpperCase()],
-            ['From : ' + fromCity, 'To : ' + toCity],
-            ['Departure : ' + (departDate ? new Date(departDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')) + ', ' + (selectedBoardingPoint?.Time || '5:00:00 PM'),
-            'Arrival : ' + (departDate ? new Date(new Date(departDate).getTime() + 8 * 60 * 60 * 1000).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')) + ', ' + (selectedDroppingPoint?.Time || '8:00:00 AM')],
-            ['Bus Type : ' + (bus?.busType || 'Volvo Multiaxle A/C Sleeper/Semi Sleeper (2+1)'), '']
+        
+        const tableData = [
+            [`Invoice Number : INV${Math.floor(Math.random() * 99999).toString().padStart(5, '0')}`, 
+             `Invoice Date : ${new Date().toLocaleDateString('en-GB')}`],
+            [`Booking ID : ${currentBookingId}`, 
+             `Ticket No : ${ticketNo}`],
+            [`From : ${fromCity}`, 
+             `To : ${toCity}`],
+            [`Departure : ${departDate ? new Date(departDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedBoardingPoint?.Time || '5:00 PM'}`,
+             `Arrival : ${departDate ? new Date(new Date(departDate).getTime() + 8*60*60*1000).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedDroppingPoint?.Time || '8:00 AM'}`],
+            [`Bus Type : ${bus?.busType || 'Volvo Multiaxle A/C Sleeper (2+1)'}`, '']
         ];
-
-        let currentY = tableStartY;
-
-        // Draw invoice details table
-        invoiceRows.forEach((row, index) => {
-            // Draw cell borders
-            doc.rect(20, currentY, 85, 12);
-            doc.rect(105, currentY, 85, 12);
-
-            // Add text
+        
+        // Draw invoice details table with borders
+        tableData.forEach((row, index) => {
+            // Draw borders
+            doc.rect(20, yPos, 85, 12);
+            doc.rect(105, yPos, 85, 12);
+            
+            // Add text with proper formatting
             doc.setFontSize(9);
-            doc.text(row[0], 22, currentY + 8);
+            doc.setFont("helvetica", "bold");
+            const leftParts = row[0].split(' : ');
+            const rightParts = row[1].split(' : ');
+            
+            doc.text(leftParts[0] + ' :', 22, yPos + 8);
+            doc.setFont("helvetica", "normal");
+            if (leftParts[1]) doc.text(leftParts[1], 22, yPos + 4);
+            
             if (row[1]) {
-                doc.text(row[1], 107, currentY + 8);
+                doc.setFont("helvetica", "bold");
+                doc.text(rightParts[0] + ' :', 107, yPos + 8);
+                doc.setFont("helvetica", "normal");
+                if (rightParts[1]) doc.text(rightParts[1], 107, yPos + 4);
             }
-
-            currentY += 12;
+            
+            yPos += 12;
         });
-
-        // Passenger Details Section
-        currentY += 10;
+        
+        // Passenger Details Section - exactly as in your template
+        yPos += 15;
+        doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.text('PASSENGER DETAILS', 20, currentY);
-
-        currentY += 10;
-
-        // Passenger details table header
+        doc.text('PASSENGER DETAILS', 20, yPos);
+        
+        yPos += 10;
+        
+        // Passenger table header with exact columns from your template
         doc.setFillColor(240, 240, 240);
-        doc.rect(20, currentY, 170, 12, 'F');
-        doc.rect(20, currentY, 170, 12);
-
-        // Header subdivisions
-        const headerWidths = [25, 40, 40, 15, 20, 30];
-        let headerX = 20;
-        headerWidths.forEach((width, index) => {
-            doc.line(headerX + width, currentY, headerX + width, currentY + 12);
-            headerX += width;
+        doc.rect(20, yPos, 170, 10, 'F');
+        doc.rect(20, yPos, 170, 10);
+        
+        // Header columns matching your template
+        const colWidths = [25, 45, 40, 15, 20, 25];
+        let xPos = 20;
+        colWidths.forEach((width, index) => {
+            if (index < colWidths.length - 1) {
+                doc.line(xPos + width, yPos, xPos + width, yPos + 10);
+            }
+            xPos += width;
         });
-
-        // Header text
+        
+        // Header text exactly as in your template
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8);
-        doc.text('Ticket No', 22, currentY + 8);
-        doc.text('Route', 47, currentY + 8);
-        doc.text('Passenger Name', 87, currentY + 8);
-        doc.text('Age', 127, currentY + 8);
-        doc.text('Seat No', 147, currentY + 8);
-        doc.text('Fare (₹)', 167, currentY + 8);
-
-        currentY += 12;
-
-        // Passenger details rows
+        doc.text('Ticket No', 22, yPos + 6);
+        doc.text('Route', 47, yPos + 6);
+        doc.text('Passenger Name', 87, yPos + 6);
+        doc.text('Age', 127, yPos + 6);
+        doc.text('Seat No', 147, yPos + 6);
+        doc.text('Fare (₹)', 167, yPos + 6);
+        
+        yPos += 10;
+        
+        // Passenger rows with exact formatting
         doc.setFont("helvetica", "normal");
         passengerData.forEach((passenger, index) => {
             const seatName = extractSeatName(selectedSeats[index], index);
-            const passengerFare = Math.floor(baseFare / passengerData.length);
-            const ticketNo = 'RASUTRIP' + Math.random().toString(36).substr(2, 4).toUpperCase();
-
+            const passengerFare = Math.floor(totalBaseFare / passengerData.length);
+            
             // Draw row border
-            doc.rect(20, currentY, 170, 12);
-
-            // Draw column separators
-            let cellX = 20;
-            headerWidths.forEach((width, cellIndex) => {
-                if (cellIndex < headerWidths.length - 1) {
-                    doc.line(cellX + width, currentY, cellX + width, currentY + 12);
+            doc.rect(20, yPos, 170, 10);
+            
+            // Column separators
+            xPos = 20;
+            colWidths.forEach((width, colIndex) => {
+                if (colIndex < colWidths.length - 1) {
+                    doc.line(xPos + width, yPos, xPos + width, yPos + 10);
                 }
-                cellX += width;
+                xPos += width;
             });
-
-            // Add passenger data
-            doc.text(ticketNo, 22, currentY + 8);
-            doc.text(`${fromCity} - ${toCity}`, 27, currentY + 8);
-            doc.text(`${passenger.firstName} ${passenger.lastName}`, 67, currentY + 8);
-            doc.text(passenger.age.toString(), 127, currentY + 8);
-            doc.text(seatName, 147, currentY + 8);
-            doc.text(`₹ ${passengerFare}`, 167, currentY + 8);
-
-            currentY += 12;
+            
+            // Passenger data exactly matching your template format
+            doc.setFontSize(8);
+            doc.text(ticketNo, 22, yPos + 6);
+            doc.text(`${fromCity} - ${toCity}`, 25, yPos + 6);
+            doc.text(`${passenger.firstName} ${passenger.lastName}`, 67, yPos + 6);
+            doc.text(passenger.age.toString(), 127, yPos + 6);
+            doc.text(seatName, 147, yPos + 6);
+            doc.text(`₹ ${passengerFare}`, 167, yPos + 6);
+            
+            yPos += 10;
         });
-
-        // Payment Details Section
-        currentY += 15;
+        
+        // Payment Details Section - matching your template exactly
+        yPos += 15;
+        doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.text('PAYMENT DETAILS', 20, currentY);
-
-        currentY += 10;
-        doc.setFont("helvetica", "normal");
+        doc.text('PAYMENT DETAILS', 20, yPos);
+        
+        yPos += 15;
         doc.setFontSize(10);
-
-        const paymentDetails = [
+        doc.setFont("helvetica", "normal");
+        
+        // Payment rows exactly as in your template
+        const paymentRows = [
             ['No. of Seats:', selectedSeats.length.toString()],
-            ['Base Fare:', `₹ ${baseFare}`],
+            ['Base Fare:', `₹ ${totalBaseFare}`],
             ['Taxes:', `₹ ${taxes}`],
-            ['Platform Fee:', `₹ ${platformFee}`],
             ['Service Charges:', `₹ ${serviceCharges}`],
             ['Coupon Discount (-):', `₹ ${couponDiscount}`],
-            ['IGST Rate:', igstRate],
+            ['IGST Rate:', `${igstRate}%`],
             ['Total Payable:', `₹ ${totalPayable}`]
         ];
-
-        paymentDetails.forEach((detail, index) => {
-            if (index === paymentDetails.length - 1) {
+        
+        paymentRows.forEach((row, index) => {
+            if (index === paymentRows.length - 1) {
                 doc.setFont("helvetica", "bold");
             }
-            doc.text(detail[0], 35, currentY);
-            doc.text(detail[1], 120, currentY);
-            currentY += 8;
+            doc.text(row[0], 30, yPos);
+            doc.text(row[1], 120, yPos);
+            yPos += 8;
         });
-
-        // Boarding & Dropping Details Section
-        currentY += 10;
+        
+        // Boarding & Dropping Details Section - exactly as in your template
+        yPos += 10;
+        doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.text('BOARDING & DROPPING DETAILS', 20, currentY);
-
-        currentY += 15;
-        doc.setFont("helvetica", "normal");
+        doc.text('BOARDING & DROPPING DETAILS', 20, yPos);
+        
+        yPos += 15;
         doc.setFontSize(10);
-
-        // Boarding details
+        
+        // Boarding details (Left) - matching your template format
         doc.setFont("helvetica", "bold");
-        doc.text('Boarding:', 35, currentY);
-        currentY += 8;
+        doc.text('Boarding:', 30, yPos);
+        yPos += 8;
         doc.setFont("helvetica", "normal");
-        doc.text(selectedBoardingPoint?.BoardingPointName || 'Domlur, Domlur', 35, currentY);
-        currentY += 6;
-        doc.text(`Landmark: ${selectedBoardingPoint?.Address || 'Domlur'}`, 35, currentY);
-        currentY += 6;
-        doc.text(`Time: ${departDate ? new Date(departDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedBoardingPoint?.Time || '4:00:00 PM'}`, 35, currentY);
-        currentY += 6;
-        doc.text(`Contact: ${contactData?.mobile || '9090909090'}`, 35, currentY);
-
-        // Dropping details - Right side
-        const droppingY = currentY - 24;
+        doc.text(selectedBoardingPoint?.BoardingPointName || selectedBoardingPoint?.CityPointName || 'Boarding Point', 30, yPos);
+        yPos += 6;
+        doc.text(`${selectedBoardingPoint?.Address || selectedBoardingPoint?.CityPointLocation || 'Address'}`, 30, yPos);
+        yPos += 6;
+        doc.text(`Landmark: ${selectedBoardingPoint?.CityPointLandmark || 'N/A'}`, 30, yPos);
+        yPos += 6;
+        doc.text(`Time: ${departDate ? new Date(departDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedBoardingPoint?.Time || selectedBoardingPoint?.CityPointTime || '4:00 PM'}`, 30, yPos);
+        yPos += 6;
+        doc.text(`Contact: ${selectedBoardingPoint?.CityPointContactNumber || contactData?.mobile || 'N/A'}`, 30, yPos);
+        
+        // Dropping details (Right) - matching your template
+        const droppingYStart = yPos - 32;
         doc.setFont("helvetica", "bold");
-        doc.text('Dropping:', 120, droppingY);
+        doc.text('Dropping:', 120, droppingYStart);
         doc.setFont("helvetica", "normal");
-        doc.text(selectedDroppingPoint?.DroppingPointName || 'A S Rajnagar, A S Rajnagar', 120, droppingY + 8);
-        doc.text(`Time: ${departDate ? new Date(new Date(departDate).getTime() + 8 * 60 * 60 * 1000).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedDroppingPoint?.Time || '8:00:00 AM'}`, 120, droppingY + 14);
-
-        currentY += 20;
-
-        // Terms & Conditions Section
+        doc.text(selectedDroppingPoint?.DroppingPointName || selectedDroppingPoint?.CityPointName || 'Dropping Point', 120, droppingYStart + 8);
+        doc.text(`${selectedDroppingPoint?.CityPointLocation || 'Location'}`, 120, droppingYStart + 14);
+        doc.text(`Time: ${departDate ? new Date(new Date(departDate).getTime() + 8*60*60*1000).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedDroppingPoint?.Time || selectedDroppingPoint?.CityPointTime || '8:00 AM'}`, 120, droppingYStart + 20);
+        
+        yPos += 15;
+        
+        // Terms & Conditions Section - exactly as in your template
+        doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.text('TERMS & CONDITIONS', 20, currentY);
-
-        currentY += 10;
-        doc.setFont("helvetica", "normal");
+        doc.text('TERMS & CONDITIONS', 20, yPos);
+        
+        yPos += 12;
         doc.setFontSize(9);
-
+        doc.setFont("helvetica", "normal");
+        
+        // Terms exactly matching your template
         const terms = [
             '• This is a computer-generated invoice; no signature required.',
             '• All disputes are subject to jurisdiction of New Delhi.',
             '• Please report at the boarding point at least 30 minutes before departure.',
             '• Ensure correct contact number for updates on schedule or cancellation.'
         ];
-
+        
         terms.forEach(term => {
-            doc.text(term, 25, currentY);
-            currentY += 7;
+            doc.text(term, 25, yPos);
+            yPos += 7;
         });
-
+        
         return doc;
     };
 
@@ -421,7 +471,7 @@ const Bookingconfirm = () => {
         try {
             const currentBookingId = bookingId || 'booking';
 
-            // Generate PDF using jsPDF with the enhanced format
+            // Generate PDF using jsPDF with the enhanced format matching your template
             const doc = generateBusPDFInvoice();
 
             // Save the PDF with a meaningful filename

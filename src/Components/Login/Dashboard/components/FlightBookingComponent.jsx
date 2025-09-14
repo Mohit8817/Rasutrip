@@ -6,7 +6,8 @@ import {
   fetchAllFlightBookings,
   fetchFlightRealTimeStatus,
   getFlightUserType,
-  isFlightUserAuthenticated
+  isFlightUserAuthenticated,
+  flightInvoiceServices
 } from "../../services/bookingApi";
 
 const FlightBookingComponent = () => {
@@ -71,7 +72,11 @@ const FlightBookingComponent = () => {
         segments: result.Segments,
         invoiceNo: result.InvoiceNo,
         invoiceAmount: result.InvoiceAmount,
-        airlineCode: firstSegment.Airline?.AirlineCode
+        airlineCode: firstSegment.Airline?.AirlineCode,
+        bookingIdForInvoice: booking.bookingId,
+        UserIpForInvoice: booking.UserIp,
+        SearchTokenIdForInvoice: booking.SearchTokenId,
+        passengerEmailForInvoice: result.Passenger?.[0]?.Email,
       };
     });
   };
@@ -375,9 +380,16 @@ const FlightBookingComponent = () => {
   };
 
   // Handle invoice download
-  const handleInvoiceDownload = (booking) => {
-    console.log('Download invoice for booking:', booking);
-    alert(`Invoice download initiated for booking: ${booking.bookingId || booking.pnr}`);
+  const handleInvoiceDownload = (bookingIdForInvoice, UserIpForInvoice, SearchTokenIdForInvoice, passengerEmailForInvoice) => {
+    flightInvoiceServices({
+      bookingId: bookingIdForInvoice,
+      userIp: UserIpForInvoice,
+      searchTokenId: SearchTokenIdForInvoice,
+      receiverEmail: passengerEmailForInvoice
+    });
+
+    console.log('Download invoice for booking:', bookingIdForInvoice, UserIpForInvoice, SearchTokenIdForInvoice, passengerEmailForInvoice);
+    alert(`Invoice download initiated for booking: ${bookingIdForInvoice}`);
   };
 
   return (
@@ -588,7 +600,7 @@ const FlightBookingComponent = () => {
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <button
-                            onClick={() => handleInvoiceDownload(booking)}
+                            onClick={() => handleInvoiceDownload(booking.bookingIdForInvoice, booking.UserIpForInvoice, booking.SearchTokenIdForInvoice, booking.passengerEmailForInvoice)}
                             className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs"
                           >
                             Invoice
