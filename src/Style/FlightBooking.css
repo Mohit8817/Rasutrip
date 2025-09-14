@@ -47,8 +47,10 @@ body {
 }
 
 .tab-box.active-tab {
-  background-color: #cb0d26;
-  color: #fff;
+  /* background-color: #cb0d26; */
+  border:2px solid #cb0d26;
+  /* color: #fff; */
+  
 }
 
 .tab-box.active-tab svg {

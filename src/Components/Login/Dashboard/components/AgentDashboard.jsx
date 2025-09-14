@@ -66,27 +66,6 @@ const AgentDashboard = () => {
     </Card>
   );
 
-  //   const StatCard = ({ icon: Icon, title, value, subtitle, color, bgColor }) => (
-  //     <Card className="border-0 shadow-sm h-100  ">
-  //       <Card.Body className="p-4  rounded-sm">
-  //         <div className="d-flex align-items-center">
-  //           <div
-  //             className={`p-3 rounded-circle me-3`}
-  //             style={{ backgroundColor: bgColor }}
-  //           >
-  //             <Icon className="w-5 h-5" style={{ color: color }} />
-  //           </div>
-  //           <div>
-  //             <div className="text-muted small">{title}</div>
-  //             <h4 className="fw-bold mb-0" style={{ color: color }}>
-  //               {value}
-  //             </h4>
-  //             {subtitle && <small className="text-muted">{subtitle}</small>}
-  //           </div>
-  //         </div>
-  //       </Card.Body>
-  //     </Card>
-  //   );
   const StatCard = ({ icon: Icon, title, value, subtitle, color, bgColor }) => (
     <div className="shadow-md rounded-lg border border-gray-200 bg-white p-4 flex items-center justify-between">
       {/* Left side: Text (Value + Title) */}

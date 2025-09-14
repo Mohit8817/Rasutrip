@@ -170,8 +170,8 @@ const Header = () => {
       </Navbar>
 
       {/* Mobile Header - Only logo and menu button */}
-      {/* <Navbar className="mobile-header d-lg-none "> */}
-      {/* <Navbar className="mobile-header d-lg-none sticky-top">
+      <Navbar className="mobile-header d-lg-none ">
+        {/* {/* <Navbar className="mobile-header d-lg-none sticky-top"> */}
         <Container fluid>
           <Navbar.Brand href="/" className="brand-container ">
             <img src={logo} alt="RasuTrip Logo" className="Header_logo" />
@@ -186,7 +186,7 @@ const Header = () => {
             />
           </div>
         </Container>
-      </Navbar> */}
+      </Navbar>
 
       {/* Mobile Bottom Navigation */}
       <div className="mobile-bottom-nav d-lg-none">
