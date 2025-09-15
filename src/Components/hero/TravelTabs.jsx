@@ -4,8 +4,8 @@ import { FaHotel, FaBus } from "react-icons/fa";
 import flightsbook from "../../assest/flightsbook.svg";
 import Hotels from "../../assest/Hotels.svg";
 import buss from "../../assest/buss.svg";
-import taxi from "../../assest/taxi.svg";
-import driver from "../../assest/driver.png";
+// import taxi from "../../assest/taxi.svg";
+// import driver from "../../assest/driver.png";
 import "../../Style/FlightBooking.css"; // Adjust path to your CSS
 
 const TravelTabs = ({ activeTab, setActiveTab }) => {
@@ -75,7 +75,7 @@ const TravelTabs = ({ activeTab, setActiveTab }) => {
         </Col>
 
         {/* fourth */}
-        <Col xs={4} md={2}>
+        {/* <Col xs={4} md={2}>
           <Card
             className={`text-center tab-box ${
               activeTab === "bus" ? "active-tab" : ""
@@ -83,35 +83,42 @@ const TravelTabs = ({ activeTab, setActiveTab }) => {
             onClick={() => handleTabClick("bus")}
           >
             <Card.Body className="d-flex flex-column align-items-center justify-content-center">
-              {/* <FaBus size={30} /> */}
               <img
                 src={taxi}
                 alt="Flight"
                 style={{ width: "30px", height: "30px" }}
               />
-              <Card.Text className="mt-2 mb-0">Driver</Card.Text>
+              <Card.Text className="mt-2 mb-0">Drive</Card.Text>
             </Card.Body>
           </Card>
-        </Col>
-        {/* fifth */}
-        <Col xs={4} md={2}>
-          <Card
-            className={`text-center tab-box ${
-              activeTab === "bus" ? "active-tab" : ""
-            }`}
-            onClick={() => handleTabClick("bus")}
+        </Col> */}
+
+        {/* <Col xs={4} md={2}>
+          <a
+            href="https://play.google.com/store/apps/details?id=com.om.rasutrip"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: "none" }}
           >
-            <Card.Body className="d-flex flex-column align-items-center justify-content-center">
-              {/* <FaBus size={30} /> */}
-              <img
-                src={driver}
-                alt="Flight"
-                style={{ width: "30px", height: "30px" }}
-              />
-              <Card.Text className="mt-2 mb-0">Cabs</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
+            <Card
+              className={`text-center tab-box ${
+                activeTab === "driver" ? "active-tab" : ""
+              }`}
+              style={{ cursor: "pointer" }}
+              onClick={() => setActiveTab("driver")}
+            >
+              <Card.Body className="d-flex flex-column align-items-center justify-content-center">
+                <img
+                  src={taxi}
+                  alt="Drive"
+                  style={{ width: "30px", height: "30px" }}
+                />
+                <Card.Text className="mt-2 mb-0">Drive</Card.Text>
+              </Card.Body>
+            </Card>
+          </a>
+        </Col> */}
+        {/* fifth */}
       </Row>
     </Container>
   );

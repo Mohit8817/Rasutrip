@@ -1,13 +1,13 @@
-import { useState, useRef, useEffect, useContext } from 'react';
-import { Row, Col, Card, Form } from 'react-bootstrap';
-import '../../Style/FlightBooking.css';
-import { HotelSearchContext } from '../Context/HotelSearchContext';
+import { useState, useRef, useEffect, useContext } from "react";
+import { Row, Col, Card, Form } from "react-bootstrap";
+import "../../Style/FlightBooking.css";
+import { HotelSearchContext } from "../Context/HotelSearchContext";
 
 const GuestRoomSelector = () => {
   const [showPopup, setShowPopup] = useState(false);
-  const [starRating, setStarRating] = useState('2 Star or More');
+  const [starRating, setStarRating] = useState("2 Star or More");
   const [rooms, setRooms] = useState([
-    { adults: 2, children: 0 } // Room 1 default
+    { adults: 2, children: 0 }, // Room 1 default
   ]);
   const popupRef = useRef();
   const { setHotelSearchData } = useContext(HotelSearchContext);
@@ -19,13 +19,16 @@ const GuestRoomSelector = () => {
         setShowPopup(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Update context when rooms change
   useEffect(() => {
-    const totalGuests = rooms.reduce((total, room) => total + room.adults + room.children, 0);
+    const totalGuests = rooms.reduce(
+      (total, room) => total + room.adults + room.children,
+      0
+    );
     const totalAdults = rooms.reduce((sum, r) => sum + r.adults, 0);
     const totalChildren = rooms.reduce((sum, r) => sum + r.children, 0);
 
@@ -35,7 +38,7 @@ const GuestRoomSelector = () => {
       rooms: rooms.length,
       adultsCount: totalAdults,
       childrenCount: totalChildren,
-      roomDetails: rooms
+      roomDetails: rooms,
     }));
   }, [rooms]);
 
@@ -52,28 +55,28 @@ const GuestRoomSelector = () => {
   };
 
   return (
-    <div className="position-relative d-inline-block" ref={popupRef}>
+    <div className=" position-relative d-inline-block" ref={popupRef}>
       {/* Main Summary Box */}
       <Card className="guest-room-box" onClick={() => setShowPopup(!showPopup)}>
         <Card.Body>
           <div className="guest-label">Rooms & Guests</div>
           <div className="fw-bold fs-5 guest-count">
-            {rooms.reduce((sum, r) => sum + r.adults + r.children, 0)}  Guest
-
-            <span>  {rooms.length} Room</span>
+            {rooms.reduce((sum, r) => sum + r.adults + r.children, 0)} Guest
+            <span> {rooms.length} Room</span>
           </div>
         </Card.Body>
       </Card>
 
       {/* Popup Panel */}
       {showPopup && (
-        <div className="absolute  top-full mt-1 z-[9999]   
+        <div
+          className="absolute  top-full mt-1 z-[9999]   
   sm:w-100 
   md:w-100 
   lg:w-[40px] 
-  xl:w-[450px]">
+  xl:w-[450px]"
+        >
           <Card className="rounded-lg shadow-lg w-11/12 sm:w-70 p-3">
-
             {/* Star Rating */}
             <Form.Group className="mb-3">
               <Row className="align-items-center">
@@ -99,7 +102,9 @@ const GuestRoomSelector = () => {
             {/* Room Inputs */}
             {rooms.map((room, index) => (
               <div key={index}>
-                <div className="fw-bold text-primary mb-2">Room {index + 1}</div>
+                <div className="fw-bold text-primary mb-2">
+                  Room {index + 1}
+                </div>
 
                 {/* Adults */}
                 <Form.Group className="mb-2">
@@ -167,7 +172,6 @@ const GuestRoomSelector = () => {
           </Card>
         </div>
       )}
-
     </div>
   );
 };

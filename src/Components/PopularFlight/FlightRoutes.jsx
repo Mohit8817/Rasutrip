@@ -62,7 +62,7 @@ const routes = [
 
 const FlightRoutes = () => {
   return (
-    <section className="flight-routes-section mt-22 sm:mt-0 ">
+    <section className="flight-routes-section mt-40 sm:mt-4">
       <h3 className="routes-title">
         Popular Flight <span>Routes</span>
       </h3>

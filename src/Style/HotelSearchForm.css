@@ -3,8 +3,8 @@
 
 .city_box {
   border-radius: 12px;
-  max-width: 550px !important;
-  padding: 27px 10px;
+  max-width: 550px !important; /* Reverted */
+  padding: 27px 10px; /* Reverted */
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
   background-color: #fff;
   border: 1px solid #d4d4d4;
@@ -60,7 +60,7 @@
 
 
 .guest-room-box {
-  width: 280px;
+  width: 280px; /* Reverted */
   text-align: left;
   padding: 9px 10px;
   cursor: pointer;
@@ -83,7 +83,7 @@
 /* Tablet screens (768px se neeche) */
 @media (max-width: 768px) {
   .guest-room-box {
-    width: 620px !important;
+    width: 240px !important; /* Reverted */
     padding: 8px;
   }
 }
@@ -92,9 +92,10 @@
 @media (max-width: 576px) {
 
   .guest-room-box {
-    max-width: 280px !important;
+    /* max-width: 280px !important; Reverted */
     padding: 0px;
     margin-bottom: 10px;
+    
   }
 
 
