@@ -261,7 +261,8 @@
 .mobile-offcanvas .offcanvas-header {
     border-bottom: 1px solid #e0e0e0;
     padding: 20px;
-    background: #f8f9fa;
+     background: #f8f9fa;
+     /* background-color: red; */
 }
 
 .mobile-offcanvas .offcanvas-body {

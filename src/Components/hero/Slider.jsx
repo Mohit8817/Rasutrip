@@ -90,6 +90,8 @@ const Slider = ({ type = "home" }) => {
           activeIndex={index}
           onSelect={handleSelect}
           className="slider"
+          indicators={false}
+          controls={false}
         >
           {[slidimg1, slidimg2, slidimg3].map((img, idx) => (
             <Carousel.Item key={idx}>

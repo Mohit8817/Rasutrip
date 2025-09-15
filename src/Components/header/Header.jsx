@@ -269,7 +269,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 style={{ cursor: "pointer" }}
               >
-                <i className="fas fa-plane"></i>
+                {/* <i className="fas fa-plane"></i> */}
                 Flight
               </Nav.Link>
               <Nav.Link
@@ -278,7 +278,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 style={{ cursor: "pointer" }}
               >
-                <i className="fas fa-bed"></i>
+                {/* <i className="fas fa-bed"></i> */}
                 Hotel
               </Nav.Link>
               <Nav.Link
@@ -287,7 +287,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 style={{ cursor: "pointer" }}
               >
-                <i className="fas fa-bus"></i>
+                {/* <i className="fas fa-bus"></i> */}
                 Bus
               </Nav.Link>
               <Nav.Link
@@ -295,7 +295,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 onClick={closeOffcanvas}
               >
-                <i className="fas fa-car"></i>
+                {/* <i className="fas fa-car"></i> */}
                 Rider
               </Nav.Link>
             </div>
@@ -308,7 +308,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 onClick={closeOffcanvas}
               >
-                <i className="fas fa-id-card"></i>
+                {/* <i className="fas fa-id-card"></i> */}
                 Apply to Drive
               </Nav.Link>
               <Nav.Link
@@ -316,7 +316,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 onClick={closeOffcanvas}
               >
-                <i className="fas fa-info-circle"></i>
+                {/* <i className="fas fa-info-circle"></i> */}
                 How it Works
               </Nav.Link>
               <Nav.Link
@@ -324,7 +324,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 onClick={closeOffcanvas}
               >
-                <i className="fas fa-clipboard-check"></i>
+                {/* <i className="fas fa-clipboard-check"></i> */}
                 Requirements
               </Nav.Link>
               <Nav.Link
@@ -332,7 +332,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 onClick={closeOffcanvas}
               >
-                <i className="fas fa-shield-alt"></i>
+                {/* <i className="fas fa-shield-alt"></i> */}
                 Safety
               </Nav.Link>
             </div>
@@ -345,7 +345,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 onClick={closeOffcanvas}
               >
-                <i className="fas fa-map-marker-alt"></i>
+                {/* <i className="fas fa-map-marker-alt"></i> */}
                 Service Areas
               </Nav.Link>
               <Nav.Link
@@ -353,7 +353,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 onClick={closeOffcanvas}
               >
-                <i className="fas fa-blog"></i>
+                {/* <i className="fas fa-blog"></i> */}
                 Blog
               </Nav.Link>
               <Nav.Link
@@ -362,7 +362,7 @@ const Header = () => {
                 className="mobile-nav-link"
                 style={{ cursor: "pointer" }}
               >
-                <i className="fas fa-envelope"></i>
+                {/* <i className="fas fa-envelope"></i> */}
                 Enquiry
               </Nav.Link>
             </div>

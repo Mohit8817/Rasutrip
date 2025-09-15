@@ -59,7 +59,6 @@
   .city-box {
     padding: 14px 12px;
     margin:0  !important;
-     width: 240px;
   }
   .city-input {
     font-size: 16px;
@@ -130,10 +129,8 @@
 }
 @media (max-width: 480px) {
   .single-date-picker .date-button {
-    width: 240px;
     padding: 12px 10px;
     margin-top: 0;
-    margin-left: 0.7rem;
   }
   .single-date-picker .date {
     font-size: 15px !important;
