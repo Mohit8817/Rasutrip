@@ -50,12 +50,12 @@ const FlightResultsPage = () => {
                     {tripType === 'oneway' && (
                         <Container className="">
                             <Row>
-                                <Col className='d-none d-lg-block'>
+                                <Col className=''>
                                     <FlightSearchBar />
                                 </Col>
                             </Row>
                             <Row className="mt-4 ">
-                                <Col lg={3} className='d-none d-lg-block'>
+                                <Col lg={3} className=''>
                                     <FlightSidebar className="" filters={filters} setFilters={setFilters} />
                                 </Col>
                                 <Col lg={9}>
@@ -67,13 +67,13 @@ const FlightResultsPage = () => {
                     {tripType === 'multicity' && (
                         <Container className="">
                             <Row>
-                                <Col className='d-none d-lg-block'>
+                                <Col className=''>
                                     <FlightSearchBar />
                                 </Col>
                             </Row>
                             <Row className="mt-4">
-                                <Col lg={3} className='d-none d-lg-block'>
-                                    <FlightSidebar className="d-none d-lg-block" filters={filters} setFilters={setFilters} />
+                                <Col lg={3} className=''>
+                                    <FlightSidebar className="" filters={filters} setFilters={setFilters} />
                                 </Col>
                                 <Col lg={9}>
                                     <MultiCityList filters={filters} />
@@ -86,15 +86,15 @@ const FlightResultsPage = () => {
                     {tripType === 'roundtrip' && (
                         <Container className=" relative">
                             <Row>
-                                <Col className='d-none d-lg-block'>
+                                <Col className=''>
                                     <FlightSearchBar />
 
                                     {/* <RoundsearchBar /> */}
                                 </Col>
                             </Row>
                             <Row className="mt-4">
-                                <Col lg={3} className='d-none d-lg-block'>
-                                    <FlightSidebar className="d-none d-lg-block" roundTripFlights={roundTripFlights} filters={filters} setFilters={setFilters} />
+                                <Col lg={3} className=''>
+                                    <FlightSidebar className="" roundTripFlights={roundTripFlights} filters={filters} setFilters={setFilters} />
 
                                 </Col>
                                 <Col lg={9}>
