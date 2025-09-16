@@ -17,7 +17,6 @@ const Slider = ({ type = "home" }) => {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState(() => {
-    // Pehle check karo ki localStorage me tab saved hai
     return localStorage.getItem("activeTab") || "bus";
   });
 
