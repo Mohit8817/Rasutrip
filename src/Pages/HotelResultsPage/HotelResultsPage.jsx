@@ -241,7 +241,7 @@ const HotelResultsPage = () => {
 
       <Row className='mt-4'>
         {/* Sidebar */}
-        <Col lg={3} className="hidden lg:block">
+        <Col lg={3} className="">
           <FilterSidebar
             priceRange={priceRange}
             actualPriceRange={actualPriceRange}

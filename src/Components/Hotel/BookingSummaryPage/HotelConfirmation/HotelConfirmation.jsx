@@ -1,4 +1,4 @@
-// src/components/Hotel/HotelConfirmation.js - ENHANCED VERSION WITH PDF GENERATION
+// src/components/Hotel/HotelConfirmation.js - UPDATED VERSION WITH FLIGHT-STYLE HTML INVOICE
 
 import React, { useEffect, useState } from 'react';
 import { Container, Card, Button, Row, Col, Badge, Spinner, Alert } from 'react-bootstrap';
@@ -63,145 +63,336 @@ const HotelConfirmation = () => {
         );
     }
 
-    // Generate PDF Invoice using jsPDF
-    const generatePDFInvoice = () => {
+    // Generate HTML Invoice following flight template structure
+    const generateHTMLInvoice = () => {
         const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId || 'N/A';
-        const hotelName = hotelDetails?.name || actualBooking?.HotelName || 'Hotel';
+        const hotelName = hotelDetails?.name || actualBooking?.HotelName || 'Hotel Booking';
         const bookingTime = confirmationDetails?.bookingTime ? new Date(confirmationDetails.bookingTime).toLocaleDateString() : new Date().toLocaleDateString();
         const guestName = `${leadPassenger.Title || ''} ${leadPassenger.FirstName || ''} ${leadPassenger.LastName || ''}`.trim() || 'Guest';
 
-        // Create new PDF document
+        // Guest rows for the table
+        let guestRows = '';
+        if (leadPassenger && Object.keys(leadPassenger).length > 0) {
+            guestRows = `
+                <tr>
+                    <td>1</td>
+                    <td>${guestName}</td>
+                    <td>${leadPassenger.Phoneno || 'N/A'}</td>
+                    <td>${leadPassenger.Email || 'N/A'}</td>
+                    <td>${leadPassenger.Age || 'N/A'}</td>
+                </tr>
+            `;
+        } else {
+            guestRows = `
+                <tr>
+                    <td>1</td>
+                    <td>${guestName}</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+            `;
+        }
+
+        const htmlContent = `
+            <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px;">
+                <h2 style="text-align: center;">Tax Invoice (Hotel Booking)</h2>
+                
+                <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
+                    <tr>
+                        <td>
+                            <strong>From :</strong> RasuTrip Travel Services<br />
+                            <strong>Mobile :</strong> +91-9876543210<br />
+                            <strong>Email :</strong> support@rasutrip.com<br />
+                            <strong>PAN Number :</strong> ABCDE1234F<br />
+                            <strong>State :</strong> Delhi, India<br />
+                            <strong>Company Registered No. :</strong> 123456789
+                        </td>
+                        <td style="text-align: right;">
+                            <strong>Guest Name :</strong> ${guestName}<br />
+                            <strong>Phone :</strong> ${leadPassenger.Phoneno || 'N/A'}<br />
+                            <strong>Email :</strong> ${leadPassenger.Email || 'N/A'}
+                        </td>
+                    </tr>
+                </table>
+
+                <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <td><strong>Invoice Number :</strong> INV-${bookingId}</td>
+                        <td><strong>Invoice Date :</strong> ${new Date().toLocaleDateString()}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Booking Reference number :</strong> ${bookingId}</td>
+                        <td><strong>Booking Date :</strong> ${bookingTime}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hotel Name :</strong> ${hotelName}</td>
+                        <td><strong>Destination :</strong> India</td>
+                    </tr>
+                </table>
+
+                <h3>GUEST DETAILS</h3>
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse;" border="1" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <th>#</th>
+                        <th>Guest Name</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Age</th>
+                    </tr>
+                    ${guestRows}
+                </table>
+
+                <h3 style="margin-top: 30px;">PAYMENT DETAILS</h3>
+                <p style="font-size: 14px; margin-bottom: 10px;"><strong>Please carry this invoice for hotel check-in.</strong><br>Present valid ID proof during check-in.</p>
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse;" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <td><strong>Hotel Booking Charges:</strong></td><td>₹ ${amount?.toLocaleString() || '0'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Service Charges:</strong></td><td>₹ 0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Platform Fee:</strong></td><td>₹ 0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Coupon Discount (-):</strong></td><td>₹ 0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>GST (+):</strong></td><td>₹ 0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Amount:</strong></td><td><strong>₹ ${amount?.toLocaleString() || '0'}</strong></td>
+                    </tr>
+                </table>
+
+                <h3 style="margin-top: 30px;">TERMS & CONDITIONS</h3>
+                <ul style="font-size: 14px; padding-left: 20px;">
+                    <li>IMP : This is computer generated invoice signature not required</li>
+                    <li>IMP : All Cases & Disputes are subject to New Delhi Jurisdiction</li>
+                    <li>IMP : Guests must present valid ID proof (Passport/Voter ID/Aadhar)</li>
+                    <li>IMP : Hotel rules and cancellation policies apply</li>
+                    <li>IMP : Please carry this invoice for hotel check-in</li>
+                    <li>IMP : For queries, contact our support team with your booking ID</li>
+                </ul>
+
+                <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #666;">
+                    <p>Thank you for choosing RasuTrip! Have a pleasant stay.</p>
+                    <p>Generated on: ${new Date().toLocaleString()}</p>
+                </div>
+            </div>
+        `;
+
+        return htmlContent;
+    };
+
+    // Convert HTML to PDF using jsPDF
+    const generatePDFFromHTML = (htmlContent) => {
         const doc = new jsPDF();
         
+        // Create a temporary div to render HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        tempDiv.style.width = '700px';
+        tempDiv.style.fontFamily = 'Arial, sans-serif';
+        document.body.appendChild(tempDiv);
+
+        // Use html2canvas approach or manual PDF creation
+        // For now, let's use the existing manual approach but with flight structure
+        
+        const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId || 'N/A';
+        const hotelName = hotelDetails?.name || actualBooking?.HotelName || 'Hotel Booking';
+        const bookingTime = confirmationDetails?.bookingTime ? new Date(confirmationDetails.bookingTime).toLocaleDateString() : new Date().toLocaleDateString();
+        const guestName = `${leadPassenger.Title || ''} ${leadPassenger.FirstName || ''} ${leadPassenger.LastName || ''}`.trim() || 'Guest';
+
         // Set font
         doc.setFont("helvetica");
-        
-        // Header - Company Logo/Name (you can add logo later)
-        doc.setFontSize(24);
+
+        // Header - Tax Invoice
+        doc.setFontSize(20);
         doc.setTextColor(40, 44, 52);
-        doc.text('HOTEL BOOKING INVOICE', 105, 30, { align: 'center' });
-        
-        // Add a line under header
+        doc.text('TAX INVOICE (HOTEL BOOKING)', 105, 20, { align: 'center' });
+
+        // Add line under header
         doc.setDrawColor(0, 0, 0);
-        doc.line(20, 35, 190, 35);
-        
-        // Invoice details section
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        
-        // Left side - Invoice Info
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text('INVOICE DETAILS', 20, 55);
-        
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`, 20, 65);
-        doc.text(`Booking ID: ${bookingId}`, 20, 72);
-        doc.text(`Booking Date: ${bookingTime}`, 20, 79);
-        
-        // Right side - Hotel Info
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text('HOTEL INFORMATION', 120, 55);
-        
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.text(`Hotel Name: ${hotelName}`, 120, 65);
-        doc.text('Location: India', 120, 72);
-        
-        // Guest Information Section
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text('GUEST INFORMATION', 20, 100);
-        
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.text(`Guest Name: ${guestName}`, 20, 110);
-        if (leadPassenger.Email) {
-            doc.text(`Email: ${leadPassenger.Email}`, 20, 117);
-        }
-        if (leadPassenger.Phoneno) {
-            doc.text(`Phone: ${leadPassenger.Phoneno}`, 20, 124);
-        }
-        if (leadPassenger.Age) {
-            doc.text(`Age: ${leadPassenger.Age} years`, 20, 131);
-        }
-        
-        // Payment Details Section
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text('PAYMENT DETAILS', 20, 150);
-        
-        // Create a table-like structure for payment details
-        doc.setDrawColor(200, 200, 200);
-        doc.rect(20, 160, 170, 40); // Main rectangle
-        
-        // Table headers
-        doc.setFillColor(240, 240, 240);
-        doc.rect(20, 160, 170, 10, 'F');
-        
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text('Description', 25, 167);
-        doc.text('Amount', 150, 167);
-        
-        // Table content
-        doc.setFont("helvetica", "normal");
-        doc.text('Hotel Booking Charges', 25, 177);
-        doc.text(`₹${amount?.toLocaleString() || '0'}`, 150, 177);
-        
-        if (paymentDetails?.paymentId) {
-            doc.text(`Payment ID: ${paymentDetails.paymentId}`, 25, 187);
-        }
-        
-        // Total amount - highlighted
-        doc.setFillColor(52, 168, 83);
-        doc.rect(20, 190, 170, 10, 'F');
-        
-        doc.setTextColor(255, 255, 255);
-        doc.setFont("helvetica", "bold");
-        doc.text('TOTAL AMOUNT PAID:', 25, 197);
-        doc.text(`₹${amount?.toLocaleString() || '0'}`, 150, 197);
-        
-        // Reset text color
-        doc.setTextColor(0, 0, 0);
-        
-        // Terms and Conditions
+        doc.line(20, 25, 190, 25);
+
+        // Company Details (Left) and Customer Details (Right) - Following flight format
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text('TERMS & CONDITIONS', 20, 220);
-        
+        doc.text('From :', 20, 35);
+
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
+        doc.text('RasuTrip Travel Services', 20, 42);
+        doc.text('Mobile: +91-9876543210', 20, 48);
+        doc.text('Email: support@rasutrip.com', 20, 54);
+        doc.text('PAN Number: ABCDE1234F', 20, 60);
+        doc.text('State: Delhi, India', 20, 66);
+        doc.text('Company Registered No.: 123456789', 20, 72);
+
+        // Customer details (Right side) - Following flight format
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text('Guest Name :', 120, 35);
+
         doc.setFont("helvetica", "normal");
-        doc.text('• This invoice is computer generated and does not require signature.', 20, 230);
-        doc.text('• Please carry this invoice and a valid ID for hotel check-in.', 20, 237);
-        doc.text('• For any queries, please contact our support team with your booking ID.', 20, 244);
-        doc.text('• Cancellation and modification policies apply as per booking terms.', 20, 251);
-        
+        doc.setFontSize(9);
+        doc.text(`${guestName}`, 120, 42);
+        if (leadPassenger.Phoneno) {
+            doc.text(`Phone: ${leadPassenger.Phoneno}`, 120, 48);
+        }
+        if (leadPassenger.Email) {
+            doc.text(`Email: ${leadPassenger.Email}`, 120, 54);
+        }
+
+        // Invoice Details Table - Following flight format
+        const startY = 85;
+        doc.setDrawColor(0, 0, 0);
+        doc.rect(20, startY, 170, 30);
+
+        // Table rows
+        doc.line(20, startY + 10, 190, startY + 10);
+        doc.line(20, startY + 20, 190, startY + 20);
+        doc.line(105, startY, 105, startY + 30);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+
+        doc.text('Invoice Number:', 25, startY + 7);
+        doc.text(`INV-${bookingId}`, 110, startY + 7);
+        doc.text('Invoice Date:', 25, startY + 17);
+        doc.text(new Date().toLocaleDateString(), 110, startY + 17);
+        doc.text('Booking Reference number:', 25, startY + 27);
+        doc.text(bookingId.toString(), 110, startY + 27);
+
+        // Hotel Details Section
+        const hotelDetailsY = startY + 45;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text('HOTEL DETAILS', 20, hotelDetailsY);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(`Hotel Name: ${hotelName}`, 20, hotelDetailsY + 10);
+        doc.text('Destination: India', 20, hotelDetailsY + 17);
+        doc.text(`Booking Date: ${bookingTime}`, 20, hotelDetailsY + 24);
+
+        // Guest Details Section - Following flight passenger format
+        const guestDetailsY = hotelDetailsY + 40;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text('GUEST DETAILS', 20, guestDetailsY);
+
+        const guestTableY = guestDetailsY + 10;
+        doc.setDrawColor(0, 0, 0);
+        doc.rect(20, guestTableY, 170, 20);
+
+        // Table header
+        doc.setFillColor(240, 240, 240);
+        doc.rect(20, guestTableY, 170, 8, 'F');
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.text('#', 25, guestTableY + 5);
+        doc.text('Guest Name', 35, guestTableY + 5);
+        doc.text('Phone', 85, guestTableY + 5);
+        doc.text('Email', 125, guestTableY + 5);
+        doc.text('Age', 165, guestTableY + 5);
+
+        // Table content
+        doc.line(20, guestTableY + 8, 190, guestTableY + 8);
+        doc.line(30, guestTableY, 30, guestTableY + 20);
+        doc.line(80, guestTableY, 80, guestTableY + 20);
+        doc.line(120, guestTableY, 120, guestTableY + 20);
+        doc.line(160, guestTableY, 160, guestTableY + 20);
+
+        doc.setFont("helvetica", "normal");
+        doc.text('1', 25, guestTableY + 15);
+        doc.text(guestName.length > 15 ? guestName.substring(0, 15) + '...' : guestName, 35, guestTableY + 15);
+        doc.text(leadPassenger.Phoneno || 'N/A', 85, guestTableY + 15);
+        doc.text(leadPassenger.Email ? (leadPassenger.Email.length > 12 ? leadPassenger.Email.substring(0, 12) + '...' : leadPassenger.Email) : 'N/A', 125, guestTableY + 15);
+        doc.text((leadPassenger.Age || 'N/A').toString(), 165, guestTableY + 15);
+
+        // Payment Details Section - Following flight format
+        const paymentY = guestTableY + 35;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text('PAYMENT DETAILS', 20, paymentY);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text('Please carry this invoice for hotel check-in.', 20, paymentY + 10);
+        doc.text('Present valid ID proof during check-in.', 20, paymentY + 16);
+
+        const paymentTableY = paymentY + 25;
+        const paymentItems = [
+            ['Hotel Booking Charges:', `₹ ${amount?.toLocaleString() || '0'}`],
+            ['Service Charges:', '₹ 0'],
+            ['Platform Fee:', '₹ 0'],
+            ['Coupon Discount (-):', '₹ 0'],
+            ['GST (+):', '₹ 0'],
+            ['Total Amount:', `₹ ${amount?.toLocaleString() || '0'}`]
+        ];
+
+        paymentItems.forEach((item, index) => {
+            const y = paymentTableY + (index * 8);
+            doc.setFont("helvetica", index === paymentItems.length - 1 ? "bold" : "normal");
+            doc.text(item[0], 20, y);
+            doc.text(item[1], 150, y);
+        });
+
+        // Terms and Conditions - Following flight format
+        const termsY = paymentTableY + 55;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text('TERMS & CONDITIONS', 20, termsY);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        const terms = [
+            'IMP : This is computer generated invoice signature not required',
+            'IMP : All Cases & Disputes are subject to New Delhi Jurisdiction',
+            'IMP : Guests must present valid ID proof (Passport/Voter ID/Aadhar)',
+            'IMP : Hotel rules and cancellation policies apply',
+            'IMP : Please carry this invoice for hotel check-in',
+            'IMP : For queries, contact our support team with your booking ID'
+        ];
+
+        terms.forEach((term, index) => {
+            doc.text(`• ${term}`, 20, termsY + 10 + (index * 6));
+        });
+
         // Footer
+        const footerY = termsY + 50;
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
-        doc.text('Thank you for choosing our service! Have a pleasant stay.', 105, 270, { align: 'center' });
-        doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 280, { align: 'center' });
+        doc.text('Thank you for choosing RasuTrip! Have a pleasant stay.', 105, footerY, { align: 'center' });
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, footerY + 6, { align: 'center' });
+
+        // Clean up
+        document.body.removeChild(tempDiv);
         
         return doc;
     };
 
-    // Enhanced invoice download with PDF generation
+    // Enhanced invoice download with HTML structure
     const handleDownloadInvoice = async () => {
         setDownloadingInvoice(true);
 
         try {
             const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId;
-            
+
             if (!bookingId) {
                 throw new Error('Booking ID not found');
             }
 
-            // Generate PDF using jsPDF
-            const doc = generatePDFInvoice();
+            // Generate HTML content
+            const htmlContent = generateHTMLInvoice();
             
+            // Convert to PDF
+            const doc = generatePDFFromHTML(htmlContent);
+
             // Save the PDF with a meaningful filename
             const fileName = `Hotel-Invoice-${bookingId}-${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(fileName);
@@ -211,7 +402,7 @@ const HotelConfirmation = () => {
                 autoClose: 5000
             });
 
-            // Optional: Also send to email (keep the original API call)
+            // Optional: Also send to email
             try {
                 const searchTokenId = confirmationDetails?.searchTokenId || actualBooking?.SearchTokenId;
                 const userIp = confirmationDetails?.userIp || actualBooking?.UserIp || "49.36.217.215";
@@ -225,7 +416,7 @@ const HotelConfirmation = () => {
                 };
 
                 await sendHotelInvoice(invoicePayload);
-                
+
                 toast.info('📧 Invoice also sent to your email!', {
                     position: "top-right",
                     autoClose: 3000
@@ -255,7 +446,7 @@ const HotelConfirmation = () => {
                 <div className="d-flex justify-content-center">
                     <div style={{ maxWidth: '1200px', width: '100%' }}>
 
-                        {/* Success Header Card - Simple Design */}
+                        {/* Success Header Card */}
                         <Card className="text-center mb-5 border-0 shadow" style={{
                             backgroundColor: '#28a745',
                             borderRadius: '15px'
@@ -272,7 +463,7 @@ const HotelConfirmation = () => {
                         </Card>
 
                         <Row className="g-4 mb-5">
-                            {/* Booking Details - Enhanced */}
+                            {/* Booking Details */}
                             <Col lg={6}>
                                 <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: '15px' }}>
                                     <Card.Header className="bg-primary text-white border-0 py-4" style={{ borderRadius: '15px 15px 0 0' }}>
@@ -315,7 +506,7 @@ const HotelConfirmation = () => {
                                 </Card>
                             </Col>
 
-                            {/* Guest Information - Enhanced */}
+                            {/* Guest Information */}
                             <Col lg={6}>
                                 <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: '15px' }}>
                                     <Card.Header className="bg-info text-white border-0 py-4" style={{ borderRadius: '15px 15px 0 0' }}>
@@ -370,7 +561,7 @@ const HotelConfirmation = () => {
                             </Col>
                         </Row>
 
-                        {/* Action Buttons - Enhanced */}
+                        {/* Action Buttons */}
                         <Card className="border-0 shadow-sm" style={{ borderRadius: '15px' }}>
                             <Card.Body className="p-5">
                                 <div className="text-center mb-4">
@@ -437,7 +628,7 @@ const HotelConfirmation = () => {
                                                     📄 PDF Invoice Generation
                                                 </Alert.Heading>
                                                 <p className="mb-2 text-dark">
-                                                    Click "Download PDF Invoice" to generate and save a professional PDF invoice to your device. 
+                                                    Click "Download PDF Invoice" to generate and save a professional PDF invoice to your device.
                                                     Your booking ID{' '}
                                                     <Badge bg="info" className="mx-1 px-3 py-1">
                                                         {bookingId}

@@ -17,7 +17,6 @@ const useFareRules = (fareId) => {
     const userIp = localStorage.getItem("UserIp") || "";
     const searchToken = localStorage.getItem("searchToken") || "";
 
-
     const farePayload = useMemo(() => ({
         UserIp: userIp,
         ResultIndex: fareId ,
