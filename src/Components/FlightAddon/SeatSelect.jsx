@@ -3,8 +3,6 @@ import { Container, Row, Col, Card, Overlay, Tooltip, Form } from 'react-bootstr
 
 const SeatSelect = ({ rawSeatData = [], passengersData = [], onAssignSeat }) => {
   const seatRows = rawSeatData ? Object.values(rawSeatData) : [];
-
-  console.log('passengersk', passengersData);
   const [tooltipTarget, setTooltipTarget] = useState(null);
   const [PassengersData, setPassengersData] = useState(passengersData); // Initialize with props
   

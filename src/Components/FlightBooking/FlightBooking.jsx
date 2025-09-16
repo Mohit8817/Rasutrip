@@ -242,7 +242,7 @@ const FlightBooking = () => {
             {/* Add more city button */}
             <Row className="mt-2">
               <Col xs={12}>
-                <button className="btn btn-danger" onClick={addSegment}>
+                <button className="Mybutton" onClick={addSegment}>
                   + Add City
                 </button>
               </Col>

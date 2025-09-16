@@ -19,8 +19,18 @@ const DateSelector = () => {
 
   // 📌 Month & Day Names
   const monthNames = [
-    "Jan","Feb","Mar","Apr","May","Jun",
-    "Jul","Aug","Sep","Oct","Nov","Dec"
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
   const dayNames = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -116,7 +126,8 @@ const DateSelector = () => {
   return (
     <>
       <div
-        className="d-flex flex-wrap align-items-start custom-date-picker"
+        // className="d-flex flex-wrap align-items-start custom-date-picker"
+        className="d-flex flex align-items-start custom-date-picker"
         ref={wrapperRef}
       >
         {/* ✅ Check-In Date Picker */}
@@ -166,18 +177,21 @@ const DateSelector = () => {
 
               <div className="days-grid">
                 {daysDepart.map((date, index) => {
-                  if (!date) return <div key={index} className="day-cell empty"></div>;
+                  if (!date)
+                    return <div key={index} className="day-cell empty"></div>;
 
                   const isSelected =
                     departDate &&
                     date.toDateString() === departDate.toDateString();
-                  
+
                   const isPast = isPastDate(date);
 
                   return (
                     <div
                       key={index}
-                      className={`day-cell ${isSelected ? "selected" : ""} ${isPast ? "disabled past" : ""}`}
+                      className={`day-cell ${isSelected ? "selected" : ""} ${
+                        isPast ? "disabled past" : ""
+                      }`}
                       onClick={() => {
                         if (!isPast) {
                           setDepartDate(date);
@@ -245,7 +259,8 @@ const DateSelector = () => {
 
               <div className="days-grid">
                 {daysReturn.map((date, index) => {
-                  if (!date) return <div key={index} className="day-cell empty"></div>;
+                  if (!date)
+                    return <div key={index} className="day-cell empty"></div>;
 
                   const isDisabled = date <= departDate; // Check-out should be after check-in
                   const isSelected =
@@ -283,7 +298,8 @@ const DateSelector = () => {
           width: 280px;
           border-radius: 8px;
           overflow: hidden;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            sans-serif;
         }
 
         .calendar-header {
