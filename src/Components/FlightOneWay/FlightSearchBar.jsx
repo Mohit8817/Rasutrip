@@ -1,60 +1,60 @@
-
-import React, { useContext, useState } from 'react';
-import { Container, Row, Col, Button, Modal } from 'react-bootstrap';
-import { LocationContext } from '../Context/LocationContext';
-import '../../Style/Pagescss/FlightResultsPage.css';
-import Slider from '../hero/Slider';
-import { Link,useNavigate } from 'react-router-dom';
+import React, { useContext, useState } from "react";
+import { Container, Row, Col, Button, Modal } from "react-bootstrap";
+import { LocationContext } from "../Context/LocationContext";
+import "../../Style/Pagescss/FlightResultsPage.css";
+import Slider from "../hero/Slider";
+import { Link, useNavigate } from "react-router-dom";
 const FlightSearchBar = () => {
   const { locationData } = useContext(LocationContext);
   const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const {
-    fromCity = '',
-    toCity = '',
-    fromAirport = '',
-    toAirport = '',
+    fromCity = "",
+    toCity = "",
+    fromAirport = "",
+    toAirport = "",
     departDate,
     passengers = { adults: 1, children: 0, infants: 0 },
-    cabinClass = '',
+    cabinClass = "",
   } = locationData || {};
 
-  const totalPassengers = passengers.adults + passengers.children + passengers.infants;
+  const totalPassengers =
+    passengers.adults + passengers.children + passengers.infants;
 
   // Format departure date
-  let formattedDate = 'Not selected';
+  let formattedDate = "Not selected";
   if (departDate?.PreferredTime) {
     const jsDate = new Date(departDate.PreferredTime);
     if (!isNaN(jsDate.getTime())) {
       formattedDate =
-        jsDate.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
+        jsDate.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
         }) +
-        ', ' +
-        jsDate.toLocaleDateString('en-GB', {
-          weekday: 'long',
+        ", " +
+        jsDate.toLocaleDateString("en-GB", {
+          weekday: "long",
         });
     }
   }
 
   // Cabin class map for showing name instead of number
   const cabinClassMap = {
-    1: 'Economy',
-    2: 'Premium Economy',
-    4: 'Business',
-    5: 'First',
+    1: "Economy",
+    2: "Premium Economy",
+    4: "Business",
+    5: "First",
   };
 
   const Show = () => {
-
     // alert('fdfdf')
-    setShowLoginModal(true)
-
-
-  }
+    setShowLoginModal(true);
+    window.dispatchEvent(
+      new CustomEvent("setActiveTab", { detail: { tabType: "flight" } })
+    );
+  };
 
   return (
     <Container className="p-3 bg-white shadow-sm rounded border ">
@@ -70,7 +70,7 @@ const FlightSearchBar = () => {
         </Col>
 
         <Col md={1}>
-          <div style={{ fontSize: '20px' }}>→</div>
+          <div style={{ fontSize: "20px" }}>→</div>
         </Col>
 
         <Col md={2} xs={6}>
@@ -79,40 +79,50 @@ const FlightSearchBar = () => {
         </Col>
 
         <Col md={2} xs={6}>
-          <div><strong>Departure Date</strong></div>
+          <div>
+            <strong>Departure Date</strong>
+          </div>
           <div className="text-muted small">{formattedDate}</div>
         </Col>
 
         <Col md={2} xs={6}>
-          <div><strong>Travellers</strong></div>
+          <div>
+            <strong>Travellers</strong>
+          </div>
           <div className="text-muted small">{totalPassengers}</div>
         </Col>
 
         <Col md={2} xs={6}>
-          <div><strong>Travel Class</strong></div>
-          <div className="text-muted small">{cabinClassMap[cabinClass] || 'Not selected'}</div>
+          <div>
+            <strong>Travel Class</strong>
+          </div>
+          <div className="text-muted small">
+            {cabinClassMap[cabinClass] || "Not selected"}
+          </div>
         </Col>
 
         <Col md={1} xs={12} className="text-end">
-          <a onClick={Show} variant="primary" className="btn btn-primary ModifyButton">
+          <a
+            onClick={Show}
+            variant="primary"
+            className="btn btn-primary ModifyButton"
+          >
             Modify
           </a>
         </Col>
       </Row>
 
-      <Modal size="xl" dialogClassName="modal-200w"
+      <Modal
+        size="xl"
+        dialogClassName="modal-200w"
         show={showLoginModal}
         onHide={() => setShowLoginModal(false)}
-
         centered
-  
       >
-        <Modal.Header >
-        </Modal.Header>
-        <Modal.Body className='text-center'>
+        <Modal.Header></Modal.Header>
+        <Modal.Body className="text-center">
           <Slider type="resultPage" />
         </Modal.Body>
-
       </Modal>
     </Container>
   );
