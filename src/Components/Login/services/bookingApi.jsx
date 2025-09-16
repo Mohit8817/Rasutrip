@@ -56,6 +56,14 @@ const FlightBookingServices = {
     realTimeStatus: `${baseURL}/airservice/real-time-booking-details`
 };
 
+const FlightInvoice = {
+    invoice: "airservice/invoice"
+}
+
+const BusInvoice = {
+    invoice: "busservice/invoice"
+}
+
 // ✅ Helper function to detect user type from multiple sources
 const detectUserType = () => {
     console.log('🔍 Detecting user type...');
@@ -378,29 +386,45 @@ export const fetchMultipleRealTimeStatus = async (bookings, userType = null) => 
     return results;
 };
 
-// ✅ Fetch upcoming BUS bookings with user type awareness
-export const fetchUpcomingBookings = async (userType = null) => {
+// ✅ Fetch upcoming BUS bookings with pagination support
+export const fetchUpcomingBookings = async (userType = null, page = 1, limit = 10) => {
     try {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType, 'bus');
 
-        console.log('🚀 Fetching upcoming bus bookings for:', currentUserType);
+        console.log('🚀 Fetching upcoming bus bookings for:', currentUserType, `Page: ${page}, Limit: ${limit}`);
+
+        // Add pagination parameters to the request
+        const url = `${endpoints.upcomingBookings}?page=${page}&limit=${limit}`;
 
         try {
-            const response = await makeAuthenticatedRequest(endpoints.upcomingBookings, 'GET', null, currentUserType);
+            const response = await makeAuthenticatedRequest(url, 'GET', null, currentUserType);
             return {
                 success: true,
-                data: response,
+                data: response.data || response, // Handle both response.data and direct response
+                pagination: {
+                    page: response.page || page,
+                    limit: response.limit || limit,
+                    total: response.total || 0,
+                    totalPages: response.totalPages || Math.ceil((response.total || 0) / limit)
+                },
                 message: `Upcoming bus bookings fetched successfully for ${currentUserType}`
             };
         } catch (error) {
             // Try fallback for agents if available
             if (currentUserType === 'agent' && endpoints.upcomingFallback) {
                 console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackResponse = await makeAuthenticatedRequest(endpoints.upcomingFallback, 'GET', null, currentUserType);
+                const fallbackUrl = `${endpoints.upcomingFallback}?page=${page}&limit=${limit}`;
+                const fallbackResponse = await makeAuthenticatedRequest(fallbackUrl, 'GET', null, currentUserType);
                 return {
                     success: true,
-                    data: fallbackResponse,
+                    data: fallbackResponse.data || fallbackResponse,
+                    pagination: {
+                        page: fallbackResponse.page || page,
+                        limit: fallbackResponse.limit || limit,
+                        total: fallbackResponse.total || 0,
+                        totalPages: fallbackResponse.totalPages || Math.ceil((fallbackResponse.total || 0) / limit)
+                    },
                     message: `Upcoming bus bookings fetched successfully for ${currentUserType} (fallback)`
                 };
             }
@@ -416,29 +440,45 @@ export const fetchUpcomingBookings = async (userType = null) => {
     }
 };
 
-// ✅ Fetch all BUS bookings with user type awareness
-export const fetchAllBookings = async (userType = null) => {
+// ✅ Fetch all BUS bookings with pagination support
+export const fetchAllBookings = async (userType = null, page = 1, limit = 10) => {
     try {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType, 'bus');
 
-        console.log('🚀 Fetching all bus bookings for:', currentUserType);
+        console.log('🚀 Fetching all bus bookings for:', currentUserType, `Page: ${page}, Limit: ${limit}`);
+
+        // Add pagination parameters to the request
+        const url = `${endpoints.allBookings}?page=${page}&limit=${limit}`;
 
         try {
-            const response = await makeAuthenticatedRequest(endpoints.allBookings, 'GET', null, currentUserType);
+            const response = await makeAuthenticatedRequest(url, 'GET', null, currentUserType);
             return {
                 success: true,
-                data: response,
+                data: response.data || response, // Handle both response.data and direct response
+                pagination: {
+                    page: response.page || page,
+                    limit: response.limit || limit,
+                    total: response.total || 0,
+                    totalPages: response.totalPages || Math.ceil((response.total || 0) / limit)
+                },
                 message: `All bus bookings fetched successfully for ${currentUserType}`
             };
         } catch (error) {
             // Try fallback for agents if available
             if (currentUserType === 'agent' && endpoints.allFallback) {
                 console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackResponse = await makeAuthenticatedRequest(endpoints.allFallback, 'GET', null, currentUserType);
+                const fallbackUrl = `${endpoints.allFallback}?page=${page}&limit=${limit}`;
+                const fallbackResponse = await makeAuthenticatedRequest(fallbackUrl, 'GET', null, currentUserType);
                 return {
                     success: true,
-                    data: fallbackResponse,
+                    data: fallbackResponse.data || fallbackResponse,
+                    pagination: {
+                        page: fallbackResponse.page || page,
+                        limit: fallbackResponse.limit || limit,
+                        total: fallbackResponse.total || 0,
+                        totalPages: fallbackResponse.totalPages || Math.ceil((fallbackResponse.total || 0) / limit)
+                    },
                     message: `All bus bookings fetched successfully for ${currentUserType} (fallback)`
                 };
             }
@@ -449,6 +489,63 @@ export const fetchAllBookings = async (userType = null) => {
         throw {
             success: false,
             message: error.message || "Failed to fetch all bus bookings",
+            error: error
+        };
+    }
+};
+
+// ✅ Fetch all bookings from all pages (if you want to get everything at once)
+export const fetchAllBookingsComplete = async (userType = null, limit = 50) => {
+    try {
+        const currentUserType = userType || detectUserType();
+        console.log('🚀 Fetching complete bus bookings for:', currentUserType);
+
+        // First, get the first page to know total pages
+        const firstPageResponse = await fetchAllBookings(currentUserType, 1, limit);
+
+        if (!firstPageResponse.success) {
+            throw new Error(firstPageResponse.message);
+        }
+
+        const { pagination } = firstPageResponse;
+        let allBookings = firstPageResponse.data || [];
+
+        // If there are more pages, fetch them
+        if (pagination.totalPages > 1) {
+            const remainingPages = [];
+            for (let page = 2; page <= pagination.totalPages; page++) {
+                remainingPages.push(fetchAllBookings(currentUserType, page, limit));
+            }
+
+            try {
+                const remainingResponses = await Promise.all(remainingPages);
+                remainingResponses.forEach(response => {
+                    if (response.success && response.data) {
+                        allBookings = [...allBookings, ...response.data];
+                    }
+                });
+            } catch (error) {
+                console.warn('⚠️ Some pages failed to load, returning partial data');
+            }
+        }
+
+        return {
+            success: true,
+            data: allBookings,
+            pagination: {
+                page: 1,
+                limit: allBookings.length,
+                total: pagination.total,
+                totalPages: 1 // Since we're returning all data in one response
+            },
+            message: `Complete bus bookings fetched successfully for ${currentUserType}`
+        };
+
+    } catch (error) {
+        console.error('❌ Error fetching complete bus bookings:', error.message);
+        throw {
+            success: false,
+            message: error.message || "Failed to fetch complete bus bookings",
             error: error
         };
     }
@@ -604,34 +701,75 @@ export const fetchMultipleHotelRealTimeStatus = async (bookings, userType = null
     return results;
 };
 
-// ✅ Fetch upcoming HOTEL bookings with user type awareness
+// Updated booking API service functions to handle pagination
+
+// ✅ Fetch all pages of upcoming HOTEL bookings
 export const fetchUpcomingHotelBookings = async (userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType, 'hotel');
 
-        console.log('🚀 Fetching upcoming hotel bookings for:', currentUserType);
+        console.log('🚀 Fetching ALL upcoming hotel bookings for:', currentUserType);
 
-        try {
-            const response = await makeAuthenticatedRequest(endpoints.upcomingBookings, 'GET', null, currentUserType);
-            return {
-                success: true,
-                data: response,
-                message: `Upcoming hotel bookings fetched successfully for ${currentUserType}`
-            };
-        } catch (error) {
-            // Try fallback for agents if available
-            if (currentUserType === 'agent' && endpoints.upcomingFallback) {
-                console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackResponse = await makeAuthenticatedRequest(endpoints.upcomingFallback, 'GET', null, currentUserType);
-                return {
-                    success: true,
-                    data: fallbackResponse,
-                    message: `Upcoming hotel bookings fetched successfully for ${currentUserType} (fallback)`
-                };
+        let allBookings = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        do {
+            try {
+                const response = await makeAuthenticatedRequest(
+                    `${endpoints.upcomingBookings}?page=${currentPage}&limit=50`,
+                    'GET',
+                    null,
+                    currentUserType
+                );
+
+                console.log(`📄 Page ${currentPage} response:`, response);
+
+                // Extract data and pagination info
+                let pageData = [];
+                if (response.data && Array.isArray(response.data)) {
+                    pageData = response.data;
+                } else if (Array.isArray(response)) {
+                    pageData = response;
+                } else if (response.bookings && Array.isArray(response.bookings)) {
+                    pageData = response.bookings;
+                } else if (response.results && Array.isArray(response.results)) {
+                    pageData = response.results;
+                }
+
+                // Add page data to all bookings
+                allBookings = [...allBookings, ...pageData];
+
+                // Update pagination info
+                totalPages = response.totalPages || response.total_pages || Math.ceil((response.total || 0) / (response.limit || 10));
+
+                console.log(`✅ Page ${currentPage}: Found ${pageData.length} bookings, Total pages: ${totalPages}`);
+
+                currentPage++;
+
+                // Add small delay between requests to avoid rate limiting
+                if (currentPage <= totalPages) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+
+            } catch (pageError) {
+                console.warn(`⚠️ Error fetching page ${currentPage}:`, pageError);
+                break;
             }
-            throw error;
-        }
+
+        } while (currentPage <= totalPages);
+
+        console.log(`🎉 Total upcoming hotel bookings fetched: ${allBookings.length}`);
+
+        return {
+            success: true,
+            data: allBookings,
+            totalBookings: allBookings.length,
+            totalPages: totalPages,
+            message: `${allBookings.length} upcoming hotel bookings fetched successfully for ${currentUserType}`
+        };
+
     } catch (error) {
         console.error('❌ Error fetching upcoming hotel bookings:', error.message);
         throw {
@@ -642,34 +780,101 @@ export const fetchUpcomingHotelBookings = async (userType = null) => {
     }
 };
 
-// ✅ Fetch all HOTEL bookings with user type awareness
+// ✅ Fetch all pages of HOTEL bookings
 export const fetchAllHotelBookings = async (userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType, 'hotel');
 
-        console.log('🚀 Fetching all hotel bookings for:', currentUserType);
+        console.log('🚀 Fetching ALL hotel bookings for:', currentUserType);
 
-        try {
-            const response = await makeAuthenticatedRequest(endpoints.allBookings, 'GET', null, currentUserType);
-            return {
-                success: true,
-                data: response,
-                message: `All hotel bookings fetched successfully for ${currentUserType}`
-            };
-        } catch (error) {
-            // Try fallback for agents if available
-            if (currentUserType === 'agent' && endpoints.allFallback) {
-                console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackResponse = await makeAuthenticatedRequest(endpoints.allFallback, 'GET', null, currentUserType);
-                return {
-                    success: true,
-                    data: fallbackResponse,
-                    message: `All hotel bookings fetched successfully for ${currentUserType} (fallback)`
-                };
+        let allBookings = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        do {
+            try {
+                const response = await makeAuthenticatedRequest(
+                    `${endpoints.allBookings}?page=${currentPage}&limit=50`,
+                    'GET',
+                    null,
+                    currentUserType
+                );
+
+                console.log(`📄 Page ${currentPage} response:`, response);
+
+                // Extract data and pagination info from API response
+                let pageData = [];
+                if (response.data && Array.isArray(response.data)) {
+                    pageData = response.data;
+                } else if (Array.isArray(response)) {
+                    pageData = response;
+                } else if (response.bookings && Array.isArray(response.bookings)) {
+                    pageData = response.bookings;
+                } else if (response.results && Array.isArray(response.results)) {
+                    pageData = response.results;
+                }
+
+                // Add page data to all bookings
+                allBookings = [...allBookings, ...pageData];
+
+                // Extract pagination info from response
+                totalPages = response.totalPages || response.total_pages || Math.ceil((response.total || 0) / (response.limit || 10));
+                const hasMorePages = response.hasNextPage || response.has_next_page || (currentPage < totalPages);
+
+                console.log(`✅ Page ${currentPage}: Found ${pageData.length} bookings, Total pages: ${totalPages}, Has more: ${hasMorePages}`);
+
+                currentPage++;
+
+                // Add small delay between requests to avoid rate limiting
+                if (currentPage <= totalPages) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+
+            } catch (pageError) {
+                console.warn(`⚠️ Error fetching page ${currentPage}:`, pageError);
+                // Try fallback for agents if available
+                if (currentUserType === 'agent' && endpoints.allFallback) {
+                    try {
+                        console.log('🔄 Trying fallback endpoint for agent...');
+                        const fallbackResponse = await makeAuthenticatedRequest(
+                            `${endpoints.allFallback}?page=${currentPage}&limit=50`,
+                            'GET',
+                            null,
+                            currentUserType
+                        );
+
+                        let fallbackData = [];
+                        if (fallbackResponse.data && Array.isArray(fallbackResponse.data)) {
+                            fallbackData = fallbackResponse.data;
+                        } else if (Array.isArray(fallbackResponse)) {
+                            fallbackData = fallbackResponse;
+                        }
+
+                        allBookings = [...allBookings, ...fallbackData];
+                        totalPages = fallbackResponse.totalPages || totalPages;
+
+                    } catch (fallbackError) {
+                        console.error('❌ Fallback also failed:', fallbackError);
+                        break;
+                    }
+                } else {
+                    break;
+                }
             }
-            throw error;
-        }
+
+        } while (currentPage <= totalPages);
+
+        console.log(`🎉 Total hotel bookings fetched: ${allBookings.length}`);
+
+        return {
+            success: true,
+            data: allBookings,
+            totalBookings: allBookings.length,
+            totalPages: totalPages,
+            message: `${allBookings.length} hotel bookings fetched successfully for ${currentUserType}`
+        };
+
     } catch (error) {
         console.error('❌ Error fetching all hotel bookings:', error.message);
         throw {
@@ -680,11 +885,426 @@ export const fetchAllHotelBookings = async (userType = null) => {
     }
 };
 
+// Alternative function that fetches specific page with pagination info
+export const fetchHotelBookingsWithPagination = async (page = 1, limit = 50, userType = null) => {
+    try {
+        const currentUserType = userType || detectUserType();
+        const endpoints = getBookingEndpoints(currentUserType, 'hotel');
+
+        console.log(`🚀 Fetching hotel bookings page ${page} (limit: ${limit}) for:`, currentUserType);
+
+        const response = await makeAuthenticatedRequest(
+            `${endpoints.allBookings}?page=${page}&limit=${limit}`,
+            'GET',
+            null,
+            currentUserType
+        );
+
+        console.log('📄 Paginated response:', response);
+
+        // Extract data from response
+        let bookings = [];
+        if (response.data && Array.isArray(response.data)) {
+            bookings = response.data;
+        } else if (Array.isArray(response)) {
+            bookings = response;
+        } else if (response.bookings && Array.isArray(response.bookings)) {
+            bookings = response.bookings;
+        } else if (response.results && Array.isArray(response.results)) {
+            bookings = response.results;
+        }
+
+        return {
+            success: true,
+            data: bookings,
+            pagination: {
+                currentPage: response.page || page,
+                totalPages: response.totalPages || response.total_pages || 1,
+                totalItems: response.total || bookings.length,
+                limit: response.limit || limit,
+                hasNextPage: response.hasNextPage || response.has_next_page || false,
+                hasPrevPage: response.hasPrevPage || response.has_prev_page || false
+            },
+            message: `Page ${page} of hotel bookings fetched successfully`
+        };
+
+    } catch (error) {
+        console.error('❌ Error fetching paginated hotel bookings:', error.message);
+        throw {
+            success: false,
+            message: error.message || "Failed to fetch hotel bookings",
+            error: error
+        };
+    }
+};
+
 // ============================================================================
-// FLIGHT BOOKING FUNCTIONS - CLEANED UP AND MERGED
+// FLIGHT BOOKING FUNCTIONS - WITH PAGINATION SUPPORT
 // ============================================================================
 
-// ✅ MAIN Flight Real-Time Status Function - Merged and Enhanced
+// ✅ Helper function to fetch all pages of data
+const fetchAllPagesData = async (endpoint, userType, maxPages = 10) => {
+    let allData = [];
+    let currentPage = 1;
+    let totalPages = 1;
+
+    console.log(`📄 Starting paginated fetch for endpoint: ${endpoint}`);
+
+    try {
+        do {
+            console.log(`📄 Fetching page ${currentPage} of ${totalPages}`);
+
+            // Add pagination parameters to the request
+            const paginatedEndpoint = `${endpoint}?page=${currentPage}&limit=50`; // Increased limit to 50
+
+            const response = await makeAuthenticatedRequest(paginatedEndpoint, 'GET', null, userType);
+
+            console.log(`✅ Page ${currentPage} response:`, response);
+
+            if (response) {
+                // Handle different response structures
+                let pageData = [];
+
+                if (response.data && Array.isArray(response.data)) {
+                    pageData = response.data;
+                } else if (Array.isArray(response)) {
+                    pageData = response;
+                } else if (response.result && Array.isArray(response.result)) {
+                    pageData = response.result;
+                }
+
+                allData.push(...pageData);
+
+                // Update pagination info
+                totalPages = response.totalPages || response.total_pages || 1;
+                currentPage++;
+
+                console.log(`📊 Page ${currentPage - 1}: Got ${pageData.length} bookings, Total so far: ${allData.length}`);
+
+                // Safety check to avoid infinite loops
+                if (currentPage > maxPages) {
+                    console.warn(`⚠️ Reached maximum pages limit (${maxPages}), stopping fetch`);
+                    break;
+                }
+            } else {
+                console.warn(`⚠️ No data received for page ${currentPage}`);
+                break;
+            }
+
+        } while (currentPage <= totalPages);
+
+        console.log(`✅ Pagination complete: Fetched ${allData.length} total bookings from ${currentPage - 1} pages`);
+
+        return {
+            success: true,
+            data: {
+                data: allData,
+                total: allData.length,
+                totalPages: totalPages,
+                fetchedPages: currentPage - 1
+            },
+            message: `Successfully fetched all ${allData.length} bookings`
+        };
+
+    } catch (error) {
+        console.error(`❌ Error during paginated fetch:`, error);
+
+        // Return partial data if we got some
+        if (allData.length > 0) {
+            return {
+                success: true,
+                data: {
+                    data: allData,
+                    total: allData.length,
+                    partial: true,
+                    error: error.message
+                },
+                message: `Partial fetch completed: ${allData.length} bookings (some pages failed)`
+            };
+        }
+
+        throw error;
+    }
+};
+
+// ✅ Fetch upcoming FLIGHT bookings with pagination support
+export const fetchUpcomingFlightBookings = async (userType = null) => {
+    try {
+        const currentUserType = userType || detectUserType();
+        console.log('🚀 Fetching upcoming flight bookings with pagination for:', currentUserType);
+
+        const baseEndpoint = currentUserType === 'agent'
+            ? FlightBookingServices.agent.upcomingBookings
+            : FlightBookingServices.customer.upcomingBookings;
+
+        const result = await fetchAllPagesData(baseEndpoint, currentUserType);
+
+        console.log('✅ All upcoming flight bookings fetched:', result);
+
+        return {
+            success: true,
+            data: result.data,
+            message: `${result.message} for ${currentUserType}`
+        };
+
+    } catch (error) {
+        console.error('❌ Error fetching upcoming flight bookings:', error.message);
+        throw {
+            success: false,
+            message: error.message || "Failed to fetch upcoming flight bookings",
+            error: error
+        };
+    }
+};
+
+// ✅ Fetch all FLIGHT bookings with pagination support
+export const fetchAllFlightBookings = async (userType = null) => {
+    try {
+        const currentUserType = userType || detectUserType();
+        console.log('🚀 Fetching all flight bookings with pagination for:', currentUserType);
+
+        const baseEndpoint = currentUserType === 'agent'
+            ? FlightBookingServices.agent.allBookings
+            : FlightBookingServices.customer.allBookings;
+
+        const result = await fetchAllPagesData(baseEndpoint, currentUserType);
+
+        console.log('✅ All flight bookings fetched:', result);
+
+        return {
+            success: true,
+            data: result.data,
+            message: `${result.message} for ${currentUserType}`
+        };
+
+    } catch (error) {
+        console.error('❌ Error fetching all flight bookings:', error.message);
+        throw {
+            success: false,
+            message: error.message || "Failed to fetch all flight bookings",
+            error: error
+        };
+    }
+};
+
+// ✅ Alternative approach - Single request with high limit
+export const fetchAllFlightBookingsHighLimit = async (userType = null) => {
+    try {
+        const currentUserType = userType || detectUserType();
+        console.log('🚀 Fetching all flight bookings with high limit for:', currentUserType);
+
+        const baseEndpoint = currentUserType === 'agent'
+            ? FlightBookingServices.agent.allBookings
+            : FlightBookingServices.customer.allBookings;
+
+        // Try to fetch all data in one request with a very high limit
+        const endpoint = `${baseEndpoint}?page=1&limit=1000`;
+
+        const response = await makeAuthenticatedRequest(endpoint, 'GET', null, currentUserType);
+
+        console.log('✅ High limit flight bookings response:', response);
+
+        return {
+            success: true,
+            data: response,
+            message: `All flight bookings fetched successfully for ${currentUserType}`
+        };
+
+    } catch (error) {
+        console.error('❌ Error fetching flight bookings with high limit:', error.message);
+        // Fallback to paginated approach
+        console.log('🔄 Falling back to paginated approach...');
+        return await fetchAllFlightBookings(userType);
+    }
+};
+
+// ✅ Enhanced data transformation to handle the nested structure better
+export const transformBookingDataEnhanced = (apiBookings) => {
+    if (!Array.isArray(apiBookings)) {
+        console.log('⚠️ API bookings is not an array:', apiBookings);
+        return [];
+    }
+
+    console.log(`🔄 Transforming ${apiBookings.length} flight bookings`);
+
+    return apiBookings.map((booking, index) => {
+        try {
+            const result = booking.Result || {};
+            const segments = result.Segments?.[0] || [];
+            const firstSegment = segments[0] || {};
+            const lastSegment = segments[segments.length - 1] || {};
+            const passenger = result.Passenger?.[0] || {};
+
+            // Enhanced error handling for missing data
+            if (!result.BookingId && !booking.bookingId) {
+                console.warn(`⚠️ Booking ${index} missing BookingId:`, booking);
+            }
+
+            const transformedBooking = {
+                // Primary identifiers
+                bookingId: result.BookingId || booking.bookingId || `temp-${index}`,
+                pnr: result.PNR || 'N/A',
+
+                // Airline information
+                airline: firstSegment.Airline,
+                airlineName: firstSegment.Airline?.AirlineName || 'Unknown Airline',
+                flightNumber: firstSegment.Airline?.FlightNumber || 'N/A',
+                airlineCode: firstSegment.Airline?.AirlineCode || 'N/A',
+
+                // Route information
+                origin: firstSegment.Origin,
+                destination: lastSegment.Destination || firstSegment.Destination,
+                from: firstSegment.Origin?.AirportCode || 'N/A',
+                to: (lastSegment.Destination || firstSegment.Destination)?.AirportCode || 'N/A',
+                fromCity: firstSegment.Origin?.CityName || 'Unknown',
+                toCity: (lastSegment.Destination || firstSegment.Destination)?.CityName || 'Unknown',
+
+                // Time information
+                departureTime: firstSegment.Origin?.DepartTime,
+                arrivalTime: (lastSegment.Destination || firstSegment.Destination)?.ArrivalTime,
+
+                // Booking details
+                cabinClass: firstSegment.CabinClass || 'Economy',
+                class: firstSegment.CabinClass || 'Economy',
+                passengers: result.Passenger || [],
+                totalPassengers: result.Passenger?.length || 1,
+
+                // Financial information
+                totalAmount: result.InvoiceAmount || result.Fare?.PublishedPrice || 0,
+                amount: result.InvoiceAmount || result.Fare?.PublishedPrice || 0,
+
+                // Status information
+                status: result.CancelStatus === 'none' ? 'Confirmed' : (result.CancelStatus || 'Confirmed'),
+                bookingStatus: result.CancelStatus === 'none' ? 'Confirmed' : (result.CancelStatus || 'Confirmed'),
+                paymentStatus: 'Completed',
+
+                // Dates
+                bookingDate: booking.createdAt || booking.updatedAt,
+                createdAt: booking.createdAt || booking.updatedAt,
+
+                // Additional information
+                confirmationNo: result.PNR || 'N/A',
+                journeyType: result.JourneyType || 1,
+                isDomestic: result.IsDomestic !== false, // Default to true if not specified
+                fareType: result.FareType || 'PUBLISHED',
+                segments: result.Segments || [],
+                invoiceNo: result.InvoiceNo || 'N/A',
+                invoiceAmount: result.InvoiceAmount || 0,
+
+                // For invoice download
+                bookingIdForInvoice: booking.bookingId || result.BookingId,
+                UserIpForInvoice: booking.UserIp,
+                SearchTokenIdForInvoice: booking.SearchTokenId,
+                passengerEmailForInvoice: passenger.Email,
+
+                // Raw data for debugging
+                _rawBooking: booking,
+                _rawResult: result
+            };
+
+            return transformedBooking;
+
+        } catch (error) {
+            console.error(`❌ Error transforming booking ${index}:`, error, booking);
+
+            // Return a minimal booking object to prevent crashes
+            return {
+                bookingId: booking.bookingId || booking.Result?.BookingId || `error-${index}`,
+                pnr: booking.Result?.PNR || 'Error',
+                airlineName: 'Error Loading',
+                flightNumber: 'N/A',
+                from: 'N/A',
+                to: 'N/A',
+                fromCity: 'Error',
+                toCity: 'Error',
+                departureTime: null,
+                arrivalTime: null,
+                totalAmount: 0,
+                status: 'Error',
+                bookingDate: booking.createdAt,
+                _error: error.message,
+                _rawBooking: booking
+            };
+        }
+    });
+};
+
+// ✅ Debug function to check API response structure
+export const debugFlightBookingsAPI = async (userType = null) => {
+    try {
+        const currentUserType = userType || detectUserType();
+        console.log('🔍 Debugging flight bookings API structure...');
+
+        const allBookingsEndpoint = currentUserType === 'agent'
+            ? FlightBookingServices.agent.allBookings
+            : FlightBookingServices.customer.allBookings;
+
+        // Try different approaches
+        const results = {
+            approach1: null,
+            approach2: null,
+            approach3: null,
+            recommendations: []
+        };
+
+        // Approach 1: Default request
+        try {
+            console.log('🧪 Testing approach 1: Default request');
+            results.approach1 = await makeAuthenticatedRequest(allBookingsEndpoint, 'GET', null, currentUserType);
+        } catch (error) {
+            results.approach1 = { error: error.message };
+        }
+
+        // Approach 2: With pagination parameters
+        try {
+            console.log('🧪 Testing approach 2: With pagination');
+            const paginatedEndpoint = `${allBookingsEndpoint}?page=1&limit=50`;
+            results.approach2 = await makeAuthenticatedRequest(paginatedEndpoint, 'GET', null, currentUserType);
+        } catch (error) {
+            results.approach2 = { error: error.message };
+        }
+
+        // Approach 3: High limit
+        try {
+            console.log('🧪 Testing approach 3: High limit');
+            const highLimitEndpoint = `${allBookingsEndpoint}?limit=1000`;
+            results.approach3 = await makeAuthenticatedRequest(highLimitEndpoint, 'GET', null, currentUserType);
+        } catch (error) {
+            results.approach3 = { error: error.message };
+        }
+
+        // Analyze results and provide recommendations
+        Object.keys(results).forEach(approach => {
+            if (approach === 'recommendations') return;
+
+            const result = results[approach];
+            if (result && !result.error) {
+                console.log(`✅ ${approach} succeeded:`, {
+                    hasData: !!result.data,
+                    dataLength: result.data?.length || 0,
+                    totalPages: result.totalPages,
+                    total: result.total,
+                    structure: Object.keys(result)
+                });
+
+                if (result.totalPages > 1) {
+                    results.recommendations.push(`${approach}: Use pagination - ${result.totalPages} pages available`);
+                } else {
+                    results.recommendations.push(`${approach}: Single page sufficient`);
+                }
+            } else {
+                console.log(`❌ ${approach} failed:`, result?.error);
+            }
+        });
+
+        return results;
+
+    } catch (error) {
+        console.error('❌ Debug function failed:', error);
+        return { error: error.message };
+    }
+};
+
 export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
@@ -884,207 +1504,6 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
     }
 };
 
-// ✅ Alternative approach - Try different booking identifiers
-export const fetchFlightRealTimeStatusWithRetry = async (booking, userType = null) => {
-    const currentUserType = userType || detectUserType();
-
-    // Strategy 1: Try with BookingId
-    try {
-        console.log('🔄 Strategy 1: Using BookingId');
-        return await fetchFlightRealTimeStatus(booking, currentUserType);
-    } catch (error) {
-        if (error.response?.status !== 404) {
-            throw error; // If it's not a 404, don't retry
-        }
-        console.log('⚠️ Strategy 1 failed with 404, trying alternative approaches...');
-    }
-
-    // Strategy 2: Try with PNR if available
-    if (booking?.pnr || booking?.PNR) {
-        try {
-            console.log('🔄 Strategy 2: Using PNR as primary identifier');
-            const pnrBooking = {
-                ...booking,
-                bookingId: booking.pnr || booking.PNR,
-                BookingId: booking.pnr || booking.PNR
-            };
-            return await fetchFlightRealTimeStatus(pnrBooking, currentUserType);
-        } catch (error) {
-            console.log('⚠️ Strategy 2 failed, trying next approach...');
-        }
-    }
-
-    // Strategy 3: Try minimal payload
-    try {
-        console.log('🔄 Strategy 3: Minimal payload approach');
-        const minimalBooking = {
-            bookingId: booking?.bookingId || booking?.BookingId,
-            BookingId: booking?.bookingId || booking?.BookingId
-        };
-        return await fetchFlightRealTimeStatus(minimalBooking, currentUserType);
-    } catch (error) {
-        console.log('⚠️ All strategies failed');
-        throw error;
-    }
-};
-
-// ✅ Debug function to test the API with different payloads
-export const debugFlightRealTimeStatus = async (booking, userType = null) => {
-    const currentUserType = userType || detectUserType();
-    const results = [];
-
-    // Test 1: Original payload
-    try {
-        console.log('🧪 Debug Test 1: Original payload');
-        const result1 = await fetchFlightRealTimeStatus(booking, currentUserType);
-        results.push({ test: 'Original Payload', success: result1.success, result: result1 });
-    } catch (error) {
-        results.push({ test: 'Original Payload', success: false, error: error.message });
-    }
-
-    // Test 2: Minimal payload
-    try {
-        console.log('🧪 Debug Test 2: Minimal payload');
-        const minimalPayload = { BookingId: String(booking?.bookingId || booking?.BookingId) };
-        const response = await makeAuthenticatedRequest(
-            FlightBookingServices.realTimeStatus,
-            'POST',
-            minimalPayload,
-            currentUserType
-        );
-        results.push({ test: 'Minimal Payload', success: true, result: { data: response } });
-    } catch (error) {
-        results.push({ test: 'Minimal Payload', success: false, error: error.message });
-    }
-
-    // Test 3: PNR as BookingId
-    if (booking?.pnr) {
-        try {
-            console.log('🧪 Debug Test 3: PNR as BookingId');
-            const pnrPayload = { BookingId: String(booking.pnr) };
-            const response = await makeAuthenticatedRequest(
-                FlightBookingServices.realTimeStatus,
-                'POST',
-                pnrPayload,
-                currentUserType
-            );
-            results.push({ test: 'PNR as BookingId', success: true, result: { data: response } });
-        } catch (error) {
-            results.push({ test: 'PNR as BookingId', success: false, error: error.message });
-        }
-    }
-
-    console.log('🧪 Debug Results:', results);
-    return results;
-};
-
-// ✅ Fetch real-time status for multiple FLIGHT bookings
-export const fetchMultipleFlightRealTimeStatus = async (bookings, userType = null) => {
-    console.log(`🔄 Fetching real-time status for ${bookings.length} flight bookings`);
-
-    const results = {};
-
-    // Process flight bookings in batches to avoid overwhelming the API
-    const batchSize = 3; // Smaller batch size for flight bookings as they might be more complex
-    for (let i = 0; i < bookings.length; i += batchSize) {
-        const batch = bookings.slice(i, i + batchSize);
-
-        const batchPromises = batch.map(async (booking) => {
-            try {
-                const result = await fetchFlightRealTimeStatus(booking, userType);
-                return { bookingId: result.bookingId, result };
-            } catch (error) {
-                console.warn('⚠️ Failed to fetch status for flight booking:', booking.bookingId);
-                return {
-                    bookingId: booking.bookingId,
-                    result: {
-                        success: false,
-                        status: 'Error',
-                        error: 'Failed to fetch',
-                        lastUpdated: new Date(),
-                        bookingId: booking.bookingId,
-                        serviceType: 'flight'
-                    }
-                };
-            }
-        });
-
-        const batchResults = await Promise.all(batchPromises);
-
-        // Add results to the main results object
-        batchResults.forEach(({ bookingId, result }) => {
-            results[bookingId] = result;
-        });
-
-        // Add small delay between batches (longer for flight bookings)
-        if (i + batchSize < bookings.length) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-    }
-
-    console.log(`✅ Completed flight real-time status fetch for ${Object.keys(results).length} bookings`);
-    return results;
-};
-
-// ✅ Fetch upcoming FLIGHT bookings with user type awareness
-export const fetchUpcomingFlightBookings = async (userType = null) => {
-    try {
-        const currentUserType = userType || detectUserType();
-        console.log('🚀 Fetching upcoming flight bookings for:', currentUserType);
-
-        const endpoint = currentUserType === 'agent'
-            ? FlightBookingServices.agent.upcomingBookings
-            : FlightBookingServices.customer.upcomingBookings;
-
-        const response = await makeAuthenticatedRequest(endpoint, 'GET', null, currentUserType);
-
-        console.log('✅ Upcoming flight bookings response:', response);
-
-        return {
-            success: true,
-            data: response,
-            message: `Upcoming flight bookings fetched successfully for ${currentUserType}`
-        };
-    } catch (error) {
-        console.error('❌ Error fetching upcoming flight bookings:', error.message);
-        throw {
-            success: false,
-            message: error.message || "Failed to fetch upcoming flight bookings",
-            error: error
-        };
-    }
-};
-
-// ✅ Fetch all FLIGHT bookings with user type awareness
-export const fetchAllFlightBookings = async (userType = null) => {
-    try {
-        const currentUserType = userType || detectUserType();
-        console.log('🚀 Fetching all flight bookings for:', currentUserType);
-
-        const endpoint = currentUserType === 'agent'
-            ? FlightBookingServices.agent.allBookings
-            : FlightBookingServices.customer.allBookings;
-
-        const response = await makeAuthenticatedRequest(endpoint, 'GET', null, currentUserType);
-
-        console.log('✅ All flight bookings response:', response);
-
-        return {
-            success: true,
-            data: response,
-            message: `All flight bookings fetched successfully for ${currentUserType}`
-        };
-    } catch (error) {
-        console.error('❌ Error fetching all flight bookings:', error.message);
-        throw {
-            success: false,
-            message: error.message || "Failed to fetch all flight bookings",
-            error: error
-        };
-    }
-};
-
-
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
@@ -1165,5 +1584,72 @@ export const fetchRealTimeStatusByType = async (booking, serviceType = 'bus', us
     }
 };
 
+export const flightInvoiceServices = async (data) => {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    const url = `${baseURL}/${FlightInvoice.invoice}`;
+
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+    };
+
+    const body = {
+        BookingId: data.bookingId,
+        UserIp: data.userIp,
+        SearchTokenId: data.searchTokenId,
+        receiverEmail: data.receiverEmail
+    };
+    console.log("body", body);
+
+    try {
+        const response = await axios.post(url, body, { headers });
+
+        console.log("✅ Invoice download response:", response.data);
+        return response.data;
+
+    } catch (error) {
+        console.error('❌ Error downloading invoice:', error.message);
+        return {
+            success: false,
+            message: error.message || "Failed to download invoice",
+            error
+        };
+    }
+}
+
+export const busInvoiceServices = async (data) => {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    const url = `${baseURL}/${BusInvoice.invoice}`;
+
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+    };
+
+    const body = {
+        BookingId: data.bookingId,
+        UserIp: data.userIp,
+        SearchTokenId: data.searchTokenId,
+        receiverEmail: data.receiverEmail
+    };
+    console.log("body", body);
+
+    try {
+        const response = await axios.post(url, body, { headers });
+
+        console.log("✅ Invoice download response:", response.data);
+        return response.data;
+
+    } catch (error) {
+        console.error('❌ Error downloading invoice:', error.message);
+        return {
+            success: false,
+            message: error.message || "Failed to download invoice",
+            error
+        };
+    }
+}
 // ✅ Export service endpoints for external use if needed
 export { BusBookingServices, HotelBookingServices, FlightBookingServices };
+
+

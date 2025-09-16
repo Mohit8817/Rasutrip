@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React, { useContext,useEffect } from 'react'
 import { Container, Row, Col } from 'react-bootstrap';
 import BookingSteps from '../FlightDetails/BookingSteps';
 import FareSummary from '../FlightDetails/FareSummary';
@@ -13,7 +13,13 @@ import { useSelector } from 'react-redux';
 
 
 const FlightAddon = () => {
-
+ const location = useLocation();
+ useEffect(() => {
+  if (!document.cookie.includes("hasReloaded=true")) {
+    document.cookie = "hasReloaded=true; path=/; max-age=5"; // expires in 5s
+    window.location.reload();
+  }
+}, []);
     return (
         <div>
             
