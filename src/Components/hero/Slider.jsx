@@ -12,9 +12,18 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 const Slider = ({ type = "home" }) => {
   const [index, setIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState("bus");
+  // const [activeTab, setActiveTab] = useState("bus");
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem("activeTab") || "bus";
+  });
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    localStorage.setItem("activeTab", newTab); // user selection save karo
+  };
 
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
@@ -50,9 +59,9 @@ const Slider = ({ type = "home" }) => {
   }, [location, navigate]);
 
   // Update activeTab and update URL
-  const handleTabChange = (newTab) => {
-    setActiveTab(newTab);
-  };
+  // const handleTabChange = (newTab) => {
+  //   setActiveTab(newTab);
+  // };
 
   // Function to render tab content
   const renderActiveTabContent = () => {
@@ -64,7 +73,7 @@ const Slider = ({ type = "home" }) => {
       case "bus":
         return <BusBooking />;
       default:
-        return <FlightBooking />;
+        return <BusBooking />;
     }
   };
 
