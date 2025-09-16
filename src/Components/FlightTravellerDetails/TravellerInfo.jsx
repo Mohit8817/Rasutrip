@@ -203,6 +203,8 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
             });
         } catch (e) {
             localStorage.setItem('passengersData', JSON.stringify(passengersData));
+            // window.location.reload();
+
             navigate('/addons', {
                 state: { SSR: [], ReturnSSR: null, SelectedFare, passengersData, Faresummary }
             });
