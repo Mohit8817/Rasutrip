@@ -839,10 +839,6 @@ const FlightBookingComponent = () => {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <div className="text-sm text-gray-600">Invoice Number</div>
-                          <div className="font-medium font-mono">{statusData.flightDetails.invoiceNo}</div>
-                        </div>
-                        <div>
                           <div className="text-sm text-gray-600">Invoice Date</div>
                           <div className="font-medium">{formatDate(statusData.flightDetails.invoiceDate)}</div>
                         </div>
