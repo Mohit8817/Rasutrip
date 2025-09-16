@@ -1,43 +1,41 @@
-import { Container, Row, Col } from 'react-bootstrap';
+import { Container, Row, Col } from "react-bootstrap";
 
-import CitySelector from './CitySelector'
-import DateSelector from './DateSelector'
-import GuestRoomSelector from './GuestRoomSelector'
-import CountrySelector from './CountrySelector'
-import SearchButton from '../Common/SearchButton'
+import CitySelector from "./CitySelector";
+import DateSelector from "./DateSelector";
+import GuestRoomSelector from "./GuestRoomSelector";
+import CountrySelector from "./CountrySelector";
+import SearchButton from "../Common/SearchButton";
 
 const HotelSearchForm = () => {
-    return (
-        <div>
-            <Container>
-
-                <Row>
-                    <Col>
-                        <h6 className="fw-bold mb-3 text-start">Book Domestic and International Hotels</h6>
-
-                    </Col>
-                </Row>
-                <Row className='mt-2'>
-                    <Col lg={3} className='p-0 m-0 mb-1'>
-                        <CitySelector />
-                    </Col>
-                    <Col lg={3} className='mb-1'>
-                        <DateSelector />
-                    </Col>
-                    <Col lg={3} className='mb-1'>
-                        <GuestRoomSelector />
-                    </Col>
-                    <Col lg={2} className='mb-1'>
-                        <CountrySelector />
-                    </Col>
-                    <Col lg={1}>
-
-                        <SearchButton  type="hotel" />
-                    </Col>
-                </Row>
-            </Container>
-        </div>  
-    )
-}
-
-export default HotelSearchForm
+  return (
+    <div>
+      <Container>
+        <Row>
+          <Col>
+            <h6 className="fw-bold mb-3 text-start">
+              Book Domestic and International Hotels
+            </h6>
+          </Col>
+        </Row>
+        <Row className="mt-2">
+          <Col lg={3} className="p-0 m-0 mb-1">
+            <CitySelector />
+          </Col>
+          <Col lg={3} className="mb-1">
+            <DateSelector />
+          </Col>
+          <Col lg={3} className="mb-1">
+            <GuestRoomSelector />
+          </Col>
+          <Col lg={2} className="mb-1">
+            <CountrySelector />
+          </Col>
+          <Col lg={1}>
+            <SearchButton type="hotel" />
+          </Col>
+        </Row>
+      </Container>
+    </div>
+  );
+};
+export default HotelSearchForm;

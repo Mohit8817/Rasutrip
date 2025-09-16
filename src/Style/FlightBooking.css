@@ -358,9 +358,9 @@ body {
 
 /* Button */
 .Mybutton {
-    background-color: #cb0d26;
+    background-color: rgb(201, 14, 39);
     color: white;
-    border-radius: 18px;
+    /* border-radius: 18px; */
     padding: 38px 28px; /* Reverted */
     font-weight: bold;
     box-shadow: 6px 6px 10px rgba(37, 37, 37, 0.1);
@@ -614,7 +614,7 @@ body {
 .Mybutton {
   background-color: #cb0d26;
   color: white;
-  border-radius: 18px;
+  /* border-radius: 18px; */
   padding: 38px 28px; /* Reverted */
   font-weight: bold;
   box-shadow: 6px 6px 10px rgba(37, 37, 37, 0.1);
@@ -717,7 +717,17 @@ body {
 }
 
 
+
 /* fgg */
+  .date-button-wrapper {
+    border: 1px solid #ccc;
+    padding: 15px 10px;
+    min-width: 140px; /* Reverted */
+    cursor: pointer;
+    user-select: none;
+    transition: border 0.2s;
+  }
+
 
 
 .fare-scroll {
@@ -758,4 +768,19 @@ body {
   box-shadow: 6px 6px 10px rgba(37, 37, 37, 0.1);
   border: none;
   width: fit; 
+}
+
+
+/* start */
+
+
+.custom-date-picker {
+  display: flex;
+  flex-direction: column; /* default: top-bottom */
+}
+
+@media (min-width: 992px) {
+  .custom-date-picker {
+    flex-direction: row; /* 992px से last तक side by side */
+  }
 }

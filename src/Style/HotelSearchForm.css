@@ -3,7 +3,8 @@
 
 .city_box {
   border-radius: 12px;
-  max-width: 550px !important; /* Reverted */
+  min-width: 100% !important;
+  /* max-width: 550px !important; Reverted */
   padding: 27px 10px; /* Reverted */
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
   background-color: #fff;
@@ -60,11 +61,12 @@
 
 
 .guest-room-box {
-  width: 280px; /* Reverted */
+  min-width: 100% !important;
   text-align: left;
   padding: 9px 10px;
   cursor: pointer;
   border-radius: 12px;
+  display: wrap;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.08);
   background-color: #fff;
 }
@@ -83,8 +85,11 @@
 /* Tablet screens (768px se neeche) */
 @media (max-width: 768px) {
   .guest-room-box {
-    width: 240px !important; /* Reverted */
-    padding: 8px;
+    /* /* width: 240px !important;  */
+    /* padding: 10px; */
+      padding: 9px 10px !important;
+
+    min-width: 100% !important;
   }
 }
 
@@ -92,11 +97,16 @@
 @media (max-width: 576px) {
 
   .guest-room-box {
-    /* max-width: 280px !important; Reverted */
-    padding: 0px;
-    margin-bottom: 10px;
+    max-width: 280px !important;
+    /* padding: 0px; */
+      padding: 9px 10px;
+
+    /* margin-bottom: 10px; */
+   /* min-width: 100% !important; */
     
   }
+
+  
 
 
   .city_box {
@@ -145,16 +155,21 @@
 /* Tablet */
 @media (max-width: 1024px) {
   .country-card {
-    max-width: 160px;
-    padding: 18px 10px;
+    /* max-width: 160px; */
+    /* padding: 18px 10px; */
+    /* background-color: red; */
+    max-width: 100% !important;
+    padding: 10px;
   }
 }
 
 /* Mobile  */
 @media (max-width: 768px) {
   .country-card {
-    max-width: 140px;
-    padding: 7px 8px !important;
+    /* max-width: 140px; */
+    /* padding: 7px 8px !important; */
+     max-width: 100% ;
+    padding: 10px;
   }
 }
 
@@ -163,6 +178,7 @@
   .country-card {
     max-width: 100%;
     padding: 10px;
+    /* background-color: red; */
   }
 }
 
