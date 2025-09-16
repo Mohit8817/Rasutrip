@@ -360,7 +360,7 @@ body {
 .Mybutton {
     background-color: rgb(201, 14, 39);
     color: white;
-    /* border-radius: 18px; */
+    border-radius: 6px;
     padding: 38px 28px; /* Reverted */
     font-weight: bold;
     box-shadow: 6px 6px 10px rgba(37, 37, 37, 0.1);
@@ -614,7 +614,7 @@ body {
 .Mybutton {
   background-color: #cb0d26;
   color: white;
-  /* border-radius: 18px; */
+  border-radius: 6px;
   padding: 38px 28px; /* Reverted */
   font-weight: bold;
   box-shadow: 6px 6px 10px rgba(37, 37, 37, 0.1);

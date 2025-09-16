@@ -12,7 +12,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 const Slider = ({ type = "home" }) => {
   const [index, setIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState("flight");
+  const [activeTab, setActiveTab] = useState("bus");
   const location = useLocation();
   const navigate = useNavigate();
 
