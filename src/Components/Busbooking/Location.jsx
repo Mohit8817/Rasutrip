@@ -1,28 +1,28 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Container, Row, Col, Form } from 'react-bootstrap';
-import { LocationContext } from '../Context/LocationContext';
-import { fetchBusCities } from '../APIS/BusApi/BusApis';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import '../../Style/BusBooking.css';
+import React, { useContext, useEffect, useState } from "react";
+import { Container, Row, Col, Form } from "react-bootstrap";
+import { LocationContext } from "../Context/LocationContext";
+import { fetchBusCities } from "../APIS/BusApi/BusApis";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "../../Style/BusBooking.css";
 
 const Location = () => {
   const { locationData, setLocationData } = useContext(LocationContext);
   const [busCities, setBusCities] = useState([]);
-  const [fromQuery, setFromQuery] = useState('Bangalore');
-  const [toQuery, setToQuery] = useState('Hyderabad');
+  const [fromQuery, setFromQuery] = useState("Bangalore");
+  const [toQuery, setToQuery] = useState("Hyderabad");
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const [showToDropdown, setShowToDropdown] = useState(false);
 
   // Set default values on load
   useEffect(() => {
-    if (!locationData.bookingType || locationData.bookingType !== 'bus') {
+    if (!locationData.bookingType || locationData.bookingType !== "bus") {
       setLocationData((prev) => ({
         ...prev,
-        fromCity: 'Bangalore',
+        fromCity: "Bangalore",
         fromCityId: 8463,
-        toCity: 'Hyderabad',
+        toCity: "Hyderabad",
         toCityId: 9573,
-        bookingType: 'bus',
+        bookingType: "bus",
       }));
     }
   }, []);
@@ -34,7 +34,7 @@ const Location = () => {
         .then((data) => {
           setBusCities(data?.results || []);
         })
-        .catch((err) => console.error('From city error:', err));
+        .catch((err) => console.error("From city error:", err));
     }
   }, [fromQuery]);
 
@@ -45,7 +45,7 @@ const Location = () => {
         .then((data) => {
           setBusCities(data?.results || []);
         })
-        .catch((err) => console.error('To city error:', err));
+        .catch((err) => console.error("To city error:", err));
     }
   }, [toQuery]);
 
@@ -58,7 +58,7 @@ const Location = () => {
 
     setLocationData(updatedData);
 
-    if (field === 'fromCity') {
+    if (field === "fromCity") {
       setFromQuery(city.city_name);
       setShowFromDropdown(false);
     } else {
@@ -67,7 +67,6 @@ const Location = () => {
     }
   };
 
-
   return (
     <Container>
       <div className="city-wrapper">
@@ -75,7 +74,7 @@ const Location = () => {
         <Row className="g-2">
           {/* FROM City */}
           <Col md={6}>
-            <div className="city-box position-relative">
+            <div className="city-box position-relative ">
               <Form.Group controlId="fromCity">
                 <Form.Label className="city-label">FROM</Form.Label>
                 <Form.Control
@@ -96,14 +95,13 @@ const Location = () => {
                       <li
                         key={city._id}
                         className="dropdown-item"
-                        onClick={() => handleCitySelect('fromCity', city)}
+                        onClick={() => handleCitySelect("fromCity", city)}
                       >
                         {city.city_name}
                       </li>
                     ))}
                   </ul>
                 )}
-
               </Form.Group>
             </div>
           </Col>
@@ -131,14 +129,13 @@ const Location = () => {
                       <li
                         key={city._id}
                         className="dropdown-item"
-                        onClick={() => handleCitySelect('toCity', city)}
+                        onClick={() => handleCitySelect("toCity", city)}
                       >
                         {city.city_name}
                       </li>
                     ))}
                   </ul>
                 )}
-
               </Form.Group>
             </div>
           </Col>

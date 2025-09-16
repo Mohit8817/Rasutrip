@@ -55,7 +55,8 @@ const GuestRoomSelector = () => {
   };
 
   return (
-    <div className=" position-relative d-inline-block" ref={popupRef}>
+    // <div className="container">
+    <div className=" position-relative d-inline-block w-100" ref={popupRef}>
       {/* Main Summary Box */}
       <Card className="guest-room-box" onClick={() => setShowPopup(!showPopup)}>
         <Card.Body>
@@ -66,7 +67,7 @@ const GuestRoomSelector = () => {
           </div>
         </Card.Body>
       </Card>
-
+      {/* </div> */}
       {/* Popup Panel */}
       {showPopup && (
         <div
