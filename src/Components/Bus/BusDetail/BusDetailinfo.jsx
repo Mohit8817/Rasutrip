@@ -56,8 +56,8 @@ const BusDetailinfo = () => {
             ResultIndex: resultIndex || "TB-1",
             BoardingPointId: boarding?.CityPointId || boarding?.Id || 1,
             DroppingPointId: dropping?.CityPointId || dropping?.Id || 1,
-            OriginId: originId || "8463",
-            DestinationId: destinationId || "9573",
+            OriginId: originId || "",
+            DestinationId: destinationId || "",
             Passenger: []
         };
     };
@@ -123,8 +123,8 @@ const BusDetailinfo = () => {
                 userIp: userIp || "122.161.64.143",
                 searchTokenId: searchTokenId || "e703c52750f2a93d7bb5cc838f7074e225d63112",
                 resultIndex: resultIndex || "TB-1",
-                originId: originId || "8463",
-                destinationId: destinationId || "9573",
+                originId: originId || "",
+                destinationId: destinationId || "",
 
                 // Additional derived parameters
                 numberOfPassengers: selectedSeats?.length || 0,

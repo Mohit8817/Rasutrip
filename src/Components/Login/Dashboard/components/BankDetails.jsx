@@ -36,18 +36,27 @@ const BankDetails = () => {
 
             const response = await BankService.getBankDetails();
 
+            // ✅ Add debugging to see exact response structure
+            console.log('🔍 Full getBankDetails response:', response);
+            console.log('🔍 Response data:', response.data);
+
             if (response.success && response.data) {
+                // ✅ Log what fields are available
+                console.log('🔍 Available fields:', Object.keys(response.data));
+
                 setBankDetails({
-                    accHolderName: response.data.accHolderName || '',
+                    accHolderName: response.data.accHolderName || response.data.accHoIderName || '', // Handle typo
                     bankName: response.data.bankName || '',
                     accountNumber: response.data.accountNumber || '',
                     ifscCode: response.data.ifscCode || '',
                     branchName: response.data.branchName || '',
                     accountType: response.data.accountType || 'savings'
                 });
+            } else {
+                console.log('⚠️ No bank details found or response unsuccessful');
             }
         } catch (error) {
-            console.error('Error fetching bank details:', error);
+            console.error('❌ Error fetching bank details:', error);
             setError(error.message || 'Failed to load bank details');
         } finally {
             setLoading(false);
@@ -136,8 +145,18 @@ const BankDetails = () => {
                 setIsEditing(false);
                 setSelectedFile(null);
 
-                // Refresh bank details after successful upload
-                await fetchBankDetails();
+                // ✅ FIXED: Update state with current form values instead of refetching
+                // This preserves all fields even if API doesn't return them all
+                if (response.data) {
+                    setBankDetails(prevDetails => ({
+                        ...prevDetails, // Keep existing values
+                        ...response.data, // Override with API response data
+                        // Ensure these fields are preserved if missing from API response
+                        accHolderName: response.data.accHolderName || prevDetails.accHolderName,
+                        branchName: response.data.branchName || prevDetails.branchName,
+                        accountType: response.data.accountType || prevDetails.accountType
+                    }));
+                }
 
                 // Clear message after 3 seconds
                 setTimeout(() => setMessage(''), 3000);
@@ -188,7 +207,7 @@ const BankDetails = () => {
                             <h4 className="text-2xl font-bold mb-1 text-gray-800">Bank Details</h4>
                             <p className="text-gray-600">Manage your banking information for payments</p>
                         </div>
-                       
+
                     </div>
                 </div>
 

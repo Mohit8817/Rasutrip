@@ -379,7 +379,7 @@ const BusTravellerinfo = () => {
 
             const passengerPayload = {
                 LeadPassenger: passenger.isLeadPassenger || (index === 0),
-                Title: passenger.title || "Mr",
+                Title: passenger.title || "",
                 FirstName: passenger.firstName?.trim() || "",
                 LastName: passenger.lastName?.trim() || "",
                 Email: contactData.email?.trim() || "",
@@ -424,10 +424,10 @@ const BusTravellerinfo = () => {
 
             // Set defaults for missing values
             requiredFields.UserIp = requiredFields.UserIp || "122.161.64.143";
-            requiredFields.BoardingPointId = requiredFields.BoardingPointId || 1;
-            requiredFields.DroppingPointId = requiredFields.DroppingPointId || 1;
-            requiredFields.OriginId = requiredFields.OriginId || "8463";
-            requiredFields.DestinationId = requiredFields.DestinationId || "9573";
+            requiredFields.BoardingPointId = requiredFields.BoardingPointId || '';
+            requiredFields.DroppingPointId = requiredFields.DroppingPointId || '';
+            requiredFields.OriginId = requiredFields.OriginId || '';
+            requiredFields.DestinationId = requiredFields.DestinationId || '';
 
             // Prepare passenger data with enhanced seat name handling
             const passengers = preparePassengerDataForAPI();
@@ -440,7 +440,7 @@ const BusTravellerinfo = () => {
             const hasLeadPassenger = passengers.some(p => p.LeadPassenger === true);
             if (!hasLeadPassenger) {
                 passengers[0].LeadPassenger = true;
-                console.warn("⚠️ No lead passenger set, making first passenger lead");
+                console.warn("No lead passenger set, making first passenger lead");
             }
 
             const blockSeatPayload = {
@@ -454,11 +454,11 @@ const BusTravellerinfo = () => {
                 Passenger: passengers
             };
 
-            console.log("🔒 FINAL Block Seat Payload:");
+            console.log(" FINAL Block Seat Payload:");
             console.log(JSON.stringify(blockSeatPayload, null, 2));
 
             // Log seat names being sent
-            console.log("🎫 Seat names being sent to API:",
+            console.log(" Seat names being sent to API:",
                 blockSeatPayload.Passenger.map(p => p.SeatName)
             );
 
@@ -467,7 +467,7 @@ const BusTravellerinfo = () => {
             console.log("📡 Block Seats API Response:", blockResponse);
 
             if (blockResponse && blockResponse.ResponseStatus === 1) {
-                console.log("✅ Seats blocked successfully");
+                console.log("Seats blocked successfully");
                 setSeatsBlocked(true);
                 setBlockSeatResponse(blockResponse);
                 return blockResponse;
@@ -479,12 +479,12 @@ const BusTravellerinfo = () => {
                     blockResponse?.error ||
                     "API call failed - no specific error message returned";
 
-                console.error("❌ API returned error:", blockResponse);
+                console.error(" API returned error:", blockResponse);
                 throw new Error(errorMessage);
             }
 
         } catch (error) {
-            console.error("❌ Block Seats API Call Failed:", error);
+            console.error("Block Seats API Call Failed:", error);
 
             // Show the exact error message from API or network error
             let apiErrorMessage = error.message;

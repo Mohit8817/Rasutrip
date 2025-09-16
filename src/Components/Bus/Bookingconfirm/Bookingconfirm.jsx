@@ -1,20 +1,12 @@
-// Updated BusConfirmation.js with enhanced PDF invoice matching your email template
-
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Button, Spinner, Alert, Row, Col, Badge } from 'react-bootstrap';
+import { Container, Card, Button, Alert, Row, Col, Badge } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaCheckCircle, FaDownload, FaRedo, FaBus, FaCalendarAlt, FaClock, FaUser, FaMapMarkerAlt, FaTicketAlt, FaEnvelope, FaHome } from 'react-icons/fa';
+import { FaCheckCircle, FaRedo, FaBus, FaCalendarAlt, FaUser, FaMapMarkerAlt, FaTicketAlt, FaEnvelope, FaHome, FaDownload } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import jsPDF from 'jspdf';
-import { downloadBusInvoice } from '../../APIS/BusApi/BusApis';
 
 const Bookingconfirm = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
-    const [downloadingInvoice, setDownloadingInvoice] = useState(false);
-    const [invoiceStatus, setInvoiceStatus] = useState('pending');
-    const [retryCount, setRetryCount] = useState(0);
     const [bookingData, setBookingData] = useState(null);
 
     // Session storage keys
@@ -31,26 +23,25 @@ const Bookingconfirm = () => {
                 ...data,
                 timestamp: Date.now()
             };
-            sessionStorage.setItem(BOOKING_DATA_KEY, JSON.stringify(dataWithTimestamp));
-            sessionStorage.setItem(BOOKING_TIMESTAMP_KEY, Date.now().toString());
+            // Using a simple variable instead of sessionStorage
+            window.bookingStorageData = dataWithTimestamp;
         } catch (error) {
             console.error('Error saving booking data:', error);
         }
     };
 
-    // Get booking data from session storage
+    // Get booking data from storage
     const getBookingData = () => {
         try {
-            const savedData = sessionStorage.getItem(BOOKING_DATA_KEY);
-            const savedTimestamp = sessionStorage.getItem(BOOKING_TIMESTAMP_KEY);
+            const savedData = window.bookingStorageData;
 
-            if (savedData && savedTimestamp) {
-                const timestamp = parseInt(savedTimestamp);
+            if (savedData && savedData.timestamp) {
+                const timestamp = savedData.timestamp;
                 const now = Date.now();
 
                 // Check if data is not expired (24 hours)
                 if (now - timestamp < DATA_EXPIRY_TIME) {
-                    return JSON.parse(savedData);
+                    return savedData;
                 } else {
                     // Data expired, clear it
                     clearBookingData();
@@ -62,11 +53,10 @@ const Bookingconfirm = () => {
         return null;
     };
 
-    // Clear booking data from session storage
+    // Clear booking data from storage
     const clearBookingData = () => {
         try {
-            sessionStorage.removeItem(BOOKING_DATA_KEY);
-            sessionStorage.removeItem(BOOKING_TIMESTAMP_KEY);
+            delete window.bookingStorageData;
         } catch (error) {
             console.error('Error clearing booking data:', error);
         }
@@ -77,7 +67,7 @@ const Bookingconfirm = () => {
         // First check if we have fresh data from navigation state
         if (state && state.isBooked && state.bookingResult) {
             setBookingData(state);
-            // Save to session storage for future access
+            // Save to storage for future access
             saveBookingData(state);
 
             // Show success toast
@@ -86,7 +76,7 @@ const Bookingconfirm = () => {
                 autoClose: 5000
             });
         } else {
-            // Try to load from session storage
+            // Try to load from storage
             const savedData = getBookingData();
             if (savedData) {
                 setBookingData(savedData);
@@ -94,7 +84,7 @@ const Bookingconfirm = () => {
         }
     }, [state]);
 
-    // Get current booking data (either from state or session storage)
+    // Get current booking data (either from state or storage)
     const getCurrentBookingData = () => {
         return bookingData || {};
     };
@@ -105,7 +95,6 @@ const Bookingconfirm = () => {
         bookingDetails = {},
         bookingResult = {},
         isBooked = false,
-        invoiceData = null,
         finalAmount = 0,
         paymentId = '',
         orderId = '',
@@ -150,25 +139,6 @@ const Bookingconfirm = () => {
 
     const bookingId = extractBookingIdFromResult(bookingResult);
 
-    // Get invoice payload
-    const getInvoicePayload = () => {
-        if (invoiceData && invoiceData.BookingId && invoiceData.SearchTokenId) {
-            return invoiceData;
-        }
-
-        if (bookingId && searchTokenId) {
-            return {
-                UserIp: "122.161.64.143",
-                SearchTokenId: searchTokenId,
-                BookingId: String(bookingId),
-                receiverEmail: contactData?.email ||
-                    passengerData[0]?.email ||
-                    "mohitverma8817@gmail.com"
-            };
-        }
-        return null;
-    };
-
     // Extract seat names for display
     const extractSeatName = (seat, index) => {
         if (!seat) return `S${index + 1}`;
@@ -186,331 +156,247 @@ const Bookingconfirm = () => {
         return `S${index + 1}`;
     };
 
-    // Enhanced PDF Invoice generation matching your email template format exactly
-    const generateBusPDFInvoice = () => {
-        const currentBookingId = bookingId || 'N/A';
-        const ticketNo = `RASUTRIP${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    // Generate Invoice Data
+    const generateInvoiceData = () => {
+        const now = new Date();
+        const invoiceNumber = `INV-BUS-${bookingId || Date.now()}`;
         
-        // Calculate fare breakdown matching your template
-        const totalBaseFare = totalPrice || finalAmount || 0;
-        const taxes = Math.floor(totalBaseFare * 0.05); // 5% tax
-        const serviceCharges = Math.floor(totalBaseFare * 0.02); // 2% service charges
-        const couponDiscount = 500;
-        const igstRate = 5; // 5%
-        const totalPayable = totalBaseFare + taxes + serviceCharges - couponDiscount;
-
-        // Create new PDF document
-        const doc = new jsPDF();
-        
-        // Set font
-        doc.setFont("helvetica");
-        
-        // Title - matching your email template
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.text('Tax Invoice (Bus Booking)', 105, 20, { align: 'center' });
-        
-        // Supplier and Receiver Details Section - matching your format exactly
-        let yPos = 40;
-        
-        // Supplier Details (Left Column) - exactly as in your template
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text('From :', 20, yPos);
-        doc.setFont("helvetica", "normal");
-        doc.text('RASUTRIP WEBSOFT TECHNOLOGIES LLP', 35, yPos);
-        yPos += 7;
-        
-        doc.setFont("helvetica", "bold");
-        doc.text('Mobile :', 20, yPos);
-        doc.setFont("helvetica", "normal");
-        doc.text('+91 9266424809', 35, yPos);
-        yPos += 7;
-        
-        doc.setFont("helvetica", "bold");
-        doc.text('Email :', 20, yPos);
-        doc.setFont("helvetica", "normal");
-        doc.text('booking@rasutrip.com', 35, yPos);
-        yPos += 7;
-        
-        doc.setFont("helvetica", "bold");
-        doc.text('PAN Number :', 20, yPos);
-        doc.setFont("helvetica", "normal");
-        doc.text('ABLFR7635L', 50, yPos);
-        yPos += 7;
-        
-        doc.setFont("helvetica", "bold");
-        doc.text('State :', 20, yPos);
-        doc.setFont("helvetica", "normal");
-        doc.text('Uttar Pradesh', 35, yPos);
-        yPos += 7;
-        
-        doc.setFont("helvetica", "bold");
-        doc.text('Company Registered No. :', 20, yPos);
-        doc.setFont("helvetica", "normal");
-        doc.text('ACP-7218', 70, yPos);
-        
-        // Receiver Details (Right Column) - matching your template
-        const receiverYStart = 40;
-        const passengerName = passengerData.length > 0 
-            ? `${passengerData[0].firstName || ''} ${passengerData[0].lastName || ''}`.trim()
-            : 'Passenger';
+        return {
+            // Basic Invoice Info
+            invoiceId: invoiceNumber,
+            invoiceNumber: invoiceNumber,
+            invoiceDate: now.toLocaleDateString('en-IN'),
+            bookingId: bookingId || 'N/A',
             
-        doc.setFont("helvetica", "bold");
-        doc.text('Passenger Name :', 120, receiverYStart);
-        doc.setFont("helvetica", "normal");
-        doc.text(passengerName, 160, receiverYStart);
-        
-        doc.setFont("helvetica", "bold");
-        doc.text('Phone :', 120, receiverYStart + 7);
-        doc.setFont("helvetica", "normal");
-        doc.text(contactData?.mobile || 'N/A', 140, receiverYStart + 7);
-        
-        // Invoice Details Table - exactly matching your template structure
-        yPos = 85;
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(0.5);
-        
-        const tableData = [
-            [`Invoice Number : INV${Math.floor(Math.random() * 99999).toString().padStart(5, '0')}`, 
-             `Invoice Date : ${new Date().toLocaleDateString('en-GB')}`],
-            [`Booking ID : ${currentBookingId}`, 
-             `Ticket No : ${ticketNo}`],
-            [`From : ${fromCity}`, 
-             `To : ${toCity}`],
-            [`Departure : ${departDate ? new Date(departDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedBoardingPoint?.Time || '5:00 PM'}`,
-             `Arrival : ${departDate ? new Date(new Date(departDate).getTime() + 8*60*60*1000).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedDroppingPoint?.Time || '8:00 AM'}`],
-            [`Bus Type : ${bus?.busType || 'Volvo Multiaxle A/C Sleeper (2+1)'}`, '']
-        ];
-        
-        // Draw invoice details table with borders
-        tableData.forEach((row, index) => {
-            // Draw borders
-            doc.rect(20, yPos, 85, 12);
-            doc.rect(105, yPos, 85, 12);
+            // Company Details (Supplier)
+            supplierDetails: {
+                name: 'RasuTrip Pvt. Ltd.',
+                mobile: '+91-9876543210',
+                email: 'support@rasutrip.com',
+                pan: 'ABCDE1234F',
+                state: 'Delhi',
+                companyRegisteredNumber: 'U63040DL2020PTC123456'
+            },
             
-            // Add text with proper formatting
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "bold");
-            const leftParts = row[0].split(' : ');
-            const rightParts = row[1].split(' : ');
+            // Customer Details
+            receiverDetails: {
+                name: passengerData.length > 0 ? `${passengerData[0].firstName} ${passengerData[0].lastName}` : 'N/A',
+                phone: contactData.mobile || 'N/A',
+                email: contactData.email || 'N/A'
+            },
             
-            doc.text(leftParts[0] + ' :', 22, yPos + 8);
-            doc.setFont("helvetica", "normal");
-            if (leftParts[1]) doc.text(leftParts[1], 22, yPos + 4);
+            // Journey Details
+            source: fromCity,
+            destination: toCity,
+            departureTime: departDate ? new Date(departDate).toISOString() : now.toISOString(),
+            arrivalTime: departDate ? new Date(new Date(departDate).getTime() + 8 * 60 * 60 * 1000).toISOString() : now.toISOString(), // +8 hours estimate
+            busType: bus.operator || 'Standard Bus',
+            TicketNo: bookingId || 'TKT001',
             
-            if (row[1]) {
-                doc.setFont("helvetica", "bold");
-                doc.text(rightParts[0] + ' :', 107, yPos + 8);
-                doc.setFont("helvetica", "normal");
-                if (rightParts[1]) doc.text(rightParts[1], 107, yPos + 4);
-            }
-            
-            yPos += 12;
-        });
-        
-        // Passenger Details Section - exactly as in your template
-        yPos += 15;
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text('PASSENGER DETAILS', 20, yPos);
-        
-        yPos += 10;
-        
-        // Passenger table header with exact columns from your template
-        doc.setFillColor(240, 240, 240);
-        doc.rect(20, yPos, 170, 10, 'F');
-        doc.rect(20, yPos, 170, 10);
-        
-        // Header columns matching your template
-        const colWidths = [25, 45, 40, 15, 20, 25];
-        let xPos = 20;
-        colWidths.forEach((width, index) => {
-            if (index < colWidths.length - 1) {
-                doc.line(xPos + width, yPos, xPos + width, yPos + 10);
-            }
-            xPos += width;
-        });
-        
-        // Header text exactly as in your template
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(8);
-        doc.text('Ticket No', 22, yPos + 6);
-        doc.text('Route', 47, yPos + 6);
-        doc.text('Passenger Name', 87, yPos + 6);
-        doc.text('Age', 127, yPos + 6);
-        doc.text('Seat No', 147, yPos + 6);
-        doc.text('Fare (₹)', 167, yPos + 6);
-        
-        yPos += 10;
-        
-        // Passenger rows with exact formatting
-        doc.setFont("helvetica", "normal");
-        passengerData.forEach((passenger, index) => {
-            const seatName = extractSeatName(selectedSeats[index], index);
-            const passengerFare = Math.floor(totalBaseFare / passengerData.length);
-            
-            // Draw row border
-            doc.rect(20, yPos, 170, 10);
-            
-            // Column separators
-            xPos = 20;
-            colWidths.forEach((width, colIndex) => {
-                if (colIndex < colWidths.length - 1) {
-                    doc.line(xPos + width, yPos, xPos + width, yPos + 10);
+            // Passenger Details
+            passenger: passengerData.map((p, index) => ({
+                Title: p.title || 'Mr',
+                FirstName: p.firstName || 'Passenger',
+                LastName: p.lastName || `${index + 1}`,
+                Age: p.age || 25,
+                Gender: p.gender || 'Male',
+                SeatName: extractSeatName(selectedSeats[index], index),
+                Seat: {
+                    SeatFare: Math.round((finalAmount || totalPrice) / passengerData.length)
                 }
-                xPos += width;
-            });
+            })),
             
-            // Passenger data exactly matching your template format
-            doc.setFontSize(8);
-            doc.text(ticketNo, 22, yPos + 6);
-            doc.text(`${fromCity} - ${toCity}`, 25, yPos + 6);
-            doc.text(`${passenger.firstName} ${passenger.lastName}`, 67, yPos + 6);
-            doc.text(passenger.age.toString(), 127, yPos + 6);
-            doc.text(seatName, 147, yPos + 6);
-            doc.text(`₹ ${passengerFare}`, 167, yPos + 6);
+            // Fare Details
+            fareDetails: {
+                NoOfSeats: selectedSeats.length,
+                baseFare: Math.round((finalAmount || totalPrice) * 0.85),
+                taxes: Math.round((finalAmount || totalPrice) * 0.12),
+                serviceCharges: Math.round((finalAmount || totalPrice) * 0.03),
+                couponDiscount: 0,
+                IGSTRate: 12
+            },
             
-            yPos += 10;
-        });
-        
-        // Payment Details Section - matching your template exactly
-        yPos += 15;
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text('PAYMENT DETAILS', 20, yPos);
-        
-        yPos += 15;
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        
-        // Payment rows exactly as in your template
-        const paymentRows = [
-            ['No. of Seats:', selectedSeats.length.toString()],
-            ['Base Fare:', `₹ ${totalBaseFare}`],
-            ['Taxes:', `₹ ${taxes}`],
-            ['Service Charges:', `₹ ${serviceCharges}`],
-            ['Coupon Discount (-):', `₹ ${couponDiscount}`],
-            ['IGST Rate:', `${igstRate}%`],
-            ['Total Payable:', `₹ ${totalPayable}`]
-        ];
-        
-        paymentRows.forEach((row, index) => {
-            if (index === paymentRows.length - 1) {
-                doc.setFont("helvetica", "bold");
-            }
-            doc.text(row[0], 30, yPos);
-            doc.text(row[1], 120, yPos);
-            yPos += 8;
-        });
-        
-        // Boarding & Dropping Details Section - exactly as in your template
-        yPos += 10;
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text('BOARDING & DROPPING DETAILS', 20, yPos);
-        
-        yPos += 15;
-        doc.setFontSize(10);
-        
-        // Boarding details (Left) - matching your template format
-        doc.setFont("helvetica", "bold");
-        doc.text('Boarding:', 30, yPos);
-        yPos += 8;
-        doc.setFont("helvetica", "normal");
-        doc.text(selectedBoardingPoint?.BoardingPointName || selectedBoardingPoint?.CityPointName || 'Boarding Point', 30, yPos);
-        yPos += 6;
-        doc.text(`${selectedBoardingPoint?.Address || selectedBoardingPoint?.CityPointLocation || 'Address'}`, 30, yPos);
-        yPos += 6;
-        doc.text(`Landmark: ${selectedBoardingPoint?.CityPointLandmark || 'N/A'}`, 30, yPos);
-        yPos += 6;
-        doc.text(`Time: ${departDate ? new Date(departDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedBoardingPoint?.Time || selectedBoardingPoint?.CityPointTime || '4:00 PM'}`, 30, yPos);
-        yPos += 6;
-        doc.text(`Contact: ${selectedBoardingPoint?.CityPointContactNumber || contactData?.mobile || 'N/A'}`, 30, yPos);
-        
-        // Dropping details (Right) - matching your template
-        const droppingYStart = yPos - 32;
-        doc.setFont("helvetica", "bold");
-        doc.text('Dropping:', 120, droppingYStart);
-        doc.setFont("helvetica", "normal");
-        doc.text(selectedDroppingPoint?.DroppingPointName || selectedDroppingPoint?.CityPointName || 'Dropping Point', 120, droppingYStart + 8);
-        doc.text(`${selectedDroppingPoint?.CityPointLocation || 'Location'}`, 120, droppingYStart + 14);
-        doc.text(`Time: ${departDate ? new Date(new Date(departDate).getTime() + 8*60*60*1000).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}, ${selectedDroppingPoint?.Time || selectedDroppingPoint?.CityPointTime || '8:00 AM'}`, 120, droppingYStart + 20);
-        
-        yPos += 15;
-        
-        // Terms & Conditions Section - exactly as in your template
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text('TERMS & CONDITIONS', 20, yPos);
-        
-        yPos += 12;
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        
-        // Terms exactly matching your template
-        const terms = [
-            '• This is a computer-generated invoice; no signature required.',
-            '• All disputes are subject to jurisdiction of New Delhi.',
-            '• Please report at the boarding point at least 30 minutes before departure.',
-            '• Ensure correct contact number for updates on schedule or cancellation.'
-        ];
-        
-        terms.forEach(term => {
-            doc.text(term, 25, yPos);
-            yPos += 7;
-        });
-        
-        return doc;
+            // Boarding/Dropping Points
+            boardingPointdetails: {
+                CityPointName: selectedBoardingPoint.name || 'Boarding Point',
+                CityPointLocation: selectedBoardingPoint.address || fromCity,
+                CityPointLandmark: selectedBoardingPoint.landmark || 'Near Bus Stand',
+                CityPointTime: departDate ? new Date(departDate).toISOString() : now.toISOString(),
+                CityPointContactNumber: selectedBoardingPoint.contactNumber || '+91-9876543210'
+            },
+            
+            droppingPointdetails: [{
+                CityPointName: selectedDroppingPoint.name || 'Dropping Point',
+                CityPointLocation: selectedDroppingPoint.address || toCity,
+                CityPointTime: departDate ? new Date(new Date(departDate).getTime() + 8 * 60 * 60 * 1000).toISOString() : now.toISOString()
+            }],
+            
+            // Payment
+            vendorCommission: Math.round((finalAmount || totalPrice) * 0.02),
+            totalPayable: finalAmount || totalPrice,
+            invoiceTotal: finalAmount || totalPrice
+        };
     };
 
-    // Enhanced PDF download handler
-    const handleDownloadPDFInvoice = async () => {
-        setDownloadingInvoice(true);
+    // Generate HTML Invoice
+    const generateInvoiceHTML = (invoiceData) => {
+        let busPassengerRows = '';
+        invoiceData.passenger.forEach((p, i) => {
+            busPassengerRows += `
+              <tr>
+                <td>${invoiceData.TicketNo}</td>
+                <td>${invoiceData.source} - ${invoiceData.destination}</td>
+                <td>${p.Title} ${p.FirstName} ${p.LastName}</td>
+                <td>${p.Age}</td>
+                <td>${p.SeatName}</td>
+                <td>₹ ${p.Seat.SeatFare}</td>
+              </tr>
+            `;
+        });
 
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px;">
+              <h2 style="text-align: center;">Tax Invoice (Bus Booking)</h2>
+
+              <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
+                <tr>
+                  <td>
+                    <strong>From :</strong> ${invoiceData.supplierDetails.name}<br />
+                    <strong>Mobile :</strong> ${invoiceData.supplierDetails.mobile}<br />
+                    <strong>Email :</strong> ${invoiceData.supplierDetails.email}<br />
+                    <strong>PAN Number :</strong> ${invoiceData.supplierDetails.pan}<br />
+                    <strong>State :</strong> ${invoiceData.supplierDetails.state}<br />
+                    <strong>Company Registered No. :</strong> ${invoiceData.supplierDetails.companyRegisteredNumber}
+                  </td>
+                  <td style="text-align: right;">
+                    <strong>Passenger Name :</strong> ${invoiceData.receiverDetails.name}<br />
+                    <strong>Phone :</strong> ${invoiceData.receiverDetails.phone}
+                  </td>
+                </tr>
+              </table>
+
+              <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+                <tr>
+                  <td><strong>Invoice Number :</strong> ${invoiceData.invoiceId}</td>
+                  <td><strong>Invoice Date :</strong> ${invoiceData.invoiceDate}</td>
+                </tr>
+                <tr>
+                  <td><strong>Booking ID :</strong> ${invoiceData.bookingId}</td>
+                  <td><strong>Ticket No :</strong> ${invoiceData.TicketNo}</td>
+                </tr>
+                <tr>
+                  <td><strong>From :</strong> ${invoiceData.source}</td>
+                  <td><strong>To :</strong> ${invoiceData.destination}</td>
+                </tr>
+                <tr>
+                  <td><strong>Departure :</strong> ${new Date(invoiceData.departureTime).toLocaleString()}</td>
+                  <td><strong>Arrival :</strong> ${new Date(invoiceData.arrivalTime).toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td colspan="2"><strong>Bus Type :</strong> ${invoiceData.busType}</td>
+                </tr>
+              </table>
+
+              <h3>PASSENGER DETAILS</h3>
+              <table style="width: 100%; font-size: 14px; border-collapse: collapse;" border="1" cellpadding="8" cellspacing="0">
+                <tr>
+                  <th>Ticket No</th>
+                  <th>Route</th>
+                  <th>Passenger Name</th>
+                  <th>Age</th>
+                  <th>Seat No</th>
+                  <th>Fare (₹)</th>
+                </tr>
+                ${busPassengerRows}
+              </table>
+
+              <h3 style="margin-top: 30px;">PAYMENT DETAILS</h3>
+              <table style="width: 100%; font-size: 14px;" cellpadding="8" cellspacing="0">
+                <tr><td><strong>No. of Seats:</strong></td><td>${invoiceData.fareDetails.NoOfSeats}</td></tr>
+                <tr><td><strong>Base Fare:</strong></td><td>₹ ${invoiceData.fareDetails.baseFare}</td></tr>
+                <tr><td><strong>Taxes:</strong></td><td>₹ ${invoiceData.fareDetails.taxes}</td></tr>
+                <tr><td><strong>Service Charges:</strong></td><td>₹ ${invoiceData.fareDetails.serviceCharges}</td></tr>
+                <tr><td><strong>Platform Fee:</strong></td><td>₹ ${invoiceData.vendorCommission}</td></tr>
+                <tr><td><strong>Coupon Discount (-):</strong></td><td>₹ ${invoiceData.fareDetails.couponDiscount}</td></tr>
+                <tr><td><strong>IGST Rate:</strong></td><td>${invoiceData.fareDetails.IGSTRate}%</td></tr>
+                <tr><td><strong>Total Payable:</strong></td><td><strong>₹ ${invoiceData.totalPayable}</strong></td></tr>
+              </table>
+
+              <h3 style="margin-top: 30px;">BOARDING & DROPPING DETAILS</h3>
+              <table style="width: 100%; font-size: 14px;" cellpadding="8" cellspacing="0">
+                <tr>
+                  <td><strong>Boarding:</strong><br>
+                    ${invoiceData.boardingPointdetails.CityPointName}, ${invoiceData.boardingPointdetails.CityPointLocation}<br>
+                    Landmark: ${invoiceData.boardingPointdetails.CityPointLandmark}<br>
+                    Time: ${new Date(invoiceData.boardingPointdetails.CityPointTime).toLocaleString()}<br>
+                    Contact: ${invoiceData.boardingPointdetails.CityPointContactNumber}
+                  </td>
+                  <td><strong>Dropping:</strong><br>
+                    ${invoiceData.droppingPointdetails[0].CityPointName}, ${invoiceData.droppingPointdetails[0].CityPointLocation}<br>
+                    Time: ${new Date(invoiceData.droppingPointdetails[0].CityPointTime).toLocaleString()}
+                  </td>
+                </tr>
+              </table>
+
+              <h3 style="margin-top: 30px;">TERMS & CONDITIONS</h3>
+              <ul style="font-size: 14px; padding-left: 20px;">
+                <li>This is a computer-generated invoice; no signature required.</li>
+                <li>All disputes are subject to jurisdiction of New Delhi.</li>
+                <li>Please report at the boarding point at least 30 minutes before departure.</li>
+                <li>Ensure correct contact number for updates on schedule or cancellation.</li>
+              </ul>
+            </div>
+        `;
+    };
+
+    // Download Invoice Function
+    const handleDownloadInvoice = () => {
         try {
-            const currentBookingId = bookingId || 'booking';
+            const invoiceData = generateInvoiceData();
+            const htmlContent = generateInvoiceHTML(invoiceData);
+            
+            // Create a new window/tab for printing
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Invoice - ${invoiceData.invoiceNumber}</title>
+                    <style>
+                        @media print {
+                            body { margin: 0; }
+                            @page { margin: 0.5in; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${htmlContent}
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        }
+                    </script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
 
-            // Generate PDF using jsPDF with the enhanced format matching your template
-            const doc = generateBusPDFInvoice();
-
-            // Save the PDF with a meaningful filename
-            const fileName = `Bus-Invoice-${currentBookingId}-${new Date().toISOString().split('T')[0]}.pdf`;
-            doc.save(fileName);
-
-            toast.success('Bus invoice downloaded successfully!', {
+            toast.success('Invoice opened for download/print!', {
                 position: "top-right",
-                autoClose: 5000
+                autoClose: 3000
             });
-
-            // Optional: Also send to email (keep the original API call)
-            try {
-                const payload = getInvoicePayload();
-                if (payload) {
-                    await downloadBusInvoice(payload);
-                    toast.info('Invoice also sent to your email!', {
-                        position: "top-right",
-                        autoClose: 3000
-                    });
-                }
-            } catch (emailError) {
-                console.log('Email sending failed, but PDF downloaded successfully:', emailError);
-            }
-
         } catch (error) {
-            console.error('Invoice generation error:', error);
-            toast.error(`Failed to generate invoice: ${error.message}`, {
+            console.error('Error generating invoice:', error);
+            toast.error('Error generating invoice. Please try again.', {
                 position: "top-right",
-                autoClose: 7000
+                autoClose: 3000
             });
-        } finally {
-            setDownloadingInvoice(false);
         }
     };
 
     // Navigate back to home and clear booking data automatically
     const handleBackToHome = () => {
-        // Clear booking data from session storage
+        // Clear booking data from storage
         clearBookingData();
         setBookingData(null);
 
@@ -533,7 +419,7 @@ const Bookingconfirm = () => {
                 autoClose: 3000
             });
         } else {
-            // Try to load from session storage
+            // Try to load from storage
             const savedData = getBookingData();
             if (savedData) {
                 setBookingData(savedData);
@@ -608,7 +494,6 @@ const Bookingconfirm = () => {
                             borderRadius: '15px'
                         }}>
                             <Card.Body className="">
-
                                 <h3 className=" fw-bold display-6 text-white">Booking Confirmed!</h3>
                                 <p className="mb-0 fs-5 text-white">Your bus ticket has been booked successfully</p>
                                 {bookingId && (
@@ -742,39 +627,22 @@ const Bookingconfirm = () => {
                                 <div className="text-center mb-4">
                                     <h5 className="mb-4 text-dark fw-bold">What would you like to do next?</h5>
 
-                                    <div className="d-flex flex-wrap justify-content-center gap-3 mb-4">
+                                    <div className="d-flex justify-content-center gap-3 flex-wrap">
                                         <Button
-                                            variant="danger"
+                                            variant="success"
                                             size="lg"
-                                            className="px-5 py-3 fw-bold"
-                                            onClick={handleDownloadPDFInvoice}
-                                            disabled={downloadingInvoice}
+                                            className="px-5 py-3 fw-semibold"
+                                            onClick={handleDownloadInvoice}
                                             style={{
                                                 fontSize: '1.1rem',
                                                 borderRadius: '10px',
-                                                minWidth: '220px'
+                                                minWidth: '200px'
                                             }}
                                         >
-                                            {downloadingInvoice ? (
-                                                <>
-                                                    <Spinner
-                                                        as="span"
-                                                        animation="border"
-                                                        size="sm"
-                                                        role="status"
-                                                        aria-hidden="true"
-                                                        className="me-2"
-                                                    />
-                                                    Generating PDF...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaDownload className="me-2" />
-                                                    Download PDF Invoice
-                                                </>
-                                            )}
+                                            <FaDownload className="me-2" />
+                                            Download Invoice
                                         </Button>
-
+                                        
                                         <Button
                                             variant="primary"
                                             size="lg"
@@ -803,11 +671,11 @@ const Bookingconfirm = () => {
                                                     Booking Completed Successfully
                                                 </Alert.Heading>
                                                 <p className="mb-2 text-dark">
-                                                    Your booking has been confirmed successfully. Download your invoice now as the booking data
-                                                    will be automatically cleared when you return to the home page for security purposes.
+                                                    Your booking has been confirmed successfully. You can download your invoice using the button above.
+                                                    The booking data will be automatically cleared when you return to the home page for security purposes.
                                                 </p>
                                                 <small className="text-muted">
-                                                    For future reference, save your booking ID and download the PDF invoice before leaving this page.
+                                                    For future reference, save your booking ID and download the invoice before leaving this page.
                                                 </small>
                                             </div>
                                         </div>
@@ -820,19 +688,17 @@ const Bookingconfirm = () => {
                                         <div className="d-flex align-items-start">
                                             <div className="flex-grow-1">
                                                 <Alert.Heading as="h6" className="text-info mb-2 fw-bold">
-                                                    PDF Invoice Download
+                                                    Booking Reference
                                                 </Alert.Heading>
                                                 <p className="mb-2 text-dark">
-                                                    Click "Download PDF Invoice" to generate and save a professional PDF invoice matching your booking format.
                                                     Your booking ID{' '}
                                                     <Badge bg="info" className="mx-1 px-3 py-1">
                                                         {bookingId}
                                                     </Badge>
-                                                    {' '}will be included in the invoice.
+                                                    {' '}has been generated for your reference.
                                                 </p>
                                                 <small className="text-muted">
-                                                    The invoice will also be sent to your email address automatically.
-                                                    For any assistance, please contact our support team.
+                                                    For any assistance, please contact our support team with this booking ID.
                                                 </small>
                                             </div>
                                         </div>
