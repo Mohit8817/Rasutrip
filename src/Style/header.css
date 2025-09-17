@@ -54,7 +54,7 @@
 .header-nav,
 .navbar,
 .navbar-nav {
-    background: transparent !important;
+    /* background: transparent !important; */
     box-shadow: none !important;
 }
 
@@ -125,6 +125,7 @@
     transition: all 0.2s ease;
     background: none;
     border: none;
+
 }
 
 .header-nav .nav-item-link:hover {

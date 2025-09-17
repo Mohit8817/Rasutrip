@@ -262,15 +262,15 @@ body {
 }
 
 /* Fare Type */
-.fare-type-container .form-check-input:checked {
+/* .fare-type-container .form-check-input:checked {
   background-color: #cb0d26;
   border-color: #cb0d26;
-}
+} */
 
-.fare-type-container .form-check-label {
+/* .fare-type-container .form-check-label {
   font-weight: 500;
   color: #333;
-}
+} */
 
 /* Passenger Class */
 .passenger-class-box {
@@ -516,15 +516,42 @@ body {
 }
 
 /* Fare Type */
-.fare-type-container .form-check-input:checked {
+/* .fare-type-container .form-check-input:checked {
   background-color: #cb0d26;
   border-color: #cb0d26;
+} */
+
+/* .fare-type-container .form-check-label {
+  font-weight: 500;
+  color: #333;
+} */
+
+
+/* Container */
+.fare-type-container {
+  background: #fff;
+  width: 100%;
+}
+
+.fare-flex {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem; 
+}
+
+/* Input styling */
+.fare-type-container .form-check-input:checked {
+  background-color: #cb0d26 !important;
+  border-color: #cb0d26 !important;
 }
 
 .fare-type-container .form-check-label {
   font-weight: 500;
   color: #333;
+  font-size: 14px;
 }
+
 
 /* Passenger Class */
 .passenger-class-box {
@@ -781,6 +808,6 @@ body {
 
 @media (min-width: 992px) {
   .custom-date-picker {
-    flex-direction: row; /* 992px से last तक side by side */
+    flex-direction: row;
   }
 }

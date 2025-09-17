@@ -225,7 +225,6 @@ const FlightBooking = () => {
                   </>
                 )}
 
-                {/* Second row se sirf remove button option */}
                 {index > 0 && (
                   <Col xs={6} sm={6} md={2} lg={1} className="mb-2">
                     <button
@@ -239,7 +238,6 @@ const FlightBooking = () => {
               </Row>
             ))}
 
-            {/* Add more city button */}
             <Row className="mt-2">
               <Col xs={12}>
                 <button className="Mybutton" onClick={addSegment}>
@@ -247,8 +245,6 @@ const FlightBooking = () => {
                 </button>
               </Col>
             </Row>
-
-            {/* Add city row  */}
           </Container>
         )}
         <Row>
