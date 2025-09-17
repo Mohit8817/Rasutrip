@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Button, Alert, Row, Col, Badge } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaCheckCircle, FaRedo, FaBus, FaCalendarAlt, FaUser, FaMapMarkerAlt, FaTicketAlt, FaEnvelope, FaHome, FaDownload } from 'react-icons/fa';
+import { FaRedo, FaBus, FaCalendarAlt, FaUser, FaMapMarkerAlt, FaTicketAlt, FaEnvelope, FaHome, FaDownload } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 const Bookingconfirm = () => {
@@ -218,15 +218,15 @@ const Bookingconfirm = () => {
             
             // Boarding/Dropping Points
             boardingPointdetails: {
-                CityPointName: selectedBoardingPoint.name || 'Boarding Point',
+                CityPointName: selectedBoardingPoint.name || '',
                 CityPointLocation: selectedBoardingPoint.address || fromCity,
-                CityPointLandmark: selectedBoardingPoint.landmark || 'Near Bus Stand',
+                CityPointLandmark: selectedBoardingPoint.landmark || '',
                 CityPointTime: departDate ? new Date(departDate).toISOString() : now.toISOString(),
-                CityPointContactNumber: selectedBoardingPoint.contactNumber || '+91-9876543210'
+                CityPointContactNumber: selectedBoardingPoint.contactNumber || ''
             },
             
             droppingPointdetails: [{
-                CityPointName: selectedDroppingPoint.name || 'Dropping Point',
+                CityPointName: selectedDroppingPoint.name || '',
                 CityPointLocation: selectedDroppingPoint.address || toCity,
                 CityPointTime: departDate ? new Date(new Date(departDate).getTime() + 8 * 60 * 60 * 1000).toISOString() : now.toISOString()
             }],

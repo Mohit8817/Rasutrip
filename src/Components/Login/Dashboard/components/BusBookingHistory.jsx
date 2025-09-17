@@ -6,7 +6,7 @@ import { Button } from "react-bootstrap";
 import {
     fetchUpcomingBookings,
     fetchAllBookings,
-    fetchAllBookingsComplete, // Import the new complete fetch function
+    fetchAllBookingsComplete,
     getUserType,
     isUserAuthenticated,
     fetchRealTimeStatus,
@@ -214,6 +214,288 @@ const BusBookingHistory = () => {
         } catch (error) {
             console.warn('Failed to fetch all bookings:', error.message);
         }
+    };
+
+    // Combined Invoice Function - Download and Send Email
+    const handleInvoice = (booking) => {
+        try {
+            // First, generate and download invoice
+            const invoiceData = generateInvoiceData(booking);
+            const htmlContent = generateInvoiceHTML(invoiceData);
+            
+            // Create a new window/tab for printing/download
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Invoice - ${invoiceData.invoiceNumber}</title>
+                    <style>
+                        @media print {
+                            body { margin: 0; }
+                            @page { margin: 0.5in; }
+                        }
+                        body { font-family: Arial, sans-serif; }
+                    </style>
+                </head>
+                <body>
+                    ${htmlContent}
+                    <script>
+                        window.onload = function() {
+                            setTimeout(() => {
+                                window.print();
+                            }, 500);
+                        }
+                    </script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+
+            // Also trigger email send functionality
+            busInvoiceServices({
+                bookingId: booking.rawData.bookingId,
+                userIp: booking.rawData.UserIp,
+                searchTokenId: booking.rawData.SearchTokenId,
+                receiverEmail: booking.rawData.Result?.Passenger?.[0]?.Email
+            });
+
+            toast.success(`Invoice download opened & email sent! Booking ID: ${booking.bookingId}`, {
+                position: "top-right",
+                autoClose: 4000
+            });
+        } catch (error) {
+            console.error('Error processing invoice:', error);
+            toast.error('Error processing invoice. Please try again.', {
+                position: "top-right",
+                autoClose: 3000
+            });
+        }
+    };
+
+    // Generate Invoice Data from Booking
+    const generateInvoiceData = (booking) => {
+        const now = new Date();
+        const invoiceNumber = `INV-BUS-${booking.bookingId}`;
+        
+        // Parse passenger data from raw booking data
+        let passengerArray = [];
+        if (booking.rawData?.Result?.Passenger && Array.isArray(booking.rawData.Result.Passenger)) {
+            passengerArray = booking.rawData.Result.Passenger;
+        } else if (booking.passengerName && booking.passengerName !== 'N/A') {
+            // Create a single passenger object if we don't have detailed passenger data
+            passengerArray = [{
+                FirstName: booking.passengerName.split(' ')[0] || 'Passenger',
+                LastName: booking.passengerName.split(' ').slice(1).join(' ') || '',
+                Age: 25,
+                Gender: 'N/A',
+                SeatName: booking.seatNumber
+            }];
+        }
+
+        // Calculate fare breakdown
+        const totalAmount = parseFloat(booking.totalAmount) || 0;
+        const baseFare = Math.round(totalAmount * 0.85);
+        const taxes = Math.round(totalAmount * 0.12);
+        const serviceCharges = Math.round(totalAmount * 0.03);
+        const vendorCommission = Math.round(totalAmount * 0.02);
+        
+        return {
+            // Basic Invoice Info
+            invoiceId: invoiceNumber,
+            invoiceNumber: invoiceNumber,
+            invoiceDate: now.toLocaleDateString('en-IN'),
+            bookingId: booking.bookingId,
+            
+            // Company Details (Supplier)
+            supplierDetails: {
+                name: 'RasuTrip Pvt. Ltd.',
+                mobile: '+91-9876543210',
+                email: 'support@rasutrip.com',
+                pan: 'ABCDE1234F',
+                state: 'Delhi',
+                companyRegisteredNumber: 'U63040DL2020PTC123456'
+            },
+            
+            // Customer Details
+            receiverDetails: {
+                name: booking.passengerName || 'N/A',
+                phone: booking.contactNumber || 'N/A',
+                email: 'customer@email.com'
+            },
+            
+            // Journey Details
+            source: booking.from,
+            destination: booking.to,
+            departureTime: booking.travelDate ? new Date(booking.travelDate).toISOString() : now.toISOString(),
+            arrivalTime: booking.travelDate ? new Date(new Date(booking.travelDate).getTime() + 8 * 60 * 60 * 1000).toISOString() : now.toISOString(),
+            busType: booking.busType,
+            TicketNo: booking.ticketNo || booking.bookingId,
+            
+            // Passenger Details
+            passenger: passengerArray.length > 0 ? passengerArray.map((p, index) => ({
+                Title: p.Title || 'Mr',
+                FirstName: p.FirstName || 'Passenger',
+                LastName: p.LastName || `${index + 1}`,
+                Age: p.Age || 25,
+                Gender: p.Gender || 'N/A',
+                SeatName: p.SeatName || booking.seatNumber.split(',')[index] || booking.seatNumber,
+                Seat: {
+                    SeatFare: Math.round(totalAmount / Math.max(passengerArray.length, 1))
+                }
+            })) : [{
+                Title: 'Mr',
+                FirstName: booking.passengerName?.split(' ')[0] || 'Passenger',
+                LastName: booking.passengerName?.split(' ').slice(1).join(' ') || '',
+                Age: 25,
+                Gender: 'N/A',
+                SeatName: booking.seatNumber,
+                Seat: {
+                    SeatFare: totalAmount
+                }
+            }],
+            
+            // Fare Details
+            fareDetails: {
+                NoOfSeats: booking.seatNumber ? booking.seatNumber.split(',').length : 1,
+                baseFare: baseFare,
+                taxes: taxes,
+                serviceCharges: serviceCharges,
+                couponDiscount: 0,
+                IGSTRate: 12
+            },
+            
+            // Boarding/Dropping Points (default values as we don't have this data in history)
+            boardingPointdetails: {
+                CityPointName: `${booking.from} Boarding Point`,
+                CityPointLocation: booking.from,
+                CityPointLandmark: 'Main Bus Stand',
+                CityPointTime: booking.travelDate ? new Date(booking.travelDate).toISOString() : now.toISOString(),
+                CityPointContactNumber: '+91-9876543210'
+            },
+            
+            droppingPointdetails: [{
+                CityPointName: `${booking.to} Dropping Point`,
+                CityPointLocation: booking.to,
+                CityPointTime: booking.travelDate ? new Date(new Date(booking.travelDate).getTime() + 8 * 60 * 60 * 1000).toISOString() : now.toISOString()
+            }],
+            
+            // Payment
+            vendorCommission: vendorCommission,
+            totalPayable: totalAmount,
+            invoiceTotal: totalAmount
+        };
+    };
+
+    // Generate HTML Invoice (same as booking confirmation)
+    const generateInvoiceHTML = (invoiceData) => {
+        let busPassengerRows = '';
+        invoiceData.passenger.forEach((p, i) => {
+            busPassengerRows += `
+              <tr>
+                <td>${invoiceData.TicketNo}</td>
+                <td>${invoiceData.source} - ${invoiceData.destination}</td>
+                <td>${p.Title} ${p.FirstName} ${p.LastName}</td>
+                <td>${p.Age}</td>
+                <td>${p.SeatName}</td>
+                <td>₹ ${p.Seat.SeatFare}</td>
+              </tr>
+            `;
+        });
+
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px;">
+              <h2 style="text-align: center;">Tax Invoice (Bus Booking)</h2>
+
+              <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
+                <tr>
+                  <td>
+                    <strong>From :</strong> ${invoiceData.supplierDetails.name}<br />
+                    <strong>Mobile :</strong> ${invoiceData.supplierDetails.mobile}<br />
+                    <strong>Email :</strong> ${invoiceData.supplierDetails.email}<br />
+                    <strong>PAN Number :</strong> ${invoiceData.supplierDetails.pan}<br />
+                    <strong>State :</strong> ${invoiceData.supplierDetails.state}<br />
+                    <strong>Company Registered No. :</strong> ${invoiceData.supplierDetails.companyRegisteredNumber}
+                  </td>
+                  <td style="text-align: right;">
+                    <strong>Passenger Name :</strong> ${invoiceData.receiverDetails.name}<br />
+                    <strong>Phone :</strong> ${invoiceData.receiverDetails.phone}
+                  </td>
+                </tr>
+              </table>
+
+              <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+                <tr>
+                  <td><strong>Invoice Number :</strong> ${invoiceData.invoiceId}</td>
+                  <td><strong>Invoice Date :</strong> ${invoiceData.invoiceDate}</td>
+                </tr>
+                <tr>
+                  <td><strong>Booking ID :</strong> ${invoiceData.bookingId}</td>
+                  <td><strong>Ticket No :</strong> ${invoiceData.TicketNo}</td>
+                </tr>
+                <tr>
+                  <td><strong>From :</strong> ${invoiceData.source}</td>
+                  <td><strong>To :</strong> ${invoiceData.destination}</td>
+                </tr>
+                <tr>
+                  <td><strong>Departure :</strong> ${new Date(invoiceData.departureTime).toLocaleString()}</td>
+                  <td><strong>Arrival :</strong> ${new Date(invoiceData.arrivalTime).toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td colspan="2"><strong>Bus Type :</strong> ${invoiceData.busType}</td>
+                </tr>
+              </table>
+
+              <h3>PASSENGER DETAILS</h3>
+              <table style="width: 100%; font-size: 14px; border-collapse: collapse;" border="1" cellpadding="8" cellspacing="0">
+                <tr>
+                  <th>Ticket No</th>
+                  <th>Route</th>
+                  <th>Passenger Name</th>
+                  <th>Age</th>
+                  <th>Seat No</th>
+                  <th>Fare (₹)</th>
+                </tr>
+                ${busPassengerRows}
+              </table>
+
+              <h3 style="margin-top: 30px;">PAYMENT DETAILS</h3>
+              <table style="width: 100%; font-size: 14px;" cellpadding="8" cellspacing="0">
+                <tr><td><strong>No. of Seats:</strong></td><td>${invoiceData.fareDetails.NoOfSeats}</td></tr>
+                <tr><td><strong>Base Fare:</strong></td><td>₹ ${invoiceData.fareDetails.baseFare}</td></tr>
+                <tr><td><strong>Taxes:</strong></td><td>₹ ${invoiceData.fareDetails.taxes}</td></tr>
+                <tr><td><strong>Service Charges:</strong></td><td>₹ ${invoiceData.fareDetails.serviceCharges}</td></tr>
+                <tr><td><strong>Platform Fee:</strong></td><td>₹ ${invoiceData.vendorCommission}</td></tr>
+                <tr><td><strong>Coupon Discount (-):</strong></td><td>₹ ${invoiceData.fareDetails.couponDiscount}</td></tr>
+                <tr><td><strong>IGST Rate:</strong></td><td>${invoiceData.fareDetails.IGSTRate}%</td></tr>
+                <tr><td><strong>Total Payable:</strong></td><td><strong>₹ ${invoiceData.totalPayable}</strong></td></tr>
+              </table>
+
+              <h3 style="margin-top: 30px;">BOARDING & DROPPING DETAILS</h3>
+              <table style="width: 100%; font-size: 14px;" cellpadding="8" cellspacing="0">
+                <tr>
+                  <td><strong>Boarding:</strong><br>
+                    ${invoiceData.boardingPointdetails.CityPointName}, ${invoiceData.boardingPointdetails.CityPointLocation}<br>
+                    Landmark: ${invoiceData.boardingPointdetails.CityPointLandmark}<br>
+                    Time: ${new Date(invoiceData.boardingPointdetails.CityPointTime).toLocaleString()}<br>
+                    Contact: ${invoiceData.boardingPointdetails.CityPointContactNumber}
+                  </td>
+                  <td><strong>Dropping:</strong><br>
+                    ${invoiceData.droppingPointdetails[0].CityPointName}, ${invoiceData.droppingPointdetails[0].CityPointLocation}<br>
+                    Time: ${new Date(invoiceData.droppingPointdetails[0].CityPointTime).toLocaleString()}
+                  </td>
+                </tr>
+              </table>
+
+              <h3 style="margin-top: 30px;">TERMS & CONDITIONS</h3>
+              <ul style="font-size: 14px; padding-left: 20px;">
+                <li>This is a computer-generated invoice; no signature required.</li>
+                <li>All disputes are subject to jurisdiction of New Delhi.</li>
+                <li>Please report at the boarding point at least 30 minutes before departure.</li>
+                <li>Ensure correct contact number for updates on schedule or cancellation.</li>
+              </ul>
+            </div>
+        `;
     };
 
     const handleInvoiceSend = (bookingIdForInvoice, UserIpForInvoice, SearchTokenIdForInvoice, passengerEmailForInvoice) => {
@@ -1078,7 +1360,7 @@ const BusBookingHistory = () => {
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Amount</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Created</th>
-                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-Time Status</th>
                             </tr>
                         </thead>
@@ -1137,9 +1419,11 @@ const BusBookingHistory = () => {
                                         <td className="px-4 py-3 text-sm text-gray-500">
                                             <div>
                                                 <Button
-                                                    onClick={() => handleInvoiceSend(booking.rawData.bookingId, booking.rawData.UserIp, booking.rawData.SearchTokenId, booking.rawData.Result.Passenger?.[0].Email)}
+                                                    onClick={() => handleInvoice(booking)}
                                                     className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs btn-red"
-                                                >Invoice</Button>
+                                                >
+                                                    Invoice
+                                                </Button>
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 text-sm">

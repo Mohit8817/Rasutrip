@@ -258,14 +258,14 @@ const BusResultPage = () => {
 
     return (
         <div className="container">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="row">
                 {/* Top section */}
-                <div className="col-span-12">
+                <div className="col-12">
                     <BusSearchSummary />
                 </div>
-
-                {/* Sidebar filter (only show on lg and above) */}
-                <div className="lg:col-span-3">
+            </div>
+            <div className="row">
+                <div className="col-lg-3 mt-2">
                     <BusSidebarFilter
                         priceRange={priceRange}
                         onPriceChange={setPriceRange}
@@ -280,7 +280,7 @@ const BusResultPage = () => {
                 </div>
 
                 {/* Bus details list */}
-                <div className="col-span-12 lg:col-span-9 p-0 m-0">
+                <div className="col-lg-9 mt-2">
                     <BusDetailsList
                         masterBusList={masterBusList}
                         priceRange={priceRange}
@@ -289,6 +289,7 @@ const BusResultPage = () => {
                     />
                 </div>
             </div>
+
         </div>
     );
 };
