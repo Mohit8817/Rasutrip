@@ -255,7 +255,7 @@ const Header = () => {
       >
         <Offcanvas.Header closeButton>
           <Offcanvas.Title id="offcanvasNavbarLabel">
-            <img src={logo} alt="Logo" style={{ width: "120px" }} />
+            <img src={logo} alt="Logo" style={{ width: "70px" }} />
           </Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>

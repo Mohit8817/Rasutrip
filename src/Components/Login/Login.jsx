@@ -144,7 +144,7 @@ const Login = () => {
                 {/* Agent Login - Hidden on mobile, visible on desktop */}
                 <Dropdown.Item
                   onClick={() => handleSelect("agent")}
-                  className="d-none d-md-block"
+                  // className="d-none d-md-block"
                 >
                   Agent Login
                 </Dropdown.Item>

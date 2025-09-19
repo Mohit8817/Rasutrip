@@ -313,7 +313,7 @@ const FlightSearchBar = () => {
   };
 
   return (
-    <Container className="mt-8 p-3 bg-white shadow-sm rounded border flight-search-container">
+    <Container className="mt-8 mb-5 p-3 bg-white shadow-sm rounded border flight-search-container">
       {/* Mobile Layout */}
       <div className="d-block d-lg-none">
         {/* Route Section */}
