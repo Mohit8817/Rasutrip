@@ -89,7 +89,10 @@ const FilterSidebar = ({
           autoComplete="off"
         />
         {showSuggestions && filteredSuggestions.length > 0 && (
-          <div className="dropdown-menu show w-100 shadow-sm" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+          <div
+            className="dropdown-menu show w-100 shadow-sm"
+            style={{ maxHeight: "200px", overflowY: "auto" }}
+          >
             {filteredSuggestions.map((name, idx) => (
               <div
                 key={idx}
@@ -111,11 +114,9 @@ const FilterSidebar = ({
           <Form.Check
             key={star}
             type="checkbox"
-            label={
-              [...Array(star)].map((_, i) => (
-                <i key={i} className="bi bi-star-fill text-warning"></i>
-              ))
-            }
+            label={[...Array(star)].map((_, i) => (
+              <i key={i} className="bi bi-star-fill text-warning"></i>
+            ))}
             checked={selectedRatings.includes(star)}
             onChange={() => handleRatingToggle(star)}
           />
