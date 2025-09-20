@@ -2,57 +2,24 @@ import axios from "axios";
 // Update this import path according to your project structure
 import baseURL from "../../../Services/Config";
 
-// ✅ Define bus booking service endpoints
+// ✅ Define bus booking service endpoints - UNIFIED FOR ALL USERS
 const BusBookingServices = {
-    // Customer endpoints
-    customer: {
-        upcomingBookings: `${baseURL}/busservice/up-comming-bookings`,
-        allBookings: `${baseURL}/busservice/my-bookings`,
-    },
-    // Agent endpoints
-    agent: {
-        upcomingBookings: `${baseURL}/agent/bus-bookings/upcoming`,
-        allBookings: `${baseURL}/agent/bus-bookings/all`,
-        // Fallback to customer endpoints if agent endpoints don't exist
-        upcomingFallback: `${baseURL}/busservice/up-comming-bookings`,
-        allFallback: `${baseURL}/busservice/my-bookings`,
-    },
-    // Real-time status endpoint
+    upcomingBookings: `${baseURL}/busservice/up-comming-bookings`,
+    allBookings: `${baseURL}/busservice/my-bookings`,
     realTimeStatus: `${baseURL}/busservice/real-time-booking-details`
 };
 
-// ✅ Define hotel booking service endpoints
+// ✅ Define hotel booking service endpoints - UNIFIED FOR ALL USERS
 const HotelBookingServices = {
-    // Customer endpoints
-    customer: {
-        upcomingBookings: `${baseURL}/hotelservice/up-comming-bookings`,
-        allBookings: `${baseURL}/hotelservice/my-bookings`,
-    },
-    // Agent endpoints
-    agent: {
-        upcomingBookings: `${baseURL}/agent/hotel-bookings/upcoming`,
-        allBookings: `${baseURL}/agent/hotel-bookings/all`,
-        // Fallback to customer endpoints if agent endpoints don't exist
-        upcomingFallback: `${baseURL}/hotelservice/up-comming-bookings`,
-        allFallback: `${baseURL}/hotelservice/my-bookings`,
-    },
-    // Real-time status endpoint for hotels
+    upcomingBookings: `${baseURL}/hotelservice/up-comming-bookings`,
+    allBookings: `${baseURL}/hotelservice/my-bookings`,
     realTimeStatus: `${baseURL}/hotelservice/real-time-booking-details`
 };
 
-// ✅ Define flight booking service endpoints - UPDATED WITH REAL-TIME STATUS
+// ✅ Define flight booking service endpoints - UNIFIED FOR ALL USERS
 const FlightBookingServices = {
-    // Customer endpoints - Only the two APIs you specified
-    customer: {
-        upcomingBookings: `${baseURL}/airservice/up-comming-bookings`,
-        allBookings: `${baseURL}/airservice/my-bookings`,
-    },
-    // Agent endpoints - using same endpoints for now
-    agent: {
-        upcomingBookings: `${baseURL}/airservice/up-comming-bookings`,
-        allBookings: `${baseURL}/airservice/my-bookings`,
-    },
-    // ✅ NEW: Real-time status endpoint for flights
+    upcomingBookings: `${baseURL}/airservice/up-comming-bookings`,
+    allBookings: `${baseURL}/airservice/my-bookings`,
     realTimeStatus: `${baseURL}/airservice/real-time-booking-details`
 };
 
@@ -142,29 +109,17 @@ const getAuthHeaders = (userType = null) => {
     };
 };
 
-// ✅ Helper function to get appropriate booking endpoints based on user type and service type
+// ✅ Helper function to get appropriate booking endpoints - SIMPLIFIED (same endpoints for all users)
 const getBookingEndpoints = (userType, serviceType = 'bus') => {
     console.log(`🎯 Getting ${serviceType} endpoints for user type:`, userType);
 
     if (serviceType === 'hotel') {
-        if (userType === 'agent') {
-            return HotelBookingServices.agent;
-        } else {
-            return HotelBookingServices.customer;
-        }
+        return HotelBookingServices;
     } else if (serviceType === 'flight') {
-        if (userType === 'agent') {
-            return FlightBookingServices.agent;
-        } else {
-            return FlightBookingServices.customer;
-        }
+        return FlightBookingServices;
     } else {
         // Default to bus service
-        if (userType === 'agent') {
-            return BusBookingServices.agent;
-        } else {
-            return BusBookingServices.customer;
-        }
+        return BusBookingServices;
     }
 };
 
@@ -338,47 +293,79 @@ export const fetchRealTimeStatus = async (booking, userType = null) => {
     }
 };
 
-// ✅ Fetch real-time status for multiple BUS bookings
-export const fetchMultipleRealTimeStatus = async (bookings, userType = null) => {
+// ✅ Fetch real-time status for multiple BUS bookings - WITH RATE LIMITING TO PREVENT CONTINUOUS CALLS
+export const fetchMultipleRealTimeStatus = async (bookings, userType = null, options = {}) => {
     console.log(`🔄 Fetching real-time status for ${bookings.length} bus bookings`);
 
-    const results = {};
+    const {
+        batchSize = 3, // Reduced batch size to prevent server overload
+        batchDelay = 2000, // Increased delay between batches
+        maxRetries = 1, // Reduced retries to prevent continuous calls
+        enableRateLimit = true
+    } = options;
 
-    // Process bookings in batches to avoid overwhelming the API
-    const batchSize = 5;
+    const results = {};
+    let processedCount = 0;
+
+    // Process bookings in smaller batches with longer delays
     for (let i = 0; i < bookings.length; i += batchSize) {
         const batch = bookings.slice(i, i + batchSize);
 
+        console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(bookings.length / batchSize)}`);
+
         const batchPromises = batch.map(async (booking) => {
-            try {
-                const result = await fetchRealTimeStatus(booking, userType);
-                return { bookingId: result.bookingId, result };
-            } catch (error) {
-                console.warn('⚠️ Failed to fetch status for bus booking:', booking.bookingId);
-                return {
-                    bookingId: booking.bookingId,
-                    result: {
-                        success: false,
-                        status: 'Error',
-                        error: 'Failed to fetch',
-                        lastUpdated: new Date(),
-                        bookingId: booking.bookingId,
-                        serviceType: 'bus'
+            let attempts = 0;
+            while (attempts <= maxRetries) {
+                try {
+                    const result = await fetchRealTimeStatus(booking, userType);
+                    processedCount++;
+                    return { bookingId: result.bookingId, result };
+                } catch (error) {
+                    attempts++;
+                    if (attempts > maxRetries) {
+                        console.warn(`⚠️ Failed to fetch status for bus booking after ${maxRetries} retries:`, booking.bookingId);
+                        return {
+                            bookingId: booking.bookingId,
+                            result: {
+                                success: false,
+                                status: 'Error',
+                                error: 'Failed to fetch after retries',
+                                lastUpdated: new Date(),
+                                bookingId: booking.bookingId,
+                                serviceType: 'bus'
+                            }
+                        };
                     }
+                    // Wait before retry
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        });
+
+        const batchResults = await Promise.allSettled(batchPromises);
+
+        // Process batch results
+        batchResults.forEach((result, index) => {
+            if (result.status === 'fulfilled' && result.value) {
+                const { bookingId, result: bookingResult } = result.value;
+                results[bookingId] = bookingResult;
+            } else {
+                const booking = batch[index];
+                results[booking.bookingId] = {
+                    success: false,
+                    status: 'Error',
+                    error: 'Batch processing failed',
+                    lastUpdated: new Date(),
+                    bookingId: booking.bookingId,
+                    serviceType: 'bus'
                 };
             }
         });
 
-        const batchResults = await Promise.all(batchPromises);
-
-        // Add results to the main results object
-        batchResults.forEach(({ bookingId, result }) => {
-            results[bookingId] = result;
-        });
-
-        // Add small delay between batches
-        if (i + batchSize < bookings.length) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+        // Add delay between batches to prevent continuous API calls
+        if (i + batchSize < bookings.length && enableRateLimit) {
+            console.log(`⏳ Waiting ${batchDelay}ms before next batch...`);
+            await new Promise(resolve => setTimeout(resolve, batchDelay));
         }
     }
 
@@ -386,7 +373,7 @@ export const fetchMultipleRealTimeStatus = async (bookings, userType = null) => 
     return results;
 };
 
-// ✅ Fetch upcoming BUS bookings with pagination support
+// ✅ Fetch upcoming BUS bookings with improved pagination
 export const fetchUpcomingBookings = async (userType = null, page = 1, limit = 10) => {
     try {
         const currentUserType = userType || detectUserType();
@@ -397,39 +384,20 @@ export const fetchUpcomingBookings = async (userType = null, page = 1, limit = 1
         // Add pagination parameters to the request
         const url = `${endpoints.upcomingBookings}?page=${page}&limit=${limit}`;
 
-        try {
-            const response = await makeAuthenticatedRequest(url, 'GET', null, currentUserType);
-            return {
-                success: true,
-                data: response.data || response, // Handle both response.data and direct response
-                pagination: {
-                    page: response.page || page,
-                    limit: response.limit || limit,
-                    total: response.total || 0,
-                    totalPages: response.totalPages || Math.ceil((response.total || 0) / limit)
-                },
-                message: `Upcoming bus bookings fetched successfully for ${currentUserType}`
-            };
-        } catch (error) {
-            // Try fallback for agents if available
-            if (currentUserType === 'agent' && endpoints.upcomingFallback) {
-                console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackUrl = `${endpoints.upcomingFallback}?page=${page}&limit=${limit}`;
-                const fallbackResponse = await makeAuthenticatedRequest(fallbackUrl, 'GET', null, currentUserType);
-                return {
-                    success: true,
-                    data: fallbackResponse.data || fallbackResponse,
-                    pagination: {
-                        page: fallbackResponse.page || page,
-                        limit: fallbackResponse.limit || limit,
-                        total: fallbackResponse.total || 0,
-                        totalPages: fallbackResponse.totalPages || Math.ceil((fallbackResponse.total || 0) / limit)
-                    },
-                    message: `Upcoming bus bookings fetched successfully for ${currentUserType} (fallback)`
-                };
-            }
-            throw error;
-        }
+        const response = await makeAuthenticatedRequest(url, 'GET', null, currentUserType);
+        
+        return {
+            success: true,
+            data: response.data || response, // Handle both response.data and direct response
+            pagination: {
+                page: response.page || page,
+                limit: response.limit || limit,
+                total: response.total || 0,
+                totalPages: response.totalPages || Math.ceil((response.total || 0) / limit)
+            },
+            message: `Upcoming bus bookings fetched successfully for ${currentUserType}`
+        };
+
     } catch (error) {
         console.error('❌ Error fetching upcoming bus bookings:', error.message);
         throw {
@@ -440,7 +408,7 @@ export const fetchUpcomingBookings = async (userType = null, page = 1, limit = 1
     }
 };
 
-// ✅ Fetch all BUS bookings with pagination support
+// ✅ Fetch all BUS bookings with improved pagination
 export const fetchAllBookings = async (userType = null, page = 1, limit = 10) => {
     try {
         const currentUserType = userType || detectUserType();
@@ -451,39 +419,20 @@ export const fetchAllBookings = async (userType = null, page = 1, limit = 10) =>
         // Add pagination parameters to the request
         const url = `${endpoints.allBookings}?page=${page}&limit=${limit}`;
 
-        try {
-            const response = await makeAuthenticatedRequest(url, 'GET', null, currentUserType);
-            return {
-                success: true,
-                data: response.data || response, // Handle both response.data and direct response
-                pagination: {
-                    page: response.page || page,
-                    limit: response.limit || limit,
-                    total: response.total || 0,
-                    totalPages: response.totalPages || Math.ceil((response.total || 0) / limit)
-                },
-                message: `All bus bookings fetched successfully for ${currentUserType}`
-            };
-        } catch (error) {
-            // Try fallback for agents if available
-            if (currentUserType === 'agent' && endpoints.allFallback) {
-                console.log('⚠️ Trying fallback endpoint for agent...');
-                const fallbackUrl = `${endpoints.allFallback}?page=${page}&limit=${limit}`;
-                const fallbackResponse = await makeAuthenticatedRequest(fallbackUrl, 'GET', null, currentUserType);
-                return {
-                    success: true,
-                    data: fallbackResponse.data || fallbackResponse,
-                    pagination: {
-                        page: fallbackResponse.page || page,
-                        limit: fallbackResponse.limit || limit,
-                        total: fallbackResponse.total || 0,
-                        totalPages: fallbackResponse.totalPages || Math.ceil((fallbackResponse.total || 0) / limit)
-                    },
-                    message: `All bus bookings fetched successfully for ${currentUserType} (fallback)`
-                };
-            }
-            throw error;
-        }
+        const response = await makeAuthenticatedRequest(url, 'GET', null, currentUserType);
+        
+        return {
+            success: true,
+            data: response.data || response, // Handle both response.data and direct response
+            pagination: {
+                page: response.page || page,
+                limit: response.limit || limit,
+                total: response.total || 0,
+                totalPages: response.totalPages || Math.ceil((response.total || 0) / limit)
+            },
+            message: `All bus bookings fetched successfully for ${currentUserType}`
+        };
+
     } catch (error) {
         console.error('❌ Error fetching all bus bookings:', error.message);
         throw {
@@ -494,11 +443,16 @@ export const fetchAllBookings = async (userType = null, page = 1, limit = 10) =>
     }
 };
 
-// ✅ Fetch all bookings from all pages (if you want to get everything at once)
-export const fetchAllBookingsComplete = async (userType = null, limit = 50) => {
+// ✅ Fetch all bookings from all pages with rate limiting
+export const fetchAllBookingsComplete = async (userType = null, limit = 50, options = {}) => {
     try {
         const currentUserType = userType || detectUserType();
         console.log('🚀 Fetching complete bus bookings for:', currentUserType);
+
+        const { 
+            maxPages = 10, // Limit maximum pages to prevent infinite calls
+            pageDelay = 1000 // Delay between page requests
+        } = options;
 
         // First, get the first page to know total pages
         const firstPageResponse = await fetchAllBookings(currentUserType, 1, limit);
@@ -510,22 +464,28 @@ export const fetchAllBookingsComplete = async (userType = null, limit = 50) => {
         const { pagination } = firstPageResponse;
         let allBookings = firstPageResponse.data || [];
 
-        // If there are more pages, fetch them
-        if (pagination.totalPages > 1) {
-            const remainingPages = [];
-            for (let page = 2; page <= pagination.totalPages; page++) {
-                remainingPages.push(fetchAllBookings(currentUserType, page, limit));
-            }
+        // Limit the number of pages to prevent excessive API calls
+        const actualTotalPages = Math.min(pagination.totalPages, maxPages);
 
-            try {
-                const remainingResponses = await Promise.all(remainingPages);
-                remainingResponses.forEach(response => {
-                    if (response.success && response.data) {
-                        allBookings = [...allBookings, ...response.data];
+        // If there are more pages, fetch them with rate limiting
+        if (actualTotalPages > 1) {
+            for (let page = 2; page <= actualTotalPages; page++) {
+                try {
+                    console.log(`📄 Fetching page ${page} of ${actualTotalPages}...`);
+                    
+                    const pageResponse = await fetchAllBookings(currentUserType, page, limit);
+                    if (pageResponse.success && pageResponse.data) {
+                        allBookings = [...allBookings, ...pageResponse.data];
                     }
-                });
-            } catch (error) {
-                console.warn('⚠️ Some pages failed to load, returning partial data');
+                    
+                    // Add delay between page requests
+                    if (page < actualTotalPages) {
+                        await new Promise(resolve => setTimeout(resolve, pageDelay));
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ Page ${page} failed to load, continuing with partial data`);
+                    break;
+                }
             }
         }
 
@@ -536,7 +496,8 @@ export const fetchAllBookingsComplete = async (userType = null, limit = 50) => {
                 page: 1,
                 limit: allBookings.length,
                 total: pagination.total,
-                totalPages: 1 // Since we're returning all data in one response
+                totalPages: 1, // Since we're returning all data in one response
+                fetchedPages: Math.min(actualTotalPages, maxPages)
             },
             message: `Complete bus bookings fetched successfully for ${currentUserType}`
         };
@@ -653,16 +614,24 @@ export const fetchHotelRealTimeStatus = async (booking, userType = null) => {
     }
 };
 
-// ✅ Fetch real-time status for multiple HOTEL bookings
-export const fetchMultipleHotelRealTimeStatus = async (bookings, userType = null) => {
+// ✅ Fetch real-time status for multiple HOTEL bookings with rate limiting
+export const fetchMultipleHotelRealTimeStatus = async (bookings, userType = null, options = {}) => {
     console.log(`🔄 Fetching real-time status for ${bookings.length} hotel bookings`);
+
+    const {
+        batchSize = 2, // Smaller batch size for hotel bookings
+        batchDelay = 3000, // Longer delay for hotel bookings
+        maxRetries = 1,
+        enableRateLimit = true
+    } = options;
 
     const results = {};
 
-    // Process hotel bookings in batches to avoid overwhelming the API
-    const batchSize = 3; // Smaller batch size for hotel bookings as they might be more complex
+    // Process hotel bookings in smaller batches with longer delays
     for (let i = 0; i < bookings.length; i += batchSize) {
         const batch = bookings.slice(i, i + batchSize);
+
+        console.log(`Processing hotel batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(bookings.length / batchSize)}`);
 
         const batchPromises = batch.map(async (booking) => {
             try {
@@ -684,16 +653,30 @@ export const fetchMultipleHotelRealTimeStatus = async (bookings, userType = null
             }
         });
 
-        const batchResults = await Promise.all(batchPromises);
+        const batchResults = await Promise.allSettled(batchPromises);
 
-        // Add results to the main results object
-        batchResults.forEach(({ bookingId, result }) => {
-            results[bookingId] = result;
+        // Process results
+        batchResults.forEach((result, index) => {
+            if (result.status === 'fulfilled' && result.value) {
+                const { bookingId, result: bookingResult } = result.value;
+                results[bookingId] = bookingResult;
+            } else {
+                const booking = batch[index];
+                results[booking.bookingId] = {
+                    success: false,
+                    status: 'Error',
+                    error: 'Batch processing failed',
+                    lastUpdated: new Date(),
+                    bookingId: booking.bookingId,
+                    serviceType: 'hotel'
+                };
+            }
         });
 
-        // Add small delay between batches (longer for hotel bookings)
-        if (i + batchSize < bookings.length) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        // Add longer delay between batches for hotel bookings
+        if (i + batchSize < bookings.length && enableRateLimit) {
+            console.log(`⏳ Waiting ${batchDelay}ms before next hotel batch...`);
+            await new Promise(resolve => setTimeout(resolve, batchDelay));
         }
     }
 
@@ -701,15 +684,19 @@ export const fetchMultipleHotelRealTimeStatus = async (bookings, userType = null
     return results;
 };
 
-// Updated booking API service functions to handle pagination
-
-// ✅ Fetch all pages of upcoming HOTEL bookings
-export const fetchUpcomingHotelBookings = async (userType = null) => {
+// ✅ Fetch upcoming HOTEL bookings with rate limiting
+export const fetchUpcomingHotelBookings = async (userType = null, options = {}) => {
     try {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType, 'hotel');
 
-        console.log('🚀 Fetching ALL upcoming hotel bookings for:', currentUserType);
+        console.log('🚀 Fetching upcoming hotel bookings for:', currentUserType);
+
+        const {
+            maxPages = 10,
+            pageSize = 50,
+            pageDelay = 1000
+        } = options;
 
         let allBookings = [];
         let currentPage = 1;
@@ -717,8 +704,10 @@ export const fetchUpcomingHotelBookings = async (userType = null) => {
 
         do {
             try {
+                console.log(`📄 Fetching hotel page ${currentPage}...`);
+                
                 const response = await makeAuthenticatedRequest(
-                    `${endpoints.upcomingBookings}?page=${currentPage}&limit=50`,
+                    `${endpoints.upcomingBookings}?page=${currentPage}&limit=${pageSize}`,
                     'GET',
                     null,
                     currentUserType
@@ -742,19 +731,22 @@ export const fetchUpcomingHotelBookings = async (userType = null) => {
                 allBookings = [...allBookings, ...pageData];
 
                 // Update pagination info
-                totalPages = response.totalPages || response.total_pages || Math.ceil((response.total || 0) / (response.limit || 10));
+                totalPages = Math.min(
+                    response.totalPages || response.total_pages || Math.ceil((response.total || 0) / (response.limit || pageSize)),
+                    maxPages
+                );
 
                 console.log(`✅ Page ${currentPage}: Found ${pageData.length} bookings, Total pages: ${totalPages}`);
 
                 currentPage++;
 
-                // Add small delay between requests to avoid rate limiting
+                // Add delay between requests
                 if (currentPage <= totalPages) {
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    await new Promise(resolve => setTimeout(resolve, pageDelay));
                 }
 
             } catch (pageError) {
-                console.warn(`⚠️ Error fetching page ${currentPage}:`, pageError);
+                console.warn(`⚠️ Error fetching hotel page ${currentPage}:`, pageError);
                 break;
             }
 
@@ -780,13 +772,19 @@ export const fetchUpcomingHotelBookings = async (userType = null) => {
     }
 };
 
-// ✅ Fetch all pages of HOTEL bookings
-export const fetchAllHotelBookings = async (userType = null) => {
+// ✅ Fetch all HOTEL bookings with rate limiting
+export const fetchAllHotelBookings = async (userType = null, options = {}) => {
     try {
         const currentUserType = userType || detectUserType();
         const endpoints = getBookingEndpoints(currentUserType, 'hotel');
 
-        console.log('🚀 Fetching ALL hotel bookings for:', currentUserType);
+        console.log('🚀 Fetching all hotel bookings for:', currentUserType);
+
+        const {
+            maxPages = 10,
+            pageSize = 50,
+            pageDelay = 1000
+        } = options;
 
         let allBookings = [];
         let currentPage = 1;
@@ -794,8 +792,10 @@ export const fetchAllHotelBookings = async (userType = null) => {
 
         do {
             try {
+                console.log(`📄 Fetching hotel page ${currentPage}...`);
+                
                 const response = await makeAuthenticatedRequest(
-                    `${endpoints.allBookings}?page=${currentPage}&limit=50`,
+                    `${endpoints.allBookings}?page=${currentPage}&limit=${pageSize}`,
                     'GET',
                     null,
                     currentUserType
@@ -819,48 +819,24 @@ export const fetchAllHotelBookings = async (userType = null) => {
                 allBookings = [...allBookings, ...pageData];
 
                 // Extract pagination info from response
-                totalPages = response.totalPages || response.total_pages || Math.ceil((response.total || 0) / (response.limit || 10));
+                totalPages = Math.min(
+                    response.totalPages || response.total_pages || Math.ceil((response.total || 0) / (response.limit || pageSize)),
+                    maxPages
+                );
                 const hasMorePages = response.hasNextPage || response.has_next_page || (currentPage < totalPages);
 
                 console.log(`✅ Page ${currentPage}: Found ${pageData.length} bookings, Total pages: ${totalPages}, Has more: ${hasMorePages}`);
 
                 currentPage++;
 
-                // Add small delay between requests to avoid rate limiting
+                // Add delay between page requests
                 if (currentPage <= totalPages) {
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    await new Promise(resolve => setTimeout(resolve, pageDelay));
                 }
 
             } catch (pageError) {
-                console.warn(`⚠️ Error fetching page ${currentPage}:`, pageError);
-                // Try fallback for agents if available
-                if (currentUserType === 'agent' && endpoints.allFallback) {
-                    try {
-                        console.log('🔄 Trying fallback endpoint for agent...');
-                        const fallbackResponse = await makeAuthenticatedRequest(
-                            `${endpoints.allFallback}?page=${currentPage}&limit=50`,
-                            'GET',
-                            null,
-                            currentUserType
-                        );
-
-                        let fallbackData = [];
-                        if (fallbackResponse.data && Array.isArray(fallbackResponse.data)) {
-                            fallbackData = fallbackResponse.data;
-                        } else if (Array.isArray(fallbackResponse)) {
-                            fallbackData = fallbackResponse;
-                        }
-
-                        allBookings = [...allBookings, ...fallbackData];
-                        totalPages = fallbackResponse.totalPages || totalPages;
-
-                    } catch (fallbackError) {
-                        console.error('❌ Fallback also failed:', fallbackError);
-                        break;
-                    }
-                } else {
-                    break;
-                }
+                console.warn(`⚠️ Error fetching hotel page ${currentPage}:`, pageError);
+                break;
             }
 
         } while (currentPage <= totalPages);
@@ -939,11 +915,17 @@ export const fetchHotelBookingsWithPagination = async (page = 1, limit = 50, use
 };
 
 // ============================================================================
-// FLIGHT BOOKING FUNCTIONS - WITH PAGINATION SUPPORT
+// FLIGHT BOOKING FUNCTIONS - WITH IMPROVED RATE LIMITING
 // ============================================================================
 
-// ✅ Helper function to fetch all pages of data
-const fetchAllPagesData = async (endpoint, userType, maxPages = 10) => {
+// ✅ Helper function to fetch all pages of data with rate limiting
+const fetchAllPagesData = async (endpoint, userType, options = {}) => {
+    const {
+        maxPages = 10,
+        pageSize = 50,
+        pageDelay = 1500
+    } = options;
+
     let allData = [];
     let currentPage = 1;
     let totalPages = 1;
@@ -955,7 +937,7 @@ const fetchAllPagesData = async (endpoint, userType, maxPages = 10) => {
             console.log(`📄 Fetching page ${currentPage} of ${totalPages}`);
 
             // Add pagination parameters to the request
-            const paginatedEndpoint = `${endpoint}?page=${currentPage}&limit=50`; // Increased limit to 50
+            const paginatedEndpoint = `${endpoint}?page=${currentPage}&limit=${pageSize}`;
 
             const response = await makeAuthenticatedRequest(paginatedEndpoint, 'GET', null, userType);
 
@@ -976,15 +958,17 @@ const fetchAllPagesData = async (endpoint, userType, maxPages = 10) => {
                 allData.push(...pageData);
 
                 // Update pagination info
-                totalPages = response.totalPages || response.total_pages || 1;
+                totalPages = Math.min(
+                    response.totalPages || response.total_pages || 1,
+                    maxPages
+                );
                 currentPage++;
 
                 console.log(`📊 Page ${currentPage - 1}: Got ${pageData.length} bookings, Total so far: ${allData.length}`);
 
-                // Safety check to avoid infinite loops
-                if (currentPage > maxPages) {
-                    console.warn(`⚠️ Reached maximum pages limit (${maxPages}), stopping fetch`);
-                    break;
+                // Add delay between page requests
+                if (currentPage <= totalPages) {
+                    await new Promise(resolve => setTimeout(resolve, pageDelay));
                 }
             } else {
                 console.warn(`⚠️ No data received for page ${currentPage}`);
@@ -1027,17 +1011,15 @@ const fetchAllPagesData = async (endpoint, userType, maxPages = 10) => {
     }
 };
 
-// ✅ Fetch upcoming FLIGHT bookings with pagination support
-export const fetchUpcomingFlightBookings = async (userType = null) => {
+// ✅ Fetch upcoming FLIGHT bookings
+export const fetchUpcomingFlightBookings = async (userType = null, options = {}) => {
     try {
         const currentUserType = userType || detectUserType();
-        console.log('🚀 Fetching upcoming flight bookings with pagination for:', currentUserType);
+        console.log('🚀 Fetching upcoming flight bookings for:', currentUserType);
 
-        const baseEndpoint = currentUserType === 'agent'
-            ? FlightBookingServices.agent.upcomingBookings
-            : FlightBookingServices.customer.upcomingBookings;
+        const baseEndpoint = FlightBookingServices.upcomingBookings;
 
-        const result = await fetchAllPagesData(baseEndpoint, currentUserType);
+        const result = await fetchAllPagesData(baseEndpoint, currentUserType, options);
 
         console.log('✅ All upcoming flight bookings fetched:', result);
 
@@ -1057,17 +1039,15 @@ export const fetchUpcomingFlightBookings = async (userType = null) => {
     }
 };
 
-// ✅ Fetch all FLIGHT bookings with pagination support
-export const fetchAllFlightBookings = async (userType = null) => {
+// ✅ Fetch all FLIGHT bookings
+export const fetchAllFlightBookings = async (userType = null, options = {}) => {
     try {
         const currentUserType = userType || detectUserType();
-        console.log('🚀 Fetching all flight bookings with pagination for:', currentUserType);
+        console.log('🚀 Fetching all flight bookings for:', currentUserType);
 
-        const baseEndpoint = currentUserType === 'agent'
-            ? FlightBookingServices.agent.allBookings
-            : FlightBookingServices.customer.allBookings;
+        const baseEndpoint = FlightBookingServices.allBookings;
 
-        const result = await fetchAllPagesData(baseEndpoint, currentUserType);
+        const result = await fetchAllPagesData(baseEndpoint, currentUserType, options);
 
         console.log('✅ All flight bookings fetched:', result);
 
@@ -1093,9 +1073,7 @@ export const fetchAllFlightBookingsHighLimit = async (userType = null) => {
         const currentUserType = userType || detectUserType();
         console.log('🚀 Fetching all flight bookings with high limit for:', currentUserType);
 
-        const baseEndpoint = currentUserType === 'agent'
-            ? FlightBookingServices.agent.allBookings
-            : FlightBookingServices.customer.allBookings;
+        const baseEndpoint = FlightBookingServices.allBookings;
 
         // Try to fetch all data in one request with a very high limit
         const endpoint = `${baseEndpoint}?page=1&limit=1000`;
@@ -1235,9 +1213,7 @@ export const debugFlightBookingsAPI = async (userType = null) => {
         const currentUserType = userType || detectUserType();
         console.log('🔍 Debugging flight bookings API structure...');
 
-        const allBookingsEndpoint = currentUserType === 'agent'
-            ? FlightBookingServices.agent.allBookings
-            : FlightBookingServices.customer.allBookings;
+        const allBookingsEndpoint = FlightBookingServices.allBookings;
 
         // Try different approaches
         const results = {
@@ -1305,6 +1281,7 @@ export const debugFlightBookingsAPI = async (userType = null) => {
     }
 };
 
+// ✅ Flight real-time status with rate limiting
 export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
     try {
         const currentUserType = userType || detectUserType();
@@ -1546,28 +1523,28 @@ export const getFlightUserType = () => {
 // ============================================================================
 
 // ✅ Generic function to fetch upcoming bookings for any service type
-export const fetchUpcomingBookingsByType = async (serviceType = 'bus', userType = null) => {
+export const fetchUpcomingBookingsByType = async (serviceType = 'bus', userType = null, options = {}) => {
     switch (serviceType.toLowerCase()) {
         case 'hotel':
-            return await fetchUpcomingHotelBookings(userType);
+            return await fetchUpcomingHotelBookings(userType, options);
         case 'flight':
-            return await fetchUpcomingFlightBookings(userType);
+            return await fetchUpcomingFlightBookings(userType, options);
         case 'bus':
         default:
-            return await fetchUpcomingBookings(userType);
+            return await fetchUpcomingBookings(userType, options.page, options.limit);
     }
 };
 
 // ✅ Generic function to fetch all bookings for any service type
-export const fetchAllBookingsByType = async (serviceType = 'bus', userType = null) => {
+export const fetchAllBookingsByType = async (serviceType = 'bus', userType = null, options = {}) => {
     switch (serviceType.toLowerCase()) {
         case 'hotel':
-            return await fetchAllHotelBookings(userType);
+            return await fetchAllHotelBookings(userType, options);
         case 'flight':
-            return await fetchAllFlightBookings(userType);
+            return await fetchAllFlightBookings(userType, options);
         case 'bus':
         default:
-            return await fetchAllBookings(userType);
+            return await fetchAllBookingsComplete(userType, options.limit, options);
     }
 };
 
@@ -1584,6 +1561,7 @@ export const fetchRealTimeStatusByType = async (booking, serviceType = 'bus', us
     }
 };
 
+// ✅ Invoice services
 export const flightInvoiceServices = async (data) => {
     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
     const url = `${baseURL}/${FlightInvoice.invoice}`;
@@ -1649,7 +1627,6 @@ export const busInvoiceServices = async (data) => {
         };
     }
 }
+
 // ✅ Export service endpoints for external use if needed
 export { BusBookingServices, HotelBookingServices, FlightBookingServices };
-
-
