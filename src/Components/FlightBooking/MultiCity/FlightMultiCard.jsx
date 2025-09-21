@@ -149,10 +149,197 @@ const FlightMultiCard = ({ flight }) => {
   return (
     <>
       <Card className="flight-card mb-3 w-full border-0 shadow-sm">
-        <Card.Body className="p-3">
-          {/* Flight Segments */}
-
+        {/* <Card.Body className="p-3">
           <Row>
+            <Col xs={12}>
+              {flightSegments.map((flightInfo, index) => (
+                <div
+                  key={index}
+                  className={index > 0 ? "border-top pt-3 mt-3" : ""}
+                >
+                  <Row className="align-items-center text-center text-md-start gy-3">
+                    <Col
+                      xs={12}
+                      sm={6}
+                      md={3}
+                      className="d-flex flex-column align-items-center align-items-md-start"
+                    >
+                      <img
+                        src={flightInfo.airline.airlineLogo}
+                        alt="Airline Logo"
+                        style={{ width: "40px", height: "40px" }}
+                      />
+                      <div className="fw-semibold small mt-1">
+                        {flightInfo.airline.AirlineName}
+                      </div>
+                      <div className="text-muted small">
+                        {flightInfo.airline.AirlineCode}-
+                        {flightInfo.airline.FlightNumber}
+                      </div>
+                      <div className="text-warning small mt-1">
+                        Seats left:{" "}
+                        {flight.FareList[0].SeatBaggage[index]?.[0]
+                          ?.NoOfSeatAvailable || "N/A"}
+                      </div>
+                    </Col>
+
+                    <Col
+                      xs={6}
+                      sm={6}
+                      md={3}
+                      className="text-center text-md-start"
+                    >
+                      <div className="text-uppercase text-muted small">
+                        <i className="fa fa-plane-departure me-1"></i>
+                        {flightInfo.from.CityCode}
+                      </div>
+                      <div className="fw-bold fs-5">
+                        {formatTime(flightInfo.from.DepartTime)}
+                      </div>
+                      <div className="text-muted small">
+                        {formatDate(flightInfo.from.DepartTime)}
+                      </div>
+                    </Col>
+
+                    <Col xs={12} sm={12} md={3} className="text-center">
+                      <div className="text-muted small">
+                        {flightInfo.stops > 0
+                          ? `${flightInfo.stops} Stop(s)`
+                          : "Non Stop"}
+                      </div>
+                      <div style={containerStyle} className="my-1">
+                        <span style={beforeStyle}></span>
+                      </div>
+                      <div className="fw-medium">
+                        {formatDuration(flightInfo.totalDuration)}
+                      </div>
+                    </Col>
+
+                    <Col
+                      xs={6}
+                      sm={6}
+                      md={3}
+                      className="text-center text-md-end"
+                    >
+                      <div className="text-uppercase text-muted small">
+                        <i className="fa fa-plane-arrival me-1"></i>
+                        {flightInfo.to.CityCode}
+                      </div>
+                      <div className="fw-bold fs-5">
+                        {formatTime(flightInfo.to.ArrivalTime)}
+                      </div>
+                      <div className="text-muted small">
+                        {formatDate(flightInfo.to.ArrivalTime)}
+                      </div>
+                    </Col>
+                  </Row>
+                </div>
+              ))}
+            </Col> */}
+        <Card.Body className="p-3">
+          <Row>
+            <Col xs={12}>
+              {flightSegments.map((flightInfo, index) => (
+                <div
+                  key={index}
+                  className={`${index > 0 ? "border-top pt-3 mt-3" : ""}`}
+                >
+                  <Row className="align-items-center gy-4">
+                    {/* Airline Info */}
+                    <Col
+                      xs={12}
+                      sm={6}
+                      md={3}
+                      className="flex flex-col items-center md:items-start text-center md:text-left"
+                    >
+                      <img
+                        src={flightInfo.airline.airlineLogo}
+                        alt="Airline Logo"
+                        className="w-10 h-10"
+                      />
+                      <div className="fw-semibold text-sm mt-1">
+                        {flightInfo.airline.AirlineName}
+                      </div>
+                      <div className="text-muted text-xs">
+                        {flightInfo.airline.AirlineCode}-
+                        {flightInfo.airline.FlightNumber}
+                      </div>
+                      <div className="text-warning text-xs mt-1">
+                        Seats left:{" "}
+                        {flight.FareList[0].SeatBaggage[index]?.[0]
+                          ?.NoOfSeatAvailable || "N/A"}
+                      </div>
+                    </Col>
+
+                    {/* Departure Info */}
+                    <Col
+                      xs={12}
+                      sm={6}
+                      md={3}
+                      className="flex flex-col items-center md:items-start text-center md:text-left"
+                    >
+                      <div className="uppercase text-muted text-xs flex items-center gap-1">
+                        <i className="fa fa-plane-departure"></i>
+                        {flightInfo.from.CityCode}
+                      </div>
+                      <div className="fw-bold text-xl md:text-lg">
+                        {formatTime(flightInfo.from.DepartTime)}
+                      </div>
+                      <div className="text-muted text-xs">
+                        {formatDate(flightInfo.from.DepartTime)}
+                      </div>
+                    </Col>
+
+                    {/* Duration + Stops */}
+                    <Col
+                      xs={12}
+                      md={3}
+                      className="flex flex-col items-center text-center"
+                    >
+                      <div className="text-muted text-xs">
+                        {flightInfo.stops > 0
+                          ? `${flightInfo.stops} Stop(s)`
+                          : "Non Stop"}
+                      </div>
+                      <div
+                        style={containerStyle}
+                        className="my-2 w-full max-w-[120px]"
+                      >
+                        <span style={beforeStyle}></span>
+                      </div>
+                      <div className="fw-medium text-sm">
+                        {formatDuration(flightInfo.totalDuration)}
+                      </div>
+                    </Col>
+
+                    {/* Arrival Info */}
+                    <Col
+                      xs={12}
+                      sm={6}
+                      md={3}
+                      className="flex flex-col items-center md:items-end text-center md:text-right"
+                    >
+                      <div className="uppercase text-muted text-xs flex items-center gap-1">
+                        <i className="fa fa-plane-arrival"></i>
+                        {flightInfo.to.CityCode}
+                      </div>
+                      <div className="fw-bold text-xl md:text-lg">
+                        {formatTime(flightInfo.to.ArrivalTime)}
+                      </div>
+                      <div className="text-muted text-xs">
+                        {formatDate(flightInfo.to.ArrivalTime)}
+                      </div>
+                    </Col>
+                  </Row>
+                </div>
+              ))}
+            </Col>
+
+            {/* <Card className="flight-card mb-3 w-full border-0 shadow-sm">
+        <Card.Body className="p-3"> */}
+            {/* Flight Segments */}
+
+            {/* <Row>
             <Col md={10}>
               {flightSegments.map((flightInfo, index) => (
                 <div
@@ -218,13 +405,13 @@ const FlightMultiCard = ({ flight }) => {
                       <div className="text-muted small">
                         {formatDate(flightInfo.to.ArrivalTime)}
                       </div>
-                    </Col>
+                    </Col> */}
 
-                    {/* Fare Options - Show only on last segment */}
-                  </Row>
+            {/* Fare Options - Show only on last segment */}
+            {/* </Row>
                 </div>
               ))}
-            </Col>
+            </Col> */}
             {/* <Col md={2}> */}
 
             <>
@@ -263,7 +450,7 @@ const FlightMultiCard = ({ flight }) => {
             <Col md={2}>
               <Button
                 variant="primary"
-                className="w-100 mb-2 rounded-pill fw-bold"
+                className="w-100 mb-2 mt-4 rounded-pill fw-bold"
                 style={{ backgroundColor: "#ff6b35", border: "none" }}
                 onClick={() => setShowFarePopup(true)}
               >
