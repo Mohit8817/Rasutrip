@@ -94,6 +94,27 @@ const BookingSuccess = () => {
     }
   };
 
+    const sendInETicket = async () => {
+    try {
+      const data = {
+        UserIp: result?.onward?.UserIp,
+        SearchTokenId: result?.onward?.SearchTokenId,
+        BookingId: result?.onward?.bookingId,
+        receiverEmail: result?.onward?.result?.Passenger[0]?.Email,
+      };
+      let finalInvoice = invoice;
+      if (!invoice) {
+        const response = await post(data, "/airservice/invoice");
+        setInvoice(response);
+        finalInvoice = response;
+      }
+
+      navigate("/booking/e-ticket", { state: { Jtype: 'flight', invoice: finalInvoice } });
+    } catch (error) {
+      console.error("Invoice API error:", error);
+    }
+  };
+
 
 
   // Call invoice API on load
@@ -347,6 +368,15 @@ const BookingSuccess = () => {
                   >
                     <i className="fas fa-download me-2"></i>
                     Download Invoice
+                  </Button>
+                   <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={() => sendInETicket()}
+                    className="me-md-2 mb-2 mb-md-0"
+                  >
+                    <i className="fas fa-download me-2"></i>
+                    Download E- Ticket
                   </Button>
                   {/* <Button
                     variant="success"
