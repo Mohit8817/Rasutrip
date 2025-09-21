@@ -32,7 +32,7 @@ const HotelConfirmation = () => {
     // Show success toast on mount
     useEffect(() => {
         if ((isBooked && actualBooking) || confirmationDetails?.message) {
-            toast.success('🎉 Hotel booking confirmed successfully!', {
+            toast.success('Hotel booking confirmed successfully!', {
                 position: "top-right",
                 autoClose: 5000
             });
@@ -115,7 +115,7 @@ const HotelConfirmation = () => {
                 email: 'booking@rasutrip.com',
                 pan: 'ABLFR7635L',
                 state: 'Uttar Pradesh',
-                companyRegisteredNumber: 'U72900UP2019LLP024578'
+                // companyRegisteredNumber: 'U72900UP2019LLP024578'
             },
 
             // Customer Details
@@ -275,7 +275,7 @@ const HotelConfirmation = () => {
                             <strong>Email:</strong> ${apiInvoiceData.supplierDetails?.email || 'booking@rasutrip.com'}<br />
                             <strong>PAN:</strong> ${apiInvoiceData.supplierDetails?.pan || 'ABLFR7635L'}<br />
                             <strong>State:</strong> ${apiInvoiceData.supplierDetails?.state || 'Uttar Pradesh'}<br />
-                            <strong>Company Registered No.:</strong> ${apiInvoiceData.supplierDetails?.companyRegisteredNumber || 'U72900UP2019LLP024578'}
+                       
                         </td>
                         <td style="text-align: right; vertical-align: top; width: 50%;">
                             <strong>To:</strong> ${apiInvoiceData.receiverDetails?.name || 'Guest'}<br />
