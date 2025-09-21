@@ -403,147 +403,147 @@ const BusTravellerinfo = () => {
         });
     };
 
-// Enhanced function to call block seats API with better error handling
-const callBlockSeatsAPI = async () => {
-    try {
-        console.log("🚀 Starting Block Seats API call...");
+    // Enhanced function to call block seats API with better error handling
+    const callBlockSeatsAPI = async () => {
+        try {
+            console.log("🚀 Starting Block Seats API call...");
 
-        // Debug the raw selectedSeats
-        console.log("🐛 Raw selectedSeats from state:", selectedSeats);
+            // Debug the raw selectedSeats
+            console.log("🐛 Raw selectedSeats from state:", selectedSeats);
 
-        // Validate required state data
-        const requiredFields = {
-            'UserIp': state?.userIp || state?.completeBlockSeatPayload?.UserIp,
-            'SearchTokenId': state?.searchTokenId || state?.completeBlockSeatPayload?.SearchTokenId,
-            'ResultIndex': state?.resultIndex || state?.completeBlockSeatPayload?.ResultIndex,
-            'BoardingPointId': state?.boardingPointId || state?.completeBlockSeatPayload?.BoardingPointId,
-            'DroppingPointId': state?.droppingPointId || state?.completeBlockSeatPayload?.DroppingPointId,
-            'OriginId': state?.originId || state?.completeBlockSeatPayload?.OriginId,
-            'DestinationId': state?.destinationId || state?.completeBlockSeatPayload?.DestinationId
-        };
+            // Validate required state data
+            const requiredFields = {
+                'UserIp': state?.userIp || state?.completeBlockSeatPayload?.UserIp,
+                'SearchTokenId': state?.searchTokenId || state?.completeBlockSeatPayload?.SearchTokenId,
+                'ResultIndex': state?.resultIndex || state?.completeBlockSeatPayload?.ResultIndex,
+                'BoardingPointId': state?.boardingPointId || state?.completeBlockSeatPayload?.BoardingPointId,
+                'DroppingPointId': state?.droppingPointId || state?.completeBlockSeatPayload?.DroppingPointId,
+                'OriginId': state?.originId || state?.completeBlockSeatPayload?.OriginId,
+                'DestinationId': state?.destinationId || state?.completeBlockSeatPayload?.DestinationId
+            };
 
-        // Set defaults for missing values
-        requiredFields.UserIp = requiredFields.UserIp || "122.161.64.143";
-        requiredFields.BoardingPointId = requiredFields.BoardingPointId || '';
-        requiredFields.DroppingPointId = requiredFields.DroppingPointId || '';
-        requiredFields.OriginId = requiredFields.OriginId || '';
-        requiredFields.DestinationId = requiredFields.DestinationId || '';
+            // Set defaults for missing values
+            requiredFields.UserIp = requiredFields.UserIp || "122.161.64.143";
+            requiredFields.BoardingPointId = requiredFields.BoardingPointId || '';
+            requiredFields.DroppingPointId = requiredFields.DroppingPointId || '';
+            requiredFields.OriginId = requiredFields.OriginId || '';
+            requiredFields.DestinationId = requiredFields.DestinationId || '';
 
-        // Prepare passenger data with enhanced seat name handling
-        const passengers = preparePassengerDataForAPI();
+            // Prepare passenger data with enhanced seat name handling
+            const passengers = preparePassengerDataForAPI();
 
-        if (!passengers || passengers.length === 0) {
-            throw new Error("No passenger data prepared");
+            if (!passengers || passengers.length === 0) {
+                throw new Error("No passenger data prepared");
+            }
+
+            // Ensure lead passenger is set
+            const hasLeadPassenger = passengers.some(p => p.LeadPassenger === true);
+            if (!hasLeadPassenger) {
+                passengers[0].LeadPassenger = true;
+                console.warn("No lead passenger set, making first passenger lead");
+            }
+
+            const blockSeatPayload = {
+                UserIp: requiredFields.UserIp,
+                SearchTokenId: requiredFields.SearchTokenId,
+                ResultIndex: requiredFields.ResultIndex,
+                BoardingPointId: parseInt(requiredFields.BoardingPointId),
+                DroppingPointId: parseInt(requiredFields.DroppingPointId),
+                OriginId: String(requiredFields.OriginId),
+                DestinationId: String(requiredFields.DestinationId),
+                Passenger: passengers
+            };
+
+            console.log("📤 FINAL Block Seat Payload:");
+            console.log(JSON.stringify(blockSeatPayload, null, 2));
+
+            // Log seat names being sent
+            console.log("🪑 Seat names being sent to API:",
+                blockSeatPayload.Passenger.map(p => p.SeatName)
+            );
+
+            const blockResponse = await blockSeats(blockSeatPayload);
+
+            console.log("📡 Block Seats API Response:", blockResponse);
+
+            // ✅ FIXED: Better success detection logic
+            if (blockResponse &&
+                (blockResponse.ResponseStatus === 1 ||
+                    blockResponse.status === 'success' ||
+                    blockResponse.success === true ||
+                    (blockResponse.data && blockResponse.data.ResponseStatus === 1))) {
+
+                console.log("✅ Seats blocked successfully");
+                setSeatsBlocked(true);
+                setBlockSeatResponse(blockResponse);
+                return blockResponse;
+            }
+
+            // ✅ FIXED: Only throw error for actual API failures, not generic messages
+            // Check if we have a proper API response structure but with an error
+            if (blockResponse && blockResponse.ResponseStatus === 0) {
+                // This is a proper API response but with failure status
+                const errorMessage = blockResponse?.Error?.ErrorMessage ||
+                    blockResponse?.Error?.Message ||
+                    blockResponse?.message ||
+                    "Booking failed - please try again";
+
+                console.error("❌ API returned failure status:", blockResponse);
+                throw new Error(errorMessage);
+            }
+
+            // ✅ FIXED: If API call was successful (no network error) but response is unclear,
+            // treat it as success and let the user proceed
+            if (blockResponse) {
+                console.log("⚠️ API response unclear but call successful, proceeding...");
+                console.log("Response received:", blockResponse);
+
+                setSeatsBlocked(true);
+                setBlockSeatResponse(blockResponse);
+                return blockResponse;
+            }
+
+            // Only throw error if no response at all
+            throw new Error("No response received from booking API");
+
+        } catch (error) {
+            console.error("❌ Block Seats API Call Failed:", error);
+
+            // ✅ FIXED: Better error handling - only block for actual API errors
+            if (error.code === 'NETWORK_ERROR' ||
+                error.code === 'ENOTFOUND' ||
+                error.message.includes('Network Error') ||
+                error.message.includes('timeout')) {
+
+                throw new Error("Network connection failed. Please check your internet connection and try again.");
+            }
+
+            // Extract the exact API error message for genuine API errors
+            let apiErrorMessage = error.message;
+
+            // Check for API response error structure
+            if (error.response?.data?.error?.ErrorMessage) {
+                apiErrorMessage = error.response.data.error.ErrorMessage;
+            } else if (error.response?.data?.Error?.ErrorMessage) {
+                apiErrorMessage = error.response.data.Error.ErrorMessage;
+            } else if (error.response?.data?.message) {
+                apiErrorMessage = error.response.data.message;
+            } else if (error.response?.data?.error) {
+                apiErrorMessage = error.response.data.error;
+            }
+
+            // ✅ FIXED: Don't throw generic error messages, only specific API failures
+            if (apiErrorMessage === "API call failed - no specific error message returned") {
+                console.log("⚠️ Generic error message detected, treating as success");
+                setSeatsBlocked(true);
+                setBlockSeatResponse({ status: 'processed' });
+                return { status: 'processed' };
+            }
+
+            // Only throw for specific/meaningful error messages
+            throw new Error(apiErrorMessage);
         }
-
-        // Ensure lead passenger is set
-        const hasLeadPassenger = passengers.some(p => p.LeadPassenger === true);
-        if (!hasLeadPassenger) {
-            passengers[0].LeadPassenger = true;
-            console.warn("No lead passenger set, making first passenger lead");
-        }
-
-        const blockSeatPayload = {
-            UserIp: requiredFields.UserIp,
-            SearchTokenId: requiredFields.SearchTokenId,
-            ResultIndex: requiredFields.ResultIndex,
-            BoardingPointId: parseInt(requiredFields.BoardingPointId),
-            DroppingPointId: parseInt(requiredFields.DroppingPointId),
-            OriginId: String(requiredFields.OriginId),
-            DestinationId: String(requiredFields.DestinationId),
-            Passenger: passengers
-        };
-
-        console.log("📤 FINAL Block Seat Payload:");
-        console.log(JSON.stringify(blockSeatPayload, null, 2));
-
-        // Log seat names being sent
-        console.log("🪑 Seat names being sent to API:",
-            blockSeatPayload.Passenger.map(p => p.SeatName)
-        );
-
-        const blockResponse = await blockSeats(blockSeatPayload);
-
-        console.log("📡 Block Seats API Response:", blockResponse);
-
-        // ✅ FIXED: Better success detection logic
-        if (blockResponse && 
-            (blockResponse.ResponseStatus === 1 || 
-             blockResponse.status === 'success' || 
-             blockResponse.success === true ||
-             (blockResponse.data && blockResponse.data.ResponseStatus === 1))) {
-            
-            console.log("✅ Seats blocked successfully");
-            setSeatsBlocked(true);
-            setBlockSeatResponse(blockResponse);
-            return blockResponse;
-        }
-        
-        // ✅ FIXED: Only throw error for actual API failures, not generic messages
-        // Check if we have a proper API response structure but with an error
-        if (blockResponse && blockResponse.ResponseStatus === 0) {
-            // This is a proper API response but with failure status
-            const errorMessage = blockResponse?.Error?.ErrorMessage ||
-                blockResponse?.Error?.Message ||
-                blockResponse?.message ||
-                "Booking failed - please try again";
-            
-            console.error("❌ API returned failure status:", blockResponse);
-            throw new Error(errorMessage);
-        }
-        
-        // ✅ FIXED: If API call was successful (no network error) but response is unclear,
-        // treat it as success and let the user proceed
-        if (blockResponse) {
-            console.log("⚠️ API response unclear but call successful, proceeding...");
-            console.log("Response received:", blockResponse);
-            
-            setSeatsBlocked(true);
-            setBlockSeatResponse(blockResponse);
-            return blockResponse;
-        }
-        
-        // Only throw error if no response at all
-        throw new Error("No response received from booking API");
-
-    } catch (error) {
-        console.error("❌ Block Seats API Call Failed:", error);
-
-        // ✅ FIXED: Better error handling - only block for actual API errors
-        if (error.code === 'NETWORK_ERROR' || 
-            error.code === 'ENOTFOUND' || 
-            error.message.includes('Network Error') ||
-            error.message.includes('timeout')) {
-            
-            throw new Error("Network connection failed. Please check your internet connection and try again.");
-        }
-
-        // Extract the exact API error message for genuine API errors
-        let apiErrorMessage = error.message;
-        
-        // Check for API response error structure
-        if (error.response?.data?.error?.ErrorMessage) {
-            apiErrorMessage = error.response.data.error.ErrorMessage;
-        } else if (error.response?.data?.Error?.ErrorMessage) {
-            apiErrorMessage = error.response.data.Error.ErrorMessage;
-        } else if (error.response?.data?.message) {
-            apiErrorMessage = error.response.data.message;
-        } else if (error.response?.data?.error) {
-            apiErrorMessage = error.response.data.error;
-        }
-
-        // ✅ FIXED: Don't throw generic error messages, only specific API failures
-        if (apiErrorMessage === "API call failed - no specific error message returned") {
-            console.log("⚠️ Generic error message detected, treating as success");
-            setSeatsBlocked(true);
-            setBlockSeatResponse({ status: 'processed' });
-            return { status: 'processed' };
-        }
-
-        // Only throw for specific/meaningful error messages
-        throw new Error(apiErrorMessage);
-    }
-};
+    };
     // Smart handleContinue function with proper error handling
     const handleContinue = async () => {
         // Clear any previous errors
@@ -571,12 +571,12 @@ const callBlockSeatsAPI = async () => {
 
         try {
             console.log("🔄 Calling Block Seats API...");
-            
+
             // Step 2: Call block seats API
             const blockResponse = await callBlockSeatsAPI();
-            
+
             console.log("✅ API call successful, proceeding to next page");
-            
+
             // Step 3: Only if API is successful, prepare data and navigate
             const dataToPass = {
                 ...state, // All existing state data
@@ -597,13 +597,13 @@ const callBlockSeatsAPI = async () => {
 
         } catch (error) {
             console.error("❌ API Error occurred:", error);
-            
+
             // Step 4: If API fails, show error popup and block navigation
             setApiErrorMessage(error.message);
             setShowApiErrorModal(true);
-            
+
             console.log("🚫 Navigation blocked due to API error");
-            
+
         } finally {
             setIsSubmitting(false);
         }
@@ -650,7 +650,7 @@ const callBlockSeatsAPI = async () => {
             </Modal>
 
             <div className="row">
-                <div className="">                   
+                <div className="">
                     {/* Traveller Details */}
                     <Card className="mb-4 shadow-sm border-0">
                         <Card.Header className="bg-white border-bottom">

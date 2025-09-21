@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Alert, Modal } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaShieldAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { FaShieldAlt, FaExclamationTriangle, FaPhone, FaWhatsapp } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { createBusPaymentOrder, validateBusPayment, bookBus, downloadBusInvoice } from '../../APIS/BusApi/BusApis';
 
@@ -11,6 +11,8 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
     const [loading, setLoading] = useState(false);
     const [loadingStep, setLoadingStep] = useState('');
     const [error, setError] = useState(null);
+    const [showRefundModal, setShowRefundModal] = useState(false);
+    const [paymentSuccessData, setPaymentSuccessData] = useState(null);
 
     // Debug mode configuration
     const DEBUG_MODE = process.env.NODE_ENV === 'development';
@@ -251,10 +253,6 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
         console.log('Calculated dynamic vendor commission:', commission);
         return parseFloat(commission.toFixed(2));
     };
-
-
-
-
 
     // FIXED: Enhanced seat name extraction that preserves original seat identifiers
     const extractSeatNameForAPI = (seat, index) => {
@@ -660,68 +658,118 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             document.body.appendChild(script);
         });
 
-    // Enhanced API error handler
-    const handleApiError = (error, context = 'API') => {
-        let errorMessage = `${context} failed. Please try again.`;
-        let errorDetails = null;
+  // Enhanced extractApiErrorMessage function to handle your specific error format
+const extractApiErrorMessage = (error) => {
+    console.log('Extracting API error message from:', error);
 
-        if (error?.response) {
-            const status = error.response.status;
-            const data = error.response.data;
+    // Check for API response error message
+    if (error?.response?.data) {
+        const errorData = error.response.data;
+        
+        // Priority order for error message paths - your specific format first
+        const errorMessagePaths = [
+            // Your specific error format: error.ErrorMessage
+            errorData?.error?.ErrorMessage,
+            errorData?.Error?.ErrorMessage,
+            
+            // Common nested error patterns
+            errorData?.error?.message,
+            errorData?.message,
+            errorData?.errorMessage,
+            errorData?.Error?.message,
+            errorData?.error?.Error?.ErrorMessage,
+            errorData?.errors?.[0]?.message,
+            errorData?.detail,
+            errorData?.details,
+            errorData?.error_description,
+            
+            // Additional patterns for bus booking APIs
+            errorData?.error?.description,
+            errorData?.Error?.Description,
+            errorData?.response?.error?.message,
+            errorData?.response?.Error?.ErrorMessage,
+            
+            // Handle arrays of errors
+            Array.isArray(errorData?.errors) ? errorData.errors[0]?.ErrorMessage : null,
+            Array.isArray(errorData?.errors) ? errorData.errors[0]?.message : null,
+        ];
 
-            errorDetails = {
-                status,
-                data,
-                headers: error.response.headers
-            };
-
-            switch (status) {
-                case 400:
-                    errorMessage = data?.Error?.ErrorMessage || data?.message || 'Invalid request data. Please check your booking details.';
-                    break;
-                case 401:
-                    errorMessage = 'Authentication failed. Please refresh the page and try again.';
-                    break;
-                case 403:
-                    errorMessage = 'Access denied. Please contact support.';
-                    break;
-                case 404:
-                    errorMessage = 'Bus booking service not found. Please try again later.';
-                    break;
-                case 409:
-                    errorMessage = 'Booking conflict. The seats may no longer be available.';
-                    break;
-                case 422:
-                    errorMessage = data?.Error?.ErrorMessage || 'Invalid booking data. Please check all required fields.';
-                    break;
-                case 429:
-                    errorMessage = 'Too many requests. Please wait a moment and try again.';
-                    break;
-                case 500:
-                    errorMessage = 'Bus booking service is temporarily unavailable. Please try again in a few minutes.';
-                    if (data?.Error?.ErrorMessage) {
-                        errorMessage += ` (${data.Error.ErrorMessage})`;
-                    }
-                    break;
-                case 502:
-                case 503:
-                case 504:
-                    errorMessage = 'Bus booking service is temporarily down. Please try again later.';
-                    break;
-                default:
-                    errorMessage = data?.Error?.ErrorMessage || data?.message || `${context} failed with status ${status}`;
+        // Find the first valid error message
+        for (const errorMsg of errorMessagePaths) {
+            if (errorMsg && typeof errorMsg === 'string' && errorMsg.trim() !== '') {
+                const cleanMessage = errorMsg.trim();
+                console.log('Found API error message:', cleanMessage);
+                return cleanMessage;
             }
-        } else if (error?.request) {
-            errorMessage = 'Network error. Please check your internet connection and try again.';
-            errorDetails = { request: 'No response received' };
-        } else {
-            errorMessage = error?.message || `${context} failed due to an unexpected error.`;
-            errorDetails = { message: error?.message };
         }
 
-        return { message: errorMessage, details: errorDetails };
-    };
+        // If error data is a string itself
+        if (typeof errorData === 'string' && errorData.trim() !== '') {
+            return errorData.trim();
+        }
 
+        // Handle case where entire response data is the error message
+        if (typeof errorData === 'object' && errorData.toString !== Object.prototype.toString) {
+            const stringified = String(errorData);
+            if (stringified !== '[object Object]' && stringified.trim() !== '') {
+                return stringified.trim();
+            }
+        }
+    }
+
+    // Check direct error message (for cases where error is not in response.data)
+    if (error?.error?.ErrorMessage) {
+        return error.error.ErrorMessage.trim();
+    }
+
+    if (error?.Error?.ErrorMessage) {
+        return error.Error.ErrorMessage.trim();
+    }
+
+    // Check direct error message
+    if (error?.message && typeof error.message === 'string') {
+        return error.message.trim();
+    }
+
+    // Handle axios-specific error patterns
+    if (error?.code === 'NETWORK_ERROR') {
+        return 'Network connection failed. Please check your internet connection.';
+    }
+
+    if (error?.code === 'TIMEOUT') {
+        return 'Request timed out. Please try again.';
+    }
+
+    // Default fallback with more context
+    if (error?.response?.status) {
+        return `Server error (${error.response.status}). Please try again or contact support.`;
+    }
+
+    // Final fallback
+    return 'An unexpected error occurred. Please try again.';
+};
+
+  const handleApiError = (error, context = 'API') => {
+    const apiErrorMessage = extractApiErrorMessage(error);
+    
+    console.log('API Error Details:', {
+        context,
+        status: error?.response?.status,
+        data: error?.response?.data,
+        extractedMessage: apiErrorMessage,
+        fullError: error
+    });
+
+    // Return both the user-friendly message and technical details for debugging
+    return {
+        message: apiErrorMessage,
+        details: {
+            status: error?.response?.status || null,
+            data: error?.response?.data || null,
+            context: context
+        }
+    };
+};
     // Show error toast function
     const showErrorToast = (message, additionalInfo = '') => {
         const toastMessage = additionalInfo ? `${message}\n${additionalInfo}` : message;
@@ -874,7 +922,6 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
         return validationData;
     };
 
-
     // Enhanced Razorpay options with better error handling
     const getRazorpayOptions = (orderId, orderAmount) => ({
         key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_glwdvx2PlFDStN',
@@ -902,12 +949,18 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             ondismiss: function () {
                 setLoading(false);
                 setLoadingStep('');
-                showErrorToast('Payment Cancelled', 'Payment was cancelled by user');
+                showErrorToast('Payment was cancelled by user');
             }
         },
     });
 
-    // ENHANCED: Payment handler with invoice email integration
+    // NEW: Show refund modal for booking failures after payment
+    const displayRefundModal = (paymentData) => {
+        setPaymentSuccessData(paymentData);
+        setShowRefundModal(true);
+    };
+
+    // ENHANCED: Payment handler with API error handling and refund modal
     const handlePayment = async () => {
         setError(null);
         setLoading(true);
@@ -927,7 +980,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             if (!razorpayLoaded) {
                 const errorMsg = 'Payment system failed to load. Please refresh and try again.';
                 setError(errorMsg);
-                showErrorToast('Payment System Error', errorMsg);
+                showErrorToast(errorMsg);
                 setLoading(false);
                 setLoadingStep('');
                 return;
@@ -981,8 +1034,10 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             console.log('Payment order created:', { orderId, orderAmount });
             setLoadingStep('Opening payment gateway...');
 
-            // ENHANCED: Success handler with invoice email integration
+            // ENHANCED: Success handler with API error handling and refund modal
             const handleSuccess = async (response) => {
+                let paymentValidated = false;
+                
                 try {
                     console.log('Payment successful, validating...', response);
                     setLoadingStep('Validating payment...');
@@ -1000,6 +1055,8 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                         validationResult?.success === true;
 
                     if (isValidationSuccessful) {
+                        paymentValidated = true;
+                        
                         // Proceed to book bus after successful validation
                         console.log('Proceeding to book bus...');
                         setLoadingStep('Confirming your booking...');
@@ -1071,25 +1128,36 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                         });
 
                     } else {
-                        const validationError = validationResult?.message ||
-                            validationResult?.error?.message ||
-                            'Payment validation failed';
-
-                        setError(`Payment completed but validation failed: ${validationError}`);
-                        showErrorToast('Payment Validation Failed', validationError);
+                        // Payment validation failed - show API error
+                        const { message: apiErrorMessage } = handleApiError(validationResult, 'Payment Validation');
+                        
+                        setError(apiErrorMessage);
+                        showErrorToast(apiErrorMessage);
+                        
+                        // Show refund modal since payment was successful but validation failed
+                        displayRefundModal({
+                            paymentId: response.razorpay_payment_id,
+                            orderId: response.razorpay_order_id,
+                            amount: finalAmount
+                        });
                     }
 
                 } catch (err) {
                     console.error('Payment validation/booking error:', err);
-
-                    if (err.message && err.message.includes('bookBus')) {
-                        setError(`Payment validated but booking failed: ${err.message}`);
-                        showErrorToast('Booking Failed', 'Payment was successful but booking could not be completed');
-                    } else {
-                        const { message: errorMessage } = handleApiError(err, 'Payment Validation/Booking');
-                        setError(`Payment completed but processing failed: ${errorMessage}`);
-                        showErrorToast('Booking Process Failed', errorMessage);
-                    }
+                    
+                    // Extract API error message
+                    const { message: apiErrorMessage } = handleApiError(err, paymentValidated ? 'Booking' : 'Payment Validation');
+                    
+                    setError(apiErrorMessage);
+                    showErrorToast(apiErrorMessage);
+                    
+                    // Show refund modal since payment was successful but booking failed
+                    displayRefundModal({
+                        paymentId: response.razorpay_payment_id,
+                        orderId: response.razorpay_order_id,
+                        amount: finalAmount
+                    });
+                    
                 } finally {
                     setLoading(false);
                     setLoadingStep('');
@@ -1102,12 +1170,18 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
 
             const rzp = new window.Razorpay(options);
 
-            // Enhanced payment failure handler
+            // Enhanced payment failure handler with API error extraction
             rzp.on('payment.failed', function (response) {
                 console.error('Payment failed:', response);
-                const failureMessage = response?.error?.description || 'Payment failed due to unknown error';
-                setError(`Payment failed: ${failureMessage}`);
-                showErrorToast('Payment Failed', failureMessage);
+                
+                // Extract API error from payment failure response
+                const apiErrorMessage = response?.error?.description || 
+                                      response?.error?.reason || 
+                                      response?.error?.source || 
+                                      'Payment failed due to unknown error';
+                
+                setError(apiErrorMessage);
+                showErrorToast(apiErrorMessage);
                 setLoading(false);
                 setLoadingStep('');
             });
@@ -1118,9 +1192,12 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
 
         } catch (err) {
             console.error('Payment initialization error:', err);
-            const { message: errorMessage } = handleApiError(err, 'Payment Initialization');
-            setError(errorMessage);
-            showErrorToast('Payment Initialization Failed', errorMessage);
+            
+            // Extract API error message
+            const { message: apiErrorMessage } = handleApiError(err, 'Payment Initialization');
+            
+            setError(apiErrorMessage);
+            showErrorToast(apiErrorMessage);
             setLoading(false);
             setLoadingStep('');
         }
@@ -1172,6 +1249,78 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                         </small>
                     </div>
                 </Modal.Body>
+            </Modal>
+
+            {/* NEW: Refund Modal */}
+            <Modal
+                show={showRefundModal}
+                onHide={() => setShowRefundModal(false)}
+                centered
+                size="md"
+            >
+                <Modal.Header closeButton className="bg-danger text-white">
+                    <Modal.Title>
+                        Booking Failed - Refund Required
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="text-center py-4">
+                    <div className="mb-4">
+                        <div className="bg-light p-3 rounded mb-3">
+                            <h6 className="text-danger mb-2">Payment Status: Success ✓</h6>
+                            <h6 className="text-danger mb-2">Booking Status: Failed ✗</h6>
+                            {paymentSuccessData && (
+                                <div className="small text-muted">
+                                    <div>Payment ID: {paymentSuccessData.paymentId}</div>
+                                    <div>Amount: ₹{paymentSuccessData.amount}</div>
+                                </div>
+                            )}
+                        </div>
+                        <p className="mb-3">
+                            Your payment was successful, but the booking could not be completed. 
+                            Please contact us for a refund.
+                        </p>
+                        <div className="bg-warning bg-opacity-10 border border-warning rounded p-3 mb-3">
+                            <h6 className="text-warning mb-2">
+                                For Refund Contact:
+                            </h6>
+                            <div className="d-flex justify-content-center gap-3 mb-2">
+                                <a 
+                                    href="tel:9266424809" 
+                                    className="btn btn-outline-success btn-sm"
+                                >
+                                    <FaPhone className="me-1" />
+                                    Call: 92664 24809
+                                </a>
+                                <a 
+                                    href="https://wa.me/919266424809?text=Hi%2C%20I%20need%20help%20with%20bus%20booking%20refund" 
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn btn-outline-success btn-sm"
+                                >
+                                    <FaWhatsapp className="me-1" />
+                                    WhatsApp
+                                </a>
+                            </div>
+                            <small className="text-muted">
+                                Please mention your payment ID when contacting for refund
+                            </small>
+                        </div>
+                    </div>
+                </Modal.Body>
+                <Modal.Footer className="justify-content-center">
+                    <Button 
+                        variant="secondary" 
+                        onClick={() => setShowRefundModal(false)}
+                    >
+                        Close
+                    </Button>
+                    <Button 
+                        variant="primary" 
+                        onClick={() => navigate('/')}
+                    >
+                        Back to Home
+                    </Button>
+                </Modal.Footer>
             </Modal>
 
             {/* Enhanced Travel Summary */}
@@ -1239,12 +1388,6 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                         </Row>
                     )}
 
-
-
-
-
-
-
                     {/* Final Total */}
                     <Row className="fw-bold fs-5">
                         <Col xs={8}>Total Amount</Col>
@@ -1281,12 +1424,11 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                 </Card.Body>
             </Card>
 
-            {/* Enhanced Error Alert */}
+            {/* Enhanced Error Alert with API Error Display */}
             {error && (
                 <Alert variant="danger" className="mb-4 mt-3" dismissible onClose={() => setError(null)}>
                     <FaExclamationTriangle className="me-2" />
                     <span style={{ whiteSpace: 'pre-line', marginTop: '8px' }}>
-                        <strong>Error: </strong>
                         {error}
                     </span>
                 </Alert>
