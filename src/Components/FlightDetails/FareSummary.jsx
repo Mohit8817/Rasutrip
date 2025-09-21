@@ -212,7 +212,7 @@ const FareSummary = ({
       )}
       <Card.Footer className="bg-light fw-bold d-flex justify-content-between">
         <span>Total Payable</span>
-        <span>₹ {Convenience?totalPay:totalPay-serviceCharge}</span>
+        <span>  ₹ {Number(Convenience ? totalPay : totalPay - serviceCharge).toFixed(2)}</span>
       </Card.Footer>
     </Card>
   );
