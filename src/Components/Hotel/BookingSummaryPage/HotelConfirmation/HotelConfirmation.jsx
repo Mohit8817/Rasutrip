@@ -1,12 +1,16 @@
-import React, { useEffect } from 'react';
-import { Container, Card, Button, Row, Col, Badge, Alert } from 'react-bootstrap';
+import React, { useEffect, useState } from 'react';
+import { Container, Card, Button, Row, Col, Badge, Alert, Spinner } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaCheckCircle, FaHome, FaDownload } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { sendHotelInvoice } from '../../../APIS/HotelApi/HotelAPi'; // Import the API function
 
 const HotelConfirmation = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
+    const [invoiceData, setInvoiceData] = useState(null);
+    const [loadingInvoice, setLoadingInvoice] = useState(false);
+    const [invoiceError, setInvoiceError] = useState('');
 
     // Extract data from navigation state
     const {
@@ -17,7 +21,9 @@ const HotelConfirmation = () => {
         paymentDetails = {},
         amount = 0,
         isBooked = false,
-        bookingDetails = {}
+        bookingDetails = {},
+        couponData = null,
+        couponDiscount = 0
     } = state || {};
 
     const actualBooking = booking || bookingResult || {};
@@ -33,184 +39,101 @@ const HotelConfirmation = () => {
         }
     }, [isBooked, actualBooking, confirmationDetails]);
 
-    // FIXED: Better date extraction and number of nights calculation
-    const getBookingDates = () => {
-        // Try to get dates from multiple sources
-        const checkInSources = [
-            bookingDetails?.checkInDate,
-            bookingDetails?.CheckInDate,
-            actualBooking?.CheckInDate,
-            actualBooking?.checkInDate,
-            state?.checkInDate,
-            state?.searchParams?.checkInDate
-        ];
+    // Fetch invoice data from API
+    const fetchInvoiceData = async () => {
+        if (loadingInvoice || invoiceData) return; // Prevent multiple calls
 
-        const checkOutSources = [
-            bookingDetails?.checkOutDate,
-            bookingDetails?.CheckOutDate,
-            actualBooking?.CheckOutDate,
-            actualBooking?.checkOutDate,
-            state?.checkOutDate,
-            state?.searchParams?.checkOutDate
-        ];
+        setLoadingInvoice(true);
+        setInvoiceError('');
 
-        // Find the first valid date from sources
-        const getValidDate = (sources) => {
-            for (const dateSource of sources) {
-                if (dateSource) {
-                    // Try different date formats
-                    let date;
-                    
-                    // If it's already a Date object
-                    if (dateSource instanceof Date && !isNaN(dateSource)) {
-                        return dateSource;
-                    }
-                    
-                    // If it's a string, try to parse it
-                    if (typeof dateSource === 'string') {
-                        // Try ISO format first
-                        date = new Date(dateSource);
-                        if (!isNaN(date.getTime())) {
-                            return date;
-                        }
-                        
-                        // Try DD/MM/YYYY format (common in Indian locale)
-                        const ddmmyyyy = dateSource.split('/');
-                        if (ddmmyyyy.length === 3) {
-                            date = new Date(ddmmyyyy[2], ddmmyyyy[1] - 1, ddmmyyyy[0]);
-                            if (!isNaN(date.getTime())) {
-                                return date;
-                            }
-                        }
-                        
-                        // Try DD-MM-YYYY format
-                        const ddmmyyyy2 = dateSource.split('-');
-                        if (ddmmyyyy2.length === 3) {
-                            date = new Date(ddmmyyyy2[2], ddmmyyyy2[1] - 1, ddmmyyyy2[0]);
-                            if (!isNaN(date.getTime())) {
-                                return date;
-                            }
-                        }
-                    }
-                    
-                    // If it's a number (timestamp)
-                    if (typeof dateSource === 'number') {
-                        date = new Date(dateSource);
-                        if (!isNaN(date.getTime())) {
-                            return date;
-                        }
-                    }
-                }
-            }
-            return null;
-        };
-
-        const checkInDate = getValidDate(checkInSources);
-        const checkOutDate = getValidDate(checkOutSources);
-
-        // If dates not found, use reasonable defaults
-        const finalCheckIn = checkInDate || new Date();
-        const finalCheckOut = checkOutDate || new Date(Date.now() + 86400000); // +1 day
-
-        return {
-            checkInDate: finalCheckIn,
-            checkOutDate: finalCheckOut,
-            checkInDateString: finalCheckIn.toLocaleDateString('en-IN'),
-            checkOutDateString: finalCheckOut.toLocaleDateString('en-IN')
-        };
-    };
-
-    // FIXED: Calculate number of nights properly
-    const calculateNumberOfNights = (checkIn, checkOut) => {
         try {
-            // Ensure we have valid Date objects
-            const checkInDate = checkIn instanceof Date ? checkIn : new Date(checkIn);
-            const checkOutDate = checkOut instanceof Date ? checkOut : new Date(checkOut);
-
-            // Validate dates
-            if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
-                console.warn('Invalid dates provided, using default 1 night');
-                return 1;
+            const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId;
+            
+            if (!bookingId) {
+                throw new Error('Booking ID not found');
             }
 
-            // Calculate difference in days
-            const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
-            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            const invoicePayload = {
+                UserIp: confirmationDetails?.userIp || actualBooking?.UserIp || "49.36.217.215",
+                BookingId: bookingId,
+                SearchTokenId: confirmationDetails?.searchTokenId || bookingDetails?.searchTokenId || actualBooking?.SearchTokenId,
+                receiverEmail: leadPassenger?.Email || 'guest@example.com'
+            };
 
-            // Ensure minimum 1 night and maximum reasonable nights
-            const nights = Math.max(1, Math.min(daysDiff, 365));
+            console.log('Fetching invoice with payload:', invoicePayload);
+
+            const response = await sendHotelInvoice(invoicePayload);
             
-            console.log('Date calculation:', {
-                checkIn: checkInDate.toDateString(),
-                checkOut: checkOutDate.toDateString(),
-                timeDiff,
-                nights
-            });
-
-            return nights;
+            if (response.success && response.data) {
+                setInvoiceData(response.data);
+                console.log('Invoice data fetched successfully:', response.data);
+            } else {
+                throw new Error(response.message || 'Failed to fetch invoice data');
+            }
         } catch (error) {
-            console.error('Error calculating nights:', error);
-            return 1; // Default fallback
+            console.error('Error fetching invoice:', error);
+            setInvoiceError(error.message || 'Failed to fetch invoice data');
+            
+            // Create fallback invoice data
+            const fallbackInvoiceData = generateFallbackInvoiceData();
+            setInvoiceData(fallbackInvoiceData);
+        } finally {
+            setLoadingInvoice(false);
         }
     };
 
-    // Generate Invoice Data
-    const generateInvoiceData = () => {
+    // Generate fallback invoice data if API fails
+    const generateFallbackInvoiceData = () => {
         const now = new Date();
         const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId || `HTL${Date.now()}`;
         const invoiceNumber = `INV-HTL-${bookingId}`;
-        
-        // Use the improved date extraction
-        const { checkInDate, checkOutDate, checkInDateString, checkOutDateString } = getBookingDates();
-        const noOfNights = calculateNumberOfNights(checkInDate, checkOutDate);
-        
+
         const hotelName = hotelDetails?.name || actualBooking?.HotelName || 'Hotel Name';
-        const guestName = leadPassenger?.FirstName ? 
-            `${leadPassenger.Title || ''} ${leadPassenger.FirstName} ${leadPassenger.LastName || ''}`.trim() : 
+        const guestName = leadPassenger?.FirstName ?
+            `${leadPassenger.Title || ''} ${leadPassenger.FirstName} ${leadPassenger.LastName || ''}`.trim() :
             'Guest Name';
-        
+
         const baseFare = Math.round(amount * 0.82) || 0;
         const taxes = Math.round(amount * 0.15) || 0;
         const platformFee = Math.round(amount * 0.03) || 0;
-        
+
         return {
             // Basic Invoice Info
             invoiceId: invoiceNumber,
             invoiceNumber: invoiceNumber,
-            invoiceDate: now.toLocaleDateString('en-IN'),
+            invoiceDate: now.toISOString(),
             bookingId: bookingId,
-            
+            totalPayable: amount,
+            invoiceTotal: amount,
+
             // Company Details (Supplier)
             supplierDetails: {
-                name: 'RasuTrip Pvt. Ltd.',
-                mobile: '+91-9876543210',
-                email: 'support@rasutrip.com',
-                pan: 'ABCDE1234F',
-                state: 'Delhi',
-                companyRegisteredNumber: 'U63040DL2020PTC367456'
+                name: 'RASUTRIP WEBSOFT TECHNOLOGIES LLP',
+                mobile: '+91 9266424809',
+                email: 'booking@rasutrip.com',
+                pan: 'ABLFR7635L',
+                state: 'Uttar Pradesh'
             },
-            
+
             // Customer Details
             receiverDetails: {
                 name: guestName,
                 phone: leadPassenger?.Phoneno || 'N/A',
                 email: leadPassenger?.Email || 'N/A'
             },
-            
+
             // Hotel Details
             hotelName: hotelName,
             destination: bookingDetails?.destination || hotelDetails?.city || actualBooking?.destination || 'N/A',
             address: hotelDetails?.address || actualBooking?.address || 'Hotel Address',
             starRating: hotelDetails?.starRating || actualBooking?.starRating || 3,
-            
+
             // Booking Details
-            checkInDate: checkInDateString,
-            checkOutDate: checkOutDateString,
-            checkInTime: checkInDate.toISOString(),
-            checkOutTime: checkOutDate.toISOString(),
-            noOfNights: noOfNights,
+            checkInDate: bookingDetails?.checkInDate || new Date().toISOString(),
+            checkOutDate: bookingDetails?.checkOutDate || new Date(Date.now() + 86400000).toISOString(),
+            noOfNights: 1,
             noOfRooms: bookingDetails?.rooms || actualBooking?.NoOfRooms || 1,
-            
+
             // Guest Details
             guest: {
                 name: guestName,
@@ -218,174 +141,228 @@ const HotelConfirmation = () => {
                 email: leadPassenger?.Email || 'N/A',
                 age: leadPassenger?.Age || 'N/A'
             },
-            
+
             // Fare Details
             fareDetails: {
                 baseFare: baseFare,
                 taxes: taxes,
-                platformFee: platformFee,
-                couponDiscount: 0,
-                IGSTRate: 18
+                serviceCharges: platformFee,
+                couponDiscount: couponDiscount || 0,
+                IGSTRate: 18,
+                CGSTAmount: 0,
+                SGSTAmount: 0,
+                IGSTAmount: 0
             },
-            
-            // Payment
-            totalPayable: amount,
-            invoiceTotal: amount
+
+            // Additional fields
+            UserIp: confirmationDetails?.userIp || "49.36.217.215",
+            SearchTokenId: confirmationDetails?.searchTokenId || bookingDetails?.searchTokenId,
+            isFallback: true
         };
     };
 
-    // Generate HTML Invoice
-    const generateInvoiceHTML = (invoiceData) => {
+    // Generate HTML Invoice using API data
+    const generateInvoiceHTMLFromAPI = (apiInvoiceData) => {
+        // Format dates
+        const formatDate = (dateStr) => {
+            try {
+                return new Date(dateStr).toLocaleDateString('en-IN');
+            } catch {
+                return dateStr || 'N/A';
+            }
+        };
+
+        // Calculate number of nights
+        const calculateNights = () => {
+            try {
+                if (apiInvoiceData.checkInDate && apiInvoiceData.checkOutDate) {
+                    const checkIn = new Date(apiInvoiceData.checkInDate);
+                    const checkOut = new Date(apiInvoiceData.checkOutDate);
+                    const nights = Math.ceil((checkOut - checkIn) / (1000 * 3600 * 24));
+                    return Math.max(1, nights);
+                }
+                return apiInvoiceData.noOfNights || 1;
+            } catch {
+                return 1;
+            }
+        };
+
+        const nights = calculateNights();
+        
         return `
             <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px;">
-              <h2 style="text-align: center; color: #2c3e50;">Tax Invoice (Hotel Booking)</h2>
+            <h2 style="text-align: center; color: #2c3e50;">Tax Invoice (Hotel Booking)</h2>
 
-              <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
+            <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
                 <tr>
-                  <td>
-                    <strong>From :</strong> ${invoiceData.supplierDetails.name}<br />
-                    <strong>Mobile :</strong> ${invoiceData.supplierDetails.mobile}<br />
-                    <strong>Email :</strong> ${invoiceData.supplierDetails.email}<br />
-                    <strong>PAN Number :</strong> ${invoiceData.supplierDetails.pan}<br />
-                    <strong>State :</strong> ${invoiceData.supplierDetails.state}<br />
-                    <strong>Company Registered No. :</strong> ${invoiceData.supplierDetails.companyRegisteredNumber}
-                  </td>
-                  <td style="text-align: right;">
-                    <strong>Guest Name :</strong> ${invoiceData.receiverDetails.name}<br />
-                    <strong>Phone :</strong> ${invoiceData.receiverDetails.phone}<br />
-                    <strong>Email :</strong> ${invoiceData.receiverDetails.email}
-                  </td>
+                <td>
+                    <strong>From:</strong> ${apiInvoiceData.supplierDetails?.name || 'RASUTRIP WEBSOFT TECHNOLOGIES LLP'}<br />
+                    <strong>Mobile:</strong> ${apiInvoiceData.supplierDetails?.mobile || '+91 9266424809'}<br />
+                    <strong>Email:</strong> ${apiInvoiceData.supplierDetails?.email || 'booking@rasutrip.com'}<br />
+                    <strong>PAN Number:</strong> ${apiInvoiceData.supplierDetails?.pan || 'ABLFR7635L'}<br />
+                    <strong>State:</strong> ${apiInvoiceData.supplierDetails?.state || 'Uttar Pradesh'}
+                </td>
+                <td style="text-align: right;">
+                    <strong>Guest Name:</strong> ${apiInvoiceData.receiverDetails?.name || 'Guest'}<br />
+                    <strong>Phone:</strong> ${apiInvoiceData.receiverDetails?.phone || 'N/A'}<br />
+                    <strong>Email:</strong> ${apiInvoiceData.receiverDetails?.email || leadPassenger?.Email || 'N/A'}
+                </td>
                 </tr>
-              </table>
+            </table>
 
-              <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+            <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
                 <tr>
-                  <td><strong>Invoice Number :</strong> ${invoiceData.invoiceId}</td>
-                  <td><strong>Invoice Date :</strong> ${invoiceData.invoiceDate}</td>
+                <td><strong>Invoice Number:</strong> ${apiInvoiceData.invoiceNumber || apiInvoiceData.invoiceId || 'N/A'}</td>
+                <td><strong>Invoice Date:</strong> ${formatDate(apiInvoiceData.invoiceDate)}</td>
                 </tr>
                 <tr>
-                  <td><strong>Booking ID :</strong> ${invoiceData.bookingId}</td>
-                  <td><strong>Booking Status :</strong> Confirmed</td>
+                <td><strong>Booking ID:</strong> ${apiInvoiceData.bookingId || 'N/A'}</td>
+                <td><strong>Booking Status:</strong> Confirmed</td>
                 </tr>
                 <tr>
-                  <td><strong>Check-In :</strong> ${invoiceData.checkInDate}</td>
-                  <td><strong>Check-Out :</strong> ${invoiceData.checkOutDate}</td>
+                <td><strong>Check-In:</strong> ${formatDate(apiInvoiceData.checkInDate)}</td>
+                <td><strong>Check-Out:</strong> ${formatDate(apiInvoiceData.checkOutDate)}</td>
                 </tr>
                 <tr>
-                  <td><strong>No. of Nights :</strong> ${invoiceData.noOfNights}</td>
-                  <td><strong>No. of Rooms :</strong> ${invoiceData.noOfRooms}</td>
+                <td><strong>No. of Nights:</strong> ${nights}</td>
+                <td><strong>No. of Rooms:</strong> ${apiInvoiceData.noOfRooms || 1}</td>
                 </tr>
-              </table>
+            </table>
 
-              <h3">HOTEL DETAILS</h3>
-              <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+            <h3>HOTEL DETAILS</h3>
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
                 <tr>
-                  <td><strong>Hotel Name</strong></td>
-                  <td>${invoiceData.hotelName}</td>
+                <td><strong>Hotel Name</strong></td>
+                <td>${apiInvoiceData.hotelName || hotelDetails?.name || 'Hotel Name'}</td>
                 </tr>
                 <tr>
-                  <td><strong>Destination</strong></td>
-                  <td>${invoiceData.destination}</td>
+                <td><strong>Destination</strong></td>
+                <td>${apiInvoiceData.destination || 'N/A'}</td>
                 </tr>
                 <tr>
-                  <td><strong>Address</strong></td>
-                  <td>${invoiceData.address}</td>
+                <td><strong>Address</strong></td>
+                <td>${apiInvoiceData.address || 'Hotel Address'}</td>
                 </tr>
                 <tr>
-                  <td><strong>Star Rating</strong></td>
-                  <td>${invoiceData.starRating}</td>
+                <td><strong>Star Rating</strong></td>
+                <td>${apiInvoiceData.starRating || 3} Star</td>
                 </tr>
-              </table>
+            </table>
 
-              <h3">GUEST DETAILS</h3>
-              <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
-                <tr">
-                  <th>#</th>
-                  <th>Guest Name</th>
-                  <th>Phone</th>
-                  <th>Email</th>
-                  <th>Age</th>
+            <h3>GUEST DETAILS</h3>
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+                <tr>
+                <th>#</th>
+                <th>Guest Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Age</th>
                 </tr>
                 <tr>
-                  <td>1</td>
-                  <td>${invoiceData.guest.name}</td>
-                  <td>${invoiceData.guest.phone}</td>
-                  <td>${invoiceData.guest.email}</td>
-                  <td>${invoiceData.guest.age}</td>
+                <td>1</td>
+                <td>${apiInvoiceData.guest?.name || apiInvoiceData.receiverDetails?.name || 'Guest'}</td>
+                <td>${apiInvoiceData.guest?.phone || apiInvoiceData.receiverDetails?.phone || 'N/A'}</td>
+                <td>${apiInvoiceData.guest?.email || leadPassenger?.Email || 'N/A'}</td>
+                <td>${apiInvoiceData.guest?.age || 'N/A'}</td>
                 </tr>
-              </table>
+            </table>
 
-              <h3">PAYMENT DETAILS</h3>
-              <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" cellpadding="8" cellspacing="0">
-                <tr><td><strong>Room Fare (${invoiceData.noOfNights} nights):</strong></td><td>₹ ${invoiceData.fareDetails.baseFare.toLocaleString()}</td></tr>
-                <tr><td><strong>Taxes & Fees:</strong></td><td>₹ ${invoiceData.fareDetails.taxes.toLocaleString()}</td></tr>
-                <tr><td><strong>Platform Fee:</strong></td><td>₹ ${invoiceData.fareDetails.platformFee.toLocaleString()}</td></tr>
-                <tr><td><strong>Coupon Discount (-):</strong></td><td>₹ ${invoiceData.fareDetails.couponDiscount}</td></tr>
-                <tr><td><strong>IGST Rate:</strong></td><td>${invoiceData.fareDetails.IGSTRate}%</td></tr>
+            <h3>PAYMENT DETAILS</h3>
+            <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" cellpadding="8" cellspacing="0">
+                <tr><td><strong>Base Fare (${nights} night${nights > 1 ? 's' : ''}):</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.baseFare || 0).toLocaleString()}</td></tr>
+                <tr><td><strong>Taxes & Fees:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.taxes || 0).toLocaleString()}</td></tr>
+                <tr><td><strong>Service Charges:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.serviceCharges || 0).toLocaleString()}</td></tr>
+                ${(apiInvoiceData.fareDetails?.CGSTAmount || 0) > 0 ? `<tr><td><strong>CGST:</strong></td><td>₹ ${apiInvoiceData.fareDetails.CGSTAmount.toLocaleString()}</td></tr>` : ''}
+                ${(apiInvoiceData.fareDetails?.SGSTAmount || 0) > 0 ? `<tr><td><strong>SGST:</strong></td><td>₹ ${apiInvoiceData.fareDetails.SGSTAmount.toLocaleString()}</td></tr>` : ''}
+                ${(apiInvoiceData.fareDetails?.IGSTAmount || 0) > 0 ? `<tr><td><strong>IGST (${apiInvoiceData.fareDetails?.IGSTRate || 18}%):</strong></td><td>₹ ${apiInvoiceData.fareDetails.IGSTAmount.toLocaleString()}</td></tr>` : ''}
+                ${(apiInvoiceData.fareDetails?.couponDiscount || 0) > 0 ? `<tr><td><strong>Coupon Discount (-):</strong></td><td>₹ ${apiInvoiceData.fareDetails.couponDiscount.toLocaleString()}</td></tr>` : ''}
                 <tr>
-                  <td><strong>Total Payable:</strong></td>
-                  <td><strong>₹ ${invoiceData.totalPayable.toLocaleString()}</strong></td>
+                <td><strong>Total Payable:</strong></td>
+                <td><strong>₹ ${(apiInvoiceData.totalPayable || apiInvoiceData.invoiceTotal || amount || 0).toLocaleString()}</strong></td>
                 </tr>
-              </table>
+            </table>
 
-              <h3 >CHECK-IN & CHECK-OUT DETAILS</h3>
-              <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" cellpadding="8" cellspacing="0">
+            <h3>CHECK-IN & CHECK-OUT DETAILS</h3>
+            <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" cellpadding="8" cellspacing="0">
                 <tr>
-                  <td style="vertical-align: top; width: 50%;">
+                <td style="vertical-align: top; width: 50%;">
                     <strong>Check-In:</strong><br>
-                    Date: ${invoiceData.checkInDate}<br>
+                    Date: ${formatDate(apiInvoiceData.checkInDate)}<br>
                     Time: 2:00 PM onwards<br>
-                    Hotel: ${invoiceData.hotelName}<br>
-                    Address: ${invoiceData.address}
-                  </td>
-                  <td style="vertical-align: top; width: 50%;">
+                    Hotel: ${apiInvoiceData.hotelName || 'Hotel'}<br>
+                    Address: ${apiInvoiceData.address || 'Hotel Address'}
+                </td>
+                <td style="vertical-align: top; width: 50%;">
                     <strong>Check-Out:</strong><br>
-                    Date: ${invoiceData.checkOutDate}<br>
+                    Date: ${formatDate(apiInvoiceData.checkOutDate)}<br>
                     Time: 11:00 AM<br>
-                    Total Stay: ${invoiceData.noOfNights} night(s)
-                  </td>
+                    Total Stay: ${nights} night${nights > 1 ? 's' : ''}
+                </td>
                 </tr>
-              </table>
+            </table>
 
-              <h3 style="margin-top: 30px; color: #2c3e50;">CANCELLATION POLICY</h3>
-              <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 20px;">
+            <h3 style="margin-top: 30px; color: #2c3e50;">CANCELLATION POLICY</h3>
+            <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 20px;">
                 <li>Free cancellation up to 24 hours before check-in</li>
                 <li>50% charges for cancellation within 24 hours</li>
                 <li>100% charges for no-show</li>
                 <li>Refunds will be processed within 7-10 working days</li>
-              </ul>
+            </ul>
 
-              <h3 style="margin-top: 30px; color: #2c3e50;">TERMS & CONDITIONS</h3>
-              <ul style="font-size: 14px; padding-left: 20px;">
+            <h3 style="margin-top: 30px; color: #2c3e50;">TERMS & CONDITIONS</h3>
+            <ul style="font-size: 14px; padding-left: 20px;">
                 <li>This is a computer-generated invoice; no signature required.</li>
                 <li>All disputes are subject to jurisdiction of New Delhi.</li>
                 <li>Guests must present valid ID proof (Passport/Voter ID/Aadhar Card).</li>
                 <li>Hotel rules and policies apply as per hotel management.</li>
                 <li>Check-in time is 2:00 PM and check-out time is 11:00 AM.</li>
-                <li>Number of nights: ${invoiceData.noOfNights} (${invoiceData.checkInDate} to ${invoiceData.checkOutDate})</li>
-                <li>For any queries, contact our support team at ${invoiceData.supplierDetails.email}</li>
-              </ul>
-              
-              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc;">
+                <li>Number of nights: ${nights} (${formatDate(apiInvoiceData.checkInDate)} to ${formatDate(apiInvoiceData.checkOutDate)})</li>
+                <li>For any queries, contact our support team at ${apiInvoiceData.supplierDetails?.email || 'booking@rasutrip.com'}</li>
+            </ul>
+            
+            ${apiInvoiceData.isFallback ? `
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin-top: 20px; border-radius: 5px;">
+                <small style="color: #856404;">
+                    <strong>Note:</strong> This invoice was generated with available booking data. 
+                    For detailed invoice, please contact support with Booking ID: ${apiInvoiceData.bookingId}
+                </small>
+            </div>
+            ` : ''}
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc;">
                 <small style="color: #7f8c8d;">Thank you for choosing RasuTrip! Have a pleasant stay!</small>
-              </div>
+            </div>
             </div>
         `;
     };
 
-    // Download Invoice Function (HTML Version like Bus)
-    const handleDownloadInvoice = () => {
+    // Download Invoice Function
+    const handleDownloadInvoice = async () => {
         try {
-            const invoiceData = generateInvoiceData();
-            const htmlContent = generateInvoiceHTML(invoiceData);
-            
+            // Fetch invoice data if not already available
+            if (!invoiceData && !loadingInvoice) {
+                await fetchInvoiceData();
+                return; // The data will be set, function will be called again by user
+            }
+
+            if (!invoiceData) {
+                toast.error('Invoice data not available. Please try again.', {
+                    position: "top-right",
+                    autoClose: 3000
+                });
+                return;
+            }
+
+            const htmlContent = generateInvoiceHTMLFromAPI(invoiceData);
+            const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId || 'HTL';
+
             // Create a new window/tab for printing
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>Hotel Invoice - ${invoiceData.invoiceNumber}</title>
+                    <title>Hotel Invoice - ${invoiceData.invoiceNumber || invoiceData.invoiceId || bookingId}</title>
                     <style>
                         @media print {
                             body { margin: 0; }
@@ -418,6 +395,13 @@ const HotelConfirmation = () => {
         }
     };
 
+    // Auto-fetch invoice data on component mount
+    useEffect(() => {
+        if (isBooked && confirmationDetails?.bookingId && !invoiceData && !loadingInvoice) {
+            fetchInvoiceData();
+        }
+    }, [isBooked, confirmationDetails?.bookingId]);
+
     // Redirect if no booking data
     if (!state || (!isBooked && !confirmationDetails?.bookingId) || (!actualBooking && !confirmationDetails)) {
         return (
@@ -448,7 +432,7 @@ const HotelConfirmation = () => {
     const bookingTime = confirmationDetails?.bookingTime ? new Date(confirmationDetails.bookingTime).toLocaleString() : new Date().toLocaleString();
 
     return (
-        <div className="bg-light min-vh-100" >
+        <div className="bg-light min-vh-100">
             <Container className="py-4">
                 <div className="d-flex justify-content-center">
                     <div style={{ maxWidth: '1200px', width: '100%' }}>
@@ -490,6 +474,19 @@ const HotelConfirmation = () => {
                                                 <h5 className="mb-0 text-dark">{hotelName}</h5>
                                             </div>
                                         </div>
+
+                                        {/* Show coupon savings if applicable */}
+                                        {couponDiscount > 0 && (
+                                            <div className="mb-4">
+                                                <div className="p-3 bg-success-subtle rounded border border-success">
+                                                    <small className="text-success d-block mb-1">Coupon Savings</small>
+                                                    <h6 className="mb-0 text-success fw-bold">₹{couponDiscount?.toLocaleString()} Saved!</h6>
+                                                    {couponData && (
+                                                        <small className="text-muted">Code: {couponData.code || couponData.couponCode}</small>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <Row className="g-3">
                                             <Col sm={6}>
@@ -568,6 +565,27 @@ const HotelConfirmation = () => {
                             </Col>
                         </Row>
 
+                        {/* Invoice Status */}
+                        {loadingInvoice && (
+                            <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
+                                <Card.Body className="p-4 text-center">
+                                    <Spinner animation="border" variant="primary" className="me-2" />
+                                    <span>Loading invoice data...</span>
+                                </Card.Body>
+                            </Card>
+                        )}
+
+                        {invoiceError && !invoiceData && (
+                            <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
+                                <Card.Body className="p-4">
+                                    <Alert variant="warning" className="mb-0">
+                                        <strong>Invoice Note:</strong> {invoiceError}. 
+                                        A basic invoice will be generated with available booking data.
+                                    </Alert>
+                                </Card.Body>
+                            </Card>
+                        )}
+
                         {/* Action Buttons */}
                         <Card className="border-0 shadow-sm" style={{ borderRadius: '15px' }}>
                             <Card.Body className="p-5">
@@ -580,14 +598,24 @@ const HotelConfirmation = () => {
                                             size="lg"
                                             className="px-5 py-3 fw-semibold"
                                             onClick={handleDownloadInvoice}
+                                            disabled={loadingInvoice}
                                             style={{
                                                 fontSize: '1.1rem',
                                                 borderRadius: '10px',
                                                 minWidth: '200px'
                                             }}
                                         >
-                                            <FaDownload className="me-2" />
-                                            Download Invoice
+                                            {loadingInvoice ? (
+                                                <>
+                                                    <Spinner animation="border" size="sm" className="me-2" />
+                                                    Loading Invoice...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaDownload className="me-2" />
+                                                    Download Invoice
+                                                </>
+                                            )}
                                         </Button>
 
                                         <Button
@@ -605,6 +633,24 @@ const HotelConfirmation = () => {
                                             Back to Home
                                         </Button>
                                     </div>
+
+                                    {/* Show invoice data status */}
+                                    {invoiceData && (
+                                        <div className="mt-4">
+                                            <Alert variant="success" className="border-0" style={{
+                                                backgroundColor: '#d4edda',
+                                                borderRadius: '10px'
+                                            }}>
+                                                <div className="d-flex align-items-center justify-content-center">
+                                                    <FaCheckCircle className="me-2 text-success" />
+                                                    <span className="text-success fw-semibold">
+                                                        Invoice data loaded successfully
+                                                        {invoiceData.invoiceNumber && ` (${invoiceData.invoiceNumber})`}
+                                                    </span>
+                                                </div>
+                                            </Alert>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="border-top pt-4">
@@ -618,12 +664,39 @@ const HotelConfirmation = () => {
                                                     Booking Completed Successfully
                                                 </Alert.Heading>
                                                 <p className="mb-2 text-dark">
-                                                    Your hotel booking has been confirmed successfully. You can download your invoice using the button above.
+                                                    Your hotel booking has been confirmed successfully. 
+                                                    {invoiceData ? 
+                                                        " Your detailed invoice is ready for download." : 
+                                                        " An invoice will be generated with your booking details."
+                                                    }
                                                     Please keep your booking ID for future reference.
                                                 </p>
                                                 <small className="text-muted">
                                                     For any assistance, please contact our support team with this booking ID.
                                                 </small>
+                                                
+                                                {/* Show API data source info */}
+                                                {invoiceData && !invoiceData.isFallback && (
+                                                    <div className="mt-3 p-2 bg-info-subtle rounded">
+                                                        <small className="text-info fw-bold">
+                                                            Invoice Details: Invoice #{invoiceData.invoiceNumber || invoiceData.invoiceId} 
+                                                            generated on {new Date(invoiceData.invoiceDate).toLocaleDateString('en-IN')}
+                                                        </small>
+                                                    </div>
+                                                )}
+
+                                                {/* Debug info in development */}
+                                                {process.env.NODE_ENV === 'development' && invoiceData && (
+                                                    <div className="mt-3 p-2 bg-light rounded">
+                                                        <small className="text-dark">
+                                                            <strong>Debug Invoice Info:</strong><br />
+                                                            Source: {invoiceData.isFallback ? 'Fallback Data' : 'API Response'}<br />
+                                                            BookingID: {invoiceData.bookingId}<br />
+                                                            InvoiceID: {invoiceData.invoiceId || invoiceData.invoiceNumber}<br />
+                                                            Total: ₹{invoiceData.totalPayable || invoiceData.invoiceTotal}
+                                                        </small>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </Alert>
