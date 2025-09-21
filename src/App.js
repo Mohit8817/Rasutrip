@@ -38,6 +38,7 @@ import BookingSuccess from './Components/FlightBookingSuccess/BookingSuccess';
 import InvoiceTemplate from './Components/FlightBookingSuccess/Invoice';
 
 import ScrollToTop from './Components/ScrollToTop/ScrollToTop';
+import Signature from './Components/Demo/Signature';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -109,7 +110,11 @@ function App() {
         {/* Blog Detail Page */}
         <Route path="/blog/:id" element={<BlogDetail />} />
 
+
+
+
       </Routes>
+      <Signature /> 
       <Footer />
 
       {/* Fixed WhatsApp Icon */}
