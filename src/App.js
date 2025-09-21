@@ -110,11 +110,10 @@ function App() {
         {/* Blog Detail Page */}
         <Route path="/blog/:id" element={<BlogDetail />} />
 
-
+ <Route path="/signature" element={<Signature />} />
 
 
       </Routes>
-      <Signature /> 
       <Footer />
 
       {/* Fixed WhatsApp Icon */}
