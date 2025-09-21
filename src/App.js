@@ -110,7 +110,7 @@ function App() {
         {/* Blog Detail Page */}
         <Route path="/blog/:id" element={<BlogDetail />} />
 
- <Route path="/signature" element={<Signature />} />
+        <Route path="/signature" element={<Signature />} />
 
 
       </Routes>
