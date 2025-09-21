@@ -36,8 +36,11 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
     }
 
     const passengersData = useSelector((s) => s.passengersData || []);
+    console.log('passengersData', passengersData[0]);
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
+    const [IsFormValidate, setIsFormValidate] = useState(open);
+
 
     const flags = {
         passport: !!fareConfirm?.IsPassportRequiredAtBook,
@@ -181,9 +184,41 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
     }
 
 
+    const GST_FIELDS = [
+        "GSTNumber",
+        "GSTCompanyName",
+        "GSTCompanyContactNumber",
+        "GSTCompanyEmail",
+        "GSTCompanyAddress",
+    ];
+
+const checkGSTDetails = () => {
+  const passenger = passengersData[0] || {};
+
+  const allFilled = GST_FIELDS.every(
+    (f) => passenger[f] && passenger[f].trim() !== ""
+  );
+  if (allFilled) {
+    setOpen(true);
+    console.log("GST details valid, form submit ho gaya ✅");
+    return passengersData; // koi change nahi
+  } else {
+    const clearedPassenger = { ...passenger };
+    GST_FIELDS.forEach((f) => {
+      clearedPassenger[f] = "";
+    });
+    GST_FIELDS.forEach((f) => {
+      dispatch(updatePassenger({ type: "ADT", index: 0, field: f, value: "" }));
+    });
+    setOpen(false);
+    console.log("GST details incomplete, fields cleared ❌");
+    return [{ ...clearedPassenger }];
+  }
+};
 
     const handleContinue = async () => {
         setLoading(true);
+         const updatedPassengers = checkGSTDetails();
         try {
             const res = await fetchSSR(SSRPayload);
             let ReturnSSR;
@@ -191,7 +226,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
                 ReturnSSR = await fetchSSR(ReturnSSRPayload);
 
             }
-            localStorage.setItem('passengersData', JSON.stringify(passengersData));
+            localStorage.setItem('passengersData', JSON.stringify(updatedPassengers));
             navigate('/addons', {
                 state: {
                     SSR: res?.Result || [],
@@ -707,34 +742,39 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
                                                     placeholder="GST Number"
                                                     value={passengersData[0]?.GSTNumber || ''}
                                                     onChange={(e) => setField('ADT', 0, 'GSTNumber', e.target.value)}
+                                                    required={open === true}
                                                 />
                                             </Col>
                                             <Col md={4}>
                                                 <Form.Control
                                                     placeholder="Registered Company Name"
-                                                    value={passengersData?.GSTCompanyName || ''}
+                                                    value={passengersData[0]?.GSTCompanyName || ''}
                                                     onChange={(e) => setField('ADT', 0, 'GSTCompanyName', e.target.value)}
+                                                    required={open === true}
                                                 />
                                             </Col>
                                             <Col md={4}>
                                                 <Form.Control
                                                     placeholder="Registered Contact No"
-                                                    value={passengersData?.GSTCompanyContactNumber || ''}
+                                                    value={passengersData[0]?.GSTCompanyContactNumber || ''}
                                                     onChange={(e) => setField('ADT', 0, 'GSTCompanyContactNumber', e.target.value)}
+                                                    required={open === true}
                                                 />
                                             </Col>
                                             <Col md={6}>
                                                 <Form.Control
                                                     placeholder="Registered Email"
-                                                    value={passengersData?.GSTCompanyEmail || ''}
+                                                    value={passengersData[0]?.GSTCompanyEmail || ''}
                                                     onChange={(e) => setField('ADT', 0, 'GSTCompanyEmail', e.target.value)}
+                                                    required={open === true}
                                                 />
                                             </Col>
                                             <Col md={6}>
                                                 <Form.Control
                                                     placeholder="Registered Address"
-                                                    value={passengersData?.GSTCompanyAddress || ''}
+                                                    value={passengersData[0]?.GSTCompanyAddress || ''}
                                                     onChange={(e) => setField('ADT', 0, 'GSTCompanyAddress', e.target.value)}
+                                                    required={open === true}
                                                 />
                                             </Col>
                                         </Row>
@@ -750,7 +790,7 @@ const TravellerInfo = ({ fareConfirmData, SelectedFare, Faresummary, IsPriceChan
                         <Button
                             variant="primary"
                             size="lg"
-                            disabled={isContinueDisabled}
+                            disabled={isContinueDisabled }
                             onClick={handleContinue}
                             className={isContinueDisabled ? 'btn-danger' : ''}
                             style={{
