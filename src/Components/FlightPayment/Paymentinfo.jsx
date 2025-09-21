@@ -98,8 +98,8 @@ const RazorpayPayment = () => {
       passengersData = mergedPassengers.map(passenger => ({
         ...passenger,
         DateOfBirth: formatDateToISOString(passenger.DateOfBirth),
-        // PassportExpiry: formatDateToISOString(passenger.PassportExpiry),
-        // PassportIssue: formatDateToISOString(passenger.PassportIssue),
+        PassportExpiry: formatDateToISOString(passenger.PassportExpiry),
+        PassportIssue: formatDateToISOString(passenger.PassportIssue),
       }));
 
       const clean = (obj) => JSON.parse(JSON.stringify(obj));
