@@ -86,15 +86,15 @@ const HotelConfirmation = () => {
     const generateFallbackInvoiceData = () => {
         const now = new Date();
         const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId || `HTL${Date.now()}`;
-        const invoiceNumber = `INV-HTL-${bookingId}`;
+        const invoiceNumber = `TW/${Math.floor(Math.random() * 9999)}/${Math.floor(Math.random() * 9999)}`;
 
         const hotelName = hotelDetails?.name || actualBooking?.HotelName || 'Hotel Name';
         const guestName = leadPassenger?.FirstName ?
             `${leadPassenger.Title || ''} ${leadPassenger.FirstName} ${leadPassenger.LastName || ''}`.trim() :
             'Guest Name';
 
-        const baseFare = Math.round(amount * 0.82) || 0;
-        const taxes = Math.round(amount * 0.15) || 0;
+        const baseFare = Math.round(amount * 0.85) || 0;
+        const taxes = Math.round(amount * 0.12) || 0;
         const platformFee = Math.round(amount * 0.03) || 0;
 
         return {
@@ -105,6 +105,8 @@ const HotelConfirmation = () => {
             bookingId: bookingId,
             totalPayable: amount,
             invoiceTotal: amount,
+            hotelName: hotelName,
+            destination: bookingDetails?.destination || hotelDetails?.city || 'N/A',
 
             // Company Details (Supplier)
             supplierDetails: {
@@ -112,34 +114,59 @@ const HotelConfirmation = () => {
                 mobile: '+91 9266424809',
                 email: 'booking@rasutrip.com',
                 pan: 'ABLFR7635L',
-                state: 'Uttar Pradesh'
+                state: 'Uttar Pradesh',
+                companyRegisteredNumber: 'U72900UP2019LLP024578'
             },
 
             // Customer Details
             receiverDetails: {
                 name: guestName,
-                phone: leadPassenger?.Phoneno || 'N/A',
-                email: leadPassenger?.Email || 'N/A'
+                phone: leadPassenger?.Phoneno || 'N/A'
             },
 
-            // Hotel Details
-            hotelName: hotelName,
-            destination: bookingDetails?.destination || hotelDetails?.city || actualBooking?.destination || 'N/A',
-            address: hotelDetails?.address || actualBooking?.address || 'Hotel Address',
-            starRating: hotelDetails?.starRating || actualBooking?.starRating || 3,
-
-            // Booking Details
-            checkInDate: bookingDetails?.checkInDate || new Date().toISOString(),
-            checkOutDate: bookingDetails?.checkOutDate || new Date(Date.now() + 86400000).toISOString(),
-            noOfNights: 1,
-            noOfRooms: bookingDetails?.rooms || actualBooking?.NoOfRooms || 1,
-
-            // Guest Details
-            guest: {
-                name: guestName,
-                phone: leadPassenger?.Phoneno || 'N/A',
-                email: leadPassenger?.Email || 'N/A',
-                age: leadPassenger?.Age || 'N/A'
+            // Booking Details with Result structure
+            Result: {
+                BookingId: bookingId,
+                BookingStatus: 'Confirmed',
+                CheckInDate: bookingDetails?.checkInDate || new Date().toISOString(),
+                CheckOutDate: bookingDetails?.checkOutDate || new Date(Date.now() + 86400000).toISOString(),
+                NoOfNights: 1,
+                NoOfRooms: bookingDetails?.rooms || 1,
+                StarRating: hotelDetails?.starRating || 3,
+                AddressLine1: hotelDetails?.address || 'Hotel Address',
+                HotelPolicyDetail: 'Standard hotel policies apply. Check-in: 2:00 PM, Check-out: 11:00 AM',
+                HotelRoomsDetails: [{
+                    RoomTypeName: 'Standard Room',
+                    RatePlanName: 'ROOM ONLY',
+                    RoomDescription: 'Comfortable room with modern amenities',
+                    SmokingPreference: 'NoPreference',
+                    Amenities: ['Free WiFi', 'Air Conditioning', 'Room Service'],
+                    Price: {
+                        RoomPrice: baseFare,
+                        Tax: taxes,
+                        PublishedPrice: amount
+                    },
+                    LastCancellationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                    CancellationPolicies: [
+                        {
+                            Charge: 0,
+                            ChargeType: 1,
+                            Currency: 'INR',
+                            FromDate: new Date().toISOString(),
+                            ToDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                        }
+                    ],
+                    HotelPassenger: [{
+                        Title: leadPassenger?.Title || 'Mr',
+                        FirstName: leadPassenger?.FirstName || 'Guest',
+                        MiddleName: leadPassenger?.MiddleName || '',
+                        LastName: leadPassenger?.LastName || 'Name',
+                        Phoneno: leadPassenger?.Phoneno || 'N/A',
+                        Email: leadPassenger?.Email || 'N/A',
+                        Age: leadPassenger?.Age || 'N/A',
+                        PAN: leadPassenger?.PAN || 'N/A'
+                    }]
+                }]
             },
 
             // Fare Details
@@ -155,14 +182,16 @@ const HotelConfirmation = () => {
             },
 
             // Additional fields
+            lastCancellationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+            vendorCommission: platformFee,
             UserIp: confirmationDetails?.userIp || "49.36.217.215",
             SearchTokenId: confirmationDetails?.searchTokenId || bookingDetails?.searchTokenId,
             isFallback: true
         };
     };
 
-    // Generate HTML Invoice using API data
-    const generateInvoiceHTMLFromAPI = (apiInvoiceData) => {
+    // Generate detailed HTML Invoice matching the email template structure
+    const generateDetailedInvoiceHTML = (apiInvoiceData) => {
         // Format dates
         const formatDate = (dateStr) => {
             try {
@@ -175,168 +204,169 @@ const HotelConfirmation = () => {
         // Calculate number of nights
         const calculateNights = () => {
             try {
-                if (apiInvoiceData.checkInDate && apiInvoiceData.checkOutDate) {
-                    const checkIn = new Date(apiInvoiceData.checkInDate);
-                    const checkOut = new Date(apiInvoiceData.checkOutDate);
+                if (apiInvoiceData.Result?.CheckInDate && apiInvoiceData.Result?.CheckOutDate) {
+                    const checkIn = new Date(apiInvoiceData.Result.CheckInDate);
+                    const checkOut = new Date(apiInvoiceData.Result.CheckOutDate);
                     const nights = Math.ceil((checkOut - checkIn) / (1000 * 3600 * 24));
                     return Math.max(1, nights);
                 }
-                return apiInvoiceData.noOfNights || 1;
+                return apiInvoiceData.Result?.NoOfNights || 1;
             } catch {
                 return 1;
             }
         };
 
         const nights = calculateNights();
+        const hotelRooms = apiInvoiceData.Result?.HotelRoomsDetails || [];
+        
+        // Generate room sections similar to email template
+        const hotelRoomSections = hotelRooms.map((room, index) => {
+            const guestRows = room.HotelPassenger?.map((guest, gIndex) => `
+                <tr>
+                    <td>${gIndex + 1}</td>
+                    <td>${guest.Title} ${guest.FirstName} ${guest.MiddleName || ''} ${guest.LastName}</td>
+                    <td>${guest.Phoneno}</td>
+                    <td>${guest.Email}</td>
+                    <td>${guest.PAN || 'N/A'}</td>
+                </tr>
+            `).join('') || '';
+
+            return `
+                <h4 style="margin-top: 30px; color: #2c3e50;">Room ${index + 1} - ${room.RoomTypeName}</h4>
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+                    <tr><td><strong>Rate Plan:</strong></td><td>${room.RatePlanName}</td></tr>
+                    <tr><td><strong>Description:</strong></td><td>${room.RoomDescription || 'Standard Room'}</td></tr>
+                    <tr><td><strong>Smoking Preference:</strong></td><td>${room.SmokingPreference}</td></tr>
+                    <tr><td><strong>Amenities:</strong></td><td>${room.Amenities?.join(', ') || 'N/A'}</td></tr>
+                    <tr><td><strong>Room Fare:</strong></td><td>₹ ${(room.Price?.RoomPrice || 0).toLocaleString()}</td></tr>
+                    <tr><td><strong>Taxes:</strong></td><td>₹ ${(room.Price?.Tax || 0).toLocaleString()}</td></tr>
+                    <tr><td><strong>Published Price:</strong></td><td>₹ ${(room.Price?.PublishedPrice || 0).toLocaleString()}</td></tr>
+                </table>
+
+                <h5 style="margin-top: 20px; color: #2c3e50;">Guests in this Room:</h5>
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <th style="background-color: #f8f9fa;">#</th>
+                        <th style="background-color: #f8f9fa;">Name</th>
+                        <th style="background-color: #f8f9fa;">Phone</th>
+                        <th style="background-color: #f8f9fa;">Email</th>
+                        <th style="background-color: #f8f9fa;">PAN</th>
+                    </tr>
+                    ${guestRows}
+                </table>
+            `;
+        }).join('');
+
+        // Generate cancellation policy section
+        const cancellationPolicyHTML = hotelRooms[0]?.CancellationPolicies?.map(policy => `
+            <li style="margin-bottom: 5px;">₹ ${policy.Charge.toLocaleString()} will be charged if cancelled between ${new Date(policy.FromDate).toLocaleString()} and ${new Date(policy.ToDate).toLocaleString()}</li>
+        `).join('') || '<li>Standard cancellation policies apply</li>';
         
         return `
-            <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px;">
-            <h2 style="text-align: center; color: #2c3e50;">Tax Invoice (Hotel Booking)</h2>
+            <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px; background-color: #fff;">
+                <h2 style="text-align: center; color: #2c3e50; margin-bottom: 30px; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Tax Invoice (Hotel Booking)</h2>
 
-            <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
-                <tr>
-                <td>
-                    <strong>From:</strong> ${apiInvoiceData.supplierDetails?.name || 'RASUTRIP WEBSOFT TECHNOLOGIES LLP'}<br />
-                    <strong>Mobile:</strong> ${apiInvoiceData.supplierDetails?.mobile || '+91 9266424809'}<br />
-                    <strong>Email:</strong> ${apiInvoiceData.supplierDetails?.email || 'booking@rasutrip.com'}<br />
-                    <strong>PAN Number:</strong> ${apiInvoiceData.supplierDetails?.pan || 'ABLFR7635L'}<br />
-                    <strong>State:</strong> ${apiInvoiceData.supplierDetails?.state || 'Uttar Pradesh'}
-                </td>
-                <td style="text-align: right;">
-                    <strong>Guest Name:</strong> ${apiInvoiceData.receiverDetails?.name || 'Guest'}<br />
-                    <strong>Phone:</strong> ${apiInvoiceData.receiverDetails?.phone || 'N/A'}<br />
-                    <strong>Email:</strong> ${apiInvoiceData.receiverDetails?.email || leadPassenger?.Email || 'N/A'}
-                </td>
-                </tr>
-            </table>
+                <!-- Company & Customer Details -->
+                <table style="width: 100%; margin-bottom: 30px; font-size: 14px;">
+                    <tr>
+                        <td style="vertical-align: top; width: 50%;">
+                            <strong>From:</strong> ${apiInvoiceData.supplierDetails?.name || 'RASUTRIP WEBSOFT TECHNOLOGIES LLP'}<br />
+                            <strong>Mobile:</strong> ${apiInvoiceData.supplierDetails?.mobile || '+91 9266424809'}<br />
+                            <strong>Email:</strong> ${apiInvoiceData.supplierDetails?.email || 'booking@rasutrip.com'}<br />
+                            <strong>PAN:</strong> ${apiInvoiceData.supplierDetails?.pan || 'ABLFR7635L'}<br />
+                            <strong>State:</strong> ${apiInvoiceData.supplierDetails?.state || 'Uttar Pradesh'}<br />
+                            <strong>Company Registered No.:</strong> ${apiInvoiceData.supplierDetails?.companyRegisteredNumber || 'U72900UP2019LLP024578'}
+                        </td>
+                        <td style="text-align: right; vertical-align: top; width: 50%;">
+                            <strong>To:</strong> ${apiInvoiceData.receiverDetails?.name || 'Guest'}<br />
+                            <strong>Phone:</strong> ${apiInvoiceData.receiverDetails?.phone || 'N/A'}
+                        </td>
+                    </tr>
+                </table>
 
-            <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
-                <tr>
-                <td><strong>Invoice Number:</strong> ${apiInvoiceData.invoiceNumber || apiInvoiceData.invoiceId || 'N/A'}</td>
-                <td><strong>Invoice Date:</strong> ${formatDate(apiInvoiceData.invoiceDate)}</td>
-                </tr>
-                <tr>
-                <td><strong>Booking ID:</strong> ${apiInvoiceData.bookingId || 'N/A'}</td>
-                <td><strong>Booking Status:</strong> Confirmed</td>
-                </tr>
-                <tr>
-                <td><strong>Check-In:</strong> ${formatDate(apiInvoiceData.checkInDate)}</td>
-                <td><strong>Check-Out:</strong> ${formatDate(apiInvoiceData.checkOutDate)}</td>
-                </tr>
-                <tr>
-                <td><strong>No. of Nights:</strong> ${nights}</td>
-                <td><strong>No. of Rooms:</strong> ${apiInvoiceData.noOfRooms || 1}</td>
-                </tr>
-            </table>
+                <!-- Invoice & Booking Details -->
+                <table style="width: 100%; font-size: 14px; margin-bottom: 30px; border-collapse: collapse;" border="1" cellpadding="8" cellspacing="0">
+                    <tr style="background-color: #f8f9fa;">
+                        <td><strong>Invoice Number:</strong> ${apiInvoiceData.invoiceNumber || apiInvoiceData.invoiceId || 'N/A'}</td>
+                        <td><strong>Invoice Date:</strong> ${formatDate(apiInvoiceData.invoiceDate)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Booking ID:</strong> ${apiInvoiceData.bookingId || apiInvoiceData.Result?.BookingId || 'N/A'}</td>
+                        <td><strong>Booking Status:</strong> ${apiInvoiceData.Result?.BookingStatus || 'Confirmed'}</td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <td><strong>Check-In:</strong> ${formatDate(apiInvoiceData.Result?.CheckInDate)}</td>
+                        <td><strong>Check-Out:</strong> ${formatDate(apiInvoiceData.Result?.CheckOutDate)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>No. of Nights:</strong> ${nights}</td>
+                        <td><strong>No. of Rooms:</strong> ${apiInvoiceData.Result?.NoOfRooms || 1}</td>
+                    </tr>
+                </table>
 
-            <h3>HOTEL DETAILS</h3>
-            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
-                <tr>
-                <td><strong>Hotel Name</strong></td>
-                <td>${apiInvoiceData.hotelName || hotelDetails?.name || 'Hotel Name'}</td>
-                </tr>
-                <tr>
-                <td><strong>Destination</strong></td>
-                <td>${apiInvoiceData.destination || 'N/A'}</td>
-                </tr>
-                <tr>
-                <td><strong>Address</strong></td>
-                <td>${apiInvoiceData.address || 'Hotel Address'}</td>
-                </tr>
-                <tr>
-                <td><strong>Star Rating</strong></td>
-                <td>${apiInvoiceData.starRating || 3} Star</td>
-                </tr>
-            </table>
+                <!-- Hotel Details -->
+                <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">HOTEL DETAILS</h3>
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
+                    <tr style="background-color: #f8f9fa;"><td><strong>Hotel Name:</strong></td><td>${apiInvoiceData.hotelName || apiInvoiceData.Result?.HotelName || 'Hotel Name'}</td></tr>
+                    <tr><td><strong>Destination:</strong></td><td>${apiInvoiceData.destination || apiInvoiceData.Result?.City || 'N/A'}</td></tr>
+                    <tr style="background-color: #f8f9fa;"><td><strong>Address:</strong></td><td>${apiInvoiceData.Result?.AddressLine1 || 'Hotel Address'}</td></tr>
+                    <tr><td><strong>Star Rating:</strong></td><td>${apiInvoiceData.Result?.StarRating || 3} ⭐</td></tr>
+                    <tr style="background-color: #f8f9fa;"><td><strong>Hotel Policy:</strong></td><td>${apiInvoiceData.Result?.HotelPolicyDetail || 'Standard hotel policies apply'}</td></tr>
+                </table>
 
-            <h3>GUEST DETAILS</h3>
-            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
-                <tr>
-                <th>#</th>
-                <th>Guest Name</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Age</th>
-                </tr>
-                <tr>
-                <td>1</td>
-                <td>${apiInvoiceData.guest?.name || apiInvoiceData.receiverDetails?.name || 'Guest'}</td>
-                <td>${apiInvoiceData.guest?.phone || apiInvoiceData.receiverDetails?.phone || 'N/A'}</td>
-                <td>${apiInvoiceData.guest?.email || leadPassenger?.Email || 'N/A'}</td>
-                <td>${apiInvoiceData.guest?.age || 'N/A'}</td>
-                </tr>
-            </table>
+                <!-- Room and Guest Details -->
+                ${hotelRoomSections}
 
-            <h3>PAYMENT DETAILS</h3>
-            <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" cellpadding="8" cellspacing="0">
-                <tr><td><strong>Base Fare (${nights} night${nights > 1 ? 's' : ''}):</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.baseFare || 0).toLocaleString()}</td></tr>
-                <tr><td><strong>Taxes & Fees:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.taxes || 0).toLocaleString()}</td></tr>
-                <tr><td><strong>Service Charges:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.serviceCharges || 0).toLocaleString()}</td></tr>
-                ${(apiInvoiceData.fareDetails?.CGSTAmount || 0) > 0 ? `<tr><td><strong>CGST:</strong></td><td>₹ ${apiInvoiceData.fareDetails.CGSTAmount.toLocaleString()}</td></tr>` : ''}
-                ${(apiInvoiceData.fareDetails?.SGSTAmount || 0) > 0 ? `<tr><td><strong>SGST:</strong></td><td>₹ ${apiInvoiceData.fareDetails.SGSTAmount.toLocaleString()}</td></tr>` : ''}
-                ${(apiInvoiceData.fareDetails?.IGSTAmount || 0) > 0 ? `<tr><td><strong>IGST (${apiInvoiceData.fareDetails?.IGSTRate || 18}%):</strong></td><td>₹ ${apiInvoiceData.fareDetails.IGSTAmount.toLocaleString()}</td></tr>` : ''}
-                ${(apiInvoiceData.fareDetails?.couponDiscount || 0) > 0 ? `<tr><td><strong>Coupon Discount (-):</strong></td><td>₹ ${apiInvoiceData.fareDetails.couponDiscount.toLocaleString()}</td></tr>` : ''}
-                <tr>
-                <td><strong>Total Payable:</strong></td>
-                <td><strong>₹ ${(apiInvoiceData.totalPayable || apiInvoiceData.invoiceTotal || amount || 0).toLocaleString()}</strong></td>
-                </tr>
-            </table>
+                <!-- Payment Details -->
+                <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">PAYMENT DETAILS</h3>
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
+                    <tr style="background-color: #f8f9fa;"><td><strong>Total Base Fare:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.baseFare || 0).toLocaleString()}</td></tr>
+                    <tr><td><strong>Total Taxes:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.taxes || 0).toLocaleString()}</td></tr>
+                    <tr style="background-color: #f8f9fa;"><td><strong>Platform Fee:</strong></td><td>₹ ${(apiInvoiceData.vendorCommission || 0).toLocaleString()}</td></tr>
+                    ${(apiInvoiceData.fareDetails?.couponDiscount || 0) > 0 ? `<tr><td><strong>Coupon Discount (-):</strong></td><td>₹ ${apiInvoiceData.fareDetails.couponDiscount.toLocaleString()}</td></tr>` : ''}
+                    <tr style="background-color: #f8f9fa;"><td><strong>IGST Rate:</strong></td><td>${apiInvoiceData.fareDetails?.IGSTRate || 18}%</td></tr>
+                    <tr style="background-color: #e8f5e8; font-weight: bold;">
+                        <td><strong>Total Payable:</strong></td>
+                        <td><strong>₹ ${(apiInvoiceData.totalPayable || apiInvoiceData.invoiceTotal || 0).toLocaleString()}</strong></td>
+                    </tr>
+                </table>
 
-            <h3>CHECK-IN & CHECK-OUT DETAILS</h3>
-            <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" cellpadding="8" cellspacing="0">
-                <tr>
-                <td style="vertical-align: top; width: 50%;">
-                    <strong>Check-In:</strong><br>
-                    Date: ${formatDate(apiInvoiceData.checkInDate)}<br>
-                    Time: 2:00 PM onwards<br>
-                    Hotel: ${apiInvoiceData.hotelName || 'Hotel'}<br>
-                    Address: ${apiInvoiceData.address || 'Hotel Address'}
-                </td>
-                <td style="vertical-align: top; width: 50%;">
-                    <strong>Check-Out:</strong><br>
-                    Date: ${formatDate(apiInvoiceData.checkOutDate)}<br>
-                    Time: 11:00 AM<br>
-                    Total Stay: ${nights} night${nights > 1 ? 's' : ''}
-                </td>
-                </tr>
-            </table>
+                <!-- Cancellation Policy -->
+                <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">CANCELLATION POLICY</h3>
+                <p style="font-size: 14px; margin-bottom: 10px;"><strong>Last Cancellation Date:</strong> ${new Date(apiInvoiceData.lastCancellationDate || Date.now()).toLocaleString()}</p>
+                <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 30px;">
+                    ${cancellationPolicyHTML}
+                </ul>
 
-            <h3 style="margin-top: 30px; color: #2c3e50;">CANCELLATION POLICY</h3>
-            <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 20px;">
-                <li>Free cancellation up to 24 hours before check-in</li>
-                <li>50% charges for cancellation within 24 hours</li>
-                <li>100% charges for no-show</li>
-                <li>Refunds will be processed within 7-10 working days</li>
-            </ul>
-
-            <h3 style="margin-top: 30px; color: #2c3e50;">TERMS & CONDITIONS</h3>
-            <ul style="font-size: 14px; padding-left: 20px;">
-                <li>This is a computer-generated invoice; no signature required.</li>
-                <li>All disputes are subject to jurisdiction of New Delhi.</li>
-                <li>Guests must present valid ID proof (Passport/Voter ID/Aadhar Card).</li>
-                <li>Hotel rules and policies apply as per hotel management.</li>
-                <li>Check-in time is 2:00 PM and check-out time is 11:00 AM.</li>
-                <li>Number of nights: ${nights} (${formatDate(apiInvoiceData.checkInDate)} to ${formatDate(apiInvoiceData.checkOutDate)})</li>
-                <li>For any queries, contact our support team at ${apiInvoiceData.supplierDetails?.email || 'booking@rasutrip.com'}</li>
-            </ul>
-            
-            ${apiInvoiceData.isFallback ? `
-            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin-top: 20px; border-radius: 5px;">
-                <small style="color: #856404;">
-                    <strong>Note:</strong> This invoice was generated with available booking data. 
-                    For detailed invoice, please contact support with Booking ID: ${apiInvoiceData.bookingId}
-                </small>
-            </div>
-            ` : ''}
-            
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc;">
-                <small style="color: #7f8c8d;">Thank you for choosing RasuTrip! Have a pleasant stay!</small>
-            </div>
+                <!-- Terms & Conditions -->
+                <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">TERMS & CONDITIONS</h3>
+                <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 30px;">
+                    <li>This is a computer-generated invoice. No signature is required.</li>
+                    <li>All disputes are subject to the jurisdiction of New Delhi.</li>
+                    <li>Guests must present valid ID proof (Passport/Voter ID/Aadhar).</li>
+                    <li>Hotel rules and cancellation policies apply as per hotel management.</li>
+                    <li>Check-in time is 2:00 PM and check-out time is 11:00 AM.</li>
+                    <li>For any queries, contact our support team at ${apiInvoiceData.supplierDetails?.email || 'booking@rasutrip.com'}</li>
+                </ul>
+                
+                ${apiInvoiceData.isFallback ? `
+                <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin-top: 30px; border-radius: 5px;">
+                    <small style="color: #856404;">
+                        <strong>Note:</strong> This invoice was generated with available booking data. 
+                        For detailed invoice, please contact support with Booking ID: ${apiInvoiceData.bookingId}
+                    </small>
+                </div>
+                ` : ''}
+                
+                <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #3498db;">
+                    <small style="color: #7f8c8d;">Thank you for choosing RasuTrip! Have a pleasant stay!</small><br>
+                    <small style="color: #7f8c8d;">Generated on: ${new Date().toLocaleString('en-IN')}</small>
+                </div>
             </div>
         `;
     };
 
-    // Download Invoice Function
+    // Enhanced Download Invoice Function
     const handleDownloadInvoice = async () => {
         try {
             // Fetch invoice data if not already available
@@ -353,7 +383,7 @@ const HotelConfirmation = () => {
                 return;
             }
 
-            const htmlContent = generateInvoiceHTMLFromAPI(invoiceData);
+            const htmlContent = generateDetailedInvoiceHTML(invoiceData);
             const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId || 'HTL';
 
             // Create a new window/tab for printing
@@ -363,10 +393,17 @@ const HotelConfirmation = () => {
                 <html>
                 <head>
                     <title>Hotel Invoice - ${invoiceData.invoiceNumber || invoiceData.invoiceId || bookingId}</title>
+                    <meta charset="UTF-8">
                     <style>
                         @media print {
                             body { margin: 0; }
                             @page { margin: 0.5in; }
+                        }
+                        @media screen {
+                            body { 
+                                background-color: #f5f5f5; 
+                                padding: 20px; 
+                            }
                         }
                     </style>
                 </head>
@@ -374,7 +411,10 @@ const HotelConfirmation = () => {
                     ${htmlContent}
                     <script>
                         window.onload = function() {
-                            window.print();
+                            // Auto print after 1 second delay for better loading
+                            setTimeout(() => {
+                                window.print();
+                            }, 1000);
                         }
                     </script>
                 </body>
@@ -397,10 +437,15 @@ const HotelConfirmation = () => {
 
     // Auto-fetch invoice data on component mount
     useEffect(() => {
-        if (isBooked && confirmationDetails?.bookingId && !invoiceData && !loadingInvoice) {
-            fetchInvoiceData();
+        // Automatically fetch invoice when booking is confirmed
+        if (isBooked && (confirmationDetails?.bookingId || actualBooking?.BookingID) && !invoiceData && !loadingInvoice) {
+            const timer = setTimeout(() => {
+                fetchInvoiceData();
+            }, 2000); // Delay to ensure booking is fully processed
+
+            return () => clearTimeout(timer);
         }
-    }, [isBooked, confirmationDetails?.bookingId]);
+    }, [isBooked, confirmationDetails?.bookingId, actualBooking?.BookingID]);
 
     // Redirect if no booking data
     if (!state || (!isBooked && !confirmationDetails?.bookingId) || (!actualBooking && !confirmationDetails)) {
