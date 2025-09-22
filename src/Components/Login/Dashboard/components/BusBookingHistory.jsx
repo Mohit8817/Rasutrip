@@ -2394,13 +2394,13 @@ const BusBookingHistory = () => {
                       <div className="flex justify-center gap-3">
                         <Button
                           onClick={() => handleETicketDownload(booking)}
-                          className="flex items-center gap-1 bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-white text-xs shadow-sm transition"
+                          className="flex items-center gap-1 btn-red"
                         >
                           E-Ticket Download
                         </Button>
                         <Button
                           onClick={() => handleInvoice(booking)}
-                          className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded text-white text-xs shadow-sm transition"
+                          className="flex items-center gap-1 btn-red"
                         >
                           Invoice Download
                         </Button>
