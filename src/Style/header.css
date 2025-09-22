@@ -54,7 +54,7 @@
 .header-nav,
 .navbar,
 .navbar-nav {
-    background: transparent !important;
+    /* background: transparent !important; */
     box-shadow: none !important;
 }
 
@@ -125,6 +125,7 @@
     transition: all 0.2s ease;
     background: none;
     border: none;
+
 }
 
 .header-nav .nav-item-link:hover {
@@ -151,6 +152,21 @@
     padding: 8px 0;
     margin-top: 8px;
 }
+/* sdfvv */
+@media screen and (max-width: 786px) {
+    .dropdown-menu {
+ border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    padding: 8px 0;
+    margin-top: 8px;
+    /* background-color: red; */
+    height: 110px !important;
+    }
+}
+/* vdx v */
+
+
 
 .dropdown-item {
     padding: 10px 20px;
@@ -290,6 +306,7 @@
     margin-bottom: 15px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+  font-family: 'Poppins', sans-serif !important;
 }
 
 .mobile-nav-link {
@@ -302,6 +319,7 @@
     font-weight: 400;
     transition: all 0.2s ease;
     gap: 15px;
+    font-family: 'Poppins', sans-serif !important;
 }
 
 .mobile-nav-link:hover {

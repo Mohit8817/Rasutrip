@@ -79,22 +79,18 @@ const FareTypeSelector = ({ onDataChange }) => {
   }, [selectedFare, isNonStop]);
 
   return (
-    <div className="fare-type-container p-3">
-      {/* Heading Upar */}
-      <div className="mb-2">
-        <strong>Select A Fare Type</strong>
-      </div>
+    <div className="fare-type-container p-2">
+      <div className="fare-flex d-flex align-items-center flex-wrap gap-3">
+        <span className="fw-bold small text-dark text-nowrap">
+          Select A Fare Type:
+        </span>
 
-      {/* Items niche horizontal scroll me */}
-      <div className="fare-scroll">
-        <Col xs="auto">
-          <Form.Check
-            type="checkbox"
-            label="Non-Stop"
-            checked={isNonStop}
-            onChange={() => setIsNonStop(!isNonStop)}
-          />
-        </Col>
+        <Form.Check
+          type="checkbox"
+          label="Non-Stop"
+          checked={isNonStop}
+          onChange={() => setIsNonStop(!isNonStop)}
+        />
 
         {[
           { value: "regular", label: "Regular Fare" },
@@ -103,16 +99,15 @@ const FareTypeSelector = ({ onDataChange }) => {
           { value: "senior", label: "Senior Citizen" },
           { value: "armed", label: "Armed Forces" },
         ].map(({ value, label }) => (
-          <Col xs="auto" key={value}>
-            <Form.Check
-              type="radio"
-              label={label}
-              name="fare"
-              id={value}
-              checked={selectedFare === value}
-              onChange={() => setSelectedFare(value)}
-            />
-          </Col>
+          <Form.Check
+            key={value}
+            type="radio"
+            label={label}
+            name="fare"
+            id={value}
+            checked={selectedFare === value}
+            onChange={() => setSelectedFare(value)}
+          />
         ))}
       </div>
     </div>

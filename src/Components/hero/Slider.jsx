@@ -12,13 +12,19 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 const Slider = ({ type = "home" }) => {
   const [index, setIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState("bus");
+  const [activeTab, setActiveTab] = useState("flight");
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
   };
+  // const [activeTab, setActiveTab] = useState(() => {
+  //   if (window.location.pathname === "/") {
+  //     return "bus";
+  //   }
+  //   return "flight";
+  // });
 
   // Handle URL parameters and custom events
   useEffect(() => {

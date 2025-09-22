@@ -272,10 +272,9 @@ const Dashboard = () => {
       </div>
 
       {/* Mobile Bottom Navigation - Enhanced for agent dashboard */}
-      <div className="d-block d-lg-none fixed-bottom bg-white border-top shadow-lg">
+      {/* <div className="d-block d-lg-none fixed-bottom bg-white border-top shadow-lg">
         <div className="container-fluid">
           <div className="row g-0">
-            {/* Dashboard tab - Only for agents */}
             {isAgent && (
               <div className="col-2">
                 <button
@@ -372,7 +371,6 @@ const Dashboard = () => {
               </button>
             </div>
 
-            {/* Wallet History - Only for agents */}
             {isAgent && (
               <div className="col-2">
                 <button
@@ -401,7 +399,6 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Bank Details - Only for agents */}
             {isAgent && (
               <div className="col-2">
                 <button
@@ -428,7 +425,7 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Custom CSS for enhanced responsiveness */}
       <style jsx>{`

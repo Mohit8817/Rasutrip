@@ -24,6 +24,15 @@ const Header = () => {
     setShowOffcanvas(false);
   };
 
+  const handleBookingClick = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login/customer");
+    } else {
+      navigate("/dashboard?tab=bookings");
+    }
+  };
+
   // Function to handle enquiry click
   const handleEnquiryClick = () => {
     setShowEnquiry(true);
@@ -201,11 +210,13 @@ const Header = () => {
           <div className="bottom-nav-item">
             <span
               className="bottom-nav-link"
-              onClick={() => handleTabNavigation("flight")}
+              // onClick={() => handleTabNavigation("flight")}
+              onClick={handleBookingClick}
               style={{ cursor: "pointer" }}
             >
-              <i className="fas fa-plane"></i>
-              <span>Flights</span>
+              {/* <i className="fas fa-plane"></i> */}
+              <i class="fa-solid fa-book"></i>
+              <span>Booking</span>
             </span>
           </div>
 
@@ -255,7 +266,7 @@ const Header = () => {
       >
         <Offcanvas.Header closeButton>
           <Offcanvas.Title id="offcanvasNavbarLabel">
-            <img src={logo} alt="Logo" style={{ width: "120px" }} />
+            <img src={logo} alt="Logo" style={{ width: "70px" }} />
           </Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>

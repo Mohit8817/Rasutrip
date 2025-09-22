@@ -1,14 +1,23 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState,useEffect ,useRef} from 'react';
 import { Container, Row, Col, Table, Card, Badge, Form, Button } from 'react-bootstrap';
 import { useLocation } from 'react-router-dom';
 
 const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
   // Sample data for demonstration
   const location = useLocation();
+  const printRef = useRef();
   const { Jtype, invoice } = location.state || {};
   console.log('invoice', invoice)
   const sampleFlightData = invoice
+
+  useEffect(() => {
+    if (printRef.current) {
+      setTimeout(() => {
+        window.print();
+      }, 500); // 500ms delay to ensure page renders
+    }
+  }, []);
 
   const sampleHotelData = {
     invoiceNumber: 'INV-HTL-001',
@@ -550,9 +559,13 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
       </Container>
 
       {/* Invoice Content */}
-      {selectedType === 'flight' && renderFlightInvoice()}
-      {selectedType === 'hotel' && renderHotelInvoice()}
-      {selectedType === 'bus' && renderBusInvoice()}
+      {/* <Button onClick={() => window.print()}>Print Invoice</Button> */}
+
+      <div id="invoice-print" ref={printRef}>
+  {selectedType === 'flight' && renderFlightInvoice()}
+  {selectedType === 'hotel' && renderHotelInvoice()}
+  {selectedType === 'bus' && renderBusInvoice()}
+</div>
     </div>
   );
 };
