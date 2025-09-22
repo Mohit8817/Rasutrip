@@ -205,7 +205,7 @@ const RazorpayPayment = () => {
         // alert(IsBook)
         // }, 1000);
         console.error("❌ Booking Failed:", response?.Error?.ErrorMessage || "Unknown error");
-        toast.error(response?.Error?.ErrorMessage || "Booking failed");
+        toast.error(response?.error?.Error?.ErrorMessage || "Booking failed");
 
       }
         setModalShow(false);
