@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from 'react-toastify';
 import html2pdf from "html2pdf.js";
-import signatureImg from "../../../../assest/signature.png"; 
+import signatureImg from "../../../../assest/signature.png";
 import {
     fetchUpcomingHotelBookings,
     fetchAllHotelBookings,
@@ -397,7 +397,7 @@ const HotelBookingHistory = () => {
                     ? new Date(booking.checkInDate).toLocaleDateString("en-IN")
                     : now.toLocaleDateString("en-IN"),
                 checkOutDate: booking.checkOutDate
-                    ? new Date(booking.checkOutDate).toLocaleDateString("en-IN") 
+                    ? new Date(booking.checkOutDate).toLocaleDateString("en-IN")
                     : now.toLocaleDateString("en-IN"),
                 checkInTime: "2:00 PM",
                 checkOutTime: "11:00 AM",
@@ -1824,15 +1824,15 @@ const HotelBookingHistory = () => {
                                                         <span className="font-medium">{booking.createdAt}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm">
-                                                    <div className=" flex-col space-y-1">
+                                                <td className="px-4 py-3 text-sm d-flex">
+                                                    <div className="flex flex-row space-x-2">
                                                         {/* Tax Invoice Download Button */}
                                                         <button
                                                             onClick={() => handleDownloadInvoiceForBooking(booking)}
                                                             disabled={isDownloadingInvoice}
                                                             className={`px-3 py-1 rounded text-white text-xs ${isDownloadingInvoice
-                                                                ? "bg-orange-500 cursor-wait"
-                                                                : "bg-red-500 hover:bg-red-600"
+                                                                    ? "bg-orange-500 cursor-wait"
+                                                                    : "bg-red-500 hover:bg-red-600"
                                                                 }`}
                                                             title="Download Tax Invoice"
                                                         >
@@ -1844,8 +1844,8 @@ const HotelBookingHistory = () => {
                                                             onClick={() => handleETicketDownload(booking)}
                                                             disabled={isDownloadingETicket}
                                                             className={`px-3 py-1 rounded text-white text-xs ${isDownloadingETicket
-                                                                ? "bg-orange-500 cursor-wait"
-                                                                : "bg-green-500 hover:bg-green-600"
+                                                                    ? "bg-orange-500 cursor-wait"
+                                                                    : "bg-red-500 hover:bg-red-600"
                                                                 }`}
                                                             title="Download E-Ticket"
                                                         >
@@ -1853,6 +1853,7 @@ const HotelBookingHistory = () => {
                                                         </button>
                                                     </div>
                                                 </td>
+
                                                 <td className="px-4 py-3 text-sm">
                                                     {/* Status Button */}
                                                     <button
