@@ -3,7 +3,12 @@ import { Container, Card, Button, Row, Col, Badge, Alert, Spinner } from 'react-
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaCheckCircle, FaHome, FaDownload } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { sendHotelInvoice } from '../../../APIS/HotelApi/HotelAPi'; // Import the API function
+import { sendHotelInvoice } from '../../../APIS/HotelApi/HotelAPi';
+import html2pdf from "html2pdf.js";
+
+// Alternative imports - add these if html2pdf doesn't work properly
+// import jsPDF from 'jspdf';
+// import html2canvas from 'html2canvas';
 
 const HotelConfirmation = () => {
     const { state } = useLocation();
@@ -11,6 +16,8 @@ const HotelConfirmation = () => {
     const [invoiceData, setInvoiceData] = useState(null);
     const [loadingInvoice, setLoadingInvoice] = useState(false);
     const [invoiceError, setInvoiceError] = useState('');
+    const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+    const [downloadingTicket, setDownloadingTicket] = useState(false);
 
     // Extract data from navigation state
     const {
@@ -41,7 +48,7 @@ const HotelConfirmation = () => {
 
     // Fetch invoice data from API
     const fetchInvoiceData = async () => {
-        if (loadingInvoice || invoiceData) return; // Prevent multiple calls
+        if (loadingInvoice || invoiceData) return;
 
         setLoadingInvoice(true);
         setInvoiceError('');
@@ -74,7 +81,6 @@ const HotelConfirmation = () => {
             console.error('Error fetching invoice:', error);
             setInvoiceError(error.message || 'Failed to fetch invoice data');
 
-            // Create fallback invoice data
             const fallbackInvoiceData = generateFallbackInvoiceData();
             setInvoiceData(fallbackInvoiceData);
         } finally {
@@ -98,7 +104,6 @@ const HotelConfirmation = () => {
         const platformFee = Math.round(amount * 0.03) || 0;
 
         return {
-            // Basic Invoice Info
             invoiceId: invoiceNumber,
             invoiceNumber: invoiceNumber,
             invoiceDate: now.toISOString(),
@@ -108,23 +113,19 @@ const HotelConfirmation = () => {
             hotelName: hotelName,
             destination: bookingDetails?.destination || hotelDetails?.city || 'N/A',
 
-            // Company Details (Supplier)
             supplierDetails: {
                 name: 'RASUTRIP WEBSOFT TECHNOLOGIES LLP',
                 mobile: '+91 9266424809',
                 email: 'booking@rasutrip.com',
                 pan: 'ABLFR7635L',
                 state: 'Uttar Pradesh',
-                // companyRegisteredNumber: 'U72900UP2019LLP024578'
             },
 
-            // Customer Details
             receiverDetails: {
                 name: guestName,
                 phone: leadPassenger?.Phoneno || 'N/A'
             },
 
-            // Booking Details with Result structure
             Result: {
                 BookingId: bookingId,
                 BookingStatus: 'Confirmed',
@@ -169,7 +170,6 @@ const HotelConfirmation = () => {
                 }]
             },
 
-            // Fare Details
             fareDetails: {
                 baseFare: baseFare,
                 taxes: taxes,
@@ -181,7 +181,6 @@ const HotelConfirmation = () => {
                 IGSTAmount: 0
             },
 
-            // Additional fields
             lastCancellationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
             vendorCommission: platformFee,
             UserIp: confirmationDetails?.userIp || "49.36.217.215",
@@ -190,9 +189,8 @@ const HotelConfirmation = () => {
         };
     };
 
-    // Generate detailed HTML Invoice matching the email template structure
+    // Generate detailed HTML Invoice
     const generateDetailedInvoiceHTML = (apiInvoiceData) => {
-        // Format dates
         const formatDate = (dateStr) => {
             try {
                 return new Date(dateStr).toLocaleDateString('en-IN');
@@ -201,7 +199,6 @@ const HotelConfirmation = () => {
             }
         };
 
-        // Calculate number of nights
         const calculateNights = () => {
             try {
                 if (apiInvoiceData.Result?.CheckInDate && apiInvoiceData.Result?.CheckOutDate) {
@@ -219,7 +216,6 @@ const HotelConfirmation = () => {
         const nights = calculateNights();
         const hotelRooms = apiInvoiceData.Result?.HotelRoomsDetails || [];
 
-        // Generate room sections similar to email template
         const hotelRoomSections = hotelRooms.map((room, index) => {
             const guestRows = room.HotelPassenger?.map((guest, gIndex) => `
                 <tr>
@@ -257,7 +253,6 @@ const HotelConfirmation = () => {
             `;
         }).join('');
 
-        // Generate cancellation policy section
         const cancellationPolicyHTML = hotelRooms[0]?.CancellationPolicies?.map(policy => `
             <li style="margin-bottom: 5px;">₹ ${policy.Charge.toLocaleString()} will be charged if cancelled between ${new Date(policy.FromDate).toLocaleString()} and ${new Date(policy.ToDate).toLocaleString()}</li>
         `).join('') || '<li>Standard cancellation policies apply</li>';
@@ -266,7 +261,6 @@ const HotelConfirmation = () => {
             <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px; background-color: #fff;">
                 <h2 style="text-align: center; color: #2c3e50; margin-bottom: 30px; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Tax Invoice (Hotel Booking)</h2>
 
-                <!-- Company & Customer Details -->
                 <table style="width: 100%; margin-bottom: 30px; font-size: 14px;">
                     <tr>
                         <td style="vertical-align: top; width: 50%;">
@@ -275,7 +269,6 @@ const HotelConfirmation = () => {
                             <strong>Email:</strong> ${apiInvoiceData.supplierDetails?.email || 'booking@rasutrip.com'}<br />
                             <strong>PAN:</strong> ${apiInvoiceData.supplierDetails?.pan || 'ABLFR7635L'}<br />
                             <strong>State:</strong> ${apiInvoiceData.supplierDetails?.state || 'Uttar Pradesh'}<br />
-                       
                         </td>
                         <td style="text-align: right; vertical-align: top; width: 50%;">
                             <strong>To:</strong> ${apiInvoiceData.receiverDetails?.name || 'Guest'}<br />
@@ -284,7 +277,6 @@ const HotelConfirmation = () => {
                     </tr>
                 </table>
 
-                <!-- Invoice & Booking Details -->
                 <table style="width: 100%; font-size: 14px; margin-bottom: 30px; border-collapse: collapse;" border="1" cellpadding="8" cellspacing="0">
                     <tr style="background-color: #f8f9fa;">
                         <td><strong>Invoice Number:</strong> ${apiInvoiceData.invoiceNumber || apiInvoiceData.invoiceId || 'N/A'}</td>
@@ -304,7 +296,6 @@ const HotelConfirmation = () => {
                     </tr>
                 </table>
 
-                <!-- Hotel Details -->
                 <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">HOTEL DETAILS</h3>
                 <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
                     <tr style="background-color: #f8f9fa;"><td><strong>Hotel Name:</strong></td><td>${apiInvoiceData.hotelName || apiInvoiceData.Result?.HotelName || 'Hotel Name'}</td></tr>
@@ -314,10 +305,8 @@ const HotelConfirmation = () => {
                     <tr style="background-color: #f8f9fa;"><td><strong>Hotel Policy:</strong></td><td>${apiInvoiceData.Result?.HotelPolicyDetail || 'Standard hotel policies apply'}</td></tr>
                 </table>
 
-                <!-- Room and Guest Details -->
                 ${hotelRoomSections}
 
-                <!-- Payment Details -->
                 <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">PAYMENT DETAILS</h3>
                 <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
                     <tr style="background-color: #f8f9fa;"><td><strong>Total Base Fare:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.baseFare || 0).toLocaleString()}</td></tr>
@@ -331,14 +320,12 @@ const HotelConfirmation = () => {
                     </tr>
                 </table>
 
-                <!-- Cancellation Policy -->
                 <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">CANCELLATION POLICY</h3>
                 <p style="font-size: 14px; margin-bottom: 10px;"><strong>Last Cancellation Date:</strong> ${new Date(apiInvoiceData.lastCancellationDate || Date.now()).toLocaleString()}</p>
                 <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 30px;">
                     ${cancellationPolicyHTML}
                 </ul>
 
-                <!-- Terms & Conditions -->
                 <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">TERMS & CONDITIONS</h3>
                 <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 30px;">
                     <li>This is a computer-generated invoice. No signature is required.</li>
@@ -366,9 +353,8 @@ const HotelConfirmation = () => {
         `;
     };
 
-    // Generate E-Ticket HTML (without payment details)
+    // Generate E-Ticket HTML
     const generateETicketHTML = (apiInvoiceData) => {
-        // Format dates
         const formatDate = (dateStr) => {
             try {
                 return new Date(dateStr).toLocaleDateString('en-IN');
@@ -377,7 +363,6 @@ const HotelConfirmation = () => {
             }
         };
 
-        // Calculate number of nights
         const calculateNights = () => {
             try {
                 if (apiInvoiceData.Result?.CheckInDate && apiInvoiceData.Result?.CheckOutDate) {
@@ -395,7 +380,6 @@ const HotelConfirmation = () => {
         const nights = calculateNights();
         const hotelRooms = apiInvoiceData.Result?.HotelRoomsDetails || [];
 
-        // Generate room sections for e-ticket
         const hotelRoomSections = hotelRooms.map((room, index) => {
             const guestRows = room.HotelPassenger?.map((guest, gIndex) => `
                 <tr>
@@ -433,7 +417,6 @@ const HotelConfirmation = () => {
             <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px; background-color: #fff;">
                 <h2 style="text-align: center; color: #2c3e50; margin-bottom: 30px; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Hotel E-Ticket</h2>
 
-                <!-- Company & Customer Details -->
                 <table style="width: 100%; margin-bottom: 30px; font-size: 14px;">
                     <tr>
                         <td style="vertical-align: top; width: 50%;">
@@ -449,7 +432,6 @@ const HotelConfirmation = () => {
                     </tr>
                 </table>
 
-                <!-- Trip Details -->
                 <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">TRIP DETAILS</h3>
                 <table style="width: 100%; font-size: 14px; margin-bottom: 30px; border-collapse: collapse;" border="1" cellpadding="8" cellspacing="0">
                     <tr style="background-color: #f8f9fa;">
@@ -470,7 +452,6 @@ const HotelConfirmation = () => {
                     </tr>
                 </table>
 
-                <!-- Hotel Details -->
                 <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">HOTEL DETAILS</h3>
                 <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
                     <tr style="background-color: #f8f9fa;"><td><strong>Hotel Name:</strong></td><td>${apiInvoiceData.hotelName || apiInvoiceData.Result?.HotelName || 'Hotel Name'}</td></tr>
@@ -479,10 +460,8 @@ const HotelConfirmation = () => {
                     <tr><td><strong>Star Rating:</strong></td><td>${apiInvoiceData.Result?.StarRating || 3} ⭐</td></tr>
                 </table>
 
-                <!-- Room and Guest Details -->
                 ${hotelRoomSections}
 
-                <!-- Check-in & Check-out Information -->
                 <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">CHECK-IN & CHECK-OUT INFORMATION</h3>
                 <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
                     <tr>
@@ -502,7 +481,6 @@ const HotelConfirmation = () => {
                     </tr>
                 </table>
 
-                <!-- Important Instructions -->
                 <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">IMPORTANT INSTRUCTIONS</h3>
                 <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 30px;">
                     <li>Please carry a valid government-issued photo ID (Aadhar Card/Passport/Voter ID) for check-in</li>
@@ -513,7 +491,6 @@ const HotelConfirmation = () => {
                     <li>Keep this e-ticket with you during your entire stay</li>
                 </ul>
 
-                <!-- Contact Information -->
                 <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">CONTACT INFORMATION</h3>
                 <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
                     <tr style="background-color: #f8f9fa;">
@@ -547,151 +524,137 @@ const HotelConfirmation = () => {
         `;
     };
 
-    // Enhanced Download Invoice Function
-    const handleDownloadInvoice = async () => {
+    // Direct PDF Download using html2pdf - FIXED VERSION
+    const downloadInvoicePDF = async () => {
+        if (!invoiceData && !loadingInvoice) {
+            await fetchInvoiceData();
+            return;
+        }
+
+        if (!invoiceData) {
+            toast.error('Invoice data not available. Please try again.', {
+                position: "top-right",
+                autoClose: 3000
+            });
+            return;
+        }
+
+        setDownloadingInvoice(true);
+
         try {
-            // Fetch invoice data if not already available
-            if (!invoiceData && !loadingInvoice) {
-                await fetchInvoiceData();
-                return; // The data will be set, function will be called again by user
-            }
-
-            if (!invoiceData) {
-                toast.error('Invoice data not available. Please try again.', {
-                    position: "top-right",
-                    autoClose: 3000
-                });
-                return;
-            }
-
             const htmlContent = generateDetailedInvoiceHTML(invoiceData);
             const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId || 'HTL';
+            const filename = `Hotel_Invoice_${invoiceData.invoiceNumber || invoiceData.invoiceId || bookingId}_${new Date().getTime()}.pdf`;
 
-            // Create a new window/tab for printing
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Hotel Invoice - ${invoiceData.invoiceNumber || invoiceData.invoiceId || bookingId}</title>
-                    <meta charset="UTF-8">
-                    <style>
-                        @media print {
-                            body { margin: 0; }
-                            @page { margin: 0.5in; }
-                        }
-                        @media screen {
-                            body { 
-                                background-color: #f5f5f5; 
-                                padding: 20px; 
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    ${htmlContent}
-                    <script>
-                        window.onload = function() {
-                            // Auto print after 1 second delay for better loading
-                            setTimeout(() => {
-                                window.print();
-                            }, 1000);
-                        }
-                    </script>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
+            // Better options for html2pdf
+            const options = {
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: filename,
+                image: { 
+                    type: 'jpeg', 
+                    quality: 0.98 
+                },
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    letterRendering: true,
+                    logging: false,
+                    allowTaint: true
+                },
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'a4', 
+                    orientation: 'portrait' 
+                }
+            };
 
-            toast.success('Invoice opened for download/print!', {
+            // Use html2pdf directly on the HTML string
+            await html2pdf().set(options).from(htmlContent).save();
+
+            toast.success('Invoice PDF downloaded successfully!', {
                 position: "top-right",
                 autoClose: 3000
             });
+
         } catch (error) {
-            console.error('Error generating invoice:', error);
-            toast.error('Error generating invoice. Please try again.', {
+            console.error('Error generating invoice PDF:', error);
+            toast.error('Error downloading invoice PDF. Please try again.', {
                 position: "top-right",
                 autoClose: 3000
             });
+        } finally {
+            setDownloadingInvoice(false);
         }
     };
 
-    // Download E-Ticket Function
-    const handleDownloadETicket = async () => {
+    const downloadETicketPDF = async () => {
+        if (!invoiceData && !loadingInvoice) {
+            await fetchInvoiceData();
+            return;
+        }
+
+        if (!invoiceData) {
+            toast.error('E-ticket data not available. Please try again.', {
+                position: "top-right",
+                autoClose: 3000
+            });
+            return;
+        }
+
+        setDownloadingTicket(true);
+
         try {
-            // Fetch invoice data if not already available
-            if (!invoiceData && !loadingInvoice) {
-                await fetchInvoiceData();
-                return; // The data will be set, function will be called again by user
-            }
-
-            if (!invoiceData) {
-                toast.error('E-ticket data not available. Please try again.', {
-                    position: "top-right",
-                    autoClose: 3000
-                });
-                return;
-            }
-
             const htmlContent = generateETicketHTML(invoiceData);
             const bookingId = confirmationDetails?.bookingId || actualBooking?.BookingID || actualBooking?.bookingId || 'HTL';
+            const filename = `Hotel_ETicket_${bookingId}_${new Date().getTime()}.pdf`;
 
-            // Create a new window/tab for printing
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Hotel E-Ticket - ${bookingId}</title>
-                    <meta charset="UTF-8">
-                    <style>
-                        @media print {
-                            body { margin: 0; }
-                            @page { margin: 0.5in; }
-                        }
-                        @media screen {
-                            body { 
-                                background-color: #f5f5f5; 
-                                padding: 20px; 
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    ${htmlContent}
-                    <script>
-                        window.onload = function() {
-                            // Auto print after 1 second delay for better loading
-                            setTimeout(() => {
-                                window.print();
-                            }, 1000);
-                        }
-                    </script>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
+            // Better options for html2pdf
+            const options = {
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: filename,
+                image: { 
+                    type: 'jpeg', 
+                    quality: 0.98 
+                },
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    letterRendering: true,
+                    logging: false,
+                    allowTaint: true
+                },
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'a4', 
+                    orientation: 'portrait' 
+                }
+            };
 
-            toast.success('E-Ticket opened for download/print!', {
+            // Use html2pdf directly on the HTML string
+            await html2pdf().set(options).from(htmlContent).save();
+
+            toast.success('E-Ticket PDF downloaded successfully!', {
                 position: "top-right",
                 autoClose: 3000
             });
+
         } catch (error) {
-            console.error('Error generating e-ticket:', error);
-            toast.error('Error generating e-ticket. Please try again.', {
+            console.error('Error generating e-ticket PDF:', error);
+            toast.error('Error downloading e-ticket PDF. Please try again.', {
                 position: "top-right",
                 autoClose: 3000
             });
+        } finally {
+            setDownloadingTicket(false);
         }
     };
 
     // Auto-fetch invoice data on component mount
     useEffect(() => {
-        // Automatically fetch invoice when booking is confirmed
         if (isBooked && (confirmationDetails?.bookingId || actualBooking?.BookingID) && !invoiceData && !loadingInvoice) {
             const timer = setTimeout(() => {
                 fetchInvoiceData();
-            }, 2000); // Delay to ensure booking is fully processed
+            }, 2000);
 
             return () => clearTimeout(timer);
         }
@@ -770,7 +733,6 @@ const HotelConfirmation = () => {
                                             </div>
                                         </div>
 
-                                        {/* Show coupon savings if applicable */}
                                         {couponDiscount > 0 && (
                                             <div className="mb-4">
                                                 <div className="p-3 bg-success-subtle rounded border border-success">
@@ -892,18 +854,18 @@ const HotelConfirmation = () => {
                                             variant="success"
                                             size="lg"
                                             className="px-5 py-3 fw-semibold"
-                                            onClick={handleDownloadInvoice}
-                                            disabled={loadingInvoice}
+                                            onClick={downloadInvoicePDF}
+                                            disabled={loadingInvoice || downloadingInvoice}
                                             style={{
                                                 fontSize: '1.1rem',
                                                 borderRadius: '10px',
                                                 minWidth: '200px'
                                             }}
                                         >
-                                            {loadingInvoice ? (
+                                            {downloadingInvoice ? (
                                                 <>
                                                     <Spinner animation="border" size="sm" className="me-2" />
-                                                    Loading Invoice...
+                                                    Downloading...
                                                 </>
                                             ) : (
                                                 <>
@@ -917,18 +879,18 @@ const HotelConfirmation = () => {
                                             variant="warning"
                                             size="lg"
                                             className="px-5 py-3 fw-semibold"
-                                            onClick={handleDownloadETicket}
-                                            disabled={loadingInvoice}
+                                            onClick={downloadETicketPDF}
+                                            disabled={loadingInvoice || downloadingTicket}
                                             style={{
                                                 fontSize: '1.1rem',
                                                 borderRadius: '10px',
                                                 minWidth: '200px'
                                             }}
                                         >
-                                            {loadingInvoice ? (
+                                            {downloadingTicket ? (
                                                 <>
                                                     <Spinner animation="border" size="sm" className="me-2" />
-                                                    Loading E-Ticket...
+                                                    Downloading...
                                                 </>
                                             ) : (
                                                 <>
@@ -994,10 +956,6 @@ const HotelConfirmation = () => {
                                                 <small className="text-muted">
                                                     For any assistance, please contact our support team with this booking ID.
                                                 </small>
-
-
-
-
                                             </div>
                                         </div>
                                     </Alert>
