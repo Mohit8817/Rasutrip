@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { toast } from 'react-toastify';
+import html2pdf from "html2pdf.js";
+import signatureImg from "../../../../assest/signature.png"; 
 import {
     fetchUpcomingHotelBookings,
     fetchAllHotelBookings,
     getHotelUserType,
     isHotelUserAuthenticated,
     fetchHotelRealTimeStatus,
-    fetchMultipleHotelRealTimeStatus
+    fetchMultipleHotelRealTimeStatus,
 } from "../../services/bookingApi";
 
 const HotelBookingHistory = () => {
@@ -28,8 +30,9 @@ const HotelBookingHistory = () => {
     const [loadingStatuses, setLoadingStatuses] = useState(new Set());
     const [initialStatusLoaded, setInitialStatusLoaded] = useState(false);
 
-    // Invoice download states
+    // Download states
     const [downloadingInvoices, setDownloadingInvoices] = useState(new Set());
+    const [downloadingETickets, setDownloadingETickets] = useState(new Set());
 
     // Status popup states
     const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -156,8 +159,99 @@ const HotelBookingHistory = () => {
         }
     };
 
-    // Generate Invoice Data for a booking
-    const generateInvoiceDataForBooking = (booking) => {
+    // Hotel Tax Invoice Download Function
+    const handleDownloadInvoiceForBooking = (booking) => {
+        const bookingId = booking.bookingId;
+        setDownloadingInvoices(prev => new Set(prev.add(bookingId)));
+
+        try {
+            const invoiceData = generateHotelInvoiceData(booking);
+            const htmlContent = generateHotelInvoiceHTML(invoiceData);
+
+            // PDF download settings
+            const opt = {
+                margin: 0.5,
+                filename: `Hotel-Invoice-${invoiceData.invoiceNumber}.pdf`,
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+            };
+
+            // Generate & download PDF directly
+            html2pdf().from(htmlContent).set(opt).save();
+
+            // Note: Email send functionality removed since hotelInvoiceServices doesn't exist
+            // If you need email functionality, you'll need to create this service first
+
+            toast.success(`Hotel Invoice downloaded! Booking ID: ${booking.bookingId}`, {
+                position: "top-right",
+                autoClose: 4000,
+            });
+        } catch (error) {
+            console.error("Error processing hotel invoice:", error);
+            toast.error("Error processing hotel invoice. Please try again.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        } finally {
+            setDownloadingInvoices(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(bookingId);
+                return newSet;
+            });
+        }
+    };
+
+    // Hotel E-Ticket Download Function
+    const handleETicketDownload = (booking) => {
+        const bookingId = booking.bookingId;
+        setDownloadingETickets(prev => new Set(prev.add(bookingId)));
+
+        try {
+            // Generate E-Ticket data
+            const eTicketData = generateHotelETicketData(booking);
+            const htmlContent = generateHotelETicketHTML(eTicketData);
+
+            // PDF options
+            const opt = {
+                margin: 0.5,
+                filename: `Hotel-ETicket-${booking.bookingId}.pdf`,
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+            };
+
+            // Directly download PDF on click
+            html2pdf()
+                .from(htmlContent)
+                .set(opt)
+                .save()
+                .then(() => {
+                    // Note: Email send functionality removed since hotelInvoiceServices doesn't exist
+                    // If you need email functionality, you'll need to create this service first
+
+                    toast.success(`Hotel E-Ticket downloaded! Booking ID: ${booking.bookingId}`, {
+                        position: "top-right",
+                        autoClose: 4000,
+                    });
+                });
+        } catch (error) {
+            console.error("Error processing hotel e-ticket:", error);
+            toast.error("Error processing hotel e-ticket. Please try again.", {
+                position: "top-right",
+                autoClose: 3000,
+            });
+        } finally {
+            setDownloadingETickets(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(bookingId);
+                return newSet;
+            });
+        }
+    };
+
+    // Generate Hotel Invoice Data from Booking
+    const generateHotelInvoiceData = (booking) => {
         const now = new Date();
         const invoiceNumber = `INV-HTL-${booking.bookingId}`;
 
@@ -197,8 +291,8 @@ const HotelBookingHistory = () => {
             // Company Details (Supplier)
             supplierDetails: {
                 name: 'RasuTrip Pvt. Ltd.',
-                mobile: '+91-9876543210',
-                email: 'support@rasutrip.com',
+                mobile: '+91-9266424809',
+                email: 'rasutrip@gmail.com',
                 pan: 'ABCDE1234F',
                 state: 'Delhi',
                 companyRegisteredNumber: 'U63040DL2020PTC367456'
@@ -255,210 +349,392 @@ const HotelBookingHistory = () => {
         };
     };
 
-    // Generate HTML Invoice (same as confirmation page)
-    const generateInvoiceHTMLForBooking = (invoiceData) => {
-        return `
-        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px;">
-          <h2 style="text-align: center; color: #2c3e50;">Tax Invoice (Hotel Booking)</h2>
+    // Generate Hotel E-Ticket Data from Booking
+    const generateHotelETicketData = (booking) => {
+        const now = new Date();
+        const ticketNumber = `HOTEL-TICKET-${booking.bookingId}`;
 
-          <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
-            <tr>
-              <td>
-                <strong>From :</strong> ${invoiceData.supplierDetails.name}<br />
-                <strong>Mobile :</strong> ${invoiceData.supplierDetails.mobile}<br />
-                <strong>Email :</strong> ${invoiceData.supplierDetails.email}<br />
-                <strong>PAN Number :</strong> ${invoiceData.supplierDetails.pan}<br />
-                <strong>State :</strong> ${invoiceData.supplierDetails.state}<br />
-                <strong>Company Registered No. :</strong> ${invoiceData.supplierDetails.companyRegisteredNumber}
-              </td>
-              <td style="text-align: right;">
-                <strong>Guest Name :</strong> ${invoiceData.receiverDetails.name}<br />
-                <strong>Phone :</strong> ${invoiceData.receiverDetails.phone}<br />
-                <strong>Email :</strong> ${invoiceData.receiverDetails.email}
-              </td>
-            </tr>
-          </table>
+        const calculateNights = (checkIn, checkOut) => {
+            try {
+                const checkInDate = new Date(checkIn);
+                const checkOutDate = new Date(checkOut);
+                const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
+                const nights = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                return Math.max(1, nights);
+            } catch (error) {
+                return 1;
+            }
+        };
 
-          <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
-            <tr>
-              <td><strong>Invoice Number :</strong> ${invoiceData.invoiceId}</td>
-              <td><strong>Invoice Date :</strong> ${invoiceData.invoiceDate}</td>
-            </tr>
-            <tr>
-              <td><strong>Booking ID :</strong> ${invoiceData.bookingId}</td>
-              <td><strong>Confirmation No :</strong> ${invoiceData.confirmationNo}</td>
-            </tr>
-            <tr>
-              <td><strong>Booking Status :</strong> ${invoiceData.bookingStatus}</td>
-              <td><strong>Payment Status :</strong> ${invoiceData.paymentStatus}</td>
-            </tr>
-            <tr>
-              <td><strong>Check-In :</strong> ${invoiceData.checkInDate}</td>
-              <td><strong>Check-Out :</strong> ${invoiceData.checkOutDate}</td>
-            </tr>
-            <tr>
-              <td><strong>No. of Nights :</strong> ${invoiceData.noOfNights}</td>
-              <td><strong>No. of Rooms :</strong> ${invoiceData.noOfRooms}</td>
-            </tr>
-          </table>
+        return {
+            // Basic Ticket Info
+            ticketNumber: ticketNumber,
+            ticketDate: now.toLocaleDateString("en-IN"),
+            bookingId: booking.bookingId,
+            confirmationNo: booking.confirmationNo,
 
-          <h3 style="color: #2c3e50;">HOTEL DETAILS</h3>
-          <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
-            <tr>
-              <td><strong>Hotel Name</strong></td>
-              <td>${invoiceData.hotelName}</td>
-            </tr>
-            <tr>
-              <td><strong>Hotel Code</strong></td>
-              <td>${invoiceData.bookingId.includes('HTL') ? invoiceData.bookingId : 'N/A'}</td>
-            </tr>
-            <tr>
-              <td><strong>Destination</strong></td>
-              <td>${invoiceData.destination}</td>
-            </tr>
-            <tr>
-              <td><strong>Address</strong></td>
-              <td>${invoiceData.address}</td>
-            </tr>
-            <tr>
-              <td><strong>Room Type</strong></td>
-              <td>${invoiceData.roomType}</td>
-            </tr>
-            <tr>
-              <td><strong>Star Rating</strong></td>
-              <td>${invoiceData.starRating}</td>
-            </tr>
-          </table>
+            // Company Details
+            operatorDetails: {
+                name: "RasuTrip",
+                mobile: "+91-9266424809",
+                email: "rasutrip@gmail.com",
+                website: "www.rasutrip.com",
+            },
 
-          <h3 style="color: #2c3e50;">GUEST DETAILS</h3>
-          <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
-            <tr>
-              <th>#</th>
-              <th>Guest Name</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Total Guests</th>
-            </tr>
-            <tr>
-              <td>1</td>
-              <td>${invoiceData.guest.name}</td>
-              <td>${invoiceData.guest.phone}</td>
-              <td>${invoiceData.guest.email}</td>
-              <td>${invoiceData.numberOfGuests}</td>
-            </tr>
-          </table>
+            // Guest Details
+            guestDetails: {
+                name: booking.leadGuestName || "Guest Name",
+                phone: booking.contactNumber || "N/A",
+                email: booking.email || "customer@email.com",
+            },
 
-          <h3 style="color: #2c3e50;">PAYMENT DETAILS</h3>
-          <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" cellpadding="8" cellspacing="0">
-            <tr><td><strong>Room Fare (${invoiceData.noOfNights} nights):</strong></td><td>₹ ${invoiceData.fareDetails.baseFare.toLocaleString()}</td></tr>
-            <tr><td><strong>Taxes & Fees:</strong></td><td>₹ ${invoiceData.fareDetails.taxes.toLocaleString()}</td></tr>
-            <tr><td><strong>Platform Fee:</strong></td><td>₹ ${invoiceData.fareDetails.platformFee.toLocaleString()}</td></tr>
-            <tr><td><strong>Coupon Discount (-):</strong></td><td>₹ ${invoiceData.fareDetails.couponDiscount}</td></tr>
-            <tr><td><strong>IGST Rate:</strong></td><td>${invoiceData.fareDetails.IGSTRate}%</td></tr>
-            <tr style="border-top: 2px solid #000;">
-              <td><strong>Total Payable:</strong></td>
-              <td><strong>₹ ${invoiceData.totalPayable.toLocaleString()}</strong></td>
-            </tr>
-          </table>
+            // Hotel Stay Details
+            stayDetails: {
+                hotelName: booking.hotelName,
+                city: booking.city,
+                hotelCode: booking.hotelCode,
+                checkInDate: booking.checkInDate
+                    ? new Date(booking.checkInDate).toLocaleDateString("en-IN")
+                    : now.toLocaleDateString("en-IN"),
+                checkOutDate: booking.checkOutDate
+                    ? new Date(booking.checkOutDate).toLocaleDateString("en-IN") 
+                    : now.toLocaleDateString("en-IN"),
+                checkInTime: "2:00 PM",
+                checkOutTime: "11:00 AM",
+                roomType: booking.roomType,
+                numberOfRooms: booking.numberOfRooms,
+                numberOfGuests: booking.numberOfGuests,
+                nights: calculateNights(booking.checkInDate, booking.checkOutDate),
+                totalAmount: booking.totalAmount,
+            },
 
-          <h3 style="margin-top: 30px; color: #2c3e50;">CHECK-IN & CHECK-OUT DETAILS</h3>
-          <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" cellpadding="8" cellspacing="0">
-            <tr>
-              <td style="vertical-align: top; width: 50%;">
-                <strong>Check-In:</strong><br>
-                Date: ${invoiceData.checkInDate}<br>
-                Time: 2:00 PM onwards<br>
-                Hotel: ${invoiceData.hotelName}<br>
-                Address: ${invoiceData.address}
-              </td>
-              <td style="vertical-align: top; width: 50%;">
-                <strong>Check-Out:</strong><br>
-                Date: ${invoiceData.checkOutDate}<br>
-                Time: 11:00 AM<br>
-                Total Stay: ${invoiceData.noOfNights} night(s)
-              </td>
-            </tr>
-          </table>
-
-          <h3 style="margin-top: 30px; color: #2c3e50;">CANCELLATION POLICY</h3>
-          <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 20px;">
-            <li>Free cancellation up to 24 hours before check-in</li>
-            <li>50% charges for cancellation within 24 hours</li>
-            <li>100% charges for no-show</li>
-            <li>Refunds will be processed within 7-10 working days</li>
-          </ul>
-
-          <h3 style="margin-top: 30px; color: #2c3e50;">TERMS & CONDITIONS</h3>
-          <ul style="font-size: 14px; padding-left: 20px;">
-            <li>This is a computer-generated invoice; no signature required.</li>
-            <li>All disputes are subject to jurisdiction of New Delhi.</li>
-            <li>Guests must present valid ID proof (Passport/Voter ID/Aadhar Card).</li>
-            <li>Hotel rules and policies apply as per hotel management.</li>
-            <li>Check-in time is 2:00 PM and check-out time is 11:00 AM.</li>
-            <li>Number of nights: ${invoiceData.noOfNights} (${invoiceData.checkInDate} to ${invoiceData.checkOutDate})</li>
-            <li>For any queries, contact our support team at ${invoiceData.supplierDetails.email}</li>
-          </ul>
-          
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc;">
-            <small style="color: #7f8c8d;">Thank you for choosing RasuTrip! Have a pleasant stay!</small>
-          </div>
-        </div>
-    `;
+            // Booking Status
+            bookingStatus: booking.bookingStatus,
+            paymentStatus: booking.paymentStatus || "Completed",
+        };
     };
 
-    // Handle Download Invoice for individual booking
-    const handleDownloadInvoiceForBooking = (booking) => {
-        const bookingId = booking.bookingId;
+    // Generate Hotel Invoice HTML
+    const generateHotelInvoiceHTML = (invoiceData) => {
+        const logoUrl = (typeof window !== "undefined" && window.location ? window.location.origin : "") + "/logo192.ico";
+        const signatureUrl = signatureImg;
 
-        setDownloadingInvoices(prev => new Set(prev.add(bookingId)));
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 12px;">
+                    <img src="${logoUrl}" onerror="this.onerror=null;this.src='/logo192.png';" alt="RasuTrip Logo" style="height:42px; object-fit:contain;" />
+                    <div style="text-align:right; font-size:12px; line-height:1.3; color:#2c3e50;">
+                        <strong>RasuTrip</strong><br/>
+                        <span>www.rasutrip.com</span>
+                    </div>
+                </div>
+                <h2 style="text-align: center; color: #2c3e50;">Tax Invoice (Hotel Booking)</h2>
 
-        try {
-            const invoiceData = generateInvoiceDataForBooking(booking);
-            const htmlContent = generateInvoiceHTMLForBooking(invoiceData);
+                <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
+                    <tr>
+                        <td>
+                            <strong>From :</strong> ${invoiceData.supplierDetails.name}<br />
+                            <strong>Mobile :</strong> ${invoiceData.supplierDetails.mobile}<br />
+                            <strong>Email :</strong> ${invoiceData.supplierDetails.email}<br />
+                            <strong>PAN Number :</strong> ${invoiceData.supplierDetails.pan}<br />
+                            <strong>State :</strong> ${invoiceData.supplierDetails.state}<br />
+                            <strong>Company Registered No. :</strong> ${invoiceData.supplierDetails.companyRegisteredNumber}
+                        </td>
+                        <td style="text-align: right;">
+                            <strong>Guest Name :</strong> ${invoiceData.receiverDetails.name}<br />
+                            <strong>Phone :</strong> ${invoiceData.receiverDetails.phone}<br />
+                            <strong>Email :</strong> ${invoiceData.receiverDetails.email}
+                        </td>
+                    </tr>
+                </table>
 
-            // Create a new window/tab for printing
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Hotel Invoice - ${invoiceData.invoiceNumber}</title>
-                <style>
-                    @media print {
-                        body { margin: 0; }
-                        @page { margin: 0.5in; }
-                    }
-                </style>
-            </head>
-            <body>
-                ${htmlContent}
-                <script>
-                    window.onload = function() {
-                        window.print();
-                    }
-                </script>
-            </body>
-            </html>
-        `);
-            printWindow.document.close();
+                <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <td><strong>Invoice Number :</strong> ${invoiceData.invoiceId}</td>
+                        <td><strong>Invoice Date :</strong> ${invoiceData.invoiceDate}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Booking ID :</strong> ${invoiceData.bookingId}</td>
+                        <td><strong>Confirmation No :</strong> ${invoiceData.confirmationNo}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Booking Status :</strong> ${invoiceData.bookingStatus}</td>
+                        <td><strong>Payment Status :</strong> ${invoiceData.paymentStatus}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Check-In :</strong> ${invoiceData.checkInDate}</td>
+                        <td><strong>Check-Out :</strong> ${invoiceData.checkOutDate}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>No. of Nights :</strong> ${invoiceData.noOfNights}</td>
+                        <td><strong>No. of Rooms :</strong> ${invoiceData.noOfRooms}</td>
+                    </tr>
+                </table>
 
-            toast.success('Invoice opened for download/print!', {
-                position: "top-right",
-                autoClose: 3000
-            });
-        } catch (error) {
-            console.error('Error generating invoice:', error);
-            toast.error('Error generating invoice. Please try again.', {
-                position: "top-right",
-                autoClose: 3000
-            });
-        } finally {
-            setDownloadingInvoices(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(bookingId);
-                return newSet;
-            });
-        }
+                <h3 style="color: #2c3e50;">HOTEL DETAILS</h3>
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <td><strong>Hotel Name</strong></td>
+                        <td>${invoiceData.hotelName}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hotel Code</strong></td>
+                        <td>${invoiceData.bookingId.includes('HTL') ? invoiceData.bookingId : 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Destination</strong></td>
+                        <td>${invoiceData.destination}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Address</strong></td>
+                        <td>${invoiceData.address}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Room Type</strong></td>
+                        <td>${invoiceData.roomType}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Star Rating</strong></td>
+                        <td>${invoiceData.starRating}</td>
+                    </tr>
+                </table>
+
+                <h3 style="color: #2c3e50;">GUEST DETAILS</h3>
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <th>#</th>
+                        <th>Guest Name</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Total Guests</th>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>${invoiceData.guest.name}</td>
+                        <td>${invoiceData.guest.phone}</td>
+                        <td>${invoiceData.guest.email}</td>
+                        <td>${invoiceData.numberOfGuests}</td>
+                    </tr>
+                </table>
+
+                <h3 style="color: #2c3e50;">PAYMENT DETAILS</h3>
+                <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" cellpadding="8" cellspacing="0">
+                    <tr><td><strong>Room Fare (${invoiceData.noOfNights} nights):</strong></td><td>₹ ${invoiceData.fareDetails.baseFare.toLocaleString()}</td></tr>
+                    <tr><td><strong>Taxes & Fees:</strong></td><td>₹ ${invoiceData.fareDetails.taxes.toLocaleString()}</td></tr>
+                    <tr><td><strong>Platform Fee:</strong></td><td>₹ ${invoiceData.fareDetails.platformFee.toLocaleString()}</td></tr>
+                    <tr><td><strong>Coupon Discount (-):</strong></td><td>₹ ${invoiceData.fareDetails.couponDiscount}</td></tr>
+                    <tr><td><strong>IGST Rate:</strong></td><td>${invoiceData.fareDetails.IGSTRate}%</td></tr>
+                    <tr style="border-top: 2px solid #000;">
+                        <td><strong>Total Payable:</strong></td>
+                        <td><strong>₹ ${invoiceData.totalPayable.toLocaleString()}</strong></td>
+                    </tr>
+                </table>
+
+                <h3 style="margin-top: 30px; color: #2c3e50;">CHECK-IN & CHECK-OUT DETAILS</h3>
+                <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <td style="vertical-align: top; width: 50%;">
+                            <strong>Check-In:</strong><br>
+                            Date: ${invoiceData.checkInDate}<br>
+                            Time: 2:00 PM onwards<br>
+                            Hotel: ${invoiceData.hotelName}<br>
+                            Address: ${invoiceData.address}
+                        </td>
+                        <td style="vertical-align: top; width: 50%;">
+                            <strong>Check-Out:</strong><br>
+                            Date: ${invoiceData.checkOutDate}<br>
+                            Time: 11:00 AM<br>
+                            Total Stay: ${invoiceData.noOfNights} night(s)
+                        </td>
+                    </tr>
+                </table>
+
+                <h3 style="margin-top: 30px; color: #2c3e50;">CANCELLATION POLICY</h3>
+                <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 20px;">
+                    <li>Free cancellation up to 24 hours before check-in</li>
+                    <li>50% charges for cancellation within 24 hours</li>
+                    <li>100% charges for no-show</li>
+                    <li>Refunds will be processed within 7-10 working days</li>
+                </ul>
+
+                <h3 style="margin-top: 30px; color: #2c3e50;">TERMS & CONDITIONS</h3>
+                <ul style="font-size: 14px; padding-left: 20px;">
+                    <li>This is a computer-generated invoice; no signature required.</li>
+                    <li>All disputes are subject to jurisdiction of New Delhi.</li>
+                    <li>Guests must present valid ID proof (Passport/Voter ID/Aadhar Card).</li>
+                    <li>Hotel rules and policies apply as per hotel management.</li>
+                    <li>Check-in time is 2:00 PM and check-out time is 11:00 AM.</li>
+                    <li>Number of nights: ${invoiceData.noOfNights} (${invoiceData.checkInDate} to ${invoiceData.checkOutDate})</li>
+                    <li>For any queries, contact our support team at ${invoiceData.supplierDetails.email}</li>
+                </ul>
+
+                <!-- Sign-off: Right aligned company and signature block -->
+                <div style="margin-top: 18px; display: flex; justify-content: flex-end;">
+                    <div style="text-align: right; min-width: 260px;">
+                        <div style="font-size: 12px; color: #555; margin-bottom: 8px;">
+                            For <strong>Rasu Trip Websoft Technology LLP</strong>
+                        </div>
+                        <div style="height: 56px; display: flex; align-items: center; justify-content: flex-end;">
+                            <img src="${signatureUrl}" alt="Signature" style="max-width: 180px; max-height: 44px; height: auto; width: auto; object-fit: contain;" />
+                        </div>
+                        <div style="border-top: 1px solid #999; margin-top: 6px;"></div>
+                        <div style="font-size: 12px; color: #555; margin-top: 6px;">Authorized Signatory</div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc;">
+                    <small style="color: #7f8c8d;">Thank you for choosing RasuTrip! Have a pleasant stay!</small>
+                </div>
+            </div>
+        `;
+    };
+
+    // Generate Hotel E-Ticket HTML
+    const generateHotelETicketHTML = (ticketData) => {
+        return `
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 20px auto; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                
+                <!-- Header Section -->
+                <div style="background: #d32f2f; color: white; padding: 20px; text-align: center;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Hotel Stay Details</h1>
+                    <br>
+                    <h1 style="margin: 0; font-size: 22px; font-weight: bold;">${ticketData.stayDetails.hotelName}</h1>
+                    <p style="margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;">${ticketData.stayDetails.city}</p>
+                </div>
+
+                <!-- Ticket Info Bar -->
+                <div style="background: #d32f2f; padding: 15px; border-bottom: 2px solid #d32f2f;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                        <div>
+                            <span style="color: white; font-size: 18px;">Confirmation No: ${ticketData.confirmationNo}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="color: white; font-size: 18px;">Date: ${ticketData.ticketDate}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p>
+                    Hey ${ticketData.guestDetails.name},<br>
+                    </p>
+                    <p style="font-size:34px; color: #333; line-height: 1.6;">
+                    Thank you once again for booking your hotel stay with RasuTrip. This mail will help you with all the information related to your upcoming stay at ${ticketData.stayDetails.hotelName} in ${ticketData.stayDetails.city}.
+                    </p>
+                </div>
+
+                <!-- Stay Details -->
+                <div style="padding: 20px; background: white;">
+                    <h2 style="color: black; padding-bottom: 10px; margin-bottom: 20px;">STAY DETAILS</h2>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; margin-bottom: 20px;">
+                        <div style="text-align: center; padding: 15px; background: #fafafaff; border-radius: 8px;">
+                            <h3 style="margin: 0; color: #7d7c7cff; font-size: 12px;">CHECK-IN DATE & TIME</h3>
+                            <p style="margin: 0; color: black; font-weight: bold;">${ticketData.stayDetails.checkInDate}</p>
+                            <p style="margin: 0; color: black; font-weight: bold; font-size: 16px;">${ticketData.stayDetails.checkInTime}</p>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <div style="width: 50px; height: 3px; background: linear-gradient(to right, #4caf50, #2196f3); margin: 0 auto; position: relative;">
+                                <div style="position: absolute; right: -5px; top: -8px; width: 0; height: 0; border-left: 10px solid #2196f3; border-top: 7px solid transparent; border-bottom: 7px solid transparent;"></div>
+                            </div>
+                            <p style="margin: 10px 0 0 0; color: #666; font-size: 12px;">STAY</p>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 15px; background: #fafafaff; border-radius: 8px;">
+                            <h3 style="margin: 0; color: #7d7c7cff; font-size: 12px;">CHECK-OUT DATE & TIME</h3>
+                            <p style="margin: 0; color: black; font-weight: bold;">${ticketData.stayDetails.checkOutDate}</p>
+                            <p style="margin: 0; color: black; font-weight: bold; font-size: 16px;">${ticketData.stayDetails.checkOutTime}</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <strong style="color: black;">Room Type:</strong><br>
+                            <span style="font-size: 16px; color: #333;">${ticketData.stayDetails.roomType}</span>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <strong style="color: black;">Number of Nights:</strong><br>
+                            <span style="font-size: 16px; color: #333;">${ticketData.stayDetails.nights}</span>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <strong style="color: black;">Status:</strong><br>
+                            <span style="font-size: 16px; font-weight: bold; color: #2e7d32;">${ticketData.bookingStatus}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hotel & Room Info -->
+                <div style="padding: 20px; background: #fff;">
+                    <h2 style="color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px; margin-bottom: 20px;">HOTEL INFORMATION</h2>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px;">
+                            <h3 style="color: #7d7c7cff; margin: 0 0 10px 0; font-size:12px">HOTEL DETAILS</h3>
+                            <p style="margin: 5px 0; font-weight: bold;">${ticketData.stayDetails.hotelName}</p>
+                            <p style="margin: 5px 0; color: #666;">Hotel Code: ${ticketData.stayDetails.hotelCode}</p>
+                            <p style="margin: 5px 0; color: #666;">City: ${ticketData.stayDetails.city}</p>
+                        </div>
+                        
+                        <div style="background: white; padding: 15px; border-radius: 8px;">
+                            <h3 style="color: #7d7c7cff; margin: 0 0 10px 0; font-size:12px">ROOM DETAILS</h3>
+                            <p style="margin: 5px 0; font-weight: bold;">Room Type: ${ticketData.stayDetails.roomType}</p>
+                            <p style="margin: 5px 0; color: #666;">Number of Rooms: ${ticketData.stayDetails.numberOfRooms}</p>
+                            <p style="margin: 5px 0; color: #666;">Number of Guests: ${ticketData.stayDetails.numberOfGuests}</p>
+                        </div>
+                    </div>
+
+                    <!-- Guest Details -->
+                    <div style="padding: 20px; background: #fafafa;">
+                        <h2 style="color: black; border-bottom: 2px solid #d32f2f; padding-bottom: 10px; margin-bottom: 20px;">GUEST DETAILS</h2>
+                        
+                        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                <div>
+                                    <label style="display: block; font-size: 12px; color: #7d7c7cff; margin-bottom: 5px;">GUEST NAME</label>
+                                    <p style="margin: 0; font-weight: bold; color: black;">${ticketData.guestDetails.name}</p>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 12px; color: #7d7c7cff; margin-bottom: 5px;">CONTACT NUMBER</label>
+                                    <p style="margin: 0; color: black;">${ticketData.guestDetails.phone}</p>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 12px; color: #7d7c7cff; margin-bottom: 5px;">EMAIL</label>
+                                    <p style="margin: 0; color: black;">${ticketData.guestDetails.email}</p>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 12px; color: #7d7c7cff; margin-bottom: 5px;">TOTAL AMOUNT</label>
+                                    <p style="margin: 0; font-weight: bold; color: #2e7d32;">₹${ticketData.stayDetails.totalAmount}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Important Instructions -->
+                    <div style="padding: 20px; background: #fff3e0; border-top: 3px solid #ff9800;">
+                        <h2 style="color: #ef6c00; margin: 0 0 15px 0;">IMPORTANT INSTRUCTIONS</h2>
+                        <ul style="color: #333; line-height: 1.6; margin: 0; padding-left: 20px;">
+                            <li>Please arrive at the hotel by <strong>2:00 PM</strong> for check-in</li>
+                            <li>Carry a valid <strong>government-issued photo ID</strong> (Aadhaar/PAN/Driving License/Passport)</li>
+                            <li>This e-ticket must be presented either in <strong>printed form or on mobile</strong></li>
+                            <li><strong>Check-out time is 11:00 AM</strong> - late check-out may incur additional charges</li>
+                            <li>Keep your mobile phone charged for hotel communication</li>
+                            <li>Hotel policies and amenities may vary - please check with hotel reception</li>
+                            <li>For cancellation and refund queries, contact customer support</li>
+                        </ul>
+                    </div>
+
+                    <!-- Footer -->
+                    <div style="background: #d32f2f; color: white; padding: 15px; text-align: center;">
+                        <div style="margin-bottom: 10px;">
+                            <strong>${ticketData.operatorDetails.name}</strong><br>
+                            ${ticketData.operatorDetails.mobile} | ${ticketData.operatorDetails.email}<br>
+                            ${ticketData.operatorDetails.website}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     };
 
     // Format hotel booking data with enhanced confirmation number mapping
@@ -1466,7 +1742,6 @@ const HotelBookingHistory = () => {
                                 </tr>
                             </thead>
                             <tbody className="bg-gray-50">
-                                {console.log('Rendering table rows for:', currentBookings.length, 'hotel bookings')}
                                 {currentBookings.length === 0 ? (
                                     <tr>
                                         <td colSpan="14" className="px-4 py-12 text-center">
@@ -1478,13 +1753,6 @@ const HotelBookingHistory = () => {
                                                         : 'Your hotel booking history will appear here'
                                                     }
                                                 </span>
-                                                <div className="mt-2 text-xs text-gray-500">
-                                                    Debug: Upcoming={upcomingBookings.length}, All={allBookings.length}, Current={currentBookings.length}
-                                                    <br />
-                                                    Sort Order: {sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
-                                                    <br />
-                                                    Page: {currentPage} of {totalPages}
-                                                </div>
                                                 <button
                                                     onClick={loadHotelBookings}
                                                     className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -1496,8 +1764,8 @@ const HotelBookingHistory = () => {
                                     </tr>
                                 ) : (
                                     currentBookings.map((booking, index) => {
-                                        console.log(`Rendering row ${index + 1}:`, booking);
                                         const isDownloadingInvoice = downloadingInvoices.has(booking.bookingId);
+                                        const isDownloadingETicket = downloadingETickets.has(booking.bookingId);
 
                                         return (
                                             <tr key={`${booking.bookingId}-${index}`} className="border-b border-gray-200 hover:bg-gray-100">
@@ -1557,32 +1825,31 @@ const HotelBookingHistory = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-sm">
-                                                    <div className="flex flex-col space-y-1">
-                                                        {/* Download Invoice Button */}
-                                                        {/* <button
-                                                            onClick={() => handleInvoiceDownload(booking)}
-                                                            disabled={isDownloadingInvoice || !booking.searchTokenId}
-                                                            className={`px-3 py-1 rounded text-white text-xs ${!booking.searchTokenId
-                                                                ? "bg-gray-400 cursor-not-allowed"
-                                                                : isDownloadingInvoice
-                                                                    ? "bg-orange-500 cursor-wait"
-                                                                    : "bg-red-500 hover:bg-red-600"
-                                                                }`}
-                                                            title={!booking.searchTokenId ? "Invoice not available" : "Download Invoice"}
-                                                        >
-                                                            {isDownloadingInvoice ? "Downloading..." : "Invoice"}
-                                                        </button> */}
-
+                                                    <div className=" flex-col space-y-1">
+                                                        {/* Tax Invoice Download Button */}
                                                         <button
                                                             onClick={() => handleDownloadInvoiceForBooking(booking)}
                                                             disabled={isDownloadingInvoice}
                                                             className={`px-3 py-1 rounded text-white text-xs ${isDownloadingInvoice
-                                                                    ? "bg-orange-500 cursor-wait"
-                                                                    : "bg-red-500 hover:bg-red-600"
+                                                                ? "bg-orange-500 cursor-wait"
+                                                                : "bg-red-500 hover:bg-red-600"
                                                                 }`}
-                                                            title="Download Invoice"
+                                                            title="Download Tax Invoice"
                                                         >
-                                                            {isDownloadingInvoice ? "Downloading..." : "Download Invoice"}
+                                                            {isDownloadingInvoice ? "Downloading..." : "Invoice"}
+                                                        </button>
+
+                                                        {/* E-Ticket Download Button */}
+                                                        <button
+                                                            onClick={() => handleETicketDownload(booking)}
+                                                            disabled={isDownloadingETicket}
+                                                            className={`px-3 py-1 rounded text-white text-xs ${isDownloadingETicket
+                                                                ? "bg-orange-500 cursor-wait"
+                                                                : "bg-green-500 hover:bg-green-600"
+                                                                }`}
+                                                            title="Download E-Ticket"
+                                                        >
+                                                            {isDownloadingETicket ? "Downloading..." : "E-Ticket"}
                                                         </button>
                                                     </div>
                                                 </td>
