@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../../../Context/AuthContext";
 import { toast } from "react-toastify";
 import { Button } from "react-bootstrap";
+import html2pdf from "html2pdf.js";
+import signatureImg from "../../../../assest/signature.png";
 
 import {
   fetchUpcomingBookings,
@@ -249,54 +251,43 @@ const BusBookingHistory = () => {
   // E-Ticket Download Function - NEW
   const handleETicketDownload = (booking) => {
     try {
-      // Generate E-Ticket data (similar to invoice but different structure)
+      // Generate E-Ticket data
       const eTicketData = generateETicketData(booking);
       const htmlContent = generateETicketHTML(eTicketData);
 
-      // Create a new window/tab for printing/download
-      const printWindow = window.open("", "_blank");
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>E-Ticket - ${eTicketData.ticketNumber}</title>
-          <style>
-            @media print {
-              body { margin: 0; }
-              @page { margin: 0.5in; }
-            }
-            body { font-family: Arial, sans-serif; }
-          </style>
-        </head>
-        <body>
-          ${htmlContent}
-          <script>
-            window.onload = function() {
-              setTimeout(() => {
-                window.print();
-              }, 500);
-            }
-          </script>
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
+      // PDF options
+      const opt = {
+        margin: 0.5,
+        filename: `ETicket-${
+          eTicketData.ticketNumber || booking.bookingId
+        }.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+      };
 
-      // Also trigger email send functionality using same API
-      busInvoiceServices({
-        bookingId: booking.rawData.bookingId,
-        userIp: booking.rawData.UserIp,
-        searchTokenId: booking.rawData.SearchTokenId,
-        receiverEmail: booking.rawData.Result?.Passenger?.[0]?.Email,
-      });
+      // Directly download PDF on click
+      html2pdf()
+        .from(htmlContent)
+        .set(opt)
+        .save()
+        .then(() => {
+          // Send email after PDF is saved
+          busInvoiceServices({
+            bookingId: booking.rawData.bookingId,
+            userIp: booking.rawData.UserIp,
+            searchTokenId: booking.rawData.SearchTokenId,
+            receiverEmail: booking.rawData.Result?.Passenger?.[0]?.Email,
+          });
 
-      toast.success(
-        `E-Ticket download opened & email sent! Booking ID: ${booking.bookingId}`,
-        {
-          position: "top-right",
-          autoClose: 4000,
-        }
-      );
+          toast.success(
+            `E-Ticket downloaded & email sent! Booking ID: ${booking.bookingId}`,
+            {
+              position: "top-right",
+              autoClose: 4000,
+            }
+          );
+        });
     } catch (error) {
       console.error("Error processing e-ticket:", error);
       toast.error("Error processing e-ticket. Please try again.", {
@@ -329,6 +320,145 @@ const BusBookingHistory = () => {
         },
       ];
     }
+
+    // Extract dynamic boarding/dropping details defensively from raw data (align with invoice logic)
+    const rawRoot = booking?.rawData?.Result || booking?.rawData || {};
+
+    const normalizeBoarding = (bp) => {
+      if (!bp) return null;
+      const obj = Array.isArray(bp) ? bp[0] : bp;
+      return {
+        name:
+          obj.CityPointName ||
+          obj.Name ||
+          obj.Location ||
+          obj.BoardingPointName ||
+          obj.City ||
+          obj.CityPoint ||
+          booking.from,
+        address:
+          obj.CityPointLocation ||
+          obj.Address ||
+          obj.Location ||
+          obj.City ||
+          `${booking.from} Bus Station, Main Road`,
+        landmark:
+          obj.CityPointLandmark ||
+          obj.Landmark ||
+          obj.NearBy ||
+          obj.NearestLandmark ||
+          "Near City Center",
+        reportingTime:
+          obj.CityPointTime ||
+          obj.Time ||
+          obj.ReportingTime ||
+          obj.BoardingTime ||
+          (booking.travelDate
+            ? new Date(
+                new Date(booking.travelDate).getTime() - 30 * 60 * 1000
+              ).toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "08:30 AM"),
+        contactNumber:
+          obj.CityPointContactNumber ||
+          obj.ContactNumber ||
+          obj.Phone ||
+          "+91-9876543210",
+      };
+    };
+
+    const normalizeDropping = (dp) => {
+      if (!dp) return null;
+      const obj = Array.isArray(dp) ? dp[0] : dp;
+      return {
+        name:
+          obj.CityPointName ||
+          obj.Name ||
+          obj.Location ||
+          obj.DroppingPointName ||
+          obj.City ||
+          obj.CityPoint ||
+          `${booking.to} `,
+        address:
+          obj.CityPointLocation ||
+          obj.Address ||
+          obj.Location ||
+          obj.City ||
+          `${booking.to} Bus Terminal, Central Location`,
+        landmark:
+          obj.CityPointLandmark ||
+          obj.Landmark ||
+          obj.NearBy ||
+          obj.NearestLandmark ||
+          "Near Railway Station",
+        estimatedArrival:
+          obj.CityPointTime ||
+          obj.Time ||
+          obj.EstimatedArrival ||
+          obj.DroppingTime ||
+          (booking.travelDate
+            ? new Date(
+                new Date(booking.travelDate).getTime() + 8 * 60 * 60 * 1000
+              ).toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "05:00 PM"),
+      };
+    };
+
+    const dynamicBoarding = normalizeBoarding(
+      rawRoot.BoardingPointdetails ||
+        rawRoot.boardingPointdetails ||
+        rawRoot.BoardingPointDetails ||
+        rawRoot.boardingPointDetails ||
+        rawRoot.BoardingPoint ||
+        rawRoot.boardingPoint ||
+        rawRoot.Boarding ||
+        rawRoot.boarding
+    ) || {
+      name: `${booking.from} `,
+      address: `${booking.from} Bus Station, Main Road`,
+      landmark: "Near City Center",
+      reportingTime: booking.travelDate
+        ? new Date(
+            new Date(booking.travelDate).getTime() - 30 * 60 * 1000
+          ).toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })
+        : "08:30 AM",
+      contactNumber: "+91-9876543210",
+    };
+
+    const dynamicDropping = normalizeDropping(
+      rawRoot.DroppingPointdetails ||
+        rawRoot.droppingPointdetails ||
+        rawRoot.DroppingPointDetails ||
+        rawRoot.droppingPointDetails ||
+        rawRoot.DroppingPoint ||
+        rawRoot.droppingPoint ||
+        rawRoot.Dropping ||
+        rawRoot.dropping
+    ) || {
+      name: `${booking.to} `,
+      address: `${booking.to} Bus Terminal, Central Location`,
+      landmark: "Near Railway Station",
+      estimatedArrival: booking.travelDate
+        ? new Date(
+            new Date(booking.travelDate).getTime() + 8 * 60 * 60 * 1000
+          ).toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })
+        : "05:00 PM",
+    };
 
     return {
       // Basic Ticket Info
@@ -403,37 +533,10 @@ const BusBookingHistory = () => {
               },
             ],
 
-      // Boarding/Dropping Points
-      boardingPoint: {
-        name: `${booking.from} `,
-        address: `${booking.from} Bus Station, Main Road`,
-        landmark: "Near City Center",
-        reportingTime: booking.travelDate
-          ? new Date(
-              new Date(booking.travelDate).getTime() - 30 * 60 * 1000
-            ).toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
-          : "08:30 AM",
-        contactNumber: "+91-9876543210",
-      },
+      // Boarding/Dropping Points (dynamic)
+      boardingPoint: dynamicBoarding,
 
-      droppingPoint: {
-        name: `${booking.to} `,
-        address: `${booking.to} Bus Terminal, Central Location`,
-        landmark: "Near Railway Station",
-        estimatedArrival: booking.travelDate
-          ? new Date(
-              new Date(booking.travelDate).getTime() + 8 * 60 * 60 * 1000
-            ).toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
-          : "05:00 PM",
-      },
+      droppingPoint: dynamicDropping,
 
       // Booking Status
       bookingStatus: booking.bookingStatus,
@@ -463,7 +566,9 @@ const BusBookingHistory = () => {
         <div style="background: #d32f2f; color: white; padding: 20px; text-align: center;">
           <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Trip Details</h1>
           <br>
-           <h1 style="margin: 0; font-size: 22px; font-weight: bold;">${ticketData.journeyDetails.from} to ${ticketData.journeyDetails.to}</h1>
+           <h1 style="margin: 0; font-size: 22px; font-weight: bold;">${
+             ticketData.journeyDetails.from
+           } to ${ticketData.journeyDetails.to}</h1>
           <p style="margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;"></p>
         </div>
 
@@ -473,10 +578,14 @@ const BusBookingHistory = () => {
         <div style="background: #d32f2f; padding: 15px; border-bottom: 2px solid #d32f2f;">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <div>
-              <span style="color: white; font-size: 18px;">PNR No: ${ticketData.pnr}</span>
+              <span style="color: white; font-size: 18px;">PNR No: ${
+                ticketData.pnr
+              }</span>
             </div>
             <div style="text-align: right;">
-              <span style="color: white; font-size: 18px;">Date: ${ticketData.ticketDate}</span>
+              <span style="color: white; font-size: 18px;">Date: ${
+                ticketData.ticketDate
+              }</span>
             </div>
           </div>
         </div>
@@ -486,7 +595,9 @@ const BusBookingHistory = () => {
         Hey  ${ticketData.passengerDetails.name},<br>
          </p>
          <p class="style="font-size:34px; color: #333; line-height: 1.6;">
-         Thank you once again for booking your bus ticket with RasuTrip. This mail will help you with all the information related to your upcoming trip from ${ticketData.journeyDetails.from} to ${ticketData.journeyDetails.to}.
+         Thank you once again for booking your bus ticket with RasuTrip. This mail will help you with all the information related to your upcoming trip from ${
+           ticketData.journeyDetails.from
+         } to ${ticketData.journeyDetails.to}.
          </p>
 
         </div>
@@ -500,8 +611,12 @@ const BusBookingHistory = () => {
           <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; margin-bottom: 20px;">
             <div style="text-align: center; padding: 15px; background: #fafafaff; border-radius: 8px;">
               <h3 style="margin: 0; color: #7d7c7cff; font-size: 12px;">Departure Date and TIME</h3>
-              <p style="margin: 0; color: black; font-weight: bold;">${ticketData.journeyDetails.departureDate}</p>
-              <p style="margin: 0; color: black; font-weight: bold; font-size: 16px;">${ticketData.journeyDetails.departureTime}</p>
+              <p style="margin: 0; color: black; font-weight: bold;">${
+                ticketData.journeyDetails.departureDate
+              }</p>
+              <p style="margin: 0; color: black; font-weight: bold; font-size: 16px;">${
+                ticketData.journeyDetails.departureTime
+              }</p>
             </div>
             
             <div style="text-align: center;">
@@ -513,21 +628,29 @@ const BusBookingHistory = () => {
             
             <div style="text-align: center; padding: 15px; background: #fafafaff; border-radius: 8px;">
               <h3 style="margin: 0; color: #7d7c7cff; font-size: 12px;">Arrival Date and TIME</h3>
-              <p style="margin: 0; color: black; font-weight: bold;">${ticketData.journeyDetails.departureDate}</p>
-              <p style="margin: 0; color: black; font-weight: bold; font-size: 16px;">${ticketData.droppingPoint.estimatedArrival}</p>
+              <p style="margin: 0; color: black; font-weight: bold;">${
+                ticketData.journeyDetails.departureDate
+              }</p>
+              <p style="margin: 0; color: black; font-weight: bold; font-size: 16px;">${
+                ticketData.droppingPoint.estimatedArrival
+              }</p>
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; ">
               <strong style="color: black;">Bus Type:</strong><br>
-              <span style="font-size: 16px; color: #333;">${ticketData.journeyDetails.busType}</span>
+              <span style="font-size: 16px; color: #333;">${
+                ticketData.journeyDetails.busType
+              }</span>
             </div>
            
          
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; ">
               <strong style="color: black;">Status:</strong><br>
-              <span style="font-size: 16px; font-weight: bold; color: #2e7d32;">${ticketData.bookingStatus}</span>
+              <span style="font-size: 16px; font-weight: bold; color: #2e7d32;">${
+                ticketData.bookingStatus
+              }</span>
             </div>
           </div>
         </div>
@@ -538,17 +661,34 @@ const BusBookingHistory = () => {
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div style="background: white; padding: 15px; border-radius: 8px;">
               <h3 style="color: #7d7c7cff; margin: 0 0 10px 0; font-size:12px"> BOARDING POINT</h3>
-              <p style="margin: 5px 0; font-weight: bold;">${ticketData.boardingPoint.name}</p>
-              <p style="margin: 5px 0; color: #666;">${ticketData.boardingPoint.address}</p>
-              <p style="margin: 5px 0; color: #666;">Landmark: ${ticketData.boardingPoint.landmark}</p>
-              <p style="margin: 5px 0; color: #2e7d32;"> ${ticketData.boardingPoint.contactNumber}</p>
+              <p style="margin: 5px 0; font-weight: bold;">${
+                ticketData.boardingPoint.name
+              }</p>
+              <p style="margin: 5px 0; color: #666;">${
+                ticketData.boardingPoint.address
+              }</p>
+             
+              <p style="margin: 5px 0; color: #2e7d32;">Bus Operator No: ${
+                ticketData.boardingPoint.contactNumber
+              }</p>
+              <p style="margin: 5px 0; color: #2e7d32;">Time: ${new Date(
+                ticketData.boardingPoint.reportingTime
+              ).toLocaleString()}</p>
             </div>
             
             <div style="background: white; padding: 15px; border-radius: 8px;">
               <h3 style="color: #7d7c7cff; margin: 0 0 10px 0; font-size:12px"> DROPPING POINT</h3>
-              <p style="margin: 5px 0; font-weight: bold;">${ticketData.droppingPoint.name}</p>
-              <p style="margin: 5px 0; color: #666;">${ticketData.droppingPoint.address}</p>
-              <p style="margin: 5px 0; color: #666;">Landmark: ${ticketData.droppingPoint.landmark}</p>
+              <p style="margin: 5px 0; font-weight: bold;">${
+                ticketData.droppingPoint.name
+              }</p>
+              <p style="margin: 5px 0; color: #666;">${
+                ticketData.droppingPoint.address
+              }</p>
+              <p style="margin: 5px 0; color: #2e7d32;">Time: ${new Date(
+                ticketData.droppingPoint.estimatedArrival
+              ).toLocaleString()}</p>
+              
+            
             </div>
           </div>
 
@@ -595,7 +735,9 @@ const BusBookingHistory = () => {
         <div style="background: #d32f2f; color: white; padding: 15px; text-align: center;">
           <div style="margin-bottom: 10px;">
             <strong>${ticketData.operatorDetails.name}</strong><br>
-             ${ticketData.operatorDetails.mobile} |  ${ticketData.operatorDetails.email}<br>
+             ${ticketData.operatorDetails.mobile} |  ${
+      ticketData.operatorDetails.email
+    }<br>
              ${ticketData.operatorDetails.website}
           </div>
          
@@ -612,40 +754,23 @@ const BusBookingHistory = () => {
   // Combined Invoice Function - Download and Send Email
   const handleInvoice = (booking) => {
     try {
-      // First, generate and download invoice
+      // Generate invoice data
       const invoiceData = generateInvoiceData(booking);
       const htmlContent = generateInvoiceHTML(invoiceData);
 
-      // Create a new window/tab for printing/download
-      const printWindow = window.open("", "_blank");
-      printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Invoice - ${invoiceData.invoiceNumber}</title>
-                    <style>
-                        @media print {
-                            body { margin: 0; }
-                            @page { margin: 0.5in; }
-                        }
-                        body { font-family: Arial, sans-serif; }
-                    </style>
-                </head>
-                <body>
-                    ${htmlContent}
-                    <script>
-                        window.onload = function() {
-                            setTimeout(() => {
-                                window.print();
-                            }, 500);
-                        }
-                    </script>
-                </body>
-                </html>
-            `);
-      printWindow.document.close();
+      // PDF download settings
+      const opt = {
+        margin: 0.5,
+        filename: `Invoice-${invoiceData.invoiceNumber}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+      };
 
-      // Also trigger email send functionality
+      // Generate & download PDF directly
+      html2pdf().from(htmlContent).set(opt).save();
+
+      // Email send functionality
       busInvoiceServices({
         bookingId: booking.rawData.bookingId,
         userIp: booking.rawData.UserIp,
@@ -654,7 +779,7 @@ const BusBookingHistory = () => {
       });
 
       toast.success(
-        `Invoice download opened & email sent! Booking ID: ${booking.bookingId}`,
+        `Invoice downloaded & email sent! Booking ID: ${booking.bookingId}`,
         {
           position: "top-right",
           autoClose: 4000,
@@ -668,7 +793,6 @@ const BusBookingHistory = () => {
       });
     }
   };
-
   // Generate Invoice Data from Booking
   const generateInvoiceData = (booking) => {
     const now = new Date();
@@ -700,6 +824,119 @@ const BusBookingHistory = () => {
     const taxes = Math.round(totalAmount * 0.12);
     const serviceCharges = Math.round(totalAmount * 0.03);
     const vendorCommission = Math.round(totalAmount * 0.02);
+
+    // Extract dynamic boarding/dropping details defensively from raw data
+    const rawRoot = booking?.rawData?.Result || booking?.rawData || {};
+
+    const normalizeBoarding = (bp) => {
+      if (!bp) return null;
+      const obj = Array.isArray(bp) ? bp[0] : bp;
+      return {
+        CityPointName:
+          obj.CityPointName ||
+          obj.Name ||
+          obj.Location ||
+          obj.BoardingPointName ||
+          obj.City ||
+          obj.CityPoint ||
+          booking.from,
+        CityPointLocation:
+          obj.CityPointLocation ||
+          obj.Address ||
+          obj.Location ||
+          obj.City ||
+          booking.from,
+        CityPointLandmark:
+          obj.CityPointLandmark ||
+          obj.Landmark ||
+          obj.NearBy ||
+          obj.NearestLandmark ||
+          "N/A",
+        CityPointTime:
+          obj.CityPointTime ||
+          obj.Time ||
+          obj.ReportingTime ||
+          obj.BoardingTime ||
+          booking.travelDate ||
+          now.toISOString(),
+        CityPointContactNumber:
+          obj.CityPointContactNumber ||
+          obj.ContactNumber ||
+          obj.Phone ||
+          "+91-9876543210",
+      };
+    };
+
+    const normalizeDropping = (dp) => {
+      if (!dp) return null;
+      const list = Array.isArray(dp) ? dp : [dp];
+      return list.map((obj) => ({
+        CityPointName:
+          obj.CityPointName ||
+          obj.Name ||
+          obj.Location ||
+          obj.DroppingPointName ||
+          obj.City ||
+          obj.CityPoint ||
+          `${booking.to} Dropping Point`,
+        CityPointLocation:
+          obj.CityPointLocation ||
+          obj.Address ||
+          obj.Location ||
+          obj.City ||
+          booking.to,
+        CityPointTime:
+          obj.CityPointTime ||
+          obj.Time ||
+          obj.EstimatedArrival ||
+          obj.DroppingTime ||
+          (booking.travelDate
+            ? new Date(
+                new Date(booking.travelDate).getTime() + 8 * 60 * 60 * 1000
+              ).toISOString()
+            : now.toISOString()),
+      }));
+    };
+
+    const dynamicBoarding = normalizeBoarding(
+      rawRoot.BoardingPointdetails ||
+        rawRoot.boardingPointdetails ||
+        rawRoot.BoardingPointDetails ||
+        rawRoot.boardingPointDetails ||
+        rawRoot.BoardingPoint ||
+        rawRoot.boardingPoint ||
+        rawRoot.Boarding ||
+        rawRoot.boarding
+    ) || {
+      CityPointName: `${booking.from}  `,
+      CityPointLocation: booking.from,
+      CityPointLandmark: "dfb",
+      CityPointTime: booking.travelDate
+        ? new Date(booking.travelDate).toISOString()
+        : now.toISOString(),
+      CityPointContactNumber: "+91-9876543210",
+    };
+
+    const dynamicDropping = normalizeDropping(
+      rawRoot.DroppingPointdetails ||
+        rawRoot.droppingPointdetails ||
+        rawRoot.DroppingPointDetails ||
+        rawRoot.droppingPointDetails ||
+        rawRoot.DroppingPoint ||
+        rawRoot.droppingPoint ||
+        rawRoot.Dropping ||
+        rawRoot.dropping
+    ) || [
+      {
+        CityPointName: `${booking.to} Dropping Point`,
+        CityPointLocation: booking.to,
+        CityPointTime: booking.travelDate
+          ? new Date(
+              new Date(booking.travelDate).getTime() + 8 * 60 * 60 * 1000
+            ).toISOString()
+          : now.toISOString(),
+      },
+    ];
 
     return {
       // Basic Invoice Info
@@ -785,28 +1022,10 @@ const BusBookingHistory = () => {
         IGSTRate: 12,
       },
 
-      // Boarding/Dropping Points (default values as we don't have this data in history)
-      boardingPointdetails: {
-        CityPointName: `${booking.from} Boarding Point`,
-        CityPointLocation: booking.from,
-        CityPointLandmark: "Main Bus Stand",
-        CityPointTime: booking.travelDate
-          ? new Date(booking.travelDate).toISOString()
-          : now.toISOString(),
-        CityPointContactNumber: "+91-9876543210",
-      },
+      // Boarding/Dropping Points (dynamic when available)
+      boardingPointdetails: dynamicBoarding,
 
-      droppingPointdetails: [
-        {
-          CityPointName: `${booking.to} Dropping Point`,
-          CityPointLocation: booking.to,
-          CityPointTime: booking.travelDate
-            ? new Date(
-                new Date(booking.travelDate).getTime() + 8 * 60 * 60 * 1000
-              ).toISOString()
-            : now.toISOString(),
-        },
-      ],
+      droppingPointdetails: dynamicDropping,
 
       // Payment
       vendorCommission: vendorCommission,
@@ -817,6 +1036,11 @@ const BusBookingHistory = () => {
 
   // Generate HTML Invoice (same as booking confirmation)
   const generateInvoiceHTML = (invoiceData) => {
+    const logoUrl =
+      (typeof window !== "undefined" && window.location
+        ? window.location.origin
+        : "") + "/logo192.ico";
+    const signatureUrl = signatureImg;
     let busPassengerRows = "";
     invoiceData.passenger.forEach((p, i) => {
       busPassengerRows += `
@@ -833,6 +1057,13 @@ const BusBookingHistory = () => {
 
     return `
             <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 12px;">
+                <img src="${logoUrl}" onerror="this.onerror=null;this.src='/logo192.png';" alt="RasuTrip Logo" style="height:42px; object-fit:contain;" />
+                <div style="text-align:right; font-size:12px; line-height:1.3; color:#2c3e50;">
+                  <strong>RasuTrip</strong><br/>
+                  <span>www.rasutrip.com</span>
+                </div>
+              </div>
               <h2 style="text-align: center;">Tax Invoice (Bus Booking)</h2>
 
               <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
@@ -950,13 +1181,11 @@ const BusBookingHistory = () => {
                     ${invoiceData.boardingPointdetails.CityPointName}, ${
       invoiceData.boardingPointdetails.CityPointLocation
     }<br>
-                    Landmark: ${
-                      invoiceData.boardingPointdetails.CityPointLandmark
-                    }<br>
+                   
                     Time: ${new Date(
                       invoiceData.boardingPointdetails.CityPointTime
                     ).toLocaleString()}<br>
-                    Contact: ${
+                    Bus Operator No: ${
                       invoiceData.boardingPointdetails.CityPointContactNumber
                     }
                   </td>
@@ -978,6 +1207,20 @@ const BusBookingHistory = () => {
                 <li>Please report at the boarding point at least 30 minutes before departure.</li>
                 <li>Ensure correct contact number for updates on schedule or cancellation.</li>
               </ul>
+
+              <!-- Sign-off: Right aligned company and signature block -->
+              <div style="margin-top: 18px; display: flex; justify-content: flex-end;">
+                <div style="text-align: right; min-width: 260px;">
+                  <div style="font-size: 12px; color: #555; margin-bottom: 8px;">
+                    For <strong>Rasu Trip Websoft Technology LLP</strong>
+                  </div>
+                  <div style="height: 56px; display: flex; align-items: center; justify-content: flex-end;">
+                    <img src="${signatureUrl}" alt="Signature" style="max-width: 180px; max-height: 44px; height: auto; width: auto; object-fit: contain;" />
+                  </div>
+                  <div style="border-top: 1px solid #999; margin-top: 6px;"></div>
+                  <div style="font-size: 12px; color: #555; margin-top: 6px;">Authorized Signatory</div>
+                </div>
+              </div>
             </div>
         `;
   };
@@ -2049,27 +2292,31 @@ const BusBookingHistory = () => {
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   Travel Date
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                {/* <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   Bus Type
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   Seats
-                </th>
+                </th> */}
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   Passenger
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                {/* <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   Amount
-                </th>
+                </th> */}
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   Status
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   Created
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                {/* <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                  Actions
+                </th> */}
+                <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">
                   Actions
                 </th>
+
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
                   Real-Time Status
                 </th>
@@ -2117,18 +2364,18 @@ const BusBookingHistory = () => {
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {formatDate(booking.travelDate)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
+                    {/* <td className="px-4 py-3 text-sm text-gray-700">
                       {booking.busType}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {booking.seatNumber}
-                    </td>
+                    </td> */}
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {booking.passengerName}
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-green-600">
+                    {/* <td className="px-4 py-3 text-sm font-medium text-green-600">
                       {formatAmount(booking.totalAmount)}
-                    </td>
+                    </td> */}
                     <td className="px-4 py-3 text-sm">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -2143,7 +2390,24 @@ const BusBookingHistory = () => {
                     <td className="px-4 py-3 text-sm text-gray-500">
                       {booking.createdAt}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-gray-500 text-center">
+                      <div className="flex justify-center gap-3">
+                        <Button
+                          onClick={() => handleETicketDownload(booking)}
+                          className="flex items-center gap-1 bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-white text-xs shadow-sm transition"
+                        >
+                          E-Ticket Download
+                        </Button>
+                        <Button
+                          onClick={() => handleInvoice(booking)}
+                          className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded text-white text-xs shadow-sm transition"
+                        >
+                          Invoice Download
+                        </Button>
+                      </div>
+                    </td>
+
+                    {/* <td className="px-4 py-3 text-sm text-gray-500">
                       <div>
                         <Button
                           onClick={() => handleETicketDownload(booking)}
@@ -2160,7 +2424,7 @@ const BusBookingHistory = () => {
                           Invoice View Download
                         </Button>
                       </div>
-                    </td>
+                    </td> */}
                     <td className="px-4 py-3 text-sm">
                       {renderRealTimeStatus(booking)}
                     </td>
