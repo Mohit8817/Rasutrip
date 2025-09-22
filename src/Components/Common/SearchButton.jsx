@@ -78,7 +78,7 @@ const SearchButton = ({ type, }) => {
 
         if (location.pathname === '/flight-results') {
           navigate(`/?${searchParams.toString()}`, { replace: true });
-          setTimeout(goToResults, 10);
+          setTimeout(goToResults, 100);
         } else {
           goToResults();
         }

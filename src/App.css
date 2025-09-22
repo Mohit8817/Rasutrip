@@ -11,14 +11,8 @@
   width: 95%;
 }
 
-
-
-
-
-
 body {
-    background-color: #f4f7fd !important; 
-
+  background-color: #f4f7fd !important;
 }
 
 /* .hotel-container {
@@ -36,23 +30,42 @@ body {
   border-radius: 8px;
 } */
 
-.rdp-month_caption{
+.rdp-month_caption {
   background-color: #cb0d26;
   display: flex;
   justify-content: center;
-  color:white
+  color: white;
 }
 .rdp-chevron {
-    display: inline-block;
-    fill:white!important
+  display: inline-block;
+  fill: white !important;
 }
 .rdp-today:not(.rdp-outside) {
-    color: #cb0d26!important;
-     border: none!important;
+  color: #cb0d26 !important;
+  border: none !important;
 }
 
 .rdp-selected .rdp-day_button {
-background: #cb0d26!important;
-    border: none!important;
-    color: #f4f7fd!important;
+  background: #cb0d26 !important;
+  border: none !important;
+  color: #f4f7fd !important;
+}
+
+/* src/index.css ya component CSS me */
+@media print {
+  body * {
+    visibility: hidden; /* sab hide karo */
+  }
+
+  #invoice-print,
+  #invoice-print * {
+    visibility: visible; /* sirf invoice visible */
+  }
+
+  #invoice-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
 }

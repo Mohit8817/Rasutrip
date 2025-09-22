@@ -1,384 +1,422 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Button, Alert, Row, Col, Badge } from 'react-bootstrap';
+import { Container, Card, Button, Row, Col, Badge, Alert, Spinner } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaRedo, FaBus, FaCalendarAlt, FaUser, FaMapMarkerAlt, FaTicketAlt, FaEnvelope, FaHome, FaDownload } from 'react-icons/fa';
+import { FaCheckCircle, FaHome, FaDownload, FaBus } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { downloadBusInvoice } from '../../APIS/BusApi/BusApis';
 
-const Bookingconfirm = () => {
+const BookingConfirm = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
-    const [bookingData, setBookingData] = useState(null);
+    const [invoiceData, setInvoiceData] = useState(null);
+    const [loadingInvoice, setLoadingInvoice] = useState(false);
+    const [downloadingPDF, setDownloadingPDF] = useState(false);
+    const [invoiceError, setInvoiceError] = useState('');
 
-    // Session storage keys
-    const BOOKING_DATA_KEY = 'bus_booking_confirmation_data';
-    const BOOKING_TIMESTAMP_KEY = 'bus_booking_timestamp';
+    // Extract data from navigation state
+    const {
+        paymentId,
+        orderId,
+        bookingDetails,
+        finalAmount,
+        validationResult,
+        bookingResult,
+        extractedBookingId,
+        appliedCouponData,
+        couponDiscount = 0
+    } = state || {};
 
-    // Data expiry time (24 hours)
-    const DATA_EXPIRY_TIME = 24 * 60 * 60 * 1000;
-
-    // Save booking data to session storage
-    const saveBookingData = (data) => {
-        try {
-            const dataWithTimestamp = {
-                ...data,
-                timestamp: Date.now()
-            };
-            // Using a simple variable instead of sessionStorage
-            window.bookingStorageData = dataWithTimestamp;
-        } catch (error) {
-            console.error('Error saving booking data:', error);
-        }
-    };
-
-    // Get booking data from storage
-    const getBookingData = () => {
-        try {
-            const savedData = window.bookingStorageData;
-
-            if (savedData && savedData.timestamp) {
-                const timestamp = savedData.timestamp;
-                const now = Date.now();
-
-                // Check if data is not expired (24 hours)
-                if (now - timestamp < DATA_EXPIRY_TIME) {
-                    return savedData;
-                } else {
-                    // Data expired, clear it
-                    clearBookingData();
-                }
+    // Load html2pdf library dynamically
+    const loadHtml2Pdf = () => {
+        return new Promise((resolve, reject) => {
+            if (window.html2pdf) {
+                resolve(window.html2pdf);
+                return;
             }
-        } catch (error) {
-            console.error('Error retrieving booking data:', error);
-        }
-        return null;
+
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = () => {
+                resolve(window.html2pdf);
+            };
+            script.onerror = () => {
+                reject(new Error('Failed to load html2pdf library'));
+            };
+            document.head.appendChild(script);
+        });
     };
 
-    // Clear booking data from storage
-    const clearBookingData = () => {
-        try {
-            delete window.bookingStorageData;
-        } catch (error) {
-            console.error('Error clearing booking data:', error);
-        }
-    };
-
-    // Initialize booking data on component mount
+    // Show success toast on mount
     useEffect(() => {
-        // First check if we have fresh data from navigation state
-        if (state && state.isBooked && state.bookingResult) {
-            setBookingData(state);
-            // Save to storage for future access
-            saveBookingData(state);
-
-            // Show success toast
-            toast.success('Bus booking confirmed successfully!', {
+        if (extractedBookingId || bookingResult) {
+            toast.success('🎉 Bus booking confirmed successfully!', {
                 position: "top-right",
                 autoClose: 5000
             });
-        } else {
-            // Try to load from storage
-            const savedData = getBookingData();
-            if (savedData) {
-                setBookingData(savedData);
+        }
+    }, [extractedBookingId, bookingResult]);
+
+    // Updated fetchInvoiceData function with correct API mapping
+    const fetchInvoiceData = async () => {
+        if (loadingInvoice || invoiceData) return; // Prevent multiple calls
+
+        setLoadingInvoice(true);
+        setInvoiceError('');
+
+        try {
+            const bookingId = extractedBookingId || bookingResult?.BookingId || bookingResult?.bookingId;
+
+            if (!bookingId) {
+                throw new Error('Booking ID not found');
             }
-        }
-    }, [state]);
 
-    // Get current booking data (either from state or storage)
-    const getCurrentBookingData = () => {
-        return bookingData || {};
-    };
+            const invoicePayload = {
+                UserIp: "122.161.64.143",
+                SearchTokenId: bookingDetails?.searchTokenId || bookingDetails?.bus?.SearchTokenId || "",
+                BookingId: bookingId,
+                receiverEmail: bookingDetails?.contactData?.email || ""
+            };
 
-    // Extract data from current booking data
-    const currentData = getCurrentBookingData();
-    const {
-        bookingDetails = {},
-        bookingResult = {},
-        isBooked = false,
-        finalAmount = 0,
-        paymentId = '',
-        orderId = '',
-        extractedBookingId = null
-    } = currentData;
+            console.log('Fetching bus invoice with payload:', invoicePayload);
 
-    const {
-        contactData = {},
-        passengerData = [],
-        searchTokenId = '',
-        bus = {},
-        fromCity = '',
-        toCity = '',
-        departDate = '',
-        selectedSeats = [],
-        totalPrice = 0,
-        selectedBoardingPoint = {},
-        selectedDroppingPoint = {}
-    } = bookingDetails || {};
+            const response = await downloadBusInvoice(invoicePayload);
 
-    // Extract BookingId from result with multiple fallback strategies
-    const extractBookingIdFromResult = (result) => {
-        const possiblePaths = [
-            extractedBookingId,
-            result?.BookingId,
-            result?.bookingId,
-            result?.data?.BookingId,
-            result?.data?.bookingId,
-            result?.response?.BookingId,
-            result?.result?.BookingId,
-            result?.booking?.id,
-            result?.id
-        ];
-
-        for (let candidateId of possiblePaths) {
-            if (candidateId && String(candidateId).trim() !== '' && candidateId !== 'undefined' && candidateId !== 'null') {
-                return String(candidateId);
+            if (response && (response.data || response)) {
+                const invoiceDetails = response.data || response;
+                setInvoiceData(invoiceDetails);
+                console.log('Bus invoice data fetched successfully:', invoiceDetails);
+            } else {
+                throw new Error('Invalid invoice response');
             }
+        } catch (error) {
+            console.error('Error fetching bus invoice:', error);
+            setInvoiceError(error.message || 'Failed to fetch invoice data');
+
+            // Create fallback invoice data only when API completely fails
+            const fallbackInvoiceData = generateFallbackBusInvoiceData();
+            setInvoiceData(fallbackInvoiceData);
+        } finally {
+            setLoadingInvoice(false);
         }
-        return null;
     };
 
-    const bookingId = extractBookingIdFromResult(bookingResult);
-
-    // Extract seat names for display
-    const extractSeatName = (seat, index) => {
-        if (!seat) return `S${index + 1}`;
-
-        let seatName = seat.SeatName || seat.seatName || seat.seatNumber || seat.name || seat.id || seat.number || seat;
-
-        if (typeof seatName === 'string' && seatName.trim()) {
-            return seatName.trim();
-        }
-
-        if (typeof seatName === 'number' && !isNaN(seatName)) {
-            return seatName.toString();
-        }
-
-        return `S${index + 1}`;
-    };
-
-    // Generate Invoice Data
-    const generateInvoiceData = () => {
+    // Generate fallback bus invoice data if API fails
+    const generateFallbackBusInvoiceData = () => {
         const now = new Date();
-        const invoiceNumber = `INV-BUS-${bookingId || Date.now()}`;
-        
+        const bookingId = extractedBookingId || bookingResult?.BookingId || `BUS${Date.now()}`;
+        const invoiceNumber = `TW/${Math.floor(Math.random() * 9999)}/${Math.floor(Math.random() * 9999)}`;
+
+        const passengerName = bookingDetails?.contactData?.name ||
+            `${bookingDetails?.passengerData?.[0]?.firstName || 'Guest'} ${bookingDetails?.passengerData?.[0]?.lastName || 'Name'}`;
+
+        const baseFare = Math.round((finalAmount || 0) * 0.8);
+        const taxes = Math.round((finalAmount || 0) * 0.1);
+        const serviceCharges = Math.round((finalAmount || 0) * 0.05);
+
         return {
-            // Basic Invoice Info
             invoiceId: invoiceNumber,
-            invoiceNumber: invoiceNumber,
-            invoiceDate: now.toLocaleDateString('en-IN'),
-            bookingId: bookingId || 'N/A',
-            
-            // Company Details (Supplier)
+            invoiceDate: now.toISOString(),
+            bookingId: bookingId,
+            TicketNo: bookingId,
+            source: bookingDetails?.fromCity || 'Source',
+            destination: bookingDetails?.toCity || 'Destination',
+            departureTime: bookingDetails?.bus?.departureTime || now.toISOString(),
+            arrivalTime: bookingDetails?.bus?.arrivalTime || new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString(),
+            busType: bookingDetails?.bus?.busType || 'AC Bus',
+
             supplierDetails: {
-                name: 'RasuTrip Pvt. Ltd.',
-                mobile: '+91-9876543210',
-                email: 'support@rasutrip.com',
-                pan: 'ABCDE1234F',
-                state: 'Delhi',
-                companyRegisteredNumber: 'U63040DL2020PTC123456'
+                name: "RASUTRIP WEBSOFT TECHNOLOGIES LLP",
+                mobile: "+91 9266424809",
+                email: "booking@rasutrip.com",
+                pan: "ABLFR7635L",
+                state: "Uttar Pradesh",
+                companyRegisteredNumber: "U72900UP2019LLP024578"
             },
-            
-            // Customer Details
+
             receiverDetails: {
-                name: passengerData.length > 0 ? `${passengerData[0].firstName} ${passengerData[0].lastName}` : 'N/A',
-                phone: contactData.mobile || 'N/A',
-                email: contactData.email || 'N/A'
+                name: passengerName,
+                phone: bookingDetails?.contactData?.mobile || 'N/A'
             },
-            
-            // Journey Details
-            source: fromCity,
-            destination: toCity,
-            departureTime: departDate ? new Date(departDate).toISOString() : now.toISOString(),
-            arrivalTime: departDate ? new Date(new Date(departDate).getTime() + 8 * 60 * 60 * 1000).toISOString() : now.toISOString(), // +8 hours estimate
-            busType: bus.operator || 'Standard Bus',
-            TicketNo: bookingId || 'TKT001',
-            
-            // Passenger Details
-            passenger: passengerData.map((p, index) => ({
-                Title: p.title || 'Mr',
-                FirstName: p.firstName || 'Passenger',
-                LastName: p.lastName || `${index + 1}`,
-                Age: p.age || 25,
-                Gender: p.gender || 'Male',
-                SeatName: extractSeatName(selectedSeats[index], index),
+
+            passenger: bookingDetails?.passengerData?.map((passenger, index) => ({
+                Title: passenger.title || "Mr",
+                FirstName: passenger.firstName || 'Guest',
+                LastName: passenger.lastName || 'Name',
+                Age: passenger.age || 'N/A',
+                SeatName: bookingDetails?.selectedSeats?.[index]?.SeatName || `Seat ${index + 1}`,
                 Seat: {
-                    SeatFare: Math.round((finalAmount || totalPrice) / passengerData.length)
+                    SeatFare: Math.round((finalAmount || 0) / (bookingDetails?.passengerData?.length || 1))
                 }
-            })),
-            
-            // Fare Details
-            fareDetails: {
-                NoOfSeats: selectedSeats.length,
-                baseFare: Math.round((finalAmount || totalPrice) * 0.85),
-                taxes: Math.round((finalAmount || totalPrice) * 0.12),
-                serviceCharges: Math.round((finalAmount || totalPrice) * 0.03),
-                couponDiscount: 0,
-                IGSTRate: 12
-            },
-            
-            // Boarding/Dropping Points
-            boardingPointdetails: {
-                CityPointName: selectedBoardingPoint.name || '',
-                CityPointLocation: selectedBoardingPoint.address || fromCity,
-                CityPointLandmark: selectedBoardingPoint.landmark || '',
-                CityPointTime: departDate ? new Date(departDate).toISOString() : now.toISOString(),
-                CityPointContactNumber: selectedBoardingPoint.contactNumber || ''
-            },
-            
-            droppingPointdetails: [{
-                CityPointName: selectedDroppingPoint.name || '',
-                CityPointLocation: selectedDroppingPoint.address || toCity,
-                CityPointTime: departDate ? new Date(new Date(departDate).getTime() + 8 * 60 * 60 * 1000).toISOString() : now.toISOString()
+            })) || [{
+                Title: "Mr",
+                FirstName: "Guest",
+                LastName: "Name",
+                Age: "N/A",
+                SeatName: "Seat 1",
+                Seat: { SeatFare: finalAmount || 0 }
             }],
-            
-            // Payment
-            vendorCommission: Math.round((finalAmount || totalPrice) * 0.02),
-            totalPayable: finalAmount || totalPrice,
-            invoiceTotal: finalAmount || totalPrice
+
+            fareDetails: {
+                NoOfSeats: bookingDetails?.selectedSeats?.length || 1,
+                baseFare: baseFare,
+                taxes: taxes,
+                serviceCharges: serviceCharges,
+                couponDiscount: couponDiscount || 0,
+            },
+
+            vendorCommission: serviceCharges,
+            totalPayable: finalAmount || 0,
+            invoiceTotal: finalAmount || 0,
+
+            boardingPointdetails: {
+                CityPointName: "Boarding Point",
+                CityPointLocation: bookingDetails?.fromCity || "Location",
+                CityPointLandmark: "Main Bus Stand",
+                CityPointTime: bookingDetails?.bus?.departureTime || now.toISOString(),
+                CityPointContactNumber: "+91 9266424809"
+            },
+
+            droppingPointdetails: [{
+                CityPointName: "Dropping Point",
+                CityPointLocation: bookingDetails?.toCity || "Location",
+                CityPointTime: bookingDetails?.bus?.arrivalTime || new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString()
+            }],
+
+            isFallback: true
         };
     };
 
-    // Generate HTML Invoice
-    const generateInvoiceHTML = (invoiceData) => {
-        let busPassengerRows = '';
-        invoiceData.passenger.forEach((p, i) => {
-            busPassengerRows += `
-              <tr>
-                <td>${invoiceData.TicketNo}</td>
-                <td>${invoiceData.source} - ${invoiceData.destination}</td>
-                <td>${p.Title} ${p.FirstName} ${p.LastName}</td>
-                <td>${p.Age}</td>
-                <td>${p.SeatName}</td>
-                <td>₹ ${p.Seat.SeatFare}</td>
-              </tr>
+    // Corrected Bus Invoice HTML generator using direct API response
+    const generateBusInvoiceHTML = (apiInvoiceData) => {
+        const formatDate = (dateStr) => {
+            try {
+                return new Date(dateStr).toLocaleDateString('en-IN');
+            } catch {
+                return dateStr || 'N/A';
+            }
+        };
+
+        const formatTime = (dateStr) => {
+            try {
+                return new Date(dateStr).toLocaleString('en-IN');
+            } catch {
+                return dateStr || 'N/A';
+            }
+        };
+
+        // Generate passenger rows from API data
+        let passengerRows = '';
+        if (apiInvoiceData.passenger && apiInvoiceData.passenger.length > 0) {
+            apiInvoiceData.passenger.forEach((p, i) => {
+                passengerRows += `
+                <tr>
+                    <td>${apiInvoiceData.TicketNo || 'N/A'}</td>
+                    <td>${apiInvoiceData.source || 'N/A'} - ${apiInvoiceData.destination || 'N/A'}</td>
+                    <td>${p.Title || ''} ${p.FirstName || ''} ${p.LastName || ''}</td>
+                    <td>${p.Age || 'N/A'}</td>
+                    <td>${p.SeatName || p.Seat?.SeatName || 'N/A'}</td>
+                    <td>₹ ${(p.Seat?.SeatFare || 0).toLocaleString()}</td>
+                </tr>
             `;
-        });
+            });
+        }
 
         return `
-            <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px;">
-              <h2 style="text-align: center;">Tax Invoice (Bus Booking)</h2>
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px; background-color: #fff;">
+            <h2 style="text-align: center; color: #2c3e50; margin-bottom: 30px; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Tax Invoice (Bus Booking)</h2>
 
-              <table style="width: 100%; margin-bottom: 20px; font-size: 14px;">
+            <!-- Company & Customer Details -->
+            <table style="width: 100%; margin-bottom: 30px; font-size: 14px;">
                 <tr>
-                  <td>
-                    <strong>From :</strong> ${invoiceData.supplierDetails.name}<br />
-                    <strong>Mobile :</strong> ${invoiceData.supplierDetails.mobile}<br />
-                    <strong>Email :</strong> ${invoiceData.supplierDetails.email}<br />
-                    <strong>PAN Number :</strong> ${invoiceData.supplierDetails.pan}<br />
-                    <strong>State :</strong> ${invoiceData.supplierDetails.state}<br />
-                    <strong>Company Registered No. :</strong> ${invoiceData.supplierDetails.companyRegisteredNumber}
-                  </td>
-                  <td style="text-align: right;">
-                    <strong>Passenger Name :</strong> ${invoiceData.receiverDetails.name}<br />
-                    <strong>Phone :</strong> ${invoiceData.receiverDetails.phone}
-                  </td>
+                    <td style="vertical-align: top; width: 50%;">
+                        <strong>From:</strong> ${apiInvoiceData.supplierDetails?.name || 'RASUTRIP WEBSOFT TECHNOLOGIES LLP'}<br />
+                        <strong>Mobile:</strong> ${apiInvoiceData.supplierDetails?.mobile || '+91 9266424809'}<br />
+                        <strong>Email:</strong> ${apiInvoiceData.supplierDetails?.email || 'booking@rasutrip.com'}<br />
+                        <strong>PAN Number:</strong> ${apiInvoiceData.supplierDetails?.pan || 'ABLFR7635L'}<br />
+                        <strong>State:</strong> ${apiInvoiceData.supplierDetails?.state || 'Uttar Pradesh'}
+                    </td>
+                    <td style="text-align: right; vertical-align: top; width: 50%;">
+                        <strong>Passenger Name:</strong> ${apiInvoiceData.receiverDetails?.name || 'Guest Name'}<br />
+                        <strong>Phone:</strong> ${apiInvoiceData.receiverDetails?.phone || 'N/A'}
+                    </td>
                 </tr>
-              </table>
+            </table>
 
-              <table style="width: 100%; font-size: 14px; margin-bottom: 20px;" border="1" cellpadding="8" cellspacing="0">
-                <tr>
-                  <td><strong>Invoice Number :</strong> ${invoiceData.invoiceId}</td>
-                  <td><strong>Invoice Date :</strong> ${invoiceData.invoiceDate}</td>
+            <!-- Invoice & Trip Details -->
+            <table style="width: 100%; font-size: 14px; margin-bottom: 30px; border-collapse: collapse;" border="1" cellpadding="8" cellspacing="0">
+                <tr style="background-color: #f8f9fa;">
+                    <td><strong>Invoice Number:</strong> ${apiInvoiceData.invoiceNumber || 'N/A'}</td>
+                    <td><strong>Invoice Date:</strong> ${formatDate(apiInvoiceData.invoiceDate)}</td>
                 </tr>
                 <tr>
-                  <td><strong>Booking ID :</strong> ${invoiceData.bookingId}</td>
-                  <td><strong>Ticket No :</strong> ${invoiceData.TicketNo}</td>
+                    <td><strong>Booking ID:</strong> ${apiInvoiceData.bookingId || 'N/A'}</td>
+                    <td><strong>Ticket No:</strong> ${apiInvoiceData.TicketNo || 'N/A'}</td>
+                </tr>
+                <tr style="background-color: #f8f9fa;">
+                    <td><strong>From:</strong> ${apiInvoiceData.source || 'N/A'}</td>
+                    <td><strong>To:</strong> ${apiInvoiceData.destination || 'N/A'}</td>
                 </tr>
                 <tr>
-                  <td><strong>From :</strong> ${invoiceData.source}</td>
-                  <td><strong>To :</strong> ${invoiceData.destination}</td>
+                    <td><strong>Departure:</strong> ${formatTime(apiInvoiceData.departureTime)}</td>
+                    <td><strong>Arrival:</strong> ${formatTime(apiInvoiceData.arrivalTime)}</td>
                 </tr>
-                <tr>
-                  <td><strong>Departure :</strong> ${new Date(invoiceData.departureTime).toLocaleString()}</td>
-                  <td><strong>Arrival :</strong> ${new Date(invoiceData.arrivalTime).toLocaleString()}</td>
+                <tr style="background-color: #f8f9fa;">
+                    <td colspan="2"><strong>Bus Type:</strong> ${apiInvoiceData.busType || 'N/A'}</td>
                 </tr>
-                <tr>
-                  <td colspan="2"><strong>Bus Type :</strong> ${invoiceData.busType}</td>
-                </tr>
-              </table>
+            </table>
 
-              <h3>PASSENGER DETAILS</h3>
-              <table style="width: 100%; font-size: 14px; border-collapse: collapse;" border="1" cellpadding="8" cellspacing="0">
-                <tr>
-                  <th>Ticket No</th>
-                  <th>Route</th>
-                  <th>Passenger Name</th>
-                  <th>Age</th>
-                  <th>Seat No</th>
-                  <th>Fare (₹)</th>
+            <!-- Passenger Details -->
+            <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">PASSENGER DETAILS</h3>
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
+                <tr style="background-color: #f8f9fa;">
+                    <th>Ticket No</th>
+                    <th>Route</th>
+                    <th>Passenger Name</th>
+                    <th>Age</th>
+                    <th>Seat No</th>
+                    <th>Fare (₹)</th>
                 </tr>
-                ${busPassengerRows}
-              </table>
+                ${passengerRows}
+            </table>
 
-              <h3 style="margin-top: 30px;">PAYMENT DETAILS</h3>
-              <table style="width: 100%; font-size: 14px;" cellpadding="8" cellspacing="0">
-                <tr><td><strong>No. of Seats:</strong></td><td>${invoiceData.fareDetails.NoOfSeats}</td></tr>
-                <tr><td><strong>Base Fare:</strong></td><td>₹ ${invoiceData.fareDetails.baseFare}</td></tr>
-                <tr><td><strong>Taxes:</strong></td><td>₹ ${invoiceData.fareDetails.taxes}</td></tr>
-                <tr><td><strong>Service Charges:</strong></td><td>₹ ${invoiceData.fareDetails.serviceCharges}</td></tr>
-                <tr><td><strong>Platform Fee:</strong></td><td>₹ ${invoiceData.vendorCommission}</td></tr>
-                <tr><td><strong>Coupon Discount (-):</strong></td><td>₹ ${invoiceData.fareDetails.couponDiscount}</td></tr>
-                <tr><td><strong>IGST Rate:</strong></td><td>${invoiceData.fareDetails.IGSTRate}%</td></tr>
-                <tr><td><strong>Total Payable:</strong></td><td><strong>₹ ${invoiceData.totalPayable}</strong></td></tr>
-              </table>
-
-              <h3 style="margin-top: 30px;">BOARDING & DROPPING DETAILS</h3>
-              <table style="width: 100%; font-size: 14px;" cellpadding="8" cellspacing="0">
-                <tr>
-                  <td><strong>Boarding:</strong><br>
-                    ${invoiceData.boardingPointdetails.CityPointName}, ${invoiceData.boardingPointdetails.CityPointLocation}<br>
-                    Landmark: ${invoiceData.boardingPointdetails.CityPointLandmark}<br>
-                    Time: ${new Date(invoiceData.boardingPointdetails.CityPointTime).toLocaleString()}<br>
-                    Contact: ${invoiceData.boardingPointdetails.CityPointContactNumber}
-                  </td>
-                  <td><strong>Dropping:</strong><br>
-                    ${invoiceData.droppingPointdetails[0].CityPointName}, ${invoiceData.droppingPointdetails[0].CityPointLocation}<br>
-                    Time: ${new Date(invoiceData.droppingPointdetails[0].CityPointTime).toLocaleString()}
-                  </td>
+            <!-- Payment Details -->
+            <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">PAYMENT DETAILS</h3>
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
+                <tr style="background-color: #f8f9fa;"><td><strong>No. of Seats:</strong></td><td>${apiInvoiceData.fareDetails?.NoOfSeats || 1}</td></tr>
+                <tr><td><strong>Base Fare:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.baseFare || 0).toLocaleString()}</td></tr>
+                <tr style="background-color: #f8f9fa;"><td><strong>Taxes:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.taxes || 0).toLocaleString()}</td></tr>
+                <tr><td><strong>Service Charges:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.serviceCharges || 0).toLocaleString()}</td></tr>
+                <tr style="background-color: #f8f9fa;"><td><strong>Platform Fee:</strong></td><td>₹ ${(apiInvoiceData.vendorCommission || 0).toLocaleString()}</td></tr>
+                ${(apiInvoiceData.fareDetails?.couponDiscount || 0) > 0 ? `<tr><td><strong>Coupon Discount (-):</strong></td><td>₹ ${apiInvoiceData.fareDetails.couponDiscount.toLocaleString()}</td></tr>` : ''}
+                <tr style="background-color: #f8f9fa;"><td><strong>IGST Rate:</strong></td><td>${apiInvoiceData.fareDetails?.IGSTRate || 0}%</td></tr>
+                <tr><td><strong>IGST Amount:</strong></td><td>₹ ${(apiInvoiceData.fareDetails?.IGSTAmount || 0).toLocaleString()}</td></tr>
+                ${apiInvoiceData.superCoinSavings > 0 ? `<tr style="background-color: #f8f9fa;"><td><strong>Super Coin Savings:</strong></td><td>₹ ${apiInvoiceData.superCoinSavings.toLocaleString()}</td></tr>` : ''}
+                <tr style="background-color: #e8f5e8; font-weight: bold;">
+                    <td><strong>Total Payable:</strong></td>
+                    <td><strong>₹ ${(apiInvoiceData.totalPayable || 0).toLocaleString()}</strong></td>
                 </tr>
-              </table>
+                <tr style="background-color: #f8f9fa;">
+                    <td><strong>Amount in Words:</strong></td>
+                    <td><strong>${apiInvoiceData.invoiceTotalInWords || 'N/A'}</strong></td>
+                </tr>
+            </table>
 
-              <h3 style="margin-top: 30px;">TERMS & CONDITIONS</h3>
-              <ul style="font-size: 14px; padding-left: 20px;">
+            <!-- Boarding & Dropping Details -->
+            <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">BOARDING & DROPPING DETAILS</h3>
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
+                <tr>
+                    <td style="vertical-align: top; width: 50%; background-color: #f8f9fa;">
+                        <strong>Boarding Point:</strong><br>
+                        <strong>Location:</strong> ${apiInvoiceData.boardingPointdetails?.CityPointName || 'N/A'}<br>
+                        <strong>Address:</strong> ${apiInvoiceData.boardingPointdetails?.CityPointLocation || 'N/A'}<br>
+                        <strong>Landmark:</strong> ${apiInvoiceData.boardingPointdetails?.CityPointLandmark || 'N/A'}<br>
+                        <strong>Time:</strong> ${formatTime(apiInvoiceData.boardingPointdetails?.CityPointTime)}<br>
+                        <strong>Contact:</strong> ${apiInvoiceData.boardingPointdetails?.CityPointContactNumber || 'N/A'}
+                    </td>
+                    <td style="vertical-align: top; width: 50%;">
+                        <strong>Dropping Point:</strong><br>
+                        <strong>Location:</strong> ${apiInvoiceData.droppingPointdetails?.[0]?.CityPointName || 'N/A'}<br>
+                        <strong>Address:</strong> ${apiInvoiceData.droppingPointdetails?.[0]?.CityPointLocation || 'N/A'}<br>
+                        <strong>Time:</strong> ${formatTime(apiInvoiceData.droppingPointdetails?.[0]?.CityPointTime)}
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Passenger Contact Details (Only if available in API) -->
+            ${apiInvoiceData.passenger?.[0]?.Email || apiInvoiceData.passenger?.[0]?.Address || apiInvoiceData.passenger?.[0]?.IdType ? `
+            <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">PASSENGER CONTACT DETAILS</h3>
+            <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
+                ${apiInvoiceData.passenger?.[0]?.Email ? `<tr style="background-color: #f8f9fa;"><td><strong>Email:</strong></td><td>${apiInvoiceData.passenger[0].Email}</td></tr>` : ''}
+                ${apiInvoiceData.passenger?.[0]?.Address ? `<tr><td><strong>Address:</strong></td><td>${apiInvoiceData.passenger[0].Address}</td></tr>` : ''}
+                ${apiInvoiceData.passenger?.[0]?.IdType && apiInvoiceData.passenger?.[0]?.IdNumber ? `<tr style="background-color: #f8f9fa;"><td><strong>ID Type:</strong></td><td>${apiInvoiceData.passenger[0].IdType} - ${apiInvoiceData.passenger[0].IdNumber}</td></tr>` : ''}
+            </table>
+            ` : ''}
+
+            <!-- Terms & Conditions -->
+            <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">TERMS & CONDITIONS</h3>
+            <ul style="font-size: 14px; padding-left: 20px; margin-bottom: 30px;">
                 <li>This is a computer-generated invoice; no signature required.</li>
                 <li>All disputes are subject to jurisdiction of New Delhi.</li>
                 <li>Please report at the boarding point at least 30 minutes before departure.</li>
                 <li>Ensure correct contact number for updates on schedule or cancellation.</li>
-              </ul>
+                <li>Carry valid photo ID proof for verification during travel.</li>
+                <li>Refunds and cancellations are subject to operator policies.</li>
+                <li>The company will not be responsible for any delay due to traffic, weather conditions, or other unforeseen circumstances.</li>
+                <li>Passengers are advised to reach the boarding point on time as bus will not wait.</li>
+            </ul>
+
+            ${apiInvoiceData.isFallback ? `
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin-top: 30px; border-radius: 5px;">
+                <small style="color: #856404;">
+                    <strong>Note:</strong> This invoice was generated with available booking data. 
+                    For any discrepancies, please contact support with Booking ID: ${apiInvoiceData.bookingId}
+                </small>
             </div>
-        `;
+            ` : ''}
+
+            <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #3498db;">
+                <small style="color: #7f8c8d;">Thank you for choosing RasuTrip! Have a safe journey!</small><br>
+                <small style="color: #7f8c8d;">Generated on: ${new Date().toLocaleString('en-IN')}</small><br>
+                <small style="color: #7f8c8d;">Invoice ID: ${apiInvoiceData.invoiceId || apiInvoiceData.invoiceNumber || 'N/A'}</small>
+            </div>
+        </div>
+    `;
     };
 
-    // Download Invoice Function
-    const handleDownloadInvoice = () => {
+    // Keep the same handleDownloadInvoice function but remove E-ticket related code
+    const handleDownloadInvoice = async () => {
         try {
-            const invoiceData = generateInvoiceData();
-            const htmlContent = generateInvoiceHTML(invoiceData);
-            
+            // Fetch invoice data if not already available
+            if (!invoiceData && !loadingInvoice) {
+                await fetchInvoiceData();
+                return; // The data will be set, function will be called again by user
+            }
+
+            if (!invoiceData) {
+                toast.error('Invoice data not available. Please try again.', {
+                    position: "top-right",
+                    autoClose: 3000
+                });
+                return;
+            }
+
+            const htmlContent = generateBusInvoiceHTML(invoiceData);
+            const bookingId = extractedBookingId || bookingResult?.BookingId || bookingResult?.bookingId || 'BUS';
+
             // Create a new window/tab for printing
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Invoice - ${invoiceData.invoiceNumber}</title>
-                    <style>
-                        @media print {
-                            body { margin: 0; }
-                            @page { margin: 0.5in; }
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Bus Invoice - ${invoiceData.invoiceNumber || invoiceData.invoiceId || bookingId}</title>
+                <meta charset="UTF-8">
+                <style>
+                    @media print {
+                        body { margin: 0; }
+                        @page { margin: 0.5in; }
+                    }
+                    @media screen {
+                        body { 
+                            background-color: #f5f5f5; 
+                            padding: 20px; 
                         }
-                    </style>
-                </head>
-                <body>
-                    ${htmlContent}
-                    <script>
-                        window.onload = function() {
+                    }
+                </style>
+            </head>
+            <body>
+                ${htmlContent}
+                <script>
+                    window.onload = function() {
+                        // Auto print after 1 second delay for better loading
+                        setTimeout(() => {
                             window.print();
-                        }
-                    </script>
-                </body>
-                </html>
-            `);
+                        }, 1000);
+                    }
+                </script>
+            </body>
+            </html>
+        `);
             printWindow.document.close();
 
             toast.success('Invoice opened for download/print!', {
@@ -393,86 +431,106 @@ const Bookingconfirm = () => {
             });
         }
     };
+    // // Download E-Ticket Function
+    // const handleDownloadETicket = async () => {
+    //     try {
+    //         // Fetch invoice data if not already available
+    //         if (!invoiceData && !loadingInvoice) {
+    //             await fetchInvoiceData();
+    //             return; // The data will be set, function will be called again by user
+    //         }
 
-    // Navigate back to home and clear booking data automatically
-    const handleBackToHome = () => {
-        // Clear booking data from storage
-        clearBookingData();
-        setBookingData(null);
+    //         if (!invoiceData) {
+    //             toast.error('E-ticket data not available. Please try again.', {
+    //                 position: "top-right",
+    //                 autoClose: 3000
+    //             });
+    //             return;
+    //         }
 
-        toast.success('Thank you! Booking data cleared for security.', {
-            position: "top-right",
-            autoClose: 3000
-        });
+    //         // const htmlContent = generateBusETicketHTML(invoiceData);
+    //         const bookingId = extractedBookingId || bookingResult?.BookingId || bookingResult?.bookingId || 'BUS';
 
-        // Navigate to home
-        navigate('/');
-    };
+    //         // Create a new window/tab for printing
+    //         const printWindow = window.open('', '_blank');
+    //         printWindow.document.write(`
+    //             <!DOCTYPE html>
+    //             <html>
+    //             <head>
+    //                 <title>Bus E-Ticket - ${bookingId}</title>
+    //                 <meta charset="UTF-8">
+    //                 <style>
+    //                     @media print {
+    //                         body { margin: 0; }
+    //                         @page { margin: 0.5in; }
+    //                     }
+    //                     @media screen {
+    //                         body { 
+    //                             background-color: #f5f5f5; 
+    //                             padding: 20px; 
+    //                         }
+    //                     }
+    //                 </style>
+    //             </head>
+    //             <body>
+    //                 ${htmlContent}
+    //                 <script>
+    //                     window.onload = function() {
+    //                         // Auto print after 1 second delay for better loading
+    //                         setTimeout(() => {
+    //                             window.print();
+    //                         }, 1000);
+    //                     }
+    //                 </script>
+    //             </body>
+    //             </html>
+    //         `);
+    //         printWindow.document.close();
 
-    // Function to go back to booking confirmation (can be called from anywhere)
-    const handleViewBookingDetails = () => {
-        // If we have booking data, stay on current page, otherwise redirect to home
-        if (bookingData && bookingData.isBooked) {
-            // Already on confirmation page with data
-            toast.info('You are already viewing your booking confirmation!', {
-                position: "top-right",
-                autoClose: 3000
-            });
-        } else {
-            // Try to load from storage
-            const savedData = getBookingData();
-            if (savedData) {
-                setBookingData(savedData);
-                toast.success('Booking details loaded successfully!', {
-                    position: "top-right",
-                    autoClose: 3000
-                });
-            } else {
-                toast.error('No recent booking found. Please make a new booking.', {
-                    position: "top-right",
-                    autoClose: 5000
-                });
-                navigate('/');
-            }
+    //         toast.success('E-Ticket opened for download/print!', {
+    //             position: "top-right",
+    //             autoClose: 3000
+    //         });
+    //     } catch (error) {
+    //         console.error('Error generating e-ticket:', error);
+    //         toast.error('Error generating e-ticket. Please try again.', {
+    //             position: "top-right",
+    //             autoClose: 3000
+    //         });
+    //     }
+    // };
+
+    // Auto-fetch invoice data on component mount
+    useEffect(() => {
+        // Automatically fetch invoice when booking is confirmed
+        if ((extractedBookingId || bookingResult) && !invoiceData && !loadingInvoice) {
+            const timer = setTimeout(() => {
+                fetchInvoiceData();
+            }, 2000); // Delay to ensure booking is fully processed
+
+            return () => clearTimeout(timer);
         }
-    };
+    }, [extractedBookingId, bookingResult]);
 
-    // Redirect if no booking data available
-    if (!bookingData || !isBooked || !bookingResult) {
+    // Redirect if no booking data
+    if (!state || (!extractedBookingId && !bookingResult)) {
         return (
             <Container className="py-5 mt-5">
                 <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
                     <Card className="shadow border-0" style={{ borderRadius: '15px', maxWidth: '500px' }}>
                         <Card.Body className="text-center p-5">
-                            <h4 className="text-warning mb-3">No Recent Booking Found</h4>
-                            <p className="text-muted mb-4">
-                                It seems like there's no recent booking data available or it has expired.
-                                Please start the booking process again or check if you have a recent booking.
-                            </p>
-
-                            <div className="d-flex flex-column gap-3">
-                                <Button
-                                    variant="primary"
-                                    size="lg"
-                                    className="px-4 py-2"
-                                    onClick={() => navigate('/')}
-                                    style={{ borderRadius: '10px' }}
-                                >
-                                    <FaHome className="me-2" />
-                                    Back to Home
-                                </Button>
-
-                                <Button
-                                    variant="outline-secondary"
-                                    size="sm"
-                                    className="px-3 py-2"
-                                    onClick={handleViewBookingDetails}
-                                    style={{ borderRadius: '10px' }}
-                                >
-                                    <FaRedo className="me-2" />
-                                    Try Loading Recent Booking
-                                </Button>
-                            </div>
+                            <h4 className="text-danger mb-3">No Booking Information Found</h4>
+                            <p className="text-muted mb-4">It seems like there's no booking data available. Please start the booking process again.</p>
+                            <Button
+                                variant="primary"
+                                size="lg"
+                                className="px-4 py-2"
+                                onClick={() => navigate('/')}
+                                style={{ borderRadius: '10px' }}
+                            >
+                                <FaHome className="me-2" />
+                                Back to Home
+                            </Button>
                         </Card.Body>
                     </Card>
                 </div>
@@ -480,7 +538,9 @@ const Bookingconfirm = () => {
         );
     }
 
-    const seatNumbers = selectedSeats.map((seat, index) => extractSeatName(seat, index)).join(', ');
+    const bookingId = extractedBookingId || bookingResult?.BookingId || bookingResult?.bookingId || 'N/A';
+    const passengerName = bookingDetails?.contactData?.name ||
+        `${bookingDetails?.passengerData?.[0]?.firstName || 'Guest'} ${bookingDetails?.passengerData?.[0]?.lastName || 'Name'}`;
 
     return (
         <div className="bg-light min-vh-100">
@@ -493,58 +553,73 @@ const Bookingconfirm = () => {
                             backgroundColor: '#28a745',
                             borderRadius: '15px'
                         }}>
-                            <Card.Body className="">
-                                <h3 className=" fw-bold display-6 text-white">Booking Confirmed!</h3>
-                                <p className="mb-0 fs-5 text-white">Your bus ticket has been booked successfully</p>
-                                {bookingId && (
-                                    <div className="mt-4">
-                                        <Badge bg="light" text="success" className="fs-6 px-4 py-2 fw-semibold">
-                                            Booking ID: {bookingId}
-                                        </Badge>
-                                    </div>
-                                )}
+                            <Card.Body className="py-5 px-4">
+                                <h3 className="mb-3 fw-bold display-6 text-white">Bus Booking Confirmed!</h3>
+                                <p className="mb-0 fs-5 text-white">Your bus ticket has been successfully booked</p>
+                                <div className="mt-4">
+                                    <Badge bg="light" text="success" className="fs-6 px-4 py-2 fw-semibold">
+                                        Booking ID: {bookingId}
+                                    </Badge>
+                                </div>
                             </Card.Body>
                         </Card>
 
                         <Row className="g-4 mb-5">
-                            {/* Journey Details */}
+                            {/* Booking Details */}
                             <Col lg={6}>
                                 <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: '15px' }}>
                                     <Card.Header className="bg-primary text-white border-0 py-4" style={{ borderRadius: '15px 15px 0 0' }}>
-                                        <h4 className="mb-0 fw-bold"><FaBus className="me-2" />Journey Details</h4>
+                                        <h4 className="mb-0 fw-bold">Journey Details</h4>
                                     </Card.Header>
                                     <Card.Body className="p-4">
                                         <div className="mb-4">
-                                            <div className="bg-danger text-white p-4 rounded mb-4">
+                                            <div className="bg-success text-white p-4 rounded mb-4">
                                                 <small className="d-block mb-1">Total Amount Paid</small>
-                                                <h5 className="mb-0 fw-bold">₹{finalAmount || totalPrice}</h5>
+                                                <h5 className="mb-0 fw-bold">₹{finalAmount?.toLocaleString()}</h5>
                                             </div>
                                         </div>
 
-                                        <div className="mb-4">
-                                            <div className="d-flex align-items-center mb-2">
-                                                <FaMapMarkerAlt className="text-danger me-2" />
-                                                <strong>Route:</strong>
+                                        {/* Show coupon savings if applicable */}
+                                        {couponDiscount > 0 && (
+                                            <div className="mb-4">
+                                                <div className="p-3 bg-success-subtle rounded border border-success">
+                                                    <small className="text-success d-block mb-1">Coupon Savings</small>
+                                                    <h6 className="mb-0 text-success fw-bold">₹{couponDiscount?.toLocaleString()} Saved!</h6>
+                                                    {appliedCouponData && (
+                                                        <small className="text-muted">Code: {appliedCouponData.code || appliedCouponData.couponCode}</small>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="p-3 bg-light rounded">
-                                                <div className="fw-bold">{fromCity} → {toCity}</div>
-                                                <small className="text-muted">{bus?.operator || 'N/A'}</small>
-                                            </div>
-                                        </div>
+                                        )}
 
                                         <Row className="g-3">
                                             <Col sm={6}>
                                                 <div className="p-3 bg-light rounded">
-                                                    <small className="text-muted d-block mb-1"><FaCalendarAlt className="me-1" />Travel Date</small>
+                                                    <small className="text-muted d-block mb-1">From</small>
+                                                    <span className="fw-semibold text-dark">{bookingDetails?.fromCity || 'Source'}</span>
+                                                </div>
+                                            </Col>
+                                            <Col sm={6}>
+                                                <div className="p-3 bg-light rounded">
+                                                    <small className="text-muted d-block mb-1">To</small>
+                                                    <span className="fw-semibold text-dark">{bookingDetails?.toCity || 'Destination'}</span>
+                                                </div>
+                                            </Col>
+                                            <Col sm={6}>
+                                                <div className="p-3 bg-light rounded">
+                                                    <small className="text-muted d-block mb-1">Departure</small>
                                                     <span className="fw-semibold text-dark">
-                                                        {departDate ? new Date(departDate).toDateString() : 'N/A'}
+                                                        {bookingDetails?.bus?.departureTime ?
+                                                            new Date(bookingDetails.bus.departureTime).toLocaleString() :
+                                                            'N/A'
+                                                        }
                                                     </span>
                                                 </div>
                                             </Col>
                                             <Col sm={6}>
                                                 <div className="p-3 bg-light rounded">
-                                                    <small className="text-muted d-block mb-1"><FaTicketAlt className="me-1" />Seat Numbers</small>
-                                                    <Badge bg="secondary" className="fw-semibold">{seatNumbers}</Badge>
+                                                    <small className="text-muted d-block mb-1">No. of Seats</small>
+                                                    <span className="fw-semibold text-dark">{bookingDetails?.selectedSeats?.length || 1}</span>
                                                 </div>
                                             </Col>
                                         </Row>
@@ -556,60 +631,58 @@ const Bookingconfirm = () => {
                             <Col lg={6}>
                                 <Card className="h-100 border-0 shadow-sm" style={{ borderRadius: '15px' }}>
                                     <Card.Header className="bg-info text-white border-0 py-4" style={{ borderRadius: '15px 15px 0 0' }}>
-                                        <h4 className="mb-0 fw-bold"><FaUser className="me-2" />Passenger Information</h4>
+                                        <h4 className="mb-0 fw-bold">Passenger Information</h4>
                                     </Card.Header>
                                     <Card.Body className="p-4">
-                                        {passengerData && passengerData.length > 0 ? (
+                                        {bookingDetails?.passengerData?.length > 0 ? (
                                             <div>
                                                 <div className="bg-warning text-white p-4 rounded mb-4">
-                                                    <small className="d-block mb-1">Lead Passenger</small>
-                                                    <h5 className="mb-0 fw-bold">
-                                                        {passengerData[0].firstName} {passengerData[0].lastName}
-                                                    </h5>
+                                                    <small className="d-block mb-1">Primary Passenger</small>
+                                                    <h5 className="mb-0 fw-bold">{passengerName}</h5>
                                                 </div>
 
                                                 <Row className="g-3">
-                                                    {contactData?.email && (
+                                                    {bookingDetails.contactData?.email && (
                                                         <Col sm={12}>
                                                             <div className="p-3 bg-light rounded">
-                                                                <small className="text-muted d-block mb-1"><FaEnvelope className="me-1" />Email</small>
-                                                                <span className="fw-semibold text-dark">{contactData.email}</span>
+                                                                <small className="text-muted d-block mb-1">Email Address</small>
+                                                                <span className="fw-semibold text-dark">{bookingDetails.contactData.email}</span>
                                                             </div>
                                                         </Col>
                                                     )}
 
-                                                    {contactData?.mobile && (
+                                                    {bookingDetails.contactData?.mobile && (
                                                         <Col sm={6}>
                                                             <div className="p-3 bg-light rounded">
-                                                                <small className="text-muted d-block mb-1">📱 Phone</small>
-                                                                <span className="fw-semibold text-dark">{contactData.mobile}</span>
+                                                                <small className="text-muted d-block mb-1">Phone Number</small>
+                                                                <span className="fw-semibold text-dark">{bookingDetails.contactData.mobile}</span>
                                                             </div>
                                                         </Col>
                                                     )}
 
                                                     <Col sm={6}>
                                                         <div className="p-3 bg-light rounded">
-                                                            <small className="text-muted d-block mb-1">👥 Total Passengers</small>
-                                                            <span className="fw-semibold text-dark">{passengerData.length}</span>
+                                                            <small className="text-muted d-block mb-1">Total Passengers</small>
+                                                            <span className="fw-semibold text-dark">{bookingDetails.passengerData.length}</span>
                                                         </div>
                                                     </Col>
-                                                </Row>
 
-                                                {passengerData.length > 1 && (
-                                                    <div className="mt-3">
-                                                        <small className="text-muted">All Passengers:</small>
-                                                        <div className="mt-2">
-                                                            {passengerData.map((passenger, index) => (
-                                                                <div key={index} className="mb-1">
-                                                                    <Badge bg="light" text="dark" className="me-2">
-                                                                        {index + 1}. {passenger.firstName} {passenger.lastName}
-                                                                        ({passenger.age}y, {passenger.gender})
-                                                                    </Badge>
+                                                    {/* Show selected seats */}
+                                                    {bookingDetails.selectedSeats && (
+                                                        <Col sm={12}>
+                                                            <div className="p-3 bg-light rounded">
+                                                                <small className="text-muted d-block mb-1">Selected Seats</small>
+                                                                <div className="d-flex flex-wrap gap-2">
+                                                                    {bookingDetails.selectedSeats.map((seat, index) => (
+                                                                        <Badge key={index} bg="primary" className="px-2 py-1">
+                                                                            {seat.SeatName || seat.Name || `Seat ${index + 1}`}
+                                                                        </Badge>
+                                                                    ))}
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                            </div>
+                                                        </Col>
+                                                    )}
+                                                </Row>
                                             </div>
                                         ) : (
                                             <div className="text-center py-5">
@@ -621,33 +694,89 @@ const Bookingconfirm = () => {
                             </Col>
                         </Row>
 
+                        {/* Invoice Status */}
+                        {loadingInvoice && (
+                            <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
+                                <Card.Body className="p-4 text-center">
+                                    <Spinner animation="border" variant="primary" className="me-2" />
+                                    <span>Loading invoice data...</span>
+                                </Card.Body>
+                            </Card>
+                        )}
+
+                        {invoiceError && !invoiceData && (
+                            <Card className="border-0 shadow-sm mb-4" style={{ borderRadius: '15px' }}>
+                                <Card.Body className="p-4">
+                                    <Alert variant="warning" className="mb-0">
+                                        <strong>Invoice Note:</strong> {invoiceError}.
+                                        A basic invoice will be generated with available booking data.
+                                    </Alert>
+                                </Card.Body>
+                            </Card>
+                        )}
+
                         {/* Action Buttons */}
                         <Card className="border-0 shadow-sm" style={{ borderRadius: '15px' }}>
                             <Card.Body className="p-5">
                                 <div className="text-center mb-4">
                                     <h5 className="mb-4 text-dark fw-bold">What would you like to do next?</h5>
 
-                                    <div className="d-flex justify-content-center gap-3 flex-wrap">
+                                    <div className="d-flex justify-content-center gap-3 mb-4 flex-wrap">
                                         <Button
                                             variant="success"
                                             size="lg"
                                             className="px-5 py-3 fw-semibold"
                                             onClick={handleDownloadInvoice}
+                                            disabled={loadingInvoice}
                                             style={{
                                                 fontSize: '1.1rem',
                                                 borderRadius: '10px',
                                                 minWidth: '200px'
                                             }}
                                         >
-                                            <FaDownload className="me-2" />
-                                            Download Invoice
+                                            {loadingInvoice ? (
+                                                <>
+                                                    <Spinner animation="border" size="sm" className="me-2" />
+                                                    Loading Invoice...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaDownload className="me-2" />
+                                                    Download Invoice
+                                                </>
+                                            )}
                                         </Button>
-                                        
+
+                                        {/* <Button
+                                            variant="warning"
+                                            size="lg"
+                                            className="px-5 py-3 fw-semibold"
+                                            onClick={handleDownloadETicket}
+                                            disabled={loadingInvoice}
+                                            style={{
+                                                fontSize: '1.1rem',
+                                                borderRadius: '10px',
+                                                minWidth: '200px'
+                                            }}
+                                        >
+                                            {loadingInvoice ? (
+                                                <>
+                                                    <Spinner animation="border" size="sm" className="me-2" />
+                                                    Loading E-Ticket...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaDownload className="me-2" />
+                                                    Download E-Ticket
+                                                </>
+                                            )}
+                                        </Button> */}
+
                                         <Button
                                             variant="primary"
                                             size="lg"
                                             className="px-5 py-3 fw-semibold"
-                                            onClick={handleBackToHome}
+                                            onClick={() => navigate('/')}
                                             style={{
                                                 fontSize: '1.1rem',
                                                 borderRadius: '10px',
@@ -658,6 +787,24 @@ const Bookingconfirm = () => {
                                             Back to Home
                                         </Button>
                                     </div>
+
+                                    {/* Show invoice data status */}
+                                    {invoiceData && (
+                                        <div className="mt-4">
+                                            <Alert variant="success" className="border-0" style={{
+                                                backgroundColor: '#d4edda',
+                                                borderRadius: '10px'
+                                            }}>
+                                                <div className="d-flex align-items-center justify-content-center">
+                                                    <FaCheckCircle className="me-2 text-success" />
+                                                    <span className="text-success fw-semibold">
+                                                        Invoice data loaded successfully
+                                                        {invoiceData.invoiceId && ` (${invoiceData.invoiceId})`}
+                                                    </span>
+                                                </div>
+                                            </Alert>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="border-top pt-4">
@@ -668,37 +815,18 @@ const Bookingconfirm = () => {
                                         <div className="d-flex align-items-start">
                                             <div className="flex-grow-1">
                                                 <Alert.Heading as="h6" className="text-success mb-2 fw-bold">
-                                                    Booking Completed Successfully
+                                                    Bus Booking Completed Successfully
                                                 </Alert.Heading>
                                                 <p className="mb-2 text-dark">
-                                                    Your booking has been confirmed successfully. You can download your invoice using the button above.
-                                                    The booking data will be automatically cleared when you return to the home page for security purposes.
+                                                    Your bus booking has been confirmed successfully.
+                                                    {invoiceData ?
+                                                        " Your detailed invoice and e-ticket are ready for download." :
+                                                        " An invoice and e-ticket will be generated with your booking details."
+                                                    }
+                                                    Please keep your booking ID for future reference.
                                                 </p>
                                                 <small className="text-muted">
-                                                    For future reference, save your booking ID and download the invoice before leaving this page.
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </Alert>
-
-                                    <Alert variant="info" className="border-0 mb-0" style={{
-                                        backgroundColor: '#e8f4fd',
-                                        borderRadius: '10px'
-                                    }}>
-                                        <div className="d-flex align-items-start">
-                                            <div className="flex-grow-1">
-                                                <Alert.Heading as="h6" className="text-info mb-2 fw-bold">
-                                                    Booking Reference
-                                                </Alert.Heading>
-                                                <p className="mb-2 text-dark">
-                                                    Your booking ID{' '}
-                                                    <Badge bg="info" className="mx-1 px-3 py-1">
-                                                        {bookingId}
-                                                    </Badge>
-                                                    {' '}has been generated for your reference.
-                                                </p>
-                                                <small className="text-muted">
-                                                    For any assistance, please contact our support team with this booking ID.
+                                                    For any assistance, please contact our support team with this booking ID: <strong>{bookingId}</strong>
                                                 </small>
                                             </div>
                                         </div>
@@ -713,4 +841,4 @@ const Bookingconfirm = () => {
     );
 };
 
-export default Bookingconfirm;
+export default BookingConfirm;

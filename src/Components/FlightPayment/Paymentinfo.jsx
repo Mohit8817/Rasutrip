@@ -98,8 +98,8 @@ const RazorpayPayment = () => {
       passengersData = mergedPassengers.map(passenger => ({
         ...passenger,
         DateOfBirth: formatDateToISOString(passenger.DateOfBirth),
-        // PassportExpiry: formatDateToISOString(passenger.PassportExpiry),
-        // PassportIssue: formatDateToISOString(passenger.PassportIssue),
+        PassportExpiry: formatDateToISOString(passenger.PassportExpiry),
+        PassportIssue: formatDateToISOString(passenger.PassportIssue),
       }));
 
       const clean = (obj) => JSON.parse(JSON.stringify(obj));
@@ -205,7 +205,7 @@ const RazorpayPayment = () => {
         // alert(IsBook)
         // }, 1000);
         console.error("❌ Booking Failed:", response?.Error?.ErrorMessage || "Unknown error");
-        toast.error(response?.Error?.ErrorMessage || "Booking failed");
+        toast.error(response?.error?.Error?.ErrorMessage || "Booking failed");
 
       }
         setModalShow(false);
