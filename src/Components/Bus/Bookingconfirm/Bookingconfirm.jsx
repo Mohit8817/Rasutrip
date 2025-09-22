@@ -10,6 +10,7 @@ const BookingConfirm = () => {
     const navigate = useNavigate();
     const [invoiceData, setInvoiceData] = useState(null);
     const [loadingInvoice, setLoadingInvoice] = useState(false);
+    const [downloadingPDF, setDownloadingPDF] = useState(false);
     const [invoiceError, setInvoiceError] = useState('');
 
     // Extract data from navigation state
@@ -25,6 +26,26 @@ const BookingConfirm = () => {
         couponDiscount = 0
     } = state || {};
 
+    // Load html2pdf library dynamically
+    const loadHtml2Pdf = () => {
+        return new Promise((resolve, reject) => {
+            if (window.html2pdf) {
+                resolve(window.html2pdf);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = () => {
+                resolve(window.html2pdf);
+            };
+            script.onerror = () => {
+                reject(new Error('Failed to load html2pdf library'));
+            };
+            document.head.appendChild(script);
+        });
+    };
+
     // Show success toast on mount
     useEffect(() => {
         if (extractedBookingId || bookingResult) {
@@ -35,7 +56,7 @@ const BookingConfirm = () => {
         }
     }, [extractedBookingId, bookingResult]);
 
-    // Fetch invoice data from API
+    // Updated fetchInvoiceData function with correct API mapping
     const fetchInvoiceData = async () => {
         if (loadingInvoice || invoiceData) return; // Prevent multiple calls
 
@@ -44,7 +65,7 @@ const BookingConfirm = () => {
 
         try {
             const bookingId = extractedBookingId || bookingResult?.BookingId || bookingResult?.bookingId;
-            
+
             if (!bookingId) {
                 throw new Error('Booking ID not found');
             }
@@ -59,90 +80,19 @@ const BookingConfirm = () => {
             console.log('Fetching bus invoice with payload:', invoicePayload);
 
             const response = await downloadBusInvoice(invoicePayload);
-            
+
             if (response && (response.data || response)) {
                 const invoiceDetails = response.data || response;
-
-                // Transform the API response to match bus invoice template format
-                const transformedInvoiceData = {
-                    invoiceId: invoiceDetails.invoiceId || bookingId,
-                    invoiceDate: invoiceDetails.invoiceDate || new Date().toISOString(),
-                    bookingId: bookingId,
-                    TicketNo: invoiceDetails.TicketNo || invoiceDetails.ticketNumber || bookingId,
-                    source: bookingDetails?.fromCity || invoiceDetails.source,
-                    destination: bookingDetails?.toCity || invoiceDetails.destination,
-                    departureTime: bookingDetails?.bus?.departureTime || invoiceDetails.departureTime,
-                    arrivalTime: bookingDetails?.bus?.arrivalTime || invoiceDetails.arrivalTime,
-                    busType: bookingDetails?.bus?.busType || invoiceDetails.busType,
-
-                    // Supplier details (default values)
-                    supplierDetails: {
-                        name: invoiceDetails.supplierDetails?.name || "RASUTRIP WEBSOFT TECHNOLOGIES LLP",
-                        mobile: invoiceDetails.supplierDetails?.mobile || "+91 9266424809",
-                        email: invoiceDetails.supplierDetails?.email || "booking@rasutrip.com",
-                        pan: invoiceDetails.supplierDetails?.pan || "ABLFR7635L",
-                        state: invoiceDetails.supplierDetails?.state || "Uttar Pradesh",
-                        companyRegisteredNumber: invoiceDetails.supplierDetails?.companyRegisteredNumber || "U72900UP2019LLP024578"
-                    },
-
-                    // Receiver details
-                    receiverDetails: {
-                        name: bookingDetails?.contactData?.name || `${bookingDetails?.passengerData?.[0]?.firstName} ${bookingDetails?.passengerData?.[0]?.lastName}`,
-                        phone: bookingDetails?.contactData?.mobile || invoiceDetails.receiverDetails?.phone
-                    },
-
-                    // Passenger details
-                    passenger: bookingDetails?.passengerData?.map((passenger, index) => ({
-                        Title: passenger.title || "Mr",
-                        FirstName: passenger.firstName,
-                        LastName: passenger.lastName,
-                        Age: passenger.age,
-                        SeatName: bookingDetails?.selectedSeats?.[index]?.SeatName || bookingDetails?.selectedSeats?.[index]?.Name || `Seat ${index + 1}`,
-                        Seat: {
-                            SeatFare: bookingDetails?.selectedSeats?.[index]?.Price?.PublishedPriceRoundedOff ||
-                                bookingDetails?.selectedSeats?.[index]?.Fare ||
-                                (finalAmount / (bookingDetails?.passengerData?.length || 1))
-                        }
-                    })) || [],
-
-                    // Fare details
-                    fareDetails: {
-                        NoOfSeats: bookingDetails?.selectedSeats?.length || 1,
-                        baseFare: invoiceDetails.fareDetails?.baseFare || (finalAmount * 0.8),
-                        taxes: invoiceDetails.fareDetails?.taxes || (finalAmount * 0.1),
-                        serviceCharges: invoiceDetails.fareDetails?.serviceCharges || (finalAmount * 0.05),
-                        couponDiscount: couponDiscount || 0,
-                    },
-
-                    vendorCommission: invoiceDetails.vendorCommission || (finalAmount * 0.05),
-                    totalPayable: finalAmount,
-                    invoiceTotal: finalAmount,
-
-                    // Boarding and dropping points
-                    boardingPointdetails: invoiceDetails.boardingPointdetails || bookingDetails?.boardingPoint || {
-                        CityPointName: "Boarding Point",
-                        CityPointLocation: "Location",
-                        CityPointLandmark: "Landmark",
-                        CityPointTime: bookingDetails?.bus?.departureTime || new Date().toISOString(),
-                        CityPointContactNumber: "+91-XXXXXXXXXX"
-                    },
-                    droppingPointdetails: invoiceDetails.droppingPointdetails || (bookingDetails?.droppingPoint ? [bookingDetails.droppingPoint] : [{
-                        CityPointName: "Dropping Point",
-                        CityPointLocation: "Location",
-                        CityPointTime: bookingDetails?.bus?.arrivalTime || new Date().toISOString()
-                    }])
-                };
-
-                setInvoiceData(transformedInvoiceData);
-                console.log('Bus invoice data fetched successfully:', transformedInvoiceData);
+                setInvoiceData(invoiceDetails);
+                console.log('Bus invoice data fetched successfully:', invoiceDetails);
             } else {
                 throw new Error('Invalid invoice response');
             }
         } catch (error) {
             console.error('Error fetching bus invoice:', error);
             setInvoiceError(error.message || 'Failed to fetch invoice data');
-            
-            // Create fallback invoice data
+
+            // Create fallback invoice data only when API completely fails
             const fallbackInvoiceData = generateFallbackBusInvoiceData();
             setInvoiceData(fallbackInvoiceData);
         } finally {
@@ -156,7 +106,7 @@ const BookingConfirm = () => {
         const bookingId = extractedBookingId || bookingResult?.BookingId || `BUS${Date.now()}`;
         const invoiceNumber = `TW/${Math.floor(Math.random() * 9999)}/${Math.floor(Math.random() * 9999)}`;
 
-        const passengerName = bookingDetails?.contactData?.name || 
+        const passengerName = bookingDetails?.contactData?.name ||
             `${bookingDetails?.passengerData?.[0]?.firstName || 'Guest'} ${bookingDetails?.passengerData?.[0]?.lastName || 'Name'}`;
 
         const baseFare = Math.round((finalAmount || 0) * 0.8);
@@ -236,40 +186,42 @@ const BookingConfirm = () => {
         };
     };
 
-// Updated Bus Invoice HTML generator based on API response
-const generateBusInvoiceHTML = (apiInvoiceData) => {
-    const formatDate = (dateStr) => {
-        try {
-            return new Date(dateStr).toLocaleDateString('en-IN');
-        } catch {
-            return dateStr || 'N/A';
+    // Corrected Bus Invoice HTML generator using direct API response
+    const generateBusInvoiceHTML = (apiInvoiceData) => {
+        const formatDate = (dateStr) => {
+            try {
+                return new Date(dateStr).toLocaleDateString('en-IN');
+            } catch {
+                return dateStr || 'N/A';
+            }
+        };
+
+        const formatTime = (dateStr) => {
+            try {
+                return new Date(dateStr).toLocaleString('en-IN');
+            } catch {
+                return dateStr || 'N/A';
+            }
+        };
+
+        // Generate passenger rows from API data
+        let passengerRows = '';
+        if (apiInvoiceData.passenger && apiInvoiceData.passenger.length > 0) {
+            apiInvoiceData.passenger.forEach((p, i) => {
+                passengerRows += `
+                <tr>
+                    <td>${apiInvoiceData.TicketNo || 'N/A'}</td>
+                    <td>${apiInvoiceData.source || 'N/A'} - ${apiInvoiceData.destination || 'N/A'}</td>
+                    <td>${p.Title || ''} ${p.FirstName || ''} ${p.LastName || ''}</td>
+                    <td>${p.Age || 'N/A'}</td>
+                    <td>${p.SeatName || p.Seat?.SeatName || 'N/A'}</td>
+                    <td>₹ ${(p.Seat?.SeatFare || 0).toLocaleString()}</td>
+                </tr>
+            `;
+            });
         }
-    };
 
-    const formatTime = (dateStr) => {
-        try {
-            return new Date(dateStr).toLocaleString('en-IN');
-        } catch {
-            return dateStr || 'N/A';
-        }
-    };
-
-    // Generate passenger rows from API data
-    let passengerRows = '';
-    apiInvoiceData.passenger.forEach((p, i) => {
-        passengerRows += `
-            <tr>
-                <td>${apiInvoiceData.TicketNo || 'N/A'}</td>
-                <td>${apiInvoiceData.source || 'N/A'} - ${apiInvoiceData.destination || 'N/A'}</td>
-                <td>${p.Title || ''} ${p.FirstName || ''} ${p.LastName || ''}</td>
-                <td>${p.Age || 'N/A'}</td>
-                <td>${p.SeatName || p.Seat?.SeatName || 'N/A'}</td>
-                <td>₹ ${(p.Seat?.SeatFare || p.Seat?.Price?.PublishedPrice || 0).toLocaleString()}</td>
-            </tr>
-        `;
-    });
-
-    return `
+        return `
         <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto; border: 1px solid #ccc; padding: 20px; background-color: #fff;">
             <h2 style="text-align: center; color: #2c3e50; margin-bottom: 30px; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Tax Invoice (Bus Booking)</h2>
 
@@ -293,7 +245,7 @@ const generateBusInvoiceHTML = (apiInvoiceData) => {
             <!-- Invoice & Trip Details -->
             <table style="width: 100%; font-size: 14px; margin-bottom: 30px; border-collapse: collapse;" border="1" cellpadding="8" cellspacing="0">
                 <tr style="background-color: #f8f9fa;">
-                    <td><strong>Invoice Number:</strong> ${apiInvoiceData.invoiceNumber || apiInvoiceData.invoiceId || 'N/A'}</td>
+                    <td><strong>Invoice Number:</strong> ${apiInvoiceData.invoiceNumber || 'N/A'}</td>
                     <td><strong>Invoice Date:</strong> ${formatDate(apiInvoiceData.invoiceDate)}</td>
                 </tr>
                 <tr>
@@ -341,7 +293,7 @@ const generateBusInvoiceHTML = (apiInvoiceData) => {
                 ${apiInvoiceData.superCoinSavings > 0 ? `<tr style="background-color: #f8f9fa;"><td><strong>Super Coin Savings:</strong></td><td>₹ ${apiInvoiceData.superCoinSavings.toLocaleString()}</td></tr>` : ''}
                 <tr style="background-color: #e8f5e8; font-weight: bold;">
                     <td><strong>Total Payable:</strong></td>
-                    <td><strong>₹ ${(apiInvoiceData.totalPayable || apiInvoiceData.invoiceTotal || 0).toLocaleString()}</strong></td>
+                    <td><strong>₹ ${(apiInvoiceData.totalPayable || 0).toLocaleString()}</strong></td>
                 </tr>
                 <tr style="background-color: #f8f9fa;">
                     <td><strong>Amount in Words:</strong></td>
@@ -358,20 +310,20 @@ const generateBusInvoiceHTML = (apiInvoiceData) => {
                         <strong>Location:</strong> ${apiInvoiceData.boardingPointdetails?.CityPointName || 'N/A'}<br>
                         <strong>Address:</strong> ${apiInvoiceData.boardingPointdetails?.CityPointLocation || 'N/A'}<br>
                         <strong>Landmark:</strong> ${apiInvoiceData.boardingPointdetails?.CityPointLandmark || 'N/A'}<br>
-                        <strong>Time:</strong> ${formatTime(apiInvoiceData.boardingPointdetails?.CityPointTime || apiInvoiceData.departureTime)}<br>
+                        <strong>Time:</strong> ${formatTime(apiInvoiceData.boardingPointdetails?.CityPointTime)}<br>
                         <strong>Contact:</strong> ${apiInvoiceData.boardingPointdetails?.CityPointContactNumber || 'N/A'}
                     </td>
                     <td style="vertical-align: top; width: 50%;">
                         <strong>Dropping Point:</strong><br>
                         <strong>Location:</strong> ${apiInvoiceData.droppingPointdetails?.[0]?.CityPointName || 'N/A'}<br>
                         <strong>Address:</strong> ${apiInvoiceData.droppingPointdetails?.[0]?.CityPointLocation || 'N/A'}<br>
-                        <strong>Time:</strong> ${formatTime(apiInvoiceData.droppingPointdetails?.[0]?.CityPointTime || apiInvoiceData.arrivalTime)}
+                        <strong>Time:</strong> ${formatTime(apiInvoiceData.droppingPointdetails?.[0]?.CityPointTime)}
                     </td>
                 </tr>
             </table>
 
-            <!-- Passenger Contact Details -->
-            ${apiInvoiceData.passenger?.[0]?.Email || apiInvoiceData.passenger?.[0]?.Address ? `
+            <!-- Passenger Contact Details (Only if available in API) -->
+            ${apiInvoiceData.passenger?.[0]?.Email || apiInvoiceData.passenger?.[0]?.Address || apiInvoiceData.passenger?.[0]?.IdType ? `
             <h3 style="color: #2c3e50; margin-top: 30px; margin-bottom: 15px;">PASSENGER CONTACT DETAILS</h3>
             <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 30px;" border="1" cellpadding="8" cellspacing="0">
                 ${apiInvoiceData.passenger?.[0]?.Email ? `<tr style="background-color: #f8f9fa;"><td><strong>Email:</strong></td><td>${apiInvoiceData.passenger[0].Email}</td></tr>` : ''}
@@ -409,31 +361,31 @@ const generateBusInvoiceHTML = (apiInvoiceData) => {
             </div>
         </div>
     `;
-};
+    };
 
-// Enhanced Download Invoice Function with PDF generation
-const handleDownloadInvoice = async () => {
-    try {
-        // Fetch invoice data if not already available
-        if (!invoiceData && !loadingInvoice) {
-            await fetchInvoiceData();
-            return; // The data will be set, function will be called again by user
-        }
+    // Keep the same handleDownloadInvoice function but remove E-ticket related code
+    const handleDownloadInvoice = async () => {
+        try {
+            // Fetch invoice data if not already available
+            if (!invoiceData && !loadingInvoice) {
+                await fetchInvoiceData();
+                return; // The data will be set, function will be called again by user
+            }
 
-        if (!invoiceData) {
-            toast.error('Invoice data not available. Please try again.', {
-                position: "top-right",
-                autoClose: 3000
-            });
-            return;
-        }
+            if (!invoiceData) {
+                toast.error('Invoice data not available. Please try again.', {
+                    position: "top-right",
+                    autoClose: 3000
+                });
+                return;
+            }
 
-        const htmlContent = generateBusInvoiceHTML(invoiceData);
-        const bookingId = extractedBookingId || bookingResult?.BookingId || bookingResult?.bookingId || 'BUS';
+            const htmlContent = generateBusInvoiceHTML(invoiceData);
+            const bookingId = extractedBookingId || bookingResult?.BookingId || bookingResult?.bookingId || 'BUS';
 
-        // Create a new window/tab for printing
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
+            // Create a new window/tab for printing
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
@@ -465,21 +417,20 @@ const handleDownloadInvoice = async () => {
             </body>
             </html>
         `);
-        printWindow.document.close();
+            printWindow.document.close();
 
-        toast.success('Invoice opened for download/print!', {
-            position: "top-right",
-            autoClose: 3000
-        });
-    } catch (error) {
-        console.error('Error generating invoice:', error);
-        toast.error('Error generating invoice. Please try again.', {
-            position: "top-right",
-            autoClose: 3000
-        });
-    }
-};
-
+            toast.success('Invoice opened for download/print!', {
+                position: "top-right",
+                autoClose: 3000
+            });
+        } catch (error) {
+            console.error('Error generating invoice:', error);
+            toast.error('Error generating invoice. Please try again.', {
+                position: "top-right",
+                autoClose: 3000
+            });
+        }
+    };
     // // Download E-Ticket Function
     // const handleDownloadETicket = async () => {
     //     try {
@@ -588,7 +539,7 @@ const handleDownloadInvoice = async () => {
     }
 
     const bookingId = extractedBookingId || bookingResult?.BookingId || bookingResult?.bookingId || 'N/A';
-    const passengerName = bookingDetails?.contactData?.name || 
+    const passengerName = bookingDetails?.contactData?.name ||
         `${bookingDetails?.passengerData?.[0]?.firstName || 'Guest'} ${bookingDetails?.passengerData?.[0]?.lastName || 'Name'}`;
 
     return (
@@ -658,8 +609,8 @@ const handleDownloadInvoice = async () => {
                                                 <div className="p-3 bg-light rounded">
                                                     <small className="text-muted d-block mb-1">Departure</small>
                                                     <span className="fw-semibold text-dark">
-                                                        {bookingDetails?.bus?.departureTime ? 
-                                                            new Date(bookingDetails.bus.departureTime).toLocaleString() : 
+                                                        {bookingDetails?.bus?.departureTime ?
+                                                            new Date(bookingDetails.bus.departureTime).toLocaleString() :
                                                             'N/A'
                                                         }
                                                     </span>
