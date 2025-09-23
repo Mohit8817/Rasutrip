@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, AlertCircle, CheckCircle, Info, Loader, Plane, Calendar, Users, CreditCard } from 'lucide-react';
+import { X, Clock, AlertCircle, CheckCircle, Info, Loader, Plane, Calendar, Users, CreditCard, Download, FileText, Ticket } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { post } from "../../../APIS/FlightApi/FlightApi"; // Import your API function
 // Import the flight booking services WITH real-time status
 import {
   fetchUpcomingFlightBookings,
@@ -7,10 +9,10 @@ import {
   fetchFlightRealTimeStatus,
   getFlightUserType,
   isFlightUserAuthenticated,
-  flightInvoiceServices
 } from "../../services/bookingApi";
 
 const FlightBookingComponent = () => {
+  const navigate = useNavigate();
   const [bookingType, setBookingType] = useState('upcoming');
   const [allBookings, setAllBookings] = useState([]);
   const [upcomingBookings, setUpcomingBookings] = useState([]);
@@ -25,6 +27,10 @@ const FlightBookingComponent = () => {
   const [statusData, setStatusData] = useState(null);
   const [statusError, setStatusError] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
+
+  // Invoice/E-ticket download states
+  const [downloadLoading, setDownloadLoading] = useState({});
+  const [invoiceCache, setInvoiceCache] = useState({});
 
   // Get current bookings based on selected type
   const currentBookings = bookingType === 'upcoming' ? upcomingBookings : allBookings;
@@ -73,10 +79,32 @@ const FlightBookingComponent = () => {
         invoiceNo: result.InvoiceNo,
         invoiceAmount: result.InvoiceAmount,
         airlineCode: firstSegment.Airline?.AirlineCode,
+
+        // Enhanced data for invoice/e-ticket download
         bookingIdForInvoice: booking.bookingId,
         UserIpForInvoice: booking.UserIp,
         SearchTokenIdForInvoice: booking.SearchTokenId,
         passengerEmailForInvoice: result.Passenger?.[0]?.Email,
+
+        // Complete booking data structure for downloads
+        result: {
+          onward: {
+            UserIp: booking.UserIp,
+            SearchTokenId: booking.SearchTokenId,
+            bookingId: booking.bookingId,
+            result: {
+              ...result,
+              Segments: result.Segments,
+              Passenger: result.Passenger
+            }
+          },
+          return: booking.returnBooking ? {
+            UserIp: booking.returnBooking.UserIp,
+            SearchTokenId: booking.returnBooking.SearchTokenId,
+            bookingId: booking.returnBooking.bookingId,
+            result: booking.returnBooking.Result
+          } : null
+        }
       };
     });
   };
@@ -256,7 +284,7 @@ const FlightBookingComponent = () => {
     loadFlightBookings();
   }, [sortOrder]);
 
-  // ✅ ENHANCED: Real-time status API call with proper data extraction
+  // Real-time status API call with proper data extraction
   const fetchRealTimeStatus = async (booking) => {
     setStatusLoading(true);
     setStatusError('');
@@ -325,6 +353,95 @@ const FlightBookingComponent = () => {
     setSelectedBooking(null);
   };
 
+  // ✅ NEW: Send Invoice Request (same as BookingSuccess component)
+  const sendInvoiceRequest = async (booking) => {
+    const bookingId = booking.bookingIdForInvoice || booking.bookingId;
+
+    if (invoiceCache[bookingId]) {
+      return invoiceCache[bookingId];
+    }
+
+    let ReturnResponse = null;
+    try {
+      const data = {
+        UserIp: booking.UserIpForInvoice,
+        SearchTokenId: booking.SearchTokenIdForInvoice,
+        BookingId: bookingId,
+        receiverEmail: booking.passengerEmailForInvoice,
+      };
+
+      const response = await post(data, "/airservice/invoice");
+
+      if (booking.result?.return) {
+        const returnData = {
+          UserIp: booking.result.return.UserIp,
+          SearchTokenId: booking.result.return.SearchTokenId,
+          BookingId: booking.result.return.bookingId,
+          receiverEmail: booking.passengerEmailForInvoice,
+        };
+        ReturnResponse = await post(returnData, "/airservice/invoice");
+      }
+
+      const invoiceResult = { response, ReturnResponse };
+      setInvoiceCache(prev => ({ ...prev, [bookingId]: invoiceResult }));
+      return invoiceResult;
+    } catch (error) {
+      console.error("Invoice API error:", error);
+      throw error;
+    }
+  };
+
+  // ✅ NEW: Send Invoice (same as BookingSuccess component)
+  const sendInvoice = async (booking, type = "onward") => {
+    const bookingId = booking.bookingIdForInvoice || booking.bookingId;
+
+    setDownloadLoading(prev => ({ ...prev, [`invoice-${bookingId}-${type}`]: true }));
+
+    try {
+      let finalInvoice = invoiceCache[bookingId];
+      if (!finalInvoice) {
+        finalInvoice = await sendInvoiceRequest(booking);
+      }
+
+      // Select onward or return invoice
+      let selectedInvoice = type === "onward" ? finalInvoice.response : finalInvoice.ReturnResponse;
+
+      navigate("/booking/invoice", {
+        state: { Jtype: "flight", invoice: selectedInvoice },
+      });
+    } catch (error) {
+      console.error("Invoice API error:", error);
+      alert("Failed to generate invoice. Please try again.");
+    } finally {
+      setDownloadLoading(prev => ({ ...prev, [`invoice-${bookingId}-${type}`]: false }));
+    }
+  };
+
+  // ✅ NEW: Send E-Ticket (same as BookingSuccess component)
+  const sendInETicket = async (booking, type = "onward") => {
+    const bookingId = booking.bookingIdForInvoice || booking.bookingId;
+
+    setDownloadLoading(prev => ({ ...prev, [`eticket-${bookingId}-${type}`]: true }));
+
+    try {
+      let finalInvoice = invoiceCache[bookingId];
+      if (!finalInvoice) {
+        finalInvoice = await sendInvoiceRequest(booking);
+      }
+
+      let selectedInvoice = type === "onward" ? finalInvoice.response : finalInvoice.ReturnResponse;
+
+      navigate("/booking/e-ticket", {
+        state: { Jtype: "flight", invoice: selectedInvoice },
+      });
+    } catch (error) {
+      console.error("E-Ticket API error:", error);
+      alert("Failed to generate e-ticket. Please try again.");
+    } finally {
+      setDownloadLoading(prev => ({ ...prev, [`eticket-${bookingId}-${type}`]: false }));
+    }
+  };
+
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -362,7 +479,7 @@ const FlightBookingComponent = () => {
   // Get status with basic styling
   const getBookingStatus = (booking) => {
     const status = booking.status || booking.bookingStatus || 'Confirmed';
-    let className = 'text-green-600';
+    let className = 'text-red-600';
 
     if (status.toLowerCase() === 'cancelled') className = 'text-red-600';
     else if (status.toLowerCase() === 'pending') className = 'text-orange-600';
@@ -379,17 +496,9 @@ const FlightBookingComponent = () => {
     }
   };
 
-  // Handle invoice download
-  const handleInvoiceDownload = (bookingIdForInvoice, UserIpForInvoice, SearchTokenIdForInvoice, passengerEmailForInvoice) => {
-    flightInvoiceServices({
-      bookingId: bookingIdForInvoice,
-      userIp: UserIpForInvoice,
-      searchTokenId: SearchTokenIdForInvoice,
-      receiverEmail: passengerEmailForInvoice
-    });
-
-    console.log('Download invoice for booking:', bookingIdForInvoice, UserIpForInvoice, SearchTokenIdForInvoice, passengerEmailForInvoice);
-    alert(`Invoice download initiated for booking: ${bookingIdForInvoice}`);
+  // Check if booking has return flight
+  const hasReturnFlight = (booking) => {
+    return booking.result?.return || booking.journeyType === 2;
   };
 
   return (
@@ -494,7 +603,7 @@ const FlightBookingComponent = () => {
                     title="Click to change sort order">
                     Booked On {sortOrder === 'desc' ? '↓' : '↑'}
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Downloads</th>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Real-time Status</th>
                 </tr>
               </thead>
@@ -522,6 +631,7 @@ const FlightBookingComponent = () => {
                 ) : (
                   currentBookings.map((booking, index) => {
                     const bookingStatus = getBookingStatus(booking);
+                    const bookingId = booking.bookingIdForInvoice || booking.bookingId;
 
                     return (
                       <tr key={booking.bookingId || index} className="border-b border-gray-200 hover:bg-gray-100">
@@ -586,7 +696,6 @@ const FlightBookingComponent = () => {
                           </span>
                         </td>
 
-
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {formatAmount(booking.totalAmount)}
                         </td>
@@ -598,23 +707,70 @@ const FlightBookingComponent = () => {
                             </span>
                           </div>
                         </td>
+
+                        {/* Enhanced Downloads Column */}
                         <td className="px-4 py-3 text-sm">
-                          <button
-                            onClick={() => handleInvoiceDownload(booking.bookingIdForInvoice, booking.UserIpForInvoice, booking.SearchTokenIdForInvoice, booking.passengerEmailForInvoice)}
-                            className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs"
-                          >
-                            Invoice
-                          </button>
+                          <div className="flex flex-col gap-1">
+                            {/* Invoice Downloads */}
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => sendInvoice(booking, "onward")}
+                                disabled={downloadLoading[`invoice-${bookingId}-onward`]}
+                                className="flex items-center gap-1 bg-red-500 hover:bg-red-600 disabled:bg-red-300 px-2 py-1 rounded text-white text-xs transition-colors"
+                                title="Download Onward Invoice"
+                              >
+                               
+                                Invoice
+                              </button>
+
+                              {hasReturnFlight(booking) && (
+                                <button
+                                  onClick={() => sendInvoice(booking, "return")}
+                                  disabled={downloadLoading[`invoice-${bookingId}-return`]}
+                                  className="flex items-center gap-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 px-2 py-1 rounded text-white text-xs transition-colors"
+                                  title="Download Return Invoice"
+                                >
+                                 
+                                  Return
+                                </button>
+                              )}
+                            </div>
+
+                            {/* E-Ticket Downloads */}
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => sendInETicket(booking, "onward")}
+                                disabled={downloadLoading[`eticket-${bookingId}-onward`]}
+                                className="flex items-center gap-1 bg-red-500 hover:bg-red-600 disabled:bg-red-300 px-2 py-1 rounded text-white text-xs transition-colors"
+                                title="Download Onward E-Ticket"
+                              >
+                              
+                                E-Ticket
+                              </button>
+
+                              {hasReturnFlight(booking) && (
+                                <button
+                                  onClick={() => sendInETicket(booking, "return")}
+                                  disabled={downloadLoading[`eticket-${bookingId}-return`]}
+                                  className="flex items-center gap-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 px-2 py-1 rounded text-white text-xs transition-colors"
+                                  title="Download Return E-Ticket"
+                                >
+                                 
+                                  Ret
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </td>
+
                         <td className="px-4 py-3 text-sm">
                           <button
                             onClick={() => fetchRealTimeStatus(booking)}
-                            className="text-xs text-green-500 hover:text-green-700 fw-semibold">
+                            className="text-xs text-green-500 hover:text-green-700 font-semibold transition-colors"
+                          >
                             Status
                           </button>
                         </td>
-
-
                       </tr>
                     );
                   })
@@ -625,7 +781,7 @@ const FlightBookingComponent = () => {
         </div>
       )}
 
-      {/* ✅ FIXED: Real-time Status Popup with HIGHEST z-index to appear above all elements including sidebar */}
+      {/* Real-time Status Popup with HIGHEST z-index to appear above all elements including sidebar */}
       {showStatusPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
           style={{ zIndex: 999999 }}>
@@ -706,7 +862,7 @@ const FlightBookingComponent = () => {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Refundable:</span>
-                          <span className={`font-medium ${statusData.flightDetails.isRefundable === 'Yes' ? 'text-green-600' : 'text-red-600'}`}>
+                          <span className={`font-medium ${statusData.flightDetails.isRefundable === 'Yes' ? 'text-red-600' : 'text-red-600'}`}>
                             {statusData.flightDetails.isRefundable}
                           </span>
                         </div>
@@ -830,8 +986,6 @@ const FlightBookingComponent = () => {
                       </div>
                     </div>
 
-
-
                     {/* Invoice Information */}
                     <div className="bg-white border border-gray-200 rounded-lg p-5 md:col-span-2">
                       <div className="flex items-center mb-4">
@@ -844,12 +998,11 @@ const FlightBookingComponent = () => {
                         </div>
                         <div>
                           <div className="text-sm text-gray-600">Status</div>
-                          <div className="font-medium text-green-600">Success - 200 OK</div>
+                          <div className="font-medium text-red-600">Success - 200 OK</div>
                         </div>
                       </div>
                     </div>
                   </div>
-
 
                 </div>
               ) : statusData && statusData.isEmpty ? (
@@ -937,8 +1090,6 @@ const FlightBookingComponent = () => {
                 </div>
               )}
             </div>
-
-
           </div>
         </div>
       )}
