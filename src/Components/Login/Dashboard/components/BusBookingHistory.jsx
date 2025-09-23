@@ -2390,19 +2390,19 @@ const BusBookingHistory = () => {
                     <td className="px-4 py-3 text-sm text-gray-500">
                       {booking.createdAt}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 text-center">
-                      <div className="flex justify-center gap-3">
+                    <td className="px-4  text-sm text-gray-500 text-center">
+                      <div className="">
                         <Button
                           onClick={() => handleETicketDownload(booking)}
-                          className="flex items-center gap-1 btn-red"
+                          className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs btn-red mb-1"
                         >
-                          E-Ticket Download
+                          E-Ticket
                         </Button>
                         <Button
                           onClick={() => handleInvoice(booking)}
-                          className="flex items-center gap-1 btn-red"
+                          className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs btn-red"
                         >
-                          Invoice Download
+                          Invoice 
                         </Button>
                       </div>
                     </td>
