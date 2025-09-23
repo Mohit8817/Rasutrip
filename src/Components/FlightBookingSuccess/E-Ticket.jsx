@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import html2pdf from "html2pdf.js";
+import Signature from '../Demo/Signature';
 
 // Barcode generation function
 const generateBarcode = (text, canvas) => {
@@ -68,12 +69,13 @@ const downloadPDF = () => {
   const element = document.getElementById("flight-ticket");
 
   const options = {
-    margin: .912,
+    margin: 0.5,
     filename: `Flight-Ticket.pdf`,
     image: { type: 'jpeg', quality: 1 },
     html2canvas: { scale: 4, useCORS: true },
     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['css', 'legacy'] }  // ensures table splits properly
+    
   };
 
   html2pdf().set(options).from(element).save();
@@ -207,7 +209,7 @@ const FlightETicket = () => {
 
   // Automatically open print dialog after a small delay
   const timer = setTimeout(() => {
-    printToPDF()
+    downloadPDF()
   }, 500); // 500ms delay to ensure page renders
 
   return () => clearTimeout(timer); // cleanup
@@ -257,36 +259,12 @@ const FlightETicket = () => {
                       {/* <div style={{ fontSize: '36px', fontWeight: 'bold' }}>✈️{getAirlineName()}</div> */}
                     </div>
                   </div>
-                  <div className="col-6 text-end">
-                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px', lineHeight: '1.4' }}>
-                      Scan the barcode above or use the e-ticket<br />
-                      number below for self service kiosk check-in
-                    </div>
-                    <div className="text-center">
-                      {/* Dynamic Barcode Canvas */}
-                      <canvas 
-                        ref={canvasRef}
-                        style={{ 
-                          maxWidth: '100%',
-                          height: '50px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          backgroundColor: 'white'
-                        }}
-                      />
-                      <div style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '5px' }}>
-                        {barcodeData}
-                      </div>
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '5px' }}>
-                        Booking Reference: {result.PNR}
-                      </div>
-                    </div>
-                  </div>
+                  
                 </div>
                 <div className="row mt-3">
                   <div className="col-12">
-                    <h2 style={{ fontSize: '32px', fontWeight: 'normal', color: '#333', margin: 0 }}>
-                      e-Ticket Receipt & Itinerary
+                    <h2 style={{ fontSize: '32px', fontWeight: 'normal', color: '#333', margin: 2 }}>
+                      e-Ticket <span> &nbsp;Receipt </span>
                     </h2>
                   </div>
                 </div>
@@ -437,62 +415,9 @@ const FlightETicket = () => {
                 </div>
 
                 {/* Fare and Additional Information */}
-                <div 
-                  className="text-white fw-bold py-2 px-3 mb-0"
-                  style={{ backgroundColor: '#b0b0b0', fontSize: '14px' }}
-                >
-                  FARE AND ADDITIONAL INFORMATION
-                </div>
+             
 
-                <div className="table-responsive">
-                  <table className="table table-sm mb-3" style={{ fontSize: '12px' }}>
-                    <tbody>
-                      <tr>
-                        <td className="fw-bold" style={{ padding: '5px 15px', width: '200px' }}>BASE FARE</td>
-                        <td className="text-end fw-bold" style={{ padding: '5px 15px', width: '150px' }}>₹{fare.baseFare}</td>
-                        <td style={{ paddingLeft: '30px', padding: '5px 15px' }}>
-                          <strong>ADDITIONAL SERVICES</strong>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="fw-bold" style={{ padding: '5px 15px' }}>TAXES & FEES</td>
-                        <td className="text-end fw-bold" style={{ padding: '5px 15px' }}>₹{result.vendorCommission}</td>
-                        <td style={{ paddingLeft: '30px', padding: '5px 15px' }}>
-                          {fare.baggageCharges > 0 && `Extra Baggage: ₹${fare.baggageCharges}`}<br />
-                          {fare.seatCharges > 0 && `Seat Selection: ₹${fare.seatCharges}`} <br/>
-                          {fare.mealCharges > 0 && `Seat Selection: ₹${fare.mealCharges}`}
-
-                        </td>
-                      </tr>
-                      {fare.TotalBaggageCharges > 0 && (
-                        <tr>
-                          <td className="fw-bold" style={{ padding: '5px 15px' }}>BAGGAGE CHARGES</td>
-                          <td className="text-end fw-bold" style={{ padding: '5px 15px' }}>₹{fare.baggageCharges}</td>
-                          <td style={{ padding: '5px 15px' }}></td>
-                        </tr>
-                      )}
-                      {fare.TotalSeatCharges > 0 && (
-                        <tr>
-                          <td className="fw-bold" style={{ padding: '5px 15px' }}>SEAT CHARGES</td>
-                          <td className="text-end fw-bold" style={{ padding: '5px 15px' }}>₹{fare.seatCharges}</td>
-                          <td style={{ padding: '5px 15px' }}></td>
-                        </tr>
-                      )}
-                      <tr style={{ borderTop: '2px solid #333' }}>
-                        <td className="fw-bold" style={{ padding: '5px 15px', fontSize: '16px' }}>TOTAL AMOUNT</td>
-                        <td colSpan={2} className="text-end fw-bold" style={{ padding: '5px 15px', fontSize: '16px', color: '#c41e3a' }}>₹{result.netPayableAmount} <span style={{  fontSize: '10px',}} >( {result.invoiceTotalInWords} )</span> </td>
-                        <td style={{ padding: '5px 15px' }}></td>
-                      </tr>
-                      <tr>
-                        <td className="fw-bold" style={{ padding: '5px 15px' }}>PAYMENT STATUS</td>
-                        <td className="text-end fw-bold text-success" style={{ padding: '5px 15px' }}>CONFIRMED</td>
-                        <td style={{ padding: '5px 15px' }}></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="row mt-4">
+                <div className="row mt-10 page-break">
                   <div className="col-md-6">
                     <div className="alert alert-info">
                       <h6 className="fw-bold">Check-in Information:</h6>
@@ -516,6 +441,7 @@ const FlightETicket = () => {
                   
                 </div>
               </div>
+              <Signature />
 
               {/* Footer */}
               <div 
@@ -526,7 +452,7 @@ const FlightETicket = () => {
                   <span style={{ fontSize: '14px', marginRight: '5px' }}>©</span>
                   <span>2025 {getAirlineName()}. All rights reserved. | Booking ID: {result.BookingId}</span>
                 </div>
-                <div className="fw-bold">Page 1 of 1</div>
+                
               </div>
             </div>
           </div>
