@@ -64,7 +64,7 @@ const Header = () => {
 
   return (
     <>
-      <img src={homeoffer} alt="offer" className="h-24 w-auto" />
+      <img src={homeoffer} alt="offer" />
 
       {/* Desktop Header - Hidden on mobile */}
       <Navbar expand="lg" className="header_navbar d-none d-lg-block">

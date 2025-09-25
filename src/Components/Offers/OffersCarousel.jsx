@@ -87,31 +87,75 @@ const OffersCarousel = () => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 bg-white">
+    // <div className="w-full max-w-9xl mx-auto p-4">
+    //   {/* Header */}
+    //   <div className="flex justify-between items-center">
+    //     <h2 className="text-2xl font-bold text-gray-900">Offers For You</h2>
+
+    //     <div className="flex gap-3 items-center justify-start sm:justify-end">
+    //       {categories.map((cat, index) => (
+    //         <button
+    //           key={index}
+    //           onClick={() => handleCategoryClick(cat.value)}
+    //           className={`px-5 py-2 text-sm font-medium transition-all border rounded-full
+    //     ${
+    //       activeCategory === cat.value
+    //         ? "bg-blue-500 text-white border-blue-500"
+    //         : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+    //     }`}
+    //           style={{ borderRadius: "9999px" }}
+    //         >
+    //           {cat.name}
+    //         </button>
+    //       ))}
+
+    //       {/* View All button normal hi rakha */}
+    //       <button
+    //         onClick={() => setShowAll(!showAll)}
+    //         className="text-orange-500 font-medium text-sm hover:text-orange-600 flex items-center"
+    //       >
+    //         {showAll ? "Show Less" : "View All"} <span className="ml-1">→</span>
+    //       </button>
+    //     </div>
+    //   </div>
+    <div className="w-full max-w-9xl mx-auto p-4">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Offers For You</h2>
-      </div>
-      <div className="flex gap-3 items-center justify-start mb-4 sm:justify-end">
-        {categories.map((cat, index) => (
-          <button
-            key={index}
-            onClick={() => handleCategoryClick(cat.value)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+      <div className="flex flex-col mb-2 md:flex-row md:justify-between md:items-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-3 md:mb-0">
+          Offers For You
+        </h2>
+
+        <div
+          className="flex flex-nowrap gap-3 items-center justify-start md:justify-end overflow-x-auto"
+          style={{
+            scrollbarWidth: "none", // Firefox
+            msOverflowStyle: "none", // IE 10+
+          }}
+        >
+          {categories.map((cat, index) => (
+            <button
+              key={index}
+              onClick={() => handleCategoryClick(cat.value)}
+              className={`px-5 py-2 text-sm font-medium transition-all border rounded-full shrink-0
+            ${
               activeCategory === cat.value
-                ? "bg-blue-500 text-white border-blue-500 "
+                ? "bg-blue-500 text-white border-blue-500"
                 : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
             }`}
+              style={{ borderRadius: "9999px" }}
+            >
+              {cat.name}
+            </button>
+          ))}
+
+          {/* View All button normal hi rakha */}
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="text-orange-500 font-medium text-sm hover:text-orange-600 flex items-center shrink-0"
           >
-            {cat.name}
+            {showAll ? "Show Less" : "View All"} <span className="ml-1">→</span>
           </button>
-        ))}
-        <button
-          onClick={() => setShowAll(!showAll)}
-          className="text-orange-500 font-medium text-sm hover:text-orange-600 flex items-center"
-        >
-          {showAll ? "Show Less" : "View All"} <span className="ml-1">→</span>
-        </button>
+        </div>
       </div>
 
       {offers.length === 0 ? (
