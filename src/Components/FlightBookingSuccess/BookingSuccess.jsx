@@ -1,8 +1,9 @@
 'use client'
 import React, { useState, useEffect } from "react";
 import { useLocation } from 'react-router-dom';
-import { post } from "../APIS/FlightApi/FlightApi";
+import { post ,get , downloadPdf} from "../APIS/FlightApi/FlightApi";
 import { useNavigate } from "react-router-dom";
+
 
 import {
   Container,
@@ -65,59 +66,46 @@ const BookingSuccess = () => {
         RetrunResponse = await post(data, "/airservice/invoice");
 
       }
-      setInvoice(response)
+      setInvoice({response,RetrunResponse});
     } catch (error) {
       console.error("Invoice API error:", error);
     }
   };
 
-
-
-  const sendInvoice = async () => {
-    try {
-      const data = {
-        UserIp: result?.onward?.UserIp,
-        SearchTokenId: result?.onward?.SearchTokenId,
-        BookingId: result?.onward?.bookingId,
-        receiverEmail: result?.onward?.result?.Passenger[0]?.Email,
-      };
-      let finalInvoice = invoice;
-      if (!invoice) {
-        const response = await post(data, "/airservice/invoice");
-        setInvoice(response);
-        finalInvoice = response;
-      }
-
-      navigate("/booking/invoice", { state: { Jtype: 'flight', invoice: finalInvoice } });
-    } catch (error) {
-      console.error("Invoice API error:", error);
+const sendInvoice = async (type = "onward") => {
+  try {
+    let finalInvoice = invoice;
+    if (!invoice) {
+      await sendInvoiceRequest();
+      finalInvoice = invoice;
     }
-  };
 
-    const sendInETicket = async () => {
-    try {
-      const data = {
-        UserIp: result?.onward?.UserIp,
-        SearchTokenId: result?.onward?.SearchTokenId,
-        BookingId: result?.onward?.bookingId,
-        receiverEmail: result?.onward?.result?.Passenger[0]?.Email,
-      };
-      let finalInvoice = invoice;
-      if (!invoice) {
-        const response = await post(data, "/airservice/invoice");
-        setInvoice(response);
-        finalInvoice = response;
-      }
+    // agar onward select hai
+    let selectedInvoice =
+      type === "onward" ? finalInvoice.response : finalInvoice.RetrunResponse;
 
-      navigate("/booking/e-ticket", { state: { Jtype: 'flight', invoice: finalInvoice } });
-    } catch (error) {
-      console.error("Invoice API error:", error);
+    const data = await downloadPdf(`/airservice/download/`,'invoice/','flight/',selectedInvoice?.bookingId);
+  } catch (error) {
+    console.error("Invoice API error:", error);
+  }
+};
+
+// Send E-Ticket (onward ya return choose)
+const sendInETicket = async (type = "onward") => {
+  try {
+    let finalInvoice = invoice;
+    if (!invoice) {
+      await sendInvoiceRequest();
+      finalInvoice = invoice;
     }
-  };
+    let selectedInvoice =
+      type === "onward" ? finalInvoice.response : finalInvoice.RetrunResponse;
+      const data = await downloadPdf(`/airservice/download/`,'e-ticket/','flight/',selectedInvoice?.bookingId);
+  } catch (error) {
+    console.error("E-Ticket API error:", error);
+  }
+};
 
-
-
-  // Call invoice API on load
   useEffect(() => {
     if (result && !invoice) {
       sendInvoiceRequest();
@@ -127,10 +115,7 @@ const BookingSuccess = () => {
   if (result.lenght < 0) {
     return <div className="text-center text-red-500 mt-10">Invalid booking data</div>;
   }
-  const handleDownload = (type) => {
-    const url = `https://yourdomain.com/api/${type}-download/${bookingData.bookingId}`;
-    window.open(url, "_blank");
-  };
+ 
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
@@ -184,7 +169,7 @@ const BookingSuccess = () => {
               </Alert>
             )}
 
-            <Card className="border-0 shadow-lg bg-white">
+            {/* <Card className="border-0 shadow-lg bg-white">
               <Card.Body className="p-4">
                 <h2 className="text-success mb-3">
                   <i className="fas fa-check-circle me-2"></i>
@@ -199,7 +184,7 @@ const BookingSuccess = () => {
                 />
                 <p className="text-muted">Processing complete</p>
               </Card.Body>
-            </Card>
+            </Card> */}
           </Col>
         </Row>
 
@@ -359,34 +344,56 @@ const BookingSuccess = () => {
             <Card className="border-0 shadow-lg">
               <Card.Body className="text-center p-4">
                 <h4 className="mb-4">Download Your Documents</h4>
-                <div className="d-grid gap-2 d-md-flex justify-content-md-center">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={() => sendInvoice()}
-                    className="me-md-2 mb-2 mb-md-0"
-                  >
-                    <i className="fas fa-download me-2"></i>
-                    Download Invoice
-                  </Button>
-                   <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={() => sendInETicket()}
-                    className="me-md-2 mb-2 mb-md-0"
-                  >
-                    <i className="fas fa-download me-2"></i>
-                    Download E- Ticket
-                  </Button>
-                  {/* <Button
-                    variant="success"
-                    size="lg"
-                    onClick={() => handleDownload("ticket")}
-                  >
-                    <i className="fas fa-download me-2"></i>
-                    Download E-Ticket
-                  </Button> */}
-                </div>
+               <div className="d-grid gap-2 d-md-flex justify-content-md-center">
+  {/* Onward Invoice */}
+  <Button
+    variant="primary"
+    size="lg"
+    onClick={() => sendInvoice("onward")}
+    className="me-md-2 mb-2 mb-md-0"
+  >
+    <i className="fas fa-download me-2"></i>
+    Onward Invoice
+  </Button>
+
+  {/* Return Invoice */}
+  {result?.return && (
+    <Button
+      variant="primary"
+      size="lg"
+      onClick={() => sendInvoice("return")}
+      className="me-md-2 mb-2 mb-md-0"
+    >
+      <i className="fas fa-download me-2"></i>
+      Return Invoice
+    </Button>
+  )}
+
+  {/* Onward E-Ticket */}
+  <Button
+    variant="success"
+    size="lg"
+    onClick={() => sendInETicket("onward")}
+    className="me-md-2 mb-2 mb-md-0"
+  >
+    <i className="fas fa-download me-2"></i>
+    Onward E-Ticket
+  </Button>
+
+  {/* Return E-Ticket */}
+  {result?.return && (
+    <Button
+      variant="success"
+      size="lg"
+      onClick={() => sendInETicket("return")}
+      className="me-md-2 mb-2 mb-md-0"
+    >
+      <i className="fas fa-download me-2"></i>
+      Return E-Ticket
+    </Button>
+  )}
+</div>
+
                 {/* <p className="text-muted mt-3 mb-0">
                   <small>
                     Invoice No: <strong>{bookingData?.result?.InvoiceNo}</strong> • Keep these documents for your records

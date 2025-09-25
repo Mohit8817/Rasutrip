@@ -69,3 +69,12 @@ body {
     width: 100%;
   }
 }
+
+.page-break {
+  page-break-before: always;
+}
+
+/* Prevent content from being split awkwardly */
+.avoid-break {
+  page-break-inside: avoid;
+}
