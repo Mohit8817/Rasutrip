@@ -2,6 +2,8 @@
 import React, { useState,useEffect ,useRef} from 'react';
 import { Container, Row, Col, Table, Card, Badge, Form, Button } from 'react-bootstrap';
 import { useLocation } from 'react-router-dom';
+import Signature from '../Demo/Signature';
+import html2pdf from "html2pdf.js";
 
 const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
   // Sample data for demonstration
@@ -11,13 +13,26 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
   console.log('invoice', invoice)
   const sampleFlightData = invoice
 
-  useEffect(() => {
-    if (printRef.current) {
-      setTimeout(() => {
-        window.print();
-      }, 500); // 500ms delay to ensure page renders
-    }
-  }, []);
+useEffect(() => {
+  if (printRef.current) {
+    setTimeout(() => {
+      const element = printRef.current;
+
+      const opt = {
+        margin:       0.3,
+        marginTop:    0.5,
+        filename:     `invoice_${Date.now()}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 3 },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ["css", "legacy"] }  // 👈 important
+      };
+
+      // Directly download PDF
+      html2pdf().set(opt).from(element).save();
+    }, 500);
+  }
+}, []);
 
   const sampleHotelData = {
     invoiceNumber: 'INV-HTL-001',
@@ -190,10 +205,18 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
             </Col>
           </Row>
 
-          <Table bordered size="sm" className="mb-4" style={{ fontSize: '14px' }}>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+
+          <Table bordered size="sm" className="mb-4 mt-2" sstyle={{
+    fontSize: '14px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    width: '80%',   // adjust as per requirement
+    textAlign: 'left'
+  }}>
             <tbody>
-              <tr>
-                <td><strong>Invoice Number:</strong> {currentData.invoiceId}</td>
+              <tr className='p-4 m-4'> 
+                <td className='p-2' > <strong>Invoice Number:</strong> {currentData.invoiceId}</td>
                 <td><strong>Invoice Date:</strong> {currentData.invoiceDate}</td>
               </tr>
               <tr>
@@ -212,8 +235,9 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
               </tr>
             </tbody>
           </Table>
+          </div>
 
-          <h3>PASSENGER DETAILS</h3>
+          <h3 className='mt-2' >PASSENGER DETAILS</h3>
           <div className=' overflow-x-auto '>
           <Table bordered  size="sm" className="mb-4 striped bordered hover" style={{ fontSize: '14px' }}>
             <thead>
@@ -270,7 +294,7 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
             </tbody>
           </Table>
 
-          <h3 className="mt-4">TERMS & CONDITIONS</h3>
+          <h3 className="mt-4 page-break">TERMS & CONDITIONS</h3>
           <ul style={{ fontSize: '14px', paddingLeft: '20px' }}>
             <li>IMP : This is computer generated invoice signature not required</li>
             <li>IMP : All Cases & Disputes are subject to New Delhi Jurisdiction</li>
@@ -278,6 +302,7 @@ const InvoiceTemplate = ({ type = 'flight', invoiceData = {} }) => {
             <li>IMP : Service charges as included above are to be collected from the customers on our behalf</li>
             <li>IMP : Kindly check all details carefully to avoid un-necessary complications</li>
           </ul>
+          <Signature />
         </Card.Body>
       </Card>
     </Container>
