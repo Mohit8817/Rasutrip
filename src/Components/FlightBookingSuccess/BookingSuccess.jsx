@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from "react";
 import { useLocation } from 'react-router-dom';
-import { post } from "../APIS/FlightApi/FlightApi";
+import { post ,get , downloadPdf} from "../APIS/FlightApi/FlightApi";
 import { useNavigate } from "react-router-dom";
 
 
@@ -72,11 +72,6 @@ const BookingSuccess = () => {
     }
   };
 
-
-
- // Invoice request dono ke liye already ho raha hai (response + RetrunResponse)
-
-// Send Invoice (onward ya return choose)
 const sendInvoice = async (type = "onward") => {
   try {
     let finalInvoice = invoice;
@@ -89,9 +84,7 @@ const sendInvoice = async (type = "onward") => {
     let selectedInvoice =
       type === "onward" ? finalInvoice.response : finalInvoice.RetrunResponse;
 
-    navigate("/booking/invoice", {
-      state: { Jtype: "flight", invoice: selectedInvoice },
-    });
+    const data = await downloadPdf(`/airservice/download/`,'invoice/','flight/',selectedInvoice?.bookingId);
   } catch (error) {
     console.error("Invoice API error:", error);
   }
@@ -105,21 +98,14 @@ const sendInETicket = async (type = "onward") => {
       await sendInvoiceRequest();
       finalInvoice = invoice;
     }
-
     let selectedInvoice =
       type === "onward" ? finalInvoice.response : finalInvoice.RetrunResponse;
-
-    navigate("/booking/e-ticket", {
-      state: { Jtype: "flight", invoice: selectedInvoice },
-    });
+      const data = await downloadPdf(`/airservice/download/`,'e-ticket/','flight/',selectedInvoice?.bookingId);
   } catch (error) {
     console.error("E-Ticket API error:", error);
   }
 };
 
-
-
-  // Call invoice API on load
   useEffect(() => {
     if (result && !invoice) {
       sendInvoiceRequest();
@@ -129,10 +115,7 @@ const sendInETicket = async (type = "onward") => {
   if (result.lenght < 0) {
     return <div className="text-center text-red-500 mt-10">Invalid booking data</div>;
   }
-  const handleDownload = (type) => {
-    const url = `https://yourdomain.com/api/${type}-download/${bookingData.bookingId}`;
-    window.open(url, "_blank");
-  };
+ 
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
@@ -186,7 +169,7 @@ const sendInETicket = async (type = "onward") => {
               </Alert>
             )}
 
-            <Card className="border-0 shadow-lg bg-white">
+            {/* <Card className="border-0 shadow-lg bg-white">
               <Card.Body className="p-4">
                 <h2 className="text-success mb-3">
                   <i className="fas fa-check-circle me-2"></i>
@@ -201,7 +184,7 @@ const sendInETicket = async (type = "onward") => {
                 />
                 <p className="text-muted">Processing complete</p>
               </Card.Body>
-            </Card>
+            </Card> */}
           </Col>
         </Row>
 
