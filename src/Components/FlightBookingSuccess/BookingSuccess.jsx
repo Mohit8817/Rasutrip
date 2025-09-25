@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from "react";
 import { useLocation } from 'react-router-dom';
-import { post ,get , downloadPdf} from "../APIS/FlightApi/FlightApi";
+import { post, get, downloadPdf } from "../APIS/FlightApi/FlightApi";
 import { useNavigate } from "react-router-dom";
 
 
@@ -66,45 +66,45 @@ const BookingSuccess = () => {
         RetrunResponse = await post(data, "/airservice/invoice");
 
       }
-      setInvoice({response,RetrunResponse});
+      setInvoice({ response, RetrunResponse });
     } catch (error) {
       console.error("Invoice API error:", error);
     }
   };
 
-const sendInvoice = async (type = "onward") => {
-  try {
-    let finalInvoice = invoice;
-    if (!invoice) {
-      await sendInvoiceRequest();
-      finalInvoice = invoice;
+  const sendInvoice = async (type = "onward") => {
+    try {
+      let finalInvoice = invoice;
+      if (!invoice) {
+        await sendInvoiceRequest();
+        finalInvoice = invoice;
+      }
+
+      // agar onward select hai
+      let selectedInvoice =
+        type === "onward" ? finalInvoice.response : finalInvoice.RetrunResponse;
+
+      const data = await downloadPdf(`/airservice/download/`, 'invoice/', 'flight/', selectedInvoice?.bookingId);
+    } catch (error) {
+      console.error("Invoice API error:", error);
     }
+  };
 
-    // agar onward select hai
-    let selectedInvoice =
-      type === "onward" ? finalInvoice.response : finalInvoice.RetrunResponse;
-
-    const data = await downloadPdf(`/airservice/download/`,'invoice/','flight/',selectedInvoice?.bookingId);
-  } catch (error) {
-    console.error("Invoice API error:", error);
-  }
-};
-
-// Send E-Ticket (onward ya return choose)
-const sendInETicket = async (type = "onward") => {
-  try {
-    let finalInvoice = invoice;
-    if (!invoice) {
-      await sendInvoiceRequest();
-      finalInvoice = invoice;
+  // Send E-Ticket (onward ya return choose)
+  const sendInETicket = async (type = "onward") => {
+    try {
+      let finalInvoice = invoice;
+      if (!invoice) {
+        await sendInvoiceRequest();
+        finalInvoice = invoice;
+      }
+      let selectedInvoice =
+        type === "onward" ? finalInvoice.response : finalInvoice.RetrunResponse;
+      const data = await downloadPdf(`/airservice/download/`, 'e-ticket/', 'flight/', selectedInvoice?.bookingId);
+    } catch (error) {
+      console.error("E-Ticket API error:", error);
     }
-    let selectedInvoice =
-      type === "onward" ? finalInvoice.response : finalInvoice.RetrunResponse;
-      const data = await downloadPdf(`/airservice/download/`,'e-ticket/','flight/',selectedInvoice?.bookingId);
-  } catch (error) {
-    console.error("E-Ticket API error:", error);
-  }
-};
+  };
 
   useEffect(() => {
     if (result && !invoice) {
@@ -115,7 +115,7 @@ const sendInETicket = async (type = "onward") => {
   if (result.lenght < 0) {
     return <div className="text-center text-red-500 mt-10">Invalid booking data</div>;
   }
- 
+
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
@@ -344,55 +344,55 @@ const sendInETicket = async (type = "onward") => {
             <Card className="border-0 shadow-lg">
               <Card.Body className="text-center p-4">
                 <h4 className="mb-4">Download Your Documents</h4>
-               <div className="d-grid gap-2 d-md-flex justify-content-md-center">
-  {/* Onward Invoice */}
-  <Button
-    variant="primary"
-    size="lg"
-    onClick={() => sendInvoice("onward")}
-    className="me-md-2 mb-2 mb-md-0"
-  >
-    <i className="fas fa-download me-2"></i>
-    Onward Invoice
-  </Button>
+                <div className="d-grid gap-2 d-md-flex justify-content-md-center">
+                  {/* Onward Invoice */}
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={() => sendInvoice("onward")}
+                    className="me-md-2 mb-2 mb-md-0"
+                  >
+                    <i className="fas fa-download me-2"></i>
+                    Onward Invoice
+                  </Button>
 
-  {/* Return Invoice */}
-  {result?.return && (
-    <Button
-      variant="primary"
-      size="lg"
-      onClick={() => sendInvoice("return")}
-      className="me-md-2 mb-2 mb-md-0"
-    >
-      <i className="fas fa-download me-2"></i>
-      Return Invoice
-    </Button>
-  )}
+                  {/* Return Invoice */}
+                  {result?.return && (
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      onClick={() => sendInvoice("return")}
+                      className="me-md-2 mb-2 mb-md-0"
+                    >
+                      <i className="fas fa-download me-2"></i>
+                      Return Invoice
+                    </Button>
+                  )}
 
-  {/* Onward E-Ticket */}
-  <Button
-    variant="success"
-    size="lg"
-    onClick={() => sendInETicket("onward")}
-    className="me-md-2 mb-2 mb-md-0"
-  >
-    <i className="fas fa-download me-2"></i>
-    Onward E-Ticket
-  </Button>
+                  {/* Onward E-Ticket */}
+                  <Button
+                    variant="success"
+                    size="lg"
+                    onClick={() => sendInETicket("onward")}
+                    className="me-md-2 mb-2 mb-md-0"
+                  >
+                    <i className="fas fa-download me-2"></i>
+                    Onward E-Ticket
+                  </Button>
 
-  {/* Return E-Ticket */}
-  {result?.return && (
-    <Button
-      variant="success"
-      size="lg"
-      onClick={() => sendInETicket("return")}
-      className="me-md-2 mb-2 mb-md-0"
-    >
-      <i className="fas fa-download me-2"></i>
-      Return E-Ticket
-    </Button>
-  )}
-</div>
+                  {/* Return E-Ticket */}
+                  {result?.return && (
+                    <Button
+                      variant="success"
+                      size="lg"
+                      onClick={() => sendInETicket("return")}
+                      className="me-md-2 mb-2 mb-md-0"
+                    >
+                      <i className="fas fa-download me-2"></i>
+                      Return E-Ticket
+                    </Button>
+                  )}
+                </div>
 
                 {/* <p className="text-muted mt-3 mb-0">
                   <small>
