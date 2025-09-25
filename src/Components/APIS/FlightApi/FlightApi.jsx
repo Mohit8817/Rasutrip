@@ -109,6 +109,44 @@ export const getUserIP = async () => {
   }
 };
 
+export const downloadPdf = async (url,pdfType,type,bookingId) => {
+  try {
+    const response = await fetch(baseURL + url+pdfType+type+bookingId, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`, // token backend auth ke liye
+      },
+    });
+
+   
+
+    const blob = await response.blob();
+
+    // backend ka filename pick karna
+    const disposition = response.headers.get("Content-Disposition");
+    let filename = `${pdfType+type+bookingId}.pdf`;
+
+    if (disposition && disposition.includes("filename=")) {
+      filename = disposition.split("filename=")[1].replace(/"/g, "").trim();
+    }
+
+    // download trigger
+    const fileURL = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = fileURL;
+    link.download = filename; // jo backend se aaya wahi set
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.URL.revokeObjectURL(fileURL); // cleanup
+  } catch (err) {
+    console.error("Download failed", err);
+  }
+};
+
+
+
 
 
 
