@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import GoogleReviews from "./GoogleReviews";
 import AboutRasu from "./AboutRasu";
 import { getUserIP } from "../APIS/FlightApi/FlightApi";
+import OffersCarousel from "../Offers/OffersCarousel";
 
 const Home = () => {
   const GetUserIP = async () => {
@@ -48,6 +49,7 @@ const Home = () => {
       {/* <Header /> */}
       <Slider />
       {/* <DealsSection /> */}
+      <OffersCarousel />
       {/* <TravelBenefits /> */}
       <FlightRoutes />
       <section>
