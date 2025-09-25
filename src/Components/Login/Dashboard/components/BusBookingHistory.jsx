@@ -58,6 +58,39 @@ const BusBookingHistory = () => {
     error: null,
   });
 
+  const handleDownload = async (type, bookingId) => {
+    try {
+      const token = localStorage.getItem("token"); // tumhare login ka JWT token
+
+      const url =
+        type === "invoice"
+          ? `https://api.rasutrip.com/api/v1/airservice/download/invoice/bus/${bookingId}`
+          : `https://api.rasutrip.com/api/v1/airservice/download/e-ticket/bus/${bookingId}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`, // token mandatory
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to download file");
+
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download =
+        type === "invoice"
+          ? `Invoice_${bookingId}.pdf`
+          : `ETicket_${bookingId}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(link.href);
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Download failed! Please try again.");
+    }
+  };
+
   // Get current pagination info based on active tab
   const getCurrentPagination = () => {
     return bookingType === "upcoming" ? upcomingPagination : allPagination;
@@ -2390,22 +2423,47 @@ const BusBookingHistory = () => {
                     <td className="px-4 py-3 text-sm text-gray-500">
                       {booking.createdAt}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 text-center">
-                      <div className="flex justify-center gap-3">
+                    <td className="px-4 text-sm text-gray-500 text-center">
+                      <div className="flex gap-2 justify-center">
                         <Button
-                          onClick={() => handleETicketDownload(booking)}
-                          className="flex items-center gap-1 btn-red"
+                          onClick={() =>
+                            handleDownload("e-ticket", booking.bookingId)
+                          }
+                          className="bg-orange-500 hover:bg-red-600 active:bg-red-400 px-3 py-1 rounded text-white text-xs btn-red mb-1"
                         >
                           E-Ticket Download
                         </Button>
                         <Button
-                          onClick={() => handleInvoice(booking)}
-                          className="flex items-center gap-1 btn-red"
+                          onClick={() =>
+                            handleDownload("invoice", booking.bookingId)
+                          }
+                          className="bg-red-500 hover:bg-red-600 active:bg-red-400 px-3 py-1 rounded text-white text-xs btn-red"
                         >
                           Invoice Download
                         </Button>
                       </div>
                     </td>
+
+                    {/* <td className="px-4  text-sm text-gray-500 text-center">
+                      <div className="">
+                        <Button
+                          onClick={() =>
+                            handleDownload("e-ticket", booking.bookingId)
+                          }
+                          className="bg-orange-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs btn-red mb-1"
+                        >
+                          E-Ticket Download
+                        </Button>
+                        <Button
+                          onClick={() =>
+                            handleDownload("invoice", booking.bookingId)
+                          }
+                          className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white text-xs btn-red"
+                        >
+                          Invoice Download
+                        </Button>
+                      </div>
+                    </td> */}
 
                     {/* <td className="px-4 py-3 text-sm text-gray-500">
                       <div>

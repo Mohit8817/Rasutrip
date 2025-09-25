@@ -1,4 +1,44 @@
-/* Hover dropdown */
+/* Hover dropdowncsd */
+.agent-login-container {
+  min-height: 100vh;
+  padding: 20px;
+  background: #1f2937; /* ya tumhara desired background */
+}
+
+.agent-login-card {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Responsive tweaks for smaller screens */
+@media (max-width: 810px) {
+  .agent-login-card .row {
+    flex-direction: column !important; /* Stack cols */
+  }
+
+  .agent-login-card .col-md-6 {
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+  }
+
+  .agent-login-card img {
+    width: 100% !important;
+    margin-top: 1rem !important;
+  }
+
+  .agent-login-right-panel {
+    padding: 1rem !important;
+  }
+}
+
+
+/* Optional: smaller padding/margin adjustments for very small screens */
+@media (max-width: 576px) {
+  .agent-login-card {
+    padding: 1rem !important;
+  }
+}
+
 
 .login-dropdown-wrapper .dropdown:hover .dropdown-menu {
   display: block;
@@ -79,6 +119,21 @@
   display: flex;
   flex-wrap: wrap;
 }
+/* vsd
+feDropShadowsdf */
+@media screen and (max-width: 810px) {
+  .login-box {
+  max-width: 80%;
+  margin: auto;
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+}
+  
+}
+
 
 .left-panel {
   background: #f8f9fa;

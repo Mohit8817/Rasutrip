@@ -11,6 +11,7 @@ import logo from "../../assest/rasutrip.png";
 import Login from "../Login/Login";
 import EnquiryForm from "../EnquiryForm/EnquiryForm";
 import icon1 from "../../assest/footericon2.svg";
+import homeoffer from "../../assest/homeoffer.png";
 
 const Header = () => {
   const [showLogin, setShowLogin] = useState(false);
@@ -63,6 +64,8 @@ const Header = () => {
 
   return (
     <>
+      <img src={homeoffer} alt="offer" className="h-24 w-auto" />
+
       {/* Desktop Header - Hidden on mobile */}
       <Navbar expand="lg" className="header_navbar d-none d-lg-block">
         <Container fluid>
@@ -102,6 +105,17 @@ const Header = () => {
               style={{ cursor: "pointer" }}
             >
               Bus
+            </Nav.Link>
+            {/* vcxd
+            cxc
+            cx */}
+            <Nav.Link
+              as="span"
+              onClick={() => navigate("/offers")}
+              className="nav-item-link"
+              style={{ cursor: "pointer" }}
+            >
+              Offers
             </Nav.Link>
 
             <Nav.Link

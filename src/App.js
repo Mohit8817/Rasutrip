@@ -46,6 +46,7 @@ import Dashboard from "./Components/Login/Dashboard/pages/Dashboard";
 import BlogListPage from "./Pages/Blog/BlogListPage";
 import BlogDetail from "./Pages/Blog/BlogDetail";
 import FlightETicket from "./Components/FlightBookingSuccess/E-Ticket";
+import Offers from "./Components/Offers/Offers";
 
 import { FaWhatsapp } from "react-icons/fa";
 function App() {
@@ -97,6 +98,8 @@ function App() {
         {/* Dashboard */}
 
         <Route path="/dashboard" element={<h1>Welcome to Dashboard</h1>} />
+      
+<Route path="/Offers" element={<Offers/>} />
 
         {/* Footer Pages */}
         <Route path="/Aboutus" element={<AboutUs />} />
@@ -132,6 +135,8 @@ function App() {
 
       {/* </Router> */}
       <ToastContainer position="top-right" autoClose={3000} />
+
+
     </>
   );
 }

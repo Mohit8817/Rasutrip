@@ -14,13 +14,43 @@ import { FaCheckCircle, FaHome, FaDownload, FaBus } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { downloadBusInvoice } from "../../APIS/BusApi/BusApis";
 
-const BookingConfirm = () => {
+const BookingConfirm = ({ booking }) => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const [invoiceData, setInvoiceData] = useState(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
   const [invoiceError, setInvoiceError] = useState("");
+  const handleDownload = async (type, bookingId) => {
+    try {
+      const token = localStorage.getItem("token"); // tumhare login ka JWT token
+
+      const url =
+        type === "invoice"
+          ? `https://api.rasutrip.com/api/v1/airservice/download/invoice/bus/${bookingId}`
+          : `https://api.rasutrip.com/api/v1/airservice/download/e-ticket/bus/${bookingId}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`, // Yaha token dena jaruri hai
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download file");
+      }
+
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = type === "invoice" ? "invoice.pdf" : "e-ticket.pdf";
+      link.click();
+      window.URL.revokeObjectURL(link.href);
+    } catch (error) {
+      console.error("Download error:", error);
+    }
+  };
 
   // Extract data from navigation state
   const {
@@ -591,74 +621,6 @@ const BookingConfirm = () => {
       });
     }
   };
-  // // Download E-Ticket Function
-  // const handleDownloadETicket = async () => {
-  //     try {
-  //         // Fetch invoice data if not already available
-  //         if (!invoiceData && !loadingInvoice) {
-  //             await fetchInvoiceData();
-  //             return; // The data will be set, function will be called again by user
-  //         }
-
-  //         if (!invoiceData) {
-  //             toast.error('E-ticket data not available. Please try again.', {
-  //                 position: "top-right",
-  //                 autoClose: 3000
-  //             });
-  //             return;
-  //         }
-
-  //         // const htmlContent = generateBusETicketHTML(invoiceData);
-  //         const bookingId = extractedBookingId || bookingResult?.BookingId || bookingResult?.bookingId || 'BUS';
-
-  //         // Create a new window/tab for printing
-  //         const printWindow = window.open('', '_blank');
-  //         printWindow.document.write(`
-  //             <!DOCTYPE html>
-  //             <html>
-  //             <head>
-  //                 <title>Bus E-Ticket - ${bookingId}</title>
-  //                 <meta charset="UTF-8">
-  //                 <style>
-  //                     @media print {
-  //                         body { margin: 0; }
-  //                         @page { margin: 0.5in; }
-  //                     }
-  //                     @media screen {
-  //                         body {
-  //                             background-color: #f5f5f5;
-  //                             padding: 20px;
-  //                         }
-  //                     }
-  //                 </style>
-  //             </head>
-  //             <body>
-  //                 ${htmlContent}
-  //                 <script>
-  //                     window.onload = function() {
-  //                         // Auto print after 1 second delay for better loading
-  //                         setTimeout(() => {
-  //                             window.print();
-  //                         }, 1000);
-  //                     }
-  //                 </script>
-  //             </body>
-  //             </html>
-  //         `);
-  //         printWindow.document.close();
-
-  //         toast.success('E-Ticket opened for download/print!', {
-  //             position: "top-right",
-  //             autoClose: 3000
-  //         });
-  //     } catch (error) {
-  //         console.error('Error generating e-ticket:', error);
-  //         toast.error('Error generating e-ticket. Please try again.', {
-  //             position: "top-right",
-  //             autoClose: 3000
-  //         });
-  //     }
-  // };
 
   // Auto-fetch invoice data on component mount
   useEffect(() => {
@@ -994,7 +956,7 @@ const BookingConfirm = () => {
                       variant="success"
                       size="lg"
                       className="px-5 py-3 fw-semibold"
-                      onClick={handleDownloadInvoice}
+                      onClick={() => handleDownload("invoice", bookingId)}
                       disabled={loadingInvoice}
                       style={{
                         fontSize: "1.1rem",
@@ -1019,30 +981,34 @@ const BookingConfirm = () => {
                       )}
                     </Button>
 
-                    {/* <Button
-                                            variant="warning"
-                                            size="lg"
-                                            className="px-5 py-3 fw-semibold"
-                                            onClick={handleDownloadETicket}
-                                            disabled={loadingInvoice}
-                                            style={{
-                                                fontSize: '1.1rem',
-                                                borderRadius: '10px',
-                                                minWidth: '200px'
-                                            }}
-                                        >
-                                            {loadingInvoice ? (
-                                                <>
-                                                    <Spinner animation="border" size="sm" className="me-2" />
-                                                    Loading E-Ticket...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaDownload className="me-2" />
-                                                    Download E-Ticket
-                                                </>
-                                            )}
-                                        </Button> */}
+                    <Button
+                      variant="warning"
+                      size="lg"
+                      className="px-5 py-3 fw-semibold"
+                      onClick={() => handleDownload("ticket", bookingId)}
+                      disabled={loadingInvoice}
+                      style={{
+                        fontSize: "1.1rem",
+                        borderRadius: "10px",
+                        minWidth: "200px",
+                      }}
+                    >
+                      {loadingInvoice ? (
+                        <>
+                          <Spinner
+                            animation="border"
+                            size="sm"
+                            className="me-2"
+                          />
+                          Loading E-Ticket...
+                        </>
+                      ) : (
+                        <>
+                          <FaDownload className="me-2" />
+                          Download E-Ticket
+                        </>
+                      )}
+                    </Button>
 
                     <Button
                       variant="primary"
