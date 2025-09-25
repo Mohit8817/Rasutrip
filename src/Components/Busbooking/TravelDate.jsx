@@ -9,21 +9,42 @@ const TravelDate = () => {
   const [travelDate, setTravelDate] = useState(() => new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
+  // useEffect(() => {
+  //   const parsed = new Date(locationData?.departDate);
+  //   const isValid = parsed instanceof Date && !isNaN(parsed);
+
+  //   const date = isValid ? parsed : new Date();
+  //   setTravelDate(date);
+  //   setCurrentMonth(date);
+
+  //   if (!isValid) {
+  //     const localDateString = formatDateForStorage(date);
+  //     setLocationData((prev) => ({
+  //       ...prev,
+  //       departDate: localDateString,
+  //     }));
+  //   }
+  // }, [locationData?.departDate, setLocationData]);
   useEffect(() => {
-    const parsed = new Date(locationData?.departDate);
-    const isValid = parsed instanceof Date && !isNaN(parsed);
+    let date;
+    if (locationData?.departDate) {
+      const parsed = new Date(locationData.departDate);
+      if (!isNaN(parsed)) {
+        date = parsed;
+      }
+    }
 
-    const date = isValid ? parsed : new Date();
-    setTravelDate(date);
-    setCurrentMonth(date);
-
-    if (!isValid) {
+    if (!date) {
+      date = new Date(); // default to today
       const localDateString = formatDateForStorage(date);
       setLocationData((prev) => ({
         ...prev,
         departDate: localDateString,
       }));
     }
+
+    setTravelDate(date);
+    setCurrentMonth(date);
   }, [locationData?.departDate, setLocationData]);
 
   const formatDateForStorage = (date) => {
