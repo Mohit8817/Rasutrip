@@ -11,7 +11,8 @@ import logo from "../../assest/rasutrip.png";
 import Login from "../Login/Login";
 import EnquiryForm from "../EnquiryForm/EnquiryForm";
 import icon1 from "../../assest/footericon2.svg";
-import homeoffer from "../../assest/homeoffer.png";
+// import homeoffer from "../../assest/homeoffer.png";
+import promoBanner from "../../assest/promoimg.png"; 
 
 const Header = () => {
   const [showLogin, setShowLogin] = useState(false);
@@ -64,7 +65,29 @@ const Header = () => {
 
   return (
     <>
-      <img src={homeoffer} alt="offer" />
+      {/* <img  
+  src={homeoffer} 
+  alt="offer" 
+  className="w-100" 
+  style={{ height: "100px", objectFit: "cover" }} 
+/> */}
+
+      <div className="promo-banner-container">
+        <img
+          src={promoBanner}
+          alt="Grand Travel Fest: Up to 15% Off on Flights & Hotels"
+          className="promo-banner-image"
+          style={{
+            width: "100%",
+            height: "auto",
+            minHeight: "80px",
+            maxHeight: "120px",
+            objectFit: "cover",
+            display: "block"
+          }}
+        />
+      </div>
+
 
       {/* Desktop Header - Hidden on mobile */}
       <Navbar expand="lg" className="header_navbar d-none d-lg-block">

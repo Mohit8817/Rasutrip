@@ -1,11 +1,11 @@
 .slider-image-wrapper {
   position: relative;
 }
-
+/* 
 .slider-image-wrapper img {
   height: 100vh;
   object-fit: cover;
-}
+} */
 
 .top-overlay {
   position: absolute;
@@ -23,6 +23,7 @@
 .slider-container {
   position: relative;
 }
+
 /* 
 .travel-tabs {
   position: relative;
@@ -44,7 +45,7 @@
   justify-content: center;
   z-index: 5;
   left: 12rem;
-   font-family: 'Poppins', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 /* Tablets */
@@ -63,6 +64,7 @@
     left: 2rem;
     bottom: 1.5rem;
   }
+
 }
 
 /* Mobile Portrait */
@@ -71,9 +73,12 @@
     width: 100%;
     left: 0;
     bottom: 1rem;
-    flex-wrap: wrap; /* Allow tabs to wrap */
+    flex-wrap: wrap;
+    /* Allow tabs to wrap */
     padding: 0 10px;
   }
+
+
 }
 
 
@@ -82,7 +87,7 @@
 .overlay-box {
   position: absolute;
   top: 22%;
-  
+
   left: 50%;
   transform: translateX(-50%);
   background-color: white;
@@ -99,7 +104,7 @@
 
 @media (max-width: 768px) {
   .overlay-box {
-    padding: 0 0 0px 0!important;
+    padding: 0 0 0px 0 !important;
     width: 90%;
   }
 }
@@ -107,14 +112,21 @@
 /* Extra small devices ke liye (optional) */
 @media (max-width: 480px) {
   .overlay-box {
-    padding: 0 0 0px 0!important;
+    padding: 0 0 0px 0 !important;
     width: 90%;
     top: 10%;
 
   }
+
+    
+  .slider-image-wrapper img {
+  height: 580px !important;
+  object-fit: cover;
+} 
 }
+
 .slider-image-wrapper img {
-  height: 670px;
+  height: 390px;
   object-fit: cover;
 }
 
@@ -170,6 +182,7 @@
 
 /* Responsive styles */
 @media (min-width: 768px) {
+
   .room-col::after,
   .guests-col::after,
   .travel-date-col:not(:last-child)::after {
@@ -185,6 +198,7 @@
 }
 
 @media (max-width: 767px) {
+
   .room-guests-container,
   .bus-travel-container {
     flex-direction: column;
@@ -214,6 +228,7 @@
 }
 
 @media (max-width: 480px) {
+
   .room-guests-container,
   .bus-travel-container {
     padding: 10px;

@@ -810,7 +810,7 @@ const FlightBookingComponent = () => {
             {/* Popup Content */}
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
               {statusLoading ? (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex items-center justify-center py-12">z
                   <Loader className="animate-spin w-8 h-8 text-blue-500" />
                   <span className="ml-3 text-gray-600">Fetching real-time flight status...</span>
                 </div>
