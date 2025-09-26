@@ -214,9 +214,9 @@ const BlogListPage = () => {
                 {/* Meta Information */}
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center">
+                    {/* <div className="flex items-center">
                       <span>{post.author?.name || post.author === "67f3a54abb43170178d6094d" ? "Admin" : (typeof post.author === 'string' ? post.author : 'Anonymous')}</span>
-                    </div>
+                    </div> */}
                     <div className="flex items-center">
                       <span>{getReadingTime(post.content)}</span>
                     </div>
