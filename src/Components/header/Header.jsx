@@ -189,12 +189,12 @@ const Header = () => {
               Enquiry
             </Nav.Link>
 
-            <Nav.Link
+            {/* <Nav.Link
               href="https://www.rasutechnologies.com/"
               className="nav-item-link"
             >
               RasuTech
-            </Nav.Link>
+            </Nav.Link> */}
           </Nav>
 
           {/* Desktop Right Side */}
