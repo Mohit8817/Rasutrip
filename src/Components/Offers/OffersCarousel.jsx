@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const OffersCarousel = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("FLIGHT");
@@ -12,7 +10,6 @@ const OffersCarousel = () => {
     { name: "Flights", value: "FLIGHT" },
     { name: "Hotels", value: "HOTEL" },
     { name: "Bus", value: "BUS" },
-    // { name: "Bank Offers", value: "BANK" },
   ];
 
   const fetchOffers = async () => {
@@ -54,26 +51,8 @@ const OffersCarousel = () => {
     ? offers
     : offers.filter((offer) => offer.applicableFor === activeCategory);
 
-  const nextSlide = () => {
-    if (currentIndex + 4 < filteredOffers.length)
-      setCurrentIndex(currentIndex + 1);
-  };
-
-  const prevSlide = () => {
-    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
-  };
-
-  const visibleOffers = filteredOffers.slice(currentIndex, currentIndex + 4);
-
-  const formatDate = (dateString) =>
-    new Date(dateString).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-    });
-
   const handleCategoryClick = (categoryValue) => {
     setActiveCategory(categoryValue);
-    setCurrentIndex(0);
     setShowAll(false);
   };
 
@@ -87,40 +66,9 @@ const OffersCarousel = () => {
   }
 
   return (
-    // <div className="w-full max-w-9xl mx-auto p-4">
-    //   {/* Header */}
-    //   <div className="flex justify-between items-center">
-    //     <h2 className="text-2xl font-bold text-gray-900">Offers For You</h2>
-
-    //     <div className="flex gap-3 items-center justify-start sm:justify-end">
-    //       {categories.map((cat, index) => (
-    //         <button
-    //           key={index}
-    //           onClick={() => handleCategoryClick(cat.value)}
-    //           className={`px-5 py-2 text-sm font-medium transition-all border rounded-full
-    //     ${
-    //       activeCategory === cat.value
-    //         ? "bg-blue-500 text-white border-blue-500"
-    //         : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-    //     }`}
-    //           style={{ borderRadius: "9999px" }}
-    //         >
-    //           {cat.name}
-    //         </button>
-    //       ))}
-
-    //       {/* View All button normal hi rakha */}
-    //       <button
-    //         onClick={() => setShowAll(!showAll)}
-    //         className="text-orange-500 font-medium text-sm hover:text-orange-600 flex items-center"
-    //       >
-    //         {showAll ? "Show Less" : "View All"} <span className="ml-1">→</span>
-    //       </button>
-    //     </div>
-    //   </div>
     <div className="w-full max-w-9xl mx-auto p-4">
       {/* Header */}
-      <div className="flex flex-col mb-2 md:flex-row md:justify-between md:items-center">
+      <div className="flex flex-col mb-3 md:flex-row md:justify-between md:items-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-3 md:mb-0">
           Offers For You
         </h2>
@@ -142,13 +90,12 @@ const OffersCarousel = () => {
                 ? "bg-blue-500 text-white border-blue-500"
                 : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
             }`}
-              style={{ borderRadius: "9999px" }}
             >
               {cat.name}
             </button>
           ))}
 
-          {/* View All button normal hi rakha */}
+          {/* View All button */}
           <button
             onClick={() => setShowAll(!showAll)}
             className="text-orange-500 font-medium text-sm hover:text-orange-600 flex items-center shrink-0"
@@ -164,62 +111,25 @@ const OffersCarousel = () => {
         </div>
       ) : (
         <div className="relative">
-          {/* Navigation Buttons */}
-          {!showAll && filteredOffers.length > 1 && (
-            <>
-              <button
-                onClick={prevSlide}
-                disabled={currentIndex === 0}
-                className={`absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full shadow-lg flex items-center justify-center ${
-                  currentIndex === 0
-                    ? "bg-gray-200 text-gray-400 "
-                    : "bg-white text-gray-600 hover:shadow-xl"
-                }`}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={nextSlide}
-                disabled={currentIndex + 4 >= filteredOffers.length}
-                className={`absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full shadow-lg flex items-center justify-center ${
-                  currentIndex + 4 >= filteredOffers.length
-                    ? "bg-gray-200 text-gray-400 "
-                    : "bg-white text-gray-600 hover:shadow-xl"
-                }`}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </>
-          )}
-
-          {/* Offers Cards */}
-          <div className="flex gap-4 overflow-hidden px-4">
-            {visibleOffers.map((offer) => (
+          {/* Horizontally Scrollable Offers */}
+          <div
+            className="flex gap-4 overflow-x-auto px-3 pb-3 scrollbar-hide"
+            style={{
+              scrollBehavior: "smooth",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            {filteredOffers.map((offer) => (
               <div
                 key={offer._id}
-                className="flex-1 min-w-72 max-w-80 rounded-2xl p-6 text-black relative cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 bg-cover bg-center"
-                style={{
-                  backgroundImage: offer.image
-                    ? `url(${offer.image})`
-                    : "linear-gradient(to br, #a78bfa, #f472b6, #f87171)",
-                }}
+                className="flex-1 min-w-80 max-w-96 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer bg-white"
               >
-                <h3 className="text-xl font-bold mb-1">
-                  {offer.type === "FLAT"
-                    ? `Up to ₹${offer.value} Off`
-                    : `Up to ${offer.value}% Off`}
-                </h3>
-                <p className="text-sm opacity-95 leading-relaxed mb-2">
-                  {offer.description}
-                </p>
-                <div className="text-sm font-semibold mb-1">{offer.name}</div>
-                <div className="text-xs opacity-90 mb-8">
-                  Valid: {formatDate(offer.startDate)} -{" "}
-                  {formatDate(offer.endDate)}
-                </div>
-                <div className="absolute bottom-4 left-6 text-xs bg-white/20 text-black px-2 py-1 rounded backdrop-blur-sm">
-                  Code: {offer.code}
-                </div>
+                <img
+                  src={offer.image}
+                  alt="Offer"
+                  className="w-full h-40 object-cover" // Reduced height
+                />
               </div>
             ))}
           </div>
