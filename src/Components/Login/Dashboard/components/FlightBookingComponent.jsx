@@ -57,7 +57,9 @@ const FlightBookingComponent = () => {
     };
   };
 
-  // Download Flight Tax Invoice - Clean Implementation
+
+
+  // Download Flight Tax Invoice - Improved Implementation
   const downloadFlightTaxInvoice = async (booking) => {
     const bookingId = booking.bookingId;
 
@@ -69,24 +71,25 @@ const FlightBookingComponent = () => {
       return;
     }
 
+    console.log('📥 Starting Flight Tax Invoice download for booking:', bookingId);
     setDownloadingTaxInvoices(prev => new Set(prev.add(bookingId)));
 
     try {
-      console.log('Starting Flight Tax Invoice download for booking:', bookingId);
-      
       // Create auth headers
       const headers = createAuthHeaders();
+      console.log('🔐 Using auth token for download request');
 
       // Construct the API URL - Tax Invoice endpoint
       const apiUrl = `${baseURL}/airservice/download/invoice/flight/${bookingId}`;
-      console.log('Flight Tax Invoice API URL:', apiUrl);
+      console.log('🚀 Flight Tax Invoice API URL:', apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: headers,
       });
 
-      console.log('Flight Tax Invoice API Response Status:', response.status);
+      console.log('📊 Flight Tax Invoice API Response Status:', response.status);
+      console.log('📋 Response Headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         // Handle specific error cases
@@ -96,23 +99,31 @@ const FlightBookingComponent = () => {
         if (response.status === 404) {
           throw new Error('Tax invoice not found for this booking.');
         }
+        if (response.status === 403) {
+          throw new Error('Access denied. You may not have permission to download this invoice.');
+        }
+        if (response.status === 500) {
+          throw new Error('Server error. Please try again later.');
+        }
 
         const errorText = await response.text();
-        console.error('Flight Tax Invoice API Error Response:', errorText);
+        console.error('❌ Flight Tax Invoice API Error Response:', errorText);
         throw new Error(`API Error: ${response.status} - ${errorText || response.statusText}`);
       }
 
       // Check if response is actually a PDF
       const contentType = response.headers.get('content-type');
-      console.log('Flight Tax Invoice Response Content Type:', contentType);
+      console.log('📄 Flight Tax Invoice Response Content Type:', contentType);
 
       if (!contentType || !contentType.includes('application/pdf')) {
+        console.warn('⚠️ Expected PDF but got:', contentType);
         throw new Error('Response is not a PDF file');
       }
 
       // Get the blob from response
       const blob = await response.blob();
-      
+      console.log('💾 Blob size:', blob.size, 'bytes');
+
       if (blob.size === 0) {
         throw new Error('Received empty PDF file');
       }
@@ -121,7 +132,9 @@ const FlightBookingComponent = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Flight_Tax_Invoice_${bookingId}_${new Date().getTime()}.pdf`;
+      link.download = `Flight_Tax_Invoice_${bookingId}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Add to DOM temporarily for download
       document.body.appendChild(link);
       link.click();
 
@@ -129,23 +142,33 @@ const FlightBookingComponent = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success('Flight Tax Invoice downloaded successfully!', {
+      toast.success('✅ Flight Tax Invoice downloaded successfully!', {
         position: "top-right",
         autoClose: 3000
       });
 
-      console.log('Flight Tax Invoice downloaded successfully for booking:', bookingId);
+      console.log('✅ Flight Tax Invoice downloaded successfully for booking:', bookingId);
 
     } catch (error) {
-      console.error('Error downloading flight tax invoice:', error);
+      console.error('❌ Error downloading flight tax invoice:', error);
 
-      if (error.message.includes('Authentication failed')) {
-        toast.error('Please login again to download tax invoice.', {
+      if (error.message.includes('Authentication failed') || error.message.includes('Access denied')) {
+        toast.error('🔐 Please login again to download tax invoice.', {
+          position: "top-right",
+          autoClose: 5000
+        });
+      } else if (error.message.includes('not found')) {
+        toast.error('📄 Tax invoice not available for this booking.', {
+          position: "top-right",
+          autoClose: 5000
+        });
+      } else if (error.message.includes('Server error')) {
+        toast.error('🔧 Server is temporarily unavailable. Please try again later.', {
           position: "top-right",
           autoClose: 5000
         });
       } else {
-        toast.error(`Error downloading tax invoice: ${error.message}`, {
+        toast.error(`❌ Error downloading tax invoice: ${error.message}`, {
           position: "top-right",
           autoClose: 5000
         });
@@ -159,7 +182,7 @@ const FlightBookingComponent = () => {
     }
   };
 
-  // Download Flight E-Ticket - Clean Implementation
+  // Download Flight E-Ticket - Improved Implementation
   const downloadFlightETicket = async (booking) => {
     const bookingId = booking.bookingId;
 
@@ -171,24 +194,25 @@ const FlightBookingComponent = () => {
       return;
     }
 
+    console.log('🎫 Starting Flight E-Ticket download for booking:', bookingId);
     setDownloadingETickets(prev => new Set(prev.add(bookingId)));
 
     try {
-      console.log('Starting Flight E-Ticket download for booking:', bookingId);
-      
       // Create auth headers
       const headers = createAuthHeaders();
+      console.log('🔐 Using auth token for e-ticket download request');
 
       // Construct the API URL - E-Ticket endpoint
       const apiUrl = `${baseURL}/airservice/download/e-ticket/flight/${bookingId}`;
-      console.log('Flight E-Ticket API URL:', apiUrl);
+      console.log('🚀 Flight E-Ticket API URL:', apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: headers,
       });
 
-      console.log('Flight E-Ticket API Response Status:', response.status);
+      console.log('📊 Flight E-Ticket API Response Status:', response.status);
+      console.log('📋 Response Headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         // Handle specific error cases
@@ -198,23 +222,31 @@ const FlightBookingComponent = () => {
         if (response.status === 404) {
           throw new Error('E-ticket not found for this booking.');
         }
+        if (response.status === 403) {
+          throw new Error('Access denied. You may not have permission to download this e-ticket.');
+        }
+        if (response.status === 500) {
+          throw new Error('Server error. Please try again later.');
+        }
 
         const errorText = await response.text();
-        console.error('Flight E-Ticket API Error Response:', errorText);
+        console.error('❌ Flight E-Ticket API Error Response:', errorText);
         throw new Error(`API Error: ${response.status} - ${errorText || response.statusText}`);
       }
 
       // Check if response is actually a PDF
       const contentType = response.headers.get('content-type');
-      console.log('Flight E-Ticket Response Content Type:', contentType);
+      console.log('📄 Flight E-Ticket Response Content Type:', contentType);
 
       if (!contentType || !contentType.includes('application/pdf')) {
+        console.warn('⚠️ Expected PDF but got:', contentType);
         throw new Error('Response is not a PDF file');
       }
 
       // Get the blob from response
       const blob = await response.blob();
-      
+      console.log('💾 Blob size:', blob.size, 'bytes');
+
       if (blob.size === 0) {
         throw new Error('Received empty PDF file');
       }
@@ -223,7 +255,9 @@ const FlightBookingComponent = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Flight_E_Ticket_${bookingId}_${new Date().getTime()}.pdf`;
+      link.download = `Flight_E_Ticket_${bookingId}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Add to DOM temporarily for download
       document.body.appendChild(link);
       link.click();
 
@@ -231,23 +265,33 @@ const FlightBookingComponent = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success('Flight E-Ticket downloaded successfully!', {
+      toast.success('✅ Flight E-Ticket downloaded successfully!', {
         position: "top-right",
         autoClose: 3000
       });
 
-      console.log('Flight E-Ticket downloaded successfully for booking:', bookingId);
+      console.log('✅ Flight E-Ticket downloaded successfully for booking:', bookingId);
 
     } catch (error) {
-      console.error('Error downloading flight e-ticket:', error);
+      console.error('❌ Error downloading flight e-ticket:', error);
 
-      if (error.message.includes('Authentication failed')) {
-        toast.error('Please login again to download e-ticket.', {
+      if (error.message.includes('Authentication failed') || error.message.includes('Access denied')) {
+        toast.error('🔐 Please login again to download e-ticket.', {
+          position: "top-right",
+          autoClose: 5000
+        });
+      } else if (error.message.includes('not found')) {
+        toast.error('🎫 E-ticket not available for this booking.', {
+          position: "top-right",
+          autoClose: 5000
+        });
+      } else if (error.message.includes('Server error')) {
+        toast.error('🔧 Server is temporarily unavailable. Please try again later.', {
           position: "top-right",
           autoClose: 5000
         });
       } else {
-        toast.error(`Error downloading e-ticket: ${error.message}`, {
+        toast.error(`❌ Error downloading e-ticket: ${error.message}`, {
           position: "top-right",
           autoClose: 5000
         });
@@ -816,35 +860,57 @@ const FlightBookingComponent = () => {
                         </td>
 
                         {/* Downloads Column - Clean Implementation */}
+
                         <td className="px-4 py-3 text-sm">
                           <div className="flex flex-col gap-1">
                             {/* Tax Invoice Download Button */}
                             <button
                               onClick={() => downloadFlightTaxInvoice(booking)}
-                              disabled={isDownloadingTaxInvoice}
-                              className={`px-3 py-1 rounded text-white text-xs ${isDownloadingTaxInvoice
-                                ? "bg-orange-500 cursor-wait"
-                                : "bg-red-500 hover:bg-red-600"
-                              }`}
+                              disabled={downloadingTaxInvoices.has(booking.bookingId)}
+                              className={`px-3 py-1 rounded text-white text-xs font-medium transition-colors ${downloadingTaxInvoices.has(booking.bookingId)
+                                  ? "bg-orange-500 cursor-wait"
+                                  : "bg-red-500 hover:bg-red-600 active:bg-red-700"
+                                }`}
                               title="Download Flight Tax Invoice"
                             >
-                              {isDownloadingTaxInvoice ? "Downloading..." : "Tax Invoice"}
+                              {downloadingTaxInvoices.has(booking.bookingId) ? (
+                                <span className="flex items-center gap-1">
+                                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Downloading...
+                                </span>
+                              ) : (
+                                "Tax Invoice"
+                              )}
                             </button>
 
                             {/* E-Ticket Download Button */}
                             <button
                               onClick={() => downloadFlightETicket(booking)}
-                              disabled={isDownloadingETicket}
-                              className={`px-3 py-1 rounded text-white text-xs ${isDownloadingETicket
-                                ? "bg-orange-500 cursor-wait"
-                                : "bg-green-500 hover:bg-green-600"
-                              }`}
+                              disabled={downloadingETickets.has(booking.bookingId)}
+                              className={`px-3 py-1 rounded text-white text-xs font-medium transition-colors ${downloadingETickets.has(booking.bookingId)
+                                  ? "bg-orange-500 cursor-wait"
+                                  : "bg-green-500 hover:bg-green-600 active:bg-green-700"
+                                }`}
                               title="Download Flight E-Ticket"
                             >
-                              {isDownloadingETicket ? "Downloading..." : "E-Ticket"}
+                              {downloadingETickets.has(booking.bookingId) ? (
+                                <span className="flex items-center gap-1">
+                                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Downloading...
+                                </span>
+                              ) : (
+                                "E-Ticket"
+                              )}
                             </button>
                           </div>
                         </td>
+
 
                         <td className="px-4 py-3 text-sm">
                           <button
@@ -863,7 +929,7 @@ const FlightBookingComponent = () => {
           </div>
         </div>
       )}
-      
+
       {/* Real-time Status Popup with HIGHEST z-index to appear above all elements including sidebar */}
       {showStatusPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
