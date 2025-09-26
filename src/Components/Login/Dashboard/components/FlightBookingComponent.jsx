@@ -317,7 +317,8 @@ const FlightBookingComponent = () => {
       const passenger = result.Passenger?.[0] || {};
 
       return {
-        bookingId: result.BookingId || booking.bookingId,
+        // 🔥 FIXED: Use outer bookingId instead of result.BookingId
+        bookingId: booking.bookingId || result.BookingId, // Use outer bookingId first, fallback to Result.BookingId
         pnr: result.PNR,
         airline: firstSegment.Airline,
         airlineName: firstSegment.Airline?.AirlineName,
@@ -349,13 +350,22 @@ const FlightBookingComponent = () => {
         invoiceNo: result.InvoiceNo,
         invoiceAmount: result.InvoiceAmount,
         airlineCode: firstSegment.Airline?.AirlineCode,
-        // Add fields needed for download APIs
+
+        // Add fields needed for download APIs and real-time status
         SearchTokenId: booking.SearchTokenId,
         UserIp: booking.UserIp,
         result: result, // Keep the full result object for API calls
+
+        // 🔥 IMPORTANT: Store both IDs for debugging and API calls
+        outerBookingId: booking.bookingId, // The correct one from API response outer level
+        innerBookingId: result.BookingId,  // The one from Result object
+
+        // Add the complete booking object for API calls that might need it
+        originalBooking: booking
       };
     });
   };
+
 
   // Extract flight details from real-time status response
   const extractFlightDetails = (apiResponse) => {
@@ -868,8 +878,8 @@ const FlightBookingComponent = () => {
                               onClick={() => downloadFlightTaxInvoice(booking)}
                               disabled={downloadingTaxInvoices.has(booking.bookingId)}
                               className={`px-3 py-1 rounded text-white text-xs font-medium transition-colors ${downloadingTaxInvoices.has(booking.bookingId)
-                                  ? "bg-orange-500 cursor-wait"
-                                  : "bg-red-500 hover:bg-red-600 active:bg-red-700"
+                                ? "bg-orange-500 cursor-wait"
+                                : "bg-red-500 hover:bg-red-600 active:bg-red-700"
                                 }`}
                               title="Download Flight Tax Invoice"
                             >
@@ -891,8 +901,8 @@ const FlightBookingComponent = () => {
                               onClick={() => downloadFlightETicket(booking)}
                               disabled={downloadingETickets.has(booking.bookingId)}
                               className={`px-3 py-1 rounded text-white text-xs font-medium transition-colors ${downloadingETickets.has(booking.bookingId)
-                                  ? "bg-orange-500 cursor-wait"
-                                  : "bg-green-500 hover:bg-green-600 active:bg-green-700"
+                                ? "bg-orange-500 cursor-wait"
+                                : "bg-green-500 hover:bg-green-600 active:bg-green-700"
                                 }`}
                               title="Download Flight E-Ticket"
                             >
@@ -989,10 +999,10 @@ const FlightBookingComponent = () => {
                         <h5 className="font-semibold text-gray-900">Booking Information</h5>
                       </div>
                       <div className="space-y-3">
-                        <div className="flex justify-between">
+                        {/* <div className="flex justify-between">
                           <span className="text-gray-600">Booking ID:</span>
                           <span className="font-medium font-mono">{statusData.flightDetails.bookingId}</span>
-                        </div>
+                        </div> */}
                         <div className="flex justify-between">
                           <span className="text-gray-600">PNR:</span>
                           <span className="font-medium font-mono">{statusData.flightDetails.pnr}</span>
@@ -1136,21 +1146,7 @@ const FlightBookingComponent = () => {
                     </div>
 
                     {/* Invoice Information */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-5 md:col-span-2">
-                      <div className="flex items-center mb-4">
-                        <h5 className="font-semibold text-gray-900">Invoice & Additional Details</h5>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <div className="text-sm text-gray-600">Invoice Date</div>
-                          <div className="font-medium">{formatDate(statusData.flightDetails.invoiceDate)}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-600">Status</div>
-                          <div className="font-medium text-red-600">Success - 200 OK</div>
-                        </div>
-                      </div>
-                    </div>
+
                   </div>
 
                 </div>
