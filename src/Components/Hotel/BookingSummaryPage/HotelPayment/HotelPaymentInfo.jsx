@@ -1049,7 +1049,7 @@ Please process my refund immediately. Thank you!`;
         }
 
         const options = {
-          key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_glwdvx2PlFDStN',
+          key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_live_RMb7SMI7mR2cCA',
           amount: order.amount,
           currency: order.currency,
           name: 'Rasutrip',

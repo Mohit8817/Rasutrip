@@ -260,7 +260,7 @@ const RazorpayPayment = () => {
       const response = await post(data, "/airservice/create-order");
       const order = response.order;
       const options = {
-        key: "rzp_test_glwdvx2PlFDStN",
+        key: "rzp_live_RMb7SMI7mR2cCA",
         amount: order.amount * 100,
         currency: "INR",
         order_id: order.id,
