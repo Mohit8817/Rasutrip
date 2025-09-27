@@ -36,10 +36,10 @@ const BusDetailinfo = () => {
 
     if (!state) {
         return (
-            <div className="container p-3">
+            <div className="container-fluid px-2">
                 <div className="text-center py-5">
                     <h5 className="text-danger mb-3">No booking data found</h5>
-                    <p className="text-muted mb-4">Please select your seats first to continue with the booking process.</p>
+                    <p className="text-muted mb-4 px-2">Please select your seats first to continue with the booking process.</p>
                     <Button variant="secondary" onClick={() => navigate("/")}>
                         Go to Home
                     </Button>
@@ -204,11 +204,11 @@ const BusDetailinfo = () => {
     };
 
     return (
-        <div className=" container mt-3">
+        <div className="container px-2 px-md-3 mt-2 mt-md-3">
             {/* Header */}
-            <div className="bg-light text-dark px-4 py-3 mb-2 fw-semibold border rounded">
-                <div className="d-flex justify-content-between align-items-center">
-                    <h5 className="mb-0">
+            <div className="bg-light text-dark px-3 px-md-4 py-2 py-md-3 mb-2 fw-semibold border rounded">
+                <div className="d-flex justify-content-center justify-content-md-between align-items-center">
+                    <h5 className="mb-0 text-center text-md-start fs-5 fs-md-5">
                         Review Your Bus Details
                     </h5>
                 </div>
@@ -216,174 +216,337 @@ const BusDetailinfo = () => {
 
             {/* Main Card Section */}
             <Card className="shadow-sm border-0">
-                <Card.Body className="p-4">
+                <Card.Body className="p-2 p-md-4">
                     {/* Route and Times Section */}
-                    <Row className="mb-4 align-items-center">
-                        <Col md={4} className="text-center text-md-start mb-3 mb-md-0">
-                            <div className="fw-semibold mb-2">
-                               Departure
-                            </div>
-                            <div className="fw-bold text-dark mb-1 fs-5">
-                                {departTime || "-"}
-                            </div>
-                            <div className="fw-semibold text-dark mb-1">
-                                {fromCity || "-"}
-                            </div>
-                            <div className="text-muted small">
-                                {formatDate(departDate)}
-                            </div>
-                        </Col>
-
-                        <Col md={4} className="text-center">
-                            <div className="text-muted small mb-2">Journey Duration</div>
-                            <div className="fw-bold text-danger mb-2" style={{ fontSize: '1.2rem' }}>
-                                {calculateDuration(departTime, arriveTime)}
-                            </div>
-                            <div className="text-center">
-                                <div style={{
-                                    height: '2px',
-                                    background: 'linear-gradient(to right, #007bff, #28a745)',
-                                    margin: '0 20px',
-                                    position: 'relative'
-                                }}>
-                                    <div style={{
-                                        position: 'absolute',
-                                        left: '0',
-                                        top: '-4px',
-                                        width: '10px',
-                                        height: '10px',
-                                        backgroundColor: '#007bff',
-                                        borderRadius: '50%'
-                                    }}></div>
-                                    <div style={{
-                                        position: 'absolute',
-                                        right: '0',
-                                        top: '-4px',
-                                        width: '10px',
-                                        height: '10px',
-                                        backgroundColor: '#28a745',
-                                        borderRadius: '50%'
-                                    }}></div>
+                    <div className="mb-1  mb-md-4">
+                        {/* Mobile Layout - Stacked */}
+                        <div className="d-block d-md-none">
+                            {/* Departure */}
+                            <div className="text-center mb-3 ">
+                                <div className="fw-semibold mb-1 text-muted small">
+                                    Departure
+                                </div>
+                                <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.1rem' }}>
+                                    {departTime || "-"}
+                                </div>
+                                <div className="fw-semibold text-dark mb-1">
+                                    {fromCity || "-"}
+                                </div>
+                                <div className="text-muted small">
+                                    {formatDate(departDate)}
                                 </div>
                             </div>
-                        </Col>
 
-                        <Col md={4} className="text-center text-md-end">
-                            <div className="fw-semibold mb-2">
-                                Arrival
+                            {/* Duration */}
+                            <div className="text-center mb-3">
+                                <div className="text-muted small mb-2">Journey Duration</div>
+                                <div className="fw-bold text-danger mb-2" style={{ fontSize: '1.1rem' }}>
+                                    {calculateDuration(departTime, arriveTime)}
+                                </div>
+                                <div className="d-flex justify-content-center align-items-center">
+                                    <div style={{
+                                        height: '2px',
+                                        background: 'linear-gradient(to right, #007bff, #28a745)',
+                                        width: '80%',
+                                        maxWidth: '200px',
+                                        position: 'relative'
+                                    }}>
+                                        <div style={{
+                                            position: 'absolute',
+                                            left: '0',
+                                            top: '-4px',
+                                            width: '10px',
+                                            height: '10px',
+                                            backgroundColor: '#007bff',
+                                            borderRadius: '50%'
+                                        }}></div>
+                                        <div style={{
+                                            position: 'absolute',
+                                            right: '0',
+                                            top: '-4px',
+                                            width: '10px',
+                                            height: '10px',
+                                            backgroundColor: '#28a745',
+                                            borderRadius: '50%'
+                                        }}></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="fw-bold text-dark mb-1 fs-5">
-                                {arriveTime || "-"}
-                            </div>
-                            <div className="fw-semibold text-dark mb-1">
-                                {toCity || "-"}
-                            </div>
-                            <div className="text-muted small">
-                                {formatDate(getArrivalDate())}
-                            </div>
-                        </Col>
-                    </Row>
 
-                    <hr className="my-4" />
+                            {/* Arrival */}
+                            <div className="text-center">
+                                <div className="fw-semibold mb-1 text-muted small">
+                                    Arrival
+                                </div>
+                                <div className="fw-bold text-dark mb-1" style={{ fontSize: '1.1rem' }}>
+                                    {arriveTime || "-"}
+                                </div>
+                                <div className="fw-semibold text-dark mb-1">
+                                    {toCity || "-"}
+                                </div>
+                                <div className="text-muted small">
+                                    {formatDate(getArrivalDate())}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Desktop Layout - Row */}
+                        <Row className="d-none d-md-flex align-items-center">
+                            <Col md={4} className="text-center text-md-start pt-4">
+                                <div className="fw-semibold mb-2">
+                                    Departure
+                                </div>
+                                <div className="fw-bold text-dark mb-1 fs-5">
+                                    {departTime || "-"}
+                                </div>
+                                <div className="fw-semibold text-dark mb-1">
+                                    {fromCity || "-"}
+                                </div>
+                                <div className="text-muted small">
+                                    {formatDate(departDate)}
+                                </div>
+                            </Col>
+
+                            <Col md={4} className="text-center">
+                                <div className="text-muted small mb-2">Journey Duration</div>
+                                <div className="fw-bold text-danger mb-1" style={{ fontSize: '1.2rem' }}>
+                                    {calculateDuration(departTime, arriveTime)}
+                                </div>
+                                <div className="text-center">
+                                    <div style={{
+                                        height: '2px',
+                                        background: 'linear-gradient(to right, #007bff, #28a745)',
+                                        margin: '0 20px',
+                                        position: 'relative'
+                                    }}>
+                                        <div style={{
+                                            position: 'absolute',
+                                            left: '0',
+                                            top: '-4px',
+                                            width: '10px',
+                                            height: '10px',
+                                            backgroundColor: '#007bff',
+                                            borderRadius: '50%'
+                                        }}></div>
+                                        <div style={{
+                                            position: 'absolute',
+                                            right: '0',
+                                            top: '-4px',
+                                            width: '10px',
+                                            height: '10px',
+                                            backgroundColor: '#28a745',
+                                            borderRadius: '50%'
+                                        }}></div>
+                                    </div>
+                                </div>
+                            </Col>
+
+                            <Col md={4} className="text-center text-md-end">
+                                <div className="fw-semibold mb-2">
+                                    Arrival
+                                </div>
+                                <div className="fw-bold text-dark mb-1 fs-5">
+                                    {arriveTime || "-"}
+                                </div>
+                                <div className="fw-semibold text-dark mb-1">
+                                    {toCity || "-"}
+                                </div>
+                                <div className="text-muted small">
+                                    {formatDate(getArrivalDate())}
+                                </div>
+                            </Col>
+                        </Row>
+                    </div>
+
+                    <hr className=" my-md-4" />
 
                     {/* Bus Details Section */}
-                    <Row className="mb-4">
-                        <Col md={4} className="mb-3 mb-md-0">
-                            <div className="text-muted small mb-1">Bus Operator</div>
-                            <div className="fw-bold text-dark" style={{ fontSize: '1.1rem' }}>
-                                {bus?.operator || bus?.TravelName || "-"}
+                    <div className="mb-3 mb-md-4">
+                        {/* Mobile Layout */}
+                        <div className="d-block d-md-none">
+                            <div className="text-center">
+                                <div className="text-muted small mb-1">Bus Operator</div>
+                                <div className="fw-bold text-dark" style={{ fontSize: '1rem' }}>
+                                    {bus?.operator || bus?.TravelName || "-"}
+                                </div>
+                                <div className="text-muted small mt-1">
+                                    {bus?.busType || bus?.BusType || "AC Seater"}
+                                </div>
                             </div>
-                            <div className="text-muted small mt-1">
-                                {bus?.busType || bus?.BusType || "AC Seater"}
-                            </div>
-                        </Col>
 
-                        <Col md={4} className="mb-3 mb-md-0 text-center">
-                            <div className="text-muted small mb-1">Selected Seat(s)</div>
-                            <div className="text-danger d-flex align-items-center justify-content-center flex-wrap">
-                                <FaWheelchair className="me-2" />
-                                <span className="fw-bold" style={{ fontSize: '1.1rem' }}>
-                                    {selectedSeats?.map((s) => s.SeatName).join(", ") || "-"}
-                                </span>
+                            <div className="text-center mb-2">
+                                <div className="text-muted small mb-1">Selected Seat(s)</div>
+                                <div className="text-danger d-flex align-items-center justify-content-center flex-wrap">
+                                    <FaWheelchair className="me-2" />
+                                    <span className="fw-bold" style={{ fontSize: '1rem' }}>
+                                        {selectedSeats?.map((s) => s.SeatName).join(", ") || "-"}
+                                    </span>
+                                </div>
+                                <div className="text-muted small mt-1">
+                                    {selectedSeats?.length || 0} seat{selectedSeats?.length !== 1 ? 's' : ''} selected
+                                </div>
                             </div>
-                            <div className="text-muted small mt-1">
-                                {selectedSeats?.length || 0} seat{selectedSeats?.length !== 1 ? 's' : ''} selected
-                            </div>
-                        </Col>
 
-                        <Col md={4} className="text-md-end">
-                            <div className="text-muted small mb-1">Total Fare</div>
-                            <div className="fw-bold fs-5"> ₹ {totalPrice?.toLocaleString() || "-"}
+                            <div className="text-center p-2 ">
+                                <div className="text-muted small mb-1">Total Fare</div>
+                                <div className="fw-bold" style={{ fontSize: '1.2rem' }}>
+                                    ₹ {totalPrice?.toLocaleString() || "-"}
+                                </div>
+                                <div className="text-muted small mt-1">
+                                    Including all taxes
+                                </div>
                             </div>
-                            <div className="text-muted small mt-1">
-                                Including all taxes
-                            </div>
-                        </Col>
-                    </Row>
+                        </div>
 
-                    <hr className="my-4" />
+                        {/* Desktop Layout */}
+                        <Row className="d-none d-md-flex">
+                            <Col md={4} className="mb-3 mb-md-0">
+                                <div className="text-muted small mb-1">Bus Operator</div>
+                                <div className="fw-bold text-dark" style={{ fontSize: '1.1rem' }}>
+                                    {bus?.operator || bus?.TravelName || "-"}
+                                </div>
+                                <div className="text-muted small mt-1">
+                                    {bus?.busType || bus?.BusType || "AC Seater"}
+                                </div>
+                            </Col>
+
+                            <Col md={4} className="mb-3 mb-md-0 text-center">
+                                <div className="text-muted small mb-1">Selected Seat(s)</div>
+                                <div className="text-danger d-flex align-items-center justify-content-center flex-wrap">
+                                    <FaWheelchair className="me-2" />
+                                    <span className="fw-bold" style={{ fontSize: '1.1rem' }}>
+                                        {selectedSeats?.map((s) => s.SeatName).join(", ") || "-"}
+                                    </span>
+                                </div>
+                                <div className="text-muted small mt-1">
+                                    {selectedSeats?.length || 0} seat{selectedSeats?.length !== 1 ? 's' : ''} selected
+                                </div>
+                            </Col>
+
+                            <Col md={4} className="text-md-end">
+                                <div className="text-muted small mb-1">Total Fare</div>
+                                <div className="fw-bold fs-5">
+                                    ₹ {totalPrice?.toLocaleString() || "-"}
+                                </div>
+                                <div className="text-muted small mt-1">
+                                    Including all taxes
+                                </div>
+                            </Col>
+                        </Row>
+                    </div>
+
+                    <hr className="my-3 my-md-4" />
 
                     {/* Boarding and Dropping Points Section */}
-                    <Row className="mb-4">
-                        <Col md={6} className="mb-3 mb-md-0">
-                            <div className="border rounded p-3 bg-light">
-                                <div className="text-muted small mb-1">Boarding Point</div>
-                                <div className="fw-bold text-dark mb-1">
-                                    {boarding?.CityPointName || boarding?.name || "-"}
-                                </div>
-                                <div className=" fw-semibold mb-1">
-                                    Time: {boardingTime || boarding?.DepTime || boarding?.time || "-"}
-                                </div>
-                                {boarding?.CityPointAddress && (
-                                    <div className="text-muted small">
-                                        {boarding.CityPointAddress}
+                    <div className="mb-3 mb-md-4">
+                        {/* Mobile Layout - Stacked */}
+                        <div className="d-block d-md-none">
+                            <div className="mb-3">
+                                <div className="border rounded p-1">
+                                    <div className="text-muted small mb-1 text-center">Boarding Point</div>
+                                    <div className="fw-bold text-dark mb-1 text-center">
+                                        {boarding?.CityPointName || boarding?.name || "-"}
                                     </div>
-                                )}
-                                {boarding?.CityPointLandmark && (
-                                    <div className="text-muted small">
-                                        Landmark: {boarding.CityPointLandmark}
+                                    <div className="fw-semibold mb-1 text-center">
+                                        Time: {boardingTime || boarding?.DepTime || boarding?.time || "-"}
                                     </div>
-                                )}
+                                    {boarding?.CityPointAddress && (
+                                        <div className="text-muted small text-center">
+                                            {boarding.CityPointAddress}
+                                        </div>
+                                    )}
+                                    {boarding?.CityPointLandmark && (
+                                        <div className="text-muted small text-center">
+                                            Landmark: {boarding.CityPointLandmark}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </Col>
 
-                        <Col md={6}>
-                            <div className="border rounded p-3 bg-light">
-                                <div className="text-muted small mb-1">Dropping Point</div>
-                                <div className="fw-bold text-dark mb-1">
-                                    {dropping?.CityPointName || dropping?.name || "-"}
-                                </div>
-                                <div className="  fw-semibold mb-1">
-                                    Time: {droppingTime || dropping?.ArrTime || dropping?.time || "-"}
-                                </div>
-                                {dropping?.CityPointAddress && (
-                                    <div className="text-muted small">
-                                        {dropping.CityPointAddress}
+                            <div>
+                                <div className="border rounded p-1">
+                                    <div className="text-muted small mb-1 text-center">Dropping Point</div>
+                                    <div className="fw-bold text-dark mb-1 text-center">
+                                        {dropping?.CityPointName || dropping?.name || "-"}
                                     </div>
-                                )}
-                                {dropping?.CityPointLandmark && (
-                                    <div className="text-muted small">
-                                        Landmark: {dropping.CityPointLandmark}
+                                    <div className="fw-semibold mb-1 text-center">
+                                        Time: {droppingTime || dropping?.ArrTime || dropping?.time || "-"}
                                     </div>
-                                )}
+                                    {dropping?.CityPointAddress && (
+                                        <div className="text-muted small text-center">
+                                            {dropping.CityPointAddress}
+                                        </div>
+                                    )}
+                                    {dropping?.CityPointLandmark && (
+                                        <div className="text-muted small text-center">
+                                            Landmark: {dropping.CityPointLandmark}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </Col>
-                    </Row>
+                        </div>
+
+                        {/* Desktop Layout */}
+                        <Row className="d-none d-md-flex">
+                            <Col md={6} className="mb-3 mb-md-0">
+                                <div className="border rounded p-3 bg-light">
+                                    <div className="text-muted small mb-1">Boarding Point</div>
+                                    <div className="fw-bold text-dark mb-1">
+                                        {boarding?.CityPointName || boarding?.name || "-"}
+                                    </div>
+                                    <div className="fw-semibold mb-1">
+                                        Time: {boardingTime || boarding?.DepTime || boarding?.time || "-"}
+                                    </div>
+                                    {boarding?.CityPointAddress && (
+                                        <div className="text-muted small">
+                                            {boarding.CityPointAddress}
+                                        </div>
+                                    )}
+                                    {boarding?.CityPointLandmark && (
+                                        <div className="text-muted small">
+                                            Landmark: {boarding.CityPointLandmark}
+                                        </div>
+                                    )}
+                                </div>
+                            </Col>
+
+                            <Col md={6}>
+                                <div className="border rounded p-3 bg-light">
+                                    <div className="text-muted small mb-1">Dropping Point</div>
+                                    <div className="fw-bold text-dark mb-1">
+                                        {dropping?.CityPointName || dropping?.name || "-"}
+                                    </div>
+                                    <div className="fw-semibold mb-1">
+                                        Time: {droppingTime || dropping?.ArrTime || dropping?.time || "-"}
+                                    </div>
+                                    {dropping?.CityPointAddress && (
+                                        <div className="text-muted small">
+                                            {dropping.CityPointAddress}
+                                        </div>
+                                    )}
+                                    {dropping?.CityPointLandmark && (
+                                        <div className="text-muted small">
+                                            Landmark: {dropping.CityPointLandmark}
+                                        </div>
+                                    )}
+                                </div>
+                            </Col>
+                        </Row>
+                    </div>
                 </Card.Body>
             </Card>
 
             {/* Action Buttons */}
-            <div className="d-flex justify-content-between align-items-center mt-4 mb-4">
+            <div className="d-flex justify-content-center justify-content-md-between align-items-center mt-3 mt-md-4 mb-3 mb-md-4 px-1">
                 <Button
                     variant="danger"
-                    className="btn-red px-5 py-2"
-                    onClick={handleContinue}                   
+                    className="btn-red w-100 w-md-auto px-4 px-md-5 py-2"
+                    onClick={handleContinue}
+                    style={{ maxWidth: '300px' }}
                 >
                     Continue to Passenger
                 </Button>
             </div>
-
-       
         </div>
     );
 };
