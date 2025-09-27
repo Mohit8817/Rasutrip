@@ -84,7 +84,7 @@ body {
 
 .trip-type-tab {
   padding: 8px 20px;
-  border-radius: 30px;
+  border-radius: 3px;
   font-size: 14px;
   background-color: white;
   color: black;
@@ -655,7 +655,7 @@ body {
   }
 
   .tripselector {
-    flex-direction: column;
+    /* flex-direction: column; */
     align-items: center;
   }
 
@@ -707,7 +707,9 @@ body {
 
 @media screen and (max-width: 480px) {
   .tripselector {
-    flex-direction: column;
+    /* flex-direction: column; */
+      justify-content: flex-start;
+
   }
 
   .tab-box {
