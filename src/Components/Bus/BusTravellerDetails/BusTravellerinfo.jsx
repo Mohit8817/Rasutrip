@@ -628,7 +628,7 @@ const BusTravellerinfo = () => {
     }
 
     return (
-        <div className="container my-4">
+        <div className="p-0 m-0 my-4">
             {/* API Error Modal */}
             <Modal show={showApiErrorModal} onHide={handleCloseErrorModal} centered>
                 <Modal.Header closeButton>
@@ -659,7 +659,7 @@ const BusTravellerinfo = () => {
                         </Card.Header>
                         <Card.Body>
                             {selectedSeats.map((seat, index) => (
-                                <div key={index} className="border rounded p-3 mb-3">
+                                <div key={index} className="border rounded p-3 mb-3 mt-2">
                                     <div className="d-flex justify-content-between mb-3">
                                         <strong>Passenger {index + 1}</strong>
                                         <strong>Seat {seat.SeatName || seat.SeatNo || seat.name || `S${index + 1}`}</strong>
@@ -800,7 +800,7 @@ const BusTravellerinfo = () => {
                     </Card>
 
                     {/* Contact Details */}
-                    <Card className="mb-4 shadow-sm border-0">
+                    <Card className="mb-4  pb-2 shadow-sm border-0">
                         <Card.Header className="bg-white border-bottom">
                             <h6 className="mb-0">Contact Details</h6>
                             <small className="text-muted">Your ticket and bus information will be sent here</small>
@@ -855,7 +855,7 @@ const BusTravellerinfo = () => {
                     </Card>
 
                     {/* GST Details */}
-                    <Card className="mb-4 shadow-sm border-0">
+                    <Card className="mb-4 shadow-sm border-0 pb-3" >
                         <Card.Header className="bg-light">
                             <Row className="align-items-center">
                                 <Col md={9}>
@@ -875,7 +875,7 @@ const BusTravellerinfo = () => {
                         </Card.Header>
 
                         {showGstinForm && (
-                            <Card.Body>
+                            <Card.Body className="pb-3">
                                 <Row className="g-3">
                                     <Col md={4}>
                                         <Form.Control

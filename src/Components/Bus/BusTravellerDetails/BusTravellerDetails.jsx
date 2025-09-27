@@ -11,27 +11,22 @@ const BusTravellerDetails = () => {
 
     return (
         <div>
-
-            <Container className='mt-5'>
-                <Row>
+            <Container className='mt-3 mt-md-5' style={{ padding: '0 10px' }}>
+                <Row className='mb-2 mb-md-3'>
                     <Col>
                         <BusStep activeIndex={1} />
                     </Col>
                 </Row>
 
-                <Row>
-                    <Col lg={9}>
+                <Row className='g-2 g-md-3'>
+                    <Col xs={12} lg={9} className='mb-3 mb-lg-0'>
                         <BusTravellerinfo />
                     </Col>
-                    <Col lg={3}>
+                    <Col xs={12} lg={3}>
                         <BusFareSummary totalPrice={totalPrice} />
-                      
-
                     </Col>
                 </Row>
             </Container>
-
-
         </div>
     )
 }
