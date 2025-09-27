@@ -72,7 +72,7 @@ const Header = () => {
   style={{ height: "100px", objectFit: "cover" }} 
 /> */}
 
-      <div className="promo-banner-container">
+      {/* <div className="promo-banner-container">
         <img
           src={promoBanner}
           alt="Grand Travel Fest: Up to 15% Off on Flights & Hotels"
@@ -84,6 +84,25 @@ const Header = () => {
             maxHeight: "120px",
             objectFit: "cover",
             display: "block",
+          }}
+        />
+      </div> */}
+      <div
+        className="promo-banner-container"
+        style={{
+          width: "100%",
+          overflow: "hidden",
+        }}
+      >
+        <img
+          src={promoBanner}
+          alt="Grand Travel Fest: Up to 15% Off on Flights & Hotels"
+          className="promo-banner-image"
+          style={{
+            width: "100%",
+            height: "auto",
+            display: "block",
+            objectFit: "contain",
           }}
         />
       </div>
