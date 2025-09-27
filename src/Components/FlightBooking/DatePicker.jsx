@@ -90,7 +90,7 @@ const DatePicker = ({ tripType, setTripType }) => {
   }, [returnDate, tripType]);
 
   return (
-    <div className="d-flex flex align-items-start custom-date-picker gap-2">
+    <div className="d-flex flex align-items-start custom-date-picker ">
       {/* Depart */}
       <div
         ref={departRef}

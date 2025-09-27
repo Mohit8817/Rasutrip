@@ -12,7 +12,7 @@ import Login from "../Login/Login";
 import EnquiryForm from "../EnquiryForm/EnquiryForm";
 import icon1 from "../../assest/footericon2.svg";
 // import homeoffer from "../../assest/homeoffer.png";
-import promoBanner from "../../assest/promoimg.png"; 
+import promoBanner from "../../assest/promoimg.png";
 
 const Header = () => {
   const [showLogin, setShowLogin] = useState(false);
@@ -83,11 +83,10 @@ const Header = () => {
             minHeight: "80px",
             maxHeight: "120px",
             objectFit: "cover",
-            display: "block"
+            display: "block",
           }}
         />
       </div>
-
 
       {/* Desktop Header - Hidden on mobile */}
       <Navbar expand="lg" className="header_navbar d-none d-lg-block">

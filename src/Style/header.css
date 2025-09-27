@@ -115,8 +115,10 @@
 
 .header_navbar {
     background: transparent !important;
+    /* background-color: red !important; */
     box-shadow: none !important;
     border: none !important;
+    height: 4rem;
 }
 
 .header-nav,
@@ -144,7 +146,7 @@
 }
 
 .Header_logo {
-    width: 4rem;
+    width: 3rem;
     height: auto;
     margin-left: 1rem;
 }
@@ -257,13 +259,13 @@
 .mobile-header {
     position: relative !important; /* Change from fixed */
     top: auto;
-    padding: 8px 0;
+    padding: 1px 0;
     background: white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-header .Header_logo {
-    width: 3.5rem;
+    width: 3rem;
     margin-left: 0;
 }
 

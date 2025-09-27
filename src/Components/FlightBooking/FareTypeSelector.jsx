@@ -79,12 +79,60 @@ const FareTypeSelector = ({ onDataChange }) => {
   }, [selectedFare, isNonStop]);
 
   return (
-    <div className="fare-type-container p-2">
-      <div className="fare-flex d-flex align-items-center flex-wrap gap-3">
-        <span className="fw-bold small text-dark text-nowrap">
-          Select A Fare Type:
-        </span>
+    // <div className="fare-type-container p-2">
+    //   <div className="fare-flex d-flex align-items-center flex-nowrap gap-3">
+    //     <span className="fw-bold small text-dark text-nowrap">
+    //       Select A Fare Type:
+    //     </span>
 
+    //     <Form.Check
+    //       type="checkbox"
+    //       label="Non-Stop"
+    //       checked={isNonStop}
+    //       onChange={() => setIsNonStop(!isNonStop)}
+    //     />
+
+    //     {[
+    //       { value: "regular", label: "Regular Fare" },
+    //       { value: "student", label: "Student Fares" },
+    //       { value: "marine", label: "Marine Fares" },
+    //       { value: "senior", label: "Senior Citizen" },
+    //       { value: "armed", label: "Armed Forces" },
+    //     ].map(({ value, label }) => (
+    //       <Form.Check
+    //         key={value}
+    //         type="radio"
+    //         label={label}
+    //         name="fare"
+    //         id={value}
+    //         checked={selectedFare === value}
+    //         onChange={() => setSelectedFare(value)}
+    //       />
+    //     ))}
+    //   </div>
+    // </div>
+    <div className="fare-type-container p-2">
+      {/* Heading */}
+      <div className="fw-bold small text-dark mb-2 text-start">
+        Select A Fare Type:
+      </div>
+
+      {/* Scrollable fare options */}
+      <div
+        className="fare-scroll d-flex gap-3 overflow-auto pb-2"
+        style={{
+          whiteSpace: "nowrap",
+          msOverflowStyle: "none", // IE aur Edge ke liye
+          scrollbarWidth: "none", // Firefox ke liye
+        }}
+      >
+        <style>
+          {`
+      .fare-scroll::-webkit-scrollbar {
+        display: none; /* Chrome, Safari */
+      }
+    `}
+        </style>
         <Form.Check
           type="checkbox"
           label="Non-Stop"

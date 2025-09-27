@@ -372,8 +372,26 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "../../Style/Footer.css";
 import footerlogo from "../../assest/rasutrip.png";
 import { Link } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const handleTabNavigation = (tabType) => {
+    if (location.pathname === "/") {
+      const sliderElement = document.querySelector(".slider-container");
+      if (sliderElement) {
+        sliderElement.scrollIntoView({ behavior: "smooth" });
+      }
+
+      const event = new CustomEvent("setActiveTab", {
+        detail: { tabType },
+      });
+      window.dispatchEvent(event);
+    } else {
+      navigate(`/?tab=${tabType}`);
+    }
+  };
   return (
     <footer className="footer">
       {/* Main Footer Content */}
@@ -461,7 +479,7 @@ const Footer = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/blog" className="footer-link">
+                  <Link to="/blogs" className="footer-link">
                     Blog
                   </Link>
                 </li>
@@ -472,21 +490,50 @@ const Footer = () => {
             <Col lg={2} md={6} className="mb-4">
               <h5 className="footer-heading">Our Services</h5>
               <ul className="footer-links">
-                <li>
-                  <Link to="/flights" className="footer-link">
+                {/* <li>
+                  <Link to="/?tab=flight" className="footer-link">
                     Flight Booking
                   </Link>
                 </li>
                 <li>
-                  <Link to="/hotels" className="footer-link">
+                  <Link to="/?tab=hotel" className="footer-link">
                     Hotel Booking
                   </Link>
                 </li>
                 <li>
-                  <Link to="/bus" className="footer-link">
+                  <Link to="/?tab=bus" className="footer-link">
                     Bus Booking
                   </Link>
+                </li> */}
+
+                <li>
+                  <span
+                    className="footer-link"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => handleTabNavigation("flight")}
+                  >
+                    Flight Booking
+                  </span>
                 </li>
+                <li>
+                  <span
+                    className="footer-link"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => handleTabNavigation("hotel")}
+                  >
+                    Hotel Booking
+                  </span>
+                </li>
+                <li>
+                  <span
+                    className="footer-link"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => handleTabNavigation("bus")}
+                  >
+                    Bus Booking
+                  </span>
+                </li>
+
                 <li>
                   <Link to="/packages" className="footer-link">
                     Rider
