@@ -382,7 +382,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             IdNumber: passenger.idNumber || null,
             Address: validAddress,
             Age: passenger.age?.toString() || '',
-            SeatName: seatName 
+            SeatName: seatName
         };
     };
 
@@ -658,118 +658,118 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             document.body.appendChild(script);
         });
 
-  // Enhanced extractApiErrorMessage function to handle your specific error format
-const extractApiErrorMessage = (error) => {
-    console.log('Extracting API error message from:', error);
+    // Enhanced extractApiErrorMessage function to handle your specific error format
+    const extractApiErrorMessage = (error) => {
+        console.log('Extracting API error message from:', error);
 
-    // Check for API response error message
-    if (error?.response?.data) {
-        const errorData = error.response.data;
-        
-        // Priority order for error message paths - your specific format first
-        const errorMessagePaths = [
-            // Your specific error format: error.ErrorMessage
-            errorData?.error?.ErrorMessage,
-            errorData?.Error?.ErrorMessage,
-            
-            // Common nested error patterns
-            errorData?.error?.message,
-            errorData?.message,
-            errorData?.errorMessage,
-            errorData?.Error?.message,
-            errorData?.error?.Error?.ErrorMessage,
-            errorData?.errors?.[0]?.message,
-            errorData?.detail,
-            errorData?.details,
-            errorData?.error_description,
-            
-            // Additional patterns for bus booking APIs
-            errorData?.error?.description,
-            errorData?.Error?.Description,
-            errorData?.response?.error?.message,
-            errorData?.response?.Error?.ErrorMessage,
-            
-            // Handle arrays of errors
-            Array.isArray(errorData?.errors) ? errorData.errors[0]?.ErrorMessage : null,
-            Array.isArray(errorData?.errors) ? errorData.errors[0]?.message : null,
-        ];
+        // Check for API response error message
+        if (error?.response?.data) {
+            const errorData = error.response.data;
 
-        // Find the first valid error message
-        for (const errorMsg of errorMessagePaths) {
-            if (errorMsg && typeof errorMsg === 'string' && errorMsg.trim() !== '') {
-                const cleanMessage = errorMsg.trim();
-                console.log('Found API error message:', cleanMessage);
-                return cleanMessage;
+            // Priority order for error message paths - your specific format first
+            const errorMessagePaths = [
+                // Your specific error format: error.ErrorMessage
+                errorData?.error?.ErrorMessage,
+                errorData?.Error?.ErrorMessage,
+
+                // Common nested error patterns
+                errorData?.error?.message,
+                errorData?.message,
+                errorData?.errorMessage,
+                errorData?.Error?.message,
+                errorData?.error?.Error?.ErrorMessage,
+                errorData?.errors?.[0]?.message,
+                errorData?.detail,
+                errorData?.details,
+                errorData?.error_description,
+
+                // Additional patterns for bus booking APIs
+                errorData?.error?.description,
+                errorData?.Error?.Description,
+                errorData?.response?.error?.message,
+                errorData?.response?.Error?.ErrorMessage,
+
+                // Handle arrays of errors
+                Array.isArray(errorData?.errors) ? errorData.errors[0]?.ErrorMessage : null,
+                Array.isArray(errorData?.errors) ? errorData.errors[0]?.message : null,
+            ];
+
+            // Find the first valid error message
+            for (const errorMsg of errorMessagePaths) {
+                if (errorMsg && typeof errorMsg === 'string' && errorMsg.trim() !== '') {
+                    const cleanMessage = errorMsg.trim();
+                    console.log('Found API error message:', cleanMessage);
+                    return cleanMessage;
+                }
+            }
+
+            // If error data is a string itself
+            if (typeof errorData === 'string' && errorData.trim() !== '') {
+                return errorData.trim();
+            }
+
+            // Handle case where entire response data is the error message
+            if (typeof errorData === 'object' && errorData.toString !== Object.prototype.toString) {
+                const stringified = String(errorData);
+                if (stringified !== '[object Object]' && stringified.trim() !== '') {
+                    return stringified.trim();
+                }
             }
         }
 
-        // If error data is a string itself
-        if (typeof errorData === 'string' && errorData.trim() !== '') {
-            return errorData.trim();
+        // Check direct error message (for cases where error is not in response.data)
+        if (error?.error?.ErrorMessage) {
+            return error.error.ErrorMessage.trim();
         }
 
-        // Handle case where entire response data is the error message
-        if (typeof errorData === 'object' && errorData.toString !== Object.prototype.toString) {
-            const stringified = String(errorData);
-            if (stringified !== '[object Object]' && stringified.trim() !== '') {
-                return stringified.trim();
-            }
+        if (error?.Error?.ErrorMessage) {
+            return error.Error.ErrorMessage.trim();
         }
-    }
 
-    // Check direct error message (for cases where error is not in response.data)
-    if (error?.error?.ErrorMessage) {
-        return error.error.ErrorMessage.trim();
-    }
-
-    if (error?.Error?.ErrorMessage) {
-        return error.Error.ErrorMessage.trim();
-    }
-
-    // Check direct error message
-    if (error?.message && typeof error.message === 'string') {
-        return error.message.trim();
-    }
-
-    // Handle axios-specific error patterns
-    if (error?.code === 'NETWORK_ERROR') {
-        return 'Network connection failed. Please check your internet connection.';
-    }
-
-    if (error?.code === 'TIMEOUT') {
-        return 'Request timed out. Please try again.';
-    }
-
-    // Default fallback with more context
-    if (error?.response?.status) {
-        return `Server error (${error.response.status}). Please try again or contact support.`;
-    }
-
-    // Final fallback
-    return 'An unexpected error occurred. Please try again.';
-};
-
-  const handleApiError = (error, context = 'API') => {
-    const apiErrorMessage = extractApiErrorMessage(error);
-    
-    console.log('API Error Details:', {
-        context,
-        status: error?.response?.status,
-        data: error?.response?.data,
-        extractedMessage: apiErrorMessage,
-        fullError: error
-    });
-
-    // Return both the user-friendly message and technical details for debugging
-    return {
-        message: apiErrorMessage,
-        details: {
-            status: error?.response?.status || null,
-            data: error?.response?.data || null,
-            context: context
+        // Check direct error message
+        if (error?.message && typeof error.message === 'string') {
+            return error.message.trim();
         }
+
+        // Handle axios-specific error patterns
+        if (error?.code === 'NETWORK_ERROR') {
+            return 'Network connection failed. Please check your internet connection.';
+        }
+
+        if (error?.code === 'TIMEOUT') {
+            return 'Request timed out. Please try again.';
+        }
+
+        // Default fallback with more context
+        if (error?.response?.status) {
+            return `Server error (${error.response.status}). Please try again or contact support.`;
+        }
+
+        // Final fallback
+        return 'An unexpected error occurred. Please try again.';
     };
-};
+
+    const handleApiError = (error, context = 'API') => {
+        const apiErrorMessage = extractApiErrorMessage(error);
+
+        console.log('API Error Details:', {
+            context,
+            status: error?.response?.status,
+            data: error?.response?.data,
+            extractedMessage: apiErrorMessage,
+            fullError: error
+        });
+
+        // Return both the user-friendly message and technical details for debugging
+        return {
+            message: apiErrorMessage,
+            details: {
+                status: error?.response?.status || null,
+                data: error?.response?.data || null,
+                context: context
+            }
+        };
+    };
     // Show error toast function
     const showErrorToast = (message, additionalInfo = '') => {
         const toastMessage = additionalInfo ? `${message}\n${additionalInfo}` : message;
@@ -1037,7 +1037,7 @@ const extractApiErrorMessage = (error) => {
             // ENHANCED: Success handler with API error handling and refund modal
             const handleSuccess = async (response) => {
                 let paymentValidated = false;
-                
+
                 try {
                     console.log('Payment successful, validating...', response);
                     setLoadingStep('Validating payment...');
@@ -1056,7 +1056,7 @@ const extractApiErrorMessage = (error) => {
 
                     if (isValidationSuccessful) {
                         paymentValidated = true;
-                        
+
                         // Proceed to book bus after successful validation
                         console.log('Proceeding to book bus...');
                         setLoadingStep('Confirming your booking...');
@@ -1130,10 +1130,10 @@ const extractApiErrorMessage = (error) => {
                     } else {
                         // Payment validation failed - show API error
                         const { message: apiErrorMessage } = handleApiError(validationResult, 'Payment Validation');
-                        
+
                         setError(apiErrorMessage);
                         showErrorToast(apiErrorMessage);
-                        
+
                         // Show refund modal since payment was successful but validation failed
                         displayRefundModal({
                             paymentId: response.razorpay_payment_id,
@@ -1144,20 +1144,20 @@ const extractApiErrorMessage = (error) => {
 
                 } catch (err) {
                     console.error('Payment validation/booking error:', err);
-                    
+
                     // Extract API error message
                     const { message: apiErrorMessage } = handleApiError(err, paymentValidated ? 'Booking' : 'Payment Validation');
-                    
+
                     setError(apiErrorMessage);
                     showErrorToast(apiErrorMessage);
-                    
+
                     // Show refund modal since payment was successful but booking failed
                     displayRefundModal({
                         paymentId: response.razorpay_payment_id,
                         orderId: response.razorpay_order_id,
                         amount: finalAmount
                     });
-                    
+
                 } finally {
                     setLoading(false);
                     setLoadingStep('');
@@ -1173,13 +1173,13 @@ const extractApiErrorMessage = (error) => {
             // Enhanced payment failure handler with API error extraction
             rzp.on('payment.failed', function (response) {
                 console.error('Payment failed:', response);
-                
+
                 // Extract API error from payment failure response
-                const apiErrorMessage = response?.error?.description || 
-                                      response?.error?.reason || 
-                                      response?.error?.source || 
-                                      'Payment failed due to unknown error';
-                
+                const apiErrorMessage = response?.error?.description ||
+                    response?.error?.reason ||
+                    response?.error?.source ||
+                    'Payment failed due to unknown error';
+
                 setError(apiErrorMessage);
                 showErrorToast(apiErrorMessage);
                 setLoading(false);
@@ -1192,10 +1192,10 @@ const extractApiErrorMessage = (error) => {
 
         } catch (err) {
             console.error('Payment initialization error:', err);
-            
+
             // Extract API error message
             const { message: apiErrorMessage } = handleApiError(err, 'Payment Initialization');
-            
+
             setError(apiErrorMessage);
             showErrorToast(apiErrorMessage);
             setLoading(false);
@@ -1222,7 +1222,7 @@ const extractApiErrorMessage = (error) => {
     }
 
     return (
-        <Container className="py-4">
+        <Container className="py-4 p-0 m-0">
             {/* Loading Overlay Modal */}
             <Modal
                 show={loading}
@@ -1276,7 +1276,7 @@ const extractApiErrorMessage = (error) => {
                             )}
                         </div>
                         <p className="mb-3">
-                            Your payment was successful, but the booking could not be completed. 
+                            Your payment was successful, but the booking could not be completed.
                             Please contact us for a refund.
                         </p>
                         <div className="bg-warning bg-opacity-10 border border-warning rounded p-3 mb-3">
@@ -1284,15 +1284,15 @@ const extractApiErrorMessage = (error) => {
                                 For Refund Contact:
                             </h6>
                             <div className="d-flex justify-content-center gap-3 mb-2">
-                                <a 
-                                    href="tel:9266424809" 
+                                <a
+                                    href="tel:9266424809"
                                     className="btn btn-outline-success btn-sm"
                                 >
                                     <FaPhone className="me-1" />
                                     Call: 92664 24809
                                 </a>
-                                <a 
-                                    href="https://wa.me/919266424809?text=Hi%2C%20I%20need%20help%20with%20bus%20booking%20refund" 
+                                <a
+                                    href="https://wa.me/919266424809?text=Hi%2C%20I%20need%20help%20with%20bus%20booking%20refund"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="btn btn-outline-success btn-sm"
@@ -1308,14 +1308,14 @@ const extractApiErrorMessage = (error) => {
                     </div>
                 </Modal.Body>
                 <Modal.Footer className="justify-content-center">
-                    <Button 
-                        variant="secondary" 
+                    <Button
+                        variant="secondary"
                         onClick={() => setShowRefundModal(false)}
                     >
                         Close
                     </Button>
-                    <Button 
-                        variant="primary" 
+                    <Button
+                        variant="primary"
                         onClick={() => navigate('/')}
                     >
                         Back to Home
@@ -1323,30 +1323,30 @@ const extractApiErrorMessage = (error) => {
                 </Modal.Footer>
             </Modal>
 
-            {/* Enhanced Travel Summary */}
+            {/* Enhanced Travel Summary - Responsive */}
             <Card className="mb-4 shadow-sm">
                 <Card.Header className="">
                     <div className="d-flex align-items-center">
-                        <h5 className="fw-bold mb-0"> Bus Booking Summary</h5>
+                        <h5 className="fw-bold mb-0">Bus Booking Summary</h5>
                     </div>
                 </Card.Header>
                 <Card.Body>
                     <div className="mb-4 p-3">
-                        <Row>
-                            <Col md={3}>
+                        <Row className="g-3">
+                            <Col xs={12} sm={6} md={3}>
                                 <div><strong>Route:</strong></div>
                                 <div className="fw-bold">{fromCity} → {toCity}</div>
                                 <small className="text-muted">{bus?.operator || 'N/A'} - {bus?.busType || 'N/A'}</small>
                             </Col>
-                            <Col md={3}>
+                            <Col xs={12} sm={6} md={3}>
                                 <div><strong>Travel Date:</strong></div>
                                 <div>{departDate ? new Date(departDate).toDateString() : 'N/A'}</div>
                             </Col>
-                            <Col md={3}>
+                            <Col xs={12} sm={6} md={3}>
                                 <div><strong>Passengers:</strong></div>
                                 <div>{passengerData.length} Passenger(s)</div>
                             </Col>
-                            <Col md={3}>
+                            <Col xs={12} sm={6} md={3}>
                                 <div><strong>Seats No:</strong></div>
                                 <div className="fw-bold">
                                     {selectedSeats.map((seat, index) =>
@@ -1359,8 +1359,8 @@ const extractApiErrorMessage = (error) => {
                 </Card.Body>
             </Card>
 
-            {/* ENHANCED Payment Summary with Detailed Breakdown and Coupon Discount */}
-            <Card className="mb-4 shadow-sm">
+            {/* ENHANCED Payment Summary with Detailed Breakdown and Coupon Discount - Responsive */}
+            <Card className="mb-4 pb-2 shadow-sm">
                 <Card.Header className="bg-white">
                     <h6 className="fw-bold mb-0">
                         Payment Summary
@@ -1375,42 +1375,42 @@ const extractApiErrorMessage = (error) => {
                     {/* Base Price - Show only if different from Published Price and greater than 0 */}
                     {fareBreakdown.basePrice > 0 && fareBreakdown.basePrice !== fareBreakdown.publishedPrice && (
                         <Row className="mb-2">
-                            <Col xs={8}>Base Price</Col>
-                            <Col xs={4} className="text-end">₹{fareBreakdown.basePrice.toFixed(2)}</Col>
+                            <Col xs={8} sm={9}>Base Price</Col>
+                            <Col xs={4} sm={3} className="text-end">₹{fareBreakdown.basePrice.toFixed(2)}</Col>
                         </Row>
                     )}
 
                     {/* Published Price - Main price from API */}
                     {fareBreakdown.publishedPrice > 0 && (
                         <Row className="mb-2">
-                            <Col xs={8}>Base Price</Col>
-                            <Col xs={4} className="text-end">₹{fareBreakdown.publishedPrice.toFixed(2)}</Col>
+                            <Col xs={8} sm={9}>Base Price</Col>
+                            <Col xs={4} sm={3} className="text-end">₹{fareBreakdown.publishedPrice.toFixed(2)}</Col>
                         </Row>
                     )}
 
                     {/* Final Total */}
-                    <Row className="fw-bold fs-5">
-                        <Col xs={8}>Total Amount</Col>
-                        <Col xs={4} className="text-end">₹{finalAmount}</Col>
+                    <Row className="fw-bold fs-5 border-top pt-2">
+                        <Col xs={8} sm={9}>Total Amount</Col>
+                        <Col xs={4} sm={3} className="text-end">₹{finalAmount}</Col>
                     </Row>
                 </Card.Body>
             </Card>
 
-            {/* Enhanced Payment Button Section */}
-            <Card className="shadow-sm">
-                <Card.Body>
+            {/* Enhanced Payment Button Section - Responsive */}
+            <Card className="shadow-sm p-2">
+                <Card.Body className="p-2 p-sm-3">
                     <div className="mb-3">
-                        <p className="text-muted small mb-0">
+                        <p className="text-muted small mb-0 lh-sm">
                             <strong>Please note:</strong> By placing this order, you agree to our{' '}
                             <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Terms Of Use</a> and{' '}
                             <a href="#" className='text-danger' onClick={(e) => e.preventDefault()}>Privacy Policy</a>
                         </p>
                     </div>
 
-                    <div className="d-flex gap-3 justify-content-between align-items-center">
+                    <div className="d-flex gap-2 gap-sm-3 justify-content-between align-items-center flex-column flex-sm-row">
                         <Button
                             variant="danger"
-                            className="btn-red"
+                            className="btn-red w-100 w-sm-auto px-4"
                             disabled={!totalPrice || !!error || loading}
                             onClick={handlePayment}
                         >
@@ -1423,8 +1423,6 @@ const extractApiErrorMessage = (error) => {
                     </div>
                 </Card.Body>
             </Card>
-
-            {/* Enhanced Error Alert with API Error Display */}
             {error && (
                 <Alert variant="danger" className="mb-4 mt-3" dismissible onClose={() => setError(null)}>
                     <FaExclamationTriangle className="me-2" />
