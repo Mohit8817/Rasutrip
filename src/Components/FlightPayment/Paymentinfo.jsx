@@ -288,7 +288,7 @@ const RazorpayPayment = () => {
         },
 
         theme: {
-          color: "#0d6efd",
+          color: "#dc3545",
         },
 
 
