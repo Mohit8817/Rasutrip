@@ -76,13 +76,21 @@ const Home = () => {
                 transition={{ duration: 0.3 }}
                 className="text-center"
               >
-                <div className="flex justify-center">
-                  <img
+                {/* <div className="flex justify-center"> */}
+                {/* <img
                     src={feature.icon}
                     alt={feature.title}
                     className="w-[15.625rem] h-[10.625rem]"
                   />
+                </div> */}
+                <div className="flex justify-center">
+                  <img
+                    src={feature.icon}
+                    alt={feature.title}
+                    className="w-[15.625rem] h-[10.625rem] rounded-lg object-cover"
+                  />
                 </div>
+
                 <h3 className="text-lg font-semibold font-montserrat mt-4">
                   {feature.title}
                 </h3>

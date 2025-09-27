@@ -924,11 +924,11 @@ const extractApiErrorMessage = (error) => {
 
     // Enhanced Razorpay options with better error handling
     const getRazorpayOptions = (orderId, orderAmount) => ({
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_glwdvx2PlFDStN',
+        key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_live_RMb7SMI7mR2cCA',
         amount: orderAmount * 100,
         currency: 'INR',
         order_id: orderId,
-        name: 'RASUTRIP',
+        // name: 'RASUTRIP',
         description: `${fromCity} to ${toCity} - ${bus?.operator || 'Bus Service'}`,
         prefill: {
             name: `${passengerData[0]?.firstName || ''} ${passengerData[0]?.lastName || ''}`.trim(),

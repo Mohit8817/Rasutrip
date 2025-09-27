@@ -58,7 +58,10 @@ const GuestRoomSelector = () => {
     // <div className="container">
     <div className=" position-relative d-inline-block w-100" ref={popupRef}>
       {/* Main Summary Box */}
-      <Card className="guest-room-box" onClick={() => setShowPopup(!showPopup)}>
+      <Card
+        className="guest-room-box w-100"
+        onClick={() => setShowPopup(!showPopup)}
+      >
         <Card.Body>
           <div className="guest-label">Rooms & Guests</div>
           <div className="fw-bold fs-5 guest-count">

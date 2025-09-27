@@ -12,6 +12,7 @@ body {
   padding: 0;
 }
 
+
 /* Trip Selector */
 .tripselector {
   display: flex;
@@ -83,7 +84,7 @@ body {
 
 .trip-type-tab {
   padding: 8px 20px;
-  border-radius: 30px;
+  border-radius: 3px;
   font-size: 14px;
   background-color: white;
   color: black;
@@ -106,6 +107,14 @@ body {
   padding: 15px 10px !important;
   background-color: #fff !important;
 }
+
+@media (max-width: 480px) {
+  .location-card {
+    /* background-color: red !important; */
+    padding: 0px 0px !important;
+  }
+}
+
 
 .location-box {
   padding: 0 12px !important;
@@ -190,9 +199,9 @@ body {
 }
 
 /* Date Picker */
+
 .custom-date-picker .date-button-wrapper {
   border: 1px solid #ccc;
-  padding: 15px 10px;
   min-width: 140px; /* Reverted */
   cursor: pointer;
   user-select: none;
@@ -211,6 +220,15 @@ body {
   border-bottom-left-radius: 0;
 }
 
+
+@media (max-width: 480px) {
+  
+  .custom-date-picker .date-button-wrapper {
+    border: 1px solid #ccc;
+    padding: 0px 10px !important;
+  }
+}
+
 @media (max-width: 768px) {
 
   .Depart,
@@ -221,11 +239,11 @@ body {
 
   .custom-date-picker .date-button-wrapper {
     border: 1px solid #ccc;
-    padding: 8px 10px;
+    padding: 1px 5px;
   }
 
   .custom-date-picker .date {
-    font-size: 10px;
+    font-size: 8px;
     font-weight: 500;
   }
 
@@ -264,27 +282,16 @@ body {
   z-index: 1000;
 }
 
-/* Fare Type */
-/* .fare-type-container .form-check-input:checked {
-  background-color: #cb0d26;
-  border-color: #cb0d26;
-} */
-
-/* .fare-type-container .form-check-label {
-  font-weight: 500;
-  color: #333;
-} */
-
-/* Passenger Class */
 .passenger-class-box {
   width: 100%;
   max-width: 280px;
   text-align: left;
-  padding: 0;
+  padding: 10px 10px;
   cursor: pointer;
   border-radius: 12px;
-  background-color: #fff;
+  /* background-color: #fff; */
 }
+
 
 .passenger-label {
   font-size: 12px;
@@ -317,7 +324,6 @@ body {
   overflow-y: auto;
 }
 
-/* Cabin Options */
 .cabin-option {
   display: flex;
   align-items: center;
@@ -371,7 +377,6 @@ body {
     width: fit; /* Reverted */
 }
 
-/* Flight Search Container */
 .flight-search-container {
   background: #fff;
   border-radius: 8px;
@@ -453,6 +458,8 @@ body {
   background: #1e3a8a;
 }
 
+
+
 @media (max-width: 768px) {
 
   .Depart,
@@ -463,7 +470,7 @@ body {
 
   .custom-date-picker .date-button-wrapper {
     border: 1px solid #ccc;
-    padding: 8px 10px;
+    padding: 0px 10px;
   }
 
   .custom-date-picker .date {
@@ -489,6 +496,7 @@ body {
     width: 100%;
   }
 }
+
 
 .custom-date-picker .date-button {
   display: flex;
@@ -518,19 +526,6 @@ body {
   z-index: 1000;
 }
 
-/* Fare Type */
-/* .fare-type-container .form-check-input:checked {
-  background-color: #cb0d26;
-  border-color: #cb0d26;
-} */
-
-/* .fare-type-container .form-check-label {
-  font-weight: 500;
-  color: #333;
-} */
-
-
-/* Container */
 .fare-type-container {
   background: #fff;
   width: 100%;
@@ -543,7 +538,6 @@ body {
   gap: 1rem; 
 }
 
-/* Input styling */
 .fare-type-container .form-check-input:checked {
   background-color: #cb0d26 !important;
   border-color: #cb0d26 !important;
@@ -556,7 +550,6 @@ body {
 }
 
 
-/* Passenger Class */
 .passenger-class-box {
   width: 100%;
   max-width: 280px;
@@ -598,7 +591,6 @@ body {
   overflow-y: auto;
 }
 
-/* Cabin Options */
 .cabin-option {
   display: flex;
   align-items: center;
@@ -663,7 +655,7 @@ body {
   }
 
   .tripselector {
-    flex-direction: column;
+    /* flex-direction: column; */
     align-items: center;
   }
 
@@ -715,7 +707,9 @@ body {
 
 @media screen and (max-width: 480px) {
   .tripselector {
-    flex-direction: column;
+    /* flex-direction: column; */
+      justify-content: flex-start;
+
   }
 
   .tab-box {
@@ -723,9 +717,9 @@ body {
   }
 
   .Mybutton {
-    font-size: 16px;
-    padding: 20px 16px;
-    margin-bottom: 15px;
+    font-size: 12px;
+    padding: 10px 6px;
+    margin-bottom: 5px;
   }
 
   .custom-date-picker .date {

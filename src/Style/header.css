@@ -2,60 +2,6 @@
 
 
 
-/* Promotional Banner Styles */
-.promo-banner-container {
-  width: 100%;
-  overflow: hidden;
-  position: relative;
-  background: linear-gradient(45deg, #FFD700, #FFA500);
-}
-
-.promo-banner-image {
-  transition: transform 0.3s ease;
-}
-
-.promo-banner-image:hover {
-  transform: scale(1.02);
-}
-
-/* Responsive adjustments for promotional banner */
-@media (max-width: 768px) {
-  .promo-banner-container {
-    margin-bottom: 0;
-  }
-  
-  .promo-banner-image {
-    height: 80px !important;
-    min-height: 80px !important;
-    max-height: 80px !important;
-  }
-}
-
-@media (min-width: 769px) {
-  .promo-banner-container {
-    margin-bottom: 0;
-  }
-  
-  .promo-banner-image {
-    height: 100px !important;
-    min-height: 100px !important;
-    max-height: 100px !important;
-  }
-}
-
-@media (min-width: 1200px) {
-  .promo-banner-image {
-    height: 120px !important;
-    min-height: 120px !important;
-    max-height: 120px !important;
-  }
-}
-
-
-
-
-
-
 
 
 
@@ -115,8 +61,10 @@
 
 .header_navbar {
     background: transparent !important;
+    /* background-color: red !important; */
     box-shadow: none !important;
     border: none !important;
+    height: 4rem;
 }
 
 .header-nav,
@@ -144,7 +92,7 @@
 }
 
 .Header_logo {
-    width: 4rem;
+    width: 3rem;
     height: auto;
     margin-left: 1rem;
 }
@@ -257,13 +205,13 @@
 .mobile-header {
     position: relative !important; /* Change from fixed */
     top: auto;
-    padding: 8px 0;
+    padding: 1px 0;
     background: white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-header .Header_logo {
-    width: 3.5rem;
+    width: 3rem;
     margin-left: 0;
 }
 

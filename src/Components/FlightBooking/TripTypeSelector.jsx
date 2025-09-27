@@ -9,22 +9,21 @@ const TripTypeSelector = ({ tripType, setTripType }) => {
     setTripType(trip);
   });
 
-    let type2;
-    
-    useEffect(() => {
-        localStorage.removeItem('fareSummery');
-        localStorage.removeItem('searchToken');
-        localStorage.removeItem('passengersData');
-        localStorage.removeItem('SearchedFlights');
-        localStorage.removeItem('SearchedFlights');
-    }, []);
+  let type2;
 
-    const handleTripTypeChange = (type) => { 
-       
-        localStorage.setItem('tripType',type)
-        setTripType(type);
-       type2= setLocationData(prev => ({ ...prev, tripType: type }));
-    };
+  useEffect(() => {
+    localStorage.removeItem("fareSummery");
+    localStorage.removeItem("searchToken");
+    localStorage.removeItem("passengersData");
+    localStorage.removeItem("SearchedFlights");
+    localStorage.removeItem("SearchedFlights");
+  }, []);
+
+  const handleTripTypeChange = (type) => {
+    localStorage.setItem("tripType", type);
+    setTripType(type);
+    type2 = setLocationData((prev) => ({ ...prev, tripType: type }));
+  };
   return (
     <div className="trip-type-container ">
       <div className="trip-type-tab-wrapper  ">
@@ -54,7 +53,7 @@ const TripTypeSelector = ({ tripType, setTripType }) => {
           Round Trip
         </label>
 
-        <input
+        {/* <input
           type="radio"
           name="tripType"
           value="multicity"
@@ -65,7 +64,7 @@ const TripTypeSelector = ({ tripType, setTripType }) => {
         />
         <label htmlFor="multicity" className="trip-type-tab">
           Multi City
-        </label>
+        </label> */}
       </div>
     </div>
   );
