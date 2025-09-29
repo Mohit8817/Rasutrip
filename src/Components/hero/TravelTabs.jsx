@@ -129,7 +129,7 @@ const TravelTabs = ({ activeTab, setActiveTab }) => {
                 >
                   <IconComponent
                     size={30}
-                    color={isActive ? "white" : "#cc0c26"} // Active = white, Inactive = red
+                    color={isActive ? "white" : "#cc0c26"}
                     className="transition-colors duration-300"
                   />
                   <Card.Text className="mt-2 mb-0">{tab.label}</Card.Text>
