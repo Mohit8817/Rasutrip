@@ -329,17 +329,16 @@ const BusReviewInfo = () => {
     }
 
     return (
-        <div className="container my-4">
+        <div className="p-0 m-0 my-4 px-3 px-sm-4">
             {/* Enhanced Route Info */}
             <Card className="mb-4">
                 <Card.Header className="">
-                    <h5 className="mb-0">Journey Details</h5>
+                    <h5 className="mb-0 text-center text-md-start">Journey Details</h5>
                 </Card.Header>
-                <Card.Body className="p-4">
+                <Card.Body className="p-3 p-md-4">
                     <Row className="align-items-center">
-                        <Col md={4}>
-                            <div className="d-flex align-items-center mb-2">
-
+                        <Col md={4} className="text-center text-md-start mb-3 mb-md-0">
+                            <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
                                 <strong className="fs-5">{journeyDetails.fromCity}</strong>
                             </div>
                             <h4 className="fw-bold fs-5">{journeyDetails.departTime}</h4>
@@ -347,21 +346,21 @@ const BusReviewInfo = () => {
                                 {formatDate(journeyDetails.departDate)}
                             </div>
                             <hr />
-                            <div>
+                            <div className="text-center text-md-start">
                                 <div className="text-muted small">Bus Operator</div>
                                 <strong>{journeyDetails.operator}</strong>
                                 <div className="text-muted small">{journeyDetails.busType}</div>
                             </div>
                         </Col>
 
-                        <Col md={4} className="text-center">
+                        <Col md={4} className="text-center mb-3 mb-md-0">
                             <div className="d-flex flex-column align-items-center">
                                 <FaClock className="mb-2 text-danger" size={20} />
                                 <div className="fw-bold">{journeyDetails.duration}</div>
                                 <div className="text-muted small">Duration</div>
                             </div>
                             <hr />
-                            <div className=''>
+                            <div>
                                 <div className="text-muted small">Selected Seats ({selectedSeats.length})</div>
                                 <div className="d-flex align-items-center justify-content-center gap-2 flex-wrap mt-2">
                                     <FaWheelchair className="text-danger" />
@@ -372,17 +371,16 @@ const BusReviewInfo = () => {
                             </div>
                         </Col>
 
-                        <Col md={4} className="text-end">
-                            <div className="d-flex justify-content-end align-items-center mb-2">
+                        <Col md={4} className="text-center text-md-end">
+                            <div className="d-flex justify-content-center justify-content-md-end align-items-center mb-2">
                                 <strong className="fs-5">{journeyDetails.toCity}</strong>
-
                             </div>
                             <h4 className="fw-bold fs-5">{journeyDetails.arriveTime}</h4>
                             <div className="text-muted">
                                 {formatDate(journeyDetails.arriveDate)}
                             </div>
                             <hr />
-                            <div>
+                            <div className="text-center text-md-end">
                                 <div className="text-muted small">Boarding Point</div>
                                 <strong>{journeyDetails.boardingPoint.name}</strong>
                                 <div className="text-muted small">
@@ -395,23 +393,22 @@ const BusReviewInfo = () => {
                     {/* Enhanced Boarding/Dropping Points */}
                     <hr className="my-4" />
                     <Row>
-                        <Col md={6}>
+                        <Col md={6} className="mb-3 mb-md-0">
                             <div className="border rounded p-3 bg-light">
-                                <div className="d-flex align-items-center mb-2">
-
+                                <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
                                     <strong>Boarding Point</strong>
                                 </div>
-                                <div className="fw-bold mb-1">{journeyDetails.boardingPoint.name}</div>
-                                <div className=" fw-semibold mb-2">
+                                <div className="fw-bold mb-1 text-center text-md-start">{journeyDetails.boardingPoint.name}</div>
+                                <div className="fw-semibold mb-2 text-center text-md-start">
                                     Time: {journeyDetails.boardingPoint.time}
                                 </div>
                                 {journeyDetails.boardingPoint.address && (
-                                    <div className="text-muted small mb-1">
+                                    <div className="text-muted small mb-1 text-center text-md-start">
                                         <strong>Address:</strong> {journeyDetails.boardingPoint.address}
                                     </div>
                                 )}
                                 {journeyDetails.boardingPoint.landmark && (
-                                    <div className="text-muted small">
+                                    <div className="text-muted small text-center text-md-start">
                                         <strong>Landmark:</strong> {journeyDetails.boardingPoint.landmark}
                                     </div>
                                 )}
@@ -420,20 +417,20 @@ const BusReviewInfo = () => {
 
                         <Col md={6}>
                             <div className="border rounded p-3 bg-light">
-                                <div className="d-flex align-items-center mb-2">
+                                <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-2">
                                     <strong>Dropping Point</strong>
                                 </div>
-                                <div className="fw-bold mb-1">{journeyDetails.droppingPoint.name}</div>
-                                <div className="fw-semibold mb-2">
+                                <div className="fw-bold mb-1 text-center text-md-start">{journeyDetails.droppingPoint.name}</div>
+                                <div className="fw-semibold mb-2 text-center text-md-start">
                                     Time: {journeyDetails.droppingPoint.time}
                                 </div>
                                 {journeyDetails.droppingPoint.address && (
-                                    <div className="text-muted small mb-1">
+                                    <div className="text-muted small mb-1 text-center text-md-start">
                                         <strong>Address:</strong> {journeyDetails.droppingPoint.address}
                                     </div>
                                 )}
                                 {journeyDetails.droppingPoint.landmark && (
-                                    <div className="text-muted small">
+                                    <div className="text-muted small text-center text-md-start">
                                         <strong>Landmark:</strong> {journeyDetails.droppingPoint.landmark}
                                     </div>
                                 )}
@@ -444,7 +441,7 @@ const BusReviewInfo = () => {
             </Card>
 
             {/* Contact Information */}
-            <Card className="mb-4 shadow-sm border-0">
+            <Card className="mb-4 shadow-sm border-0 p-2">
                 <Card.Header className="bg-light d-flex justify-content-between align-items-center">
                     <h5 className="mb-0">Contact Information</h5>
                     <FaEdit
@@ -456,20 +453,20 @@ const BusReviewInfo = () => {
                 </Card.Header>
                 <Card.Body>
                     <Row>
-                        <Col md={6}>
-                            <div className="mb-3">
-                                <div className="d-flex align-items-center mb-1">
+                        <Col md={6} className="mb-3 mb-md-0">
+                            <div className="text-center text-md-start">
+                                <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-1">
                                     <strong>Email Address</strong>
                                 </div>
-                                <div className="">{contactData?.email || 'Not provided'}</div>
+                                <div>{contactData?.email || 'Not provided'}</div>
                             </div>
                         </Col>
                         <Col md={6}>
-                            <div className="mb-3">
-                                <div className="d-flex align-items-center mb-1">
+                            <div className="text-center text-md-start">
+                                <div className="d-flex align-items-center justify-content-center justify-content-md-start mb-1">
                                     <strong>Mobile Number</strong>
                                 </div>
-                                <div className="">
+                                <div>
                                     {(contactData?.countryCode || '+91')} {contactData?.mobile || 'Not provided'}
                                 </div>
                             </div>
@@ -479,7 +476,7 @@ const BusReviewInfo = () => {
             </Card>
 
             {/* Enhanced Passenger Details */}
-            <Card className="mb-4 shadow-sm border-0">
+            <Card className="mb-4 shadow-sm border-0 p-2">
                 <Card.Header className="bg-light d-flex justify-content-between align-items-center">
                     <h5 className="mb-0">
                         Passenger Details ({passengerData?.length || 0})
@@ -491,33 +488,34 @@ const BusReviewInfo = () => {
                         title="Edit Details"
                     />
                 </Card.Header>
-                <Card.Body>
+                <Card.Body className='mt-2'>
                     {passengerData?.map((passenger, index) => {
                         const details = getPassengerDetails(passenger, index);
                         return (
                             <Card key={index} className="border mb-3">
                                 <Card.Body>
-                                    <div className="d-flex justify-content-between align-items-center mb-3">
-                                        <div className="d-flex align-items-center">                                            <span className="fw-semibold">Seat {details.seatName}</span>
+                                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-center align-items-md-center mb-3">
+                                        <div className="d-flex align-items-center mb-2 mb-md-0">
+                                            <span className="fw-semibold">Seat {details.seatName}</span>
                                         </div>
                                         {details.isLead && (
-                                            <small className="text-muted">* Primary contact person</small>
+                                            <small className="text-muted text-center">* Primary contact person</small>
                                         )}
                                     </div>
                                     <Row>
-                                        <Col md={8}>
-                                            <div className="mb-2">
+                                        <Col md={8} className="mb-3 mb-md-0">
+                                            <div className="mb-2 text-center text-md-start">
                                                 <strong>Name:</strong> {details.name}
                                             </div>
-                                            <div className="mb-2">
+                                            <div className="mb-2 text-center text-md-start">
                                                 <strong>Age:</strong> {details.age} years | <strong>Gender:</strong> {details.gender}
                                             </div>
                                         </Col>
                                         <Col md={4}>
-                                            <div className="mb-2">
+                                            <div className="mb-2 text-center text-md-start">
                                                 <strong>ID Type:</strong> {details.idType}
                                             </div>
-                                            <div className="mb-2">
+                                            <div className="mb-2 text-center text-md-start">
                                                 <strong>ID Number:</strong> {details.idNumber}
                                             </div>
                                         </Col>
@@ -546,25 +544,24 @@ const BusReviewInfo = () => {
                     </Card.Header>
                     <Card.Body>
                         <Row>
-                            <Col md={6}>
-                                <div className="mb-2">
+                            <Col md={6} className="mb-3 mb-md-0">
+                                <div className="mb-2 text-center text-md-start">
                                     <strong>GST Number:</strong> {gstData.gstNumber || 'Not provided'}
                                 </div>
-                                <div className="mb-2">
+                                <div className="mb-2 text-center text-md-start">
                                     <strong>Company Name:</strong> {gstData.companyName || 'Not provided'}
                                 </div>
-                                <div className="mb-2">
+                                <div className="mb-2 text-center text-md-start">
                                     <strong>Contact:</strong> {gstData.contactNo || 'Not provided'}
                                 </div>
                             </Col>
                             <Col md={6}>
-                                <div className="mb-2">
+                                <div className="mb-2 text-center text-md-start">
                                     <strong>Email:</strong> {gstData.email || 'Not provided'}
                                 </div>
-                                <div className="mb-2">
+                                <div className="mb-2 text-center text-md-start">
                                     <strong>Address:</strong> {gstData.address || 'Not provided'}
                                 </div>
-
                             </Col>
                         </Row>
                     </Card.Body>
@@ -572,31 +569,33 @@ const BusReviewInfo = () => {
             )}
 
             {/* Terms and Conditions */}
-            <Card className="mb-4 shadow-sm border-0">
+            <Card className="mb-4 shadow-sm border-0 p-2">
                 <Card.Body>
-                    <Form.Check
-                        type="checkbox"
-                        id="terms"
-                        className="mb-3"
-                        checked={termsAccepted}
-                        onChange={(e) => setTermsAccepted(e.target.checked)}
-                        label={
-                            <>
-                                I have read and accept the{' '}
-                                <a href="/terms" target="_blank" className="text-decoration-none text-danger">
-                                    Terms & Conditions
-                                </a>{' '}
-                                and{' '}
-                                <a href="/privacy" target="_blank" className="text-decoration-none text-danger">
-                                    Privacy Policy
-                                </a>
-                            </>
-                        }
-                    />
+                    <div className="d-flex justify-content-center justify-content-md-start">
+                        <Form.Check
+                            type="checkbox"
+                            id="terms"
+                            className="mb-3"
+                            checked={termsAccepted}
+                            onChange={(e) => setTermsAccepted(e.target.checked)}
+                            label={
+                                <>
+                                    I have read and accept the{' '}
+                                    <a href="/terms" target="_blank" className="text-decoration-none text-danger">
+                                        Terms & Conditions
+                                    </a>{' '}
+                                    and{' '}
+                                    <a href="/privacy" target="_blank" className="text-decoration-none text-danger">
+                                        Privacy Policy
+                                    </a>
+                                </>
+                            }
+                        />
+                    </div>
 
-                    <div className="mt-3 d-flex justify-content-between align-items-center">
+                    <div className="mt-3 d-flex justify-content-center justify-content-md-between align-items-center">
                         <Button
-                            className="btn-red px-5 py-2"
+                            className="btn-red px-4 px-md-5 py-2"
                             onClick={handlePayment}
                             disabled={!termsAccepted}
                         >Continue to Payment</Button>
