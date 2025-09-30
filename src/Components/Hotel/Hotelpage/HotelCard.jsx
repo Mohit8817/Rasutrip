@@ -86,8 +86,9 @@ const HotelCard = ({ hotel }) => {
   // Handle redirect to login
   const handleLoginRedirect = () => {
     setShowLoginPrompt(false);
-    window.location.href = '/login/customer';
+    window.location.href = "/login/customer";
   };
+  const finalPrice = hotel.originalPriceData?.OfferedPrice ?? hotel.price;
 
   const {
     image,
@@ -98,7 +99,7 @@ const HotelCard = ({ hotel }) => {
     price = 0,
     tax = 0,
   } = hotel;
-
+  console.log(hotel);
   return (
     <>
       <Card className="mb-3 p-3 shadow-sm rounded-3 hotel-card-box">
@@ -111,7 +112,7 @@ const HotelCard = ({ hotel }) => {
               className="img-fluid rounded w-100"
               style={{
                 height: window.innerWidth < 768 ? "150px" : "150px",
-                objectFit: "cover"
+                objectFit: "cover",
               }}
             />
           </Col>
@@ -134,12 +135,22 @@ const HotelCard = ({ hotel }) => {
           </Col>
 
           {/* Price & Book */}
-          <Col xs={12} md={3} className="text-end d-flex flex-column justify-content-between">
+          <Col
+            xs={12}
+            md={3}
+            className="text-end d-flex flex-column justify-content-between"
+          >
             {/* Desktop Layout - Column (Original) */}
             <div className="d-none d-md-block">
-              <h5 className="fw-bold text-dark mb-1">₹ {price.toFixed(2)}</h5>
+              {/* <h5 className="fw-bold text-dark mb-1">₹ {price.toFixed(2)}</h5> */}
+              <h5 className="fw-bold text-dark mb-1">
+                ₹ {finalPrice.toFixed(2)}
+              </h5>
+
               <div className="small text-muted">Per Night</div>
-              <div className="small text-muted">+ ₹ {tax.toFixed(2)} taxes & fees</div>
+              <div className="small text-muted">
+                + ₹ {tax.toFixed(2)} taxes & fees
+              </div>
             </div>
             <div className="d-none d-md-block">
               <Button className="btn-red mt-3 w-75" onClick={handleBookClick}>
@@ -150,8 +161,14 @@ const HotelCard = ({ hotel }) => {
             {/* Mobile Layout - Row */}
             <div className="d-md-none d-flex justify-content-between align-items-center">
               <div>
-                <h5 className="fw-bold text-dark mb-0">₹ {price.toFixed(2)}</h5>
-                <div className="small text-muted">Per Night + ₹ {tax.toFixed(2)} tax</div>
+                {/* <h5 className="fw-bold text-dark mb-0">₹ {price.toFixed(2)}</h5> */}
+                <h5 className="fw-bold text-dark mb-0">
+                  ₹ {finalPrice.toFixed(2)}
+                </h5>
+
+                <div className="small text-muted">
+                  Per Night + ₹ {tax.toFixed(2)} tax
+                </div>
               </div>
               <div>
                 <Button className="btn-red px-4" onClick={handleBookClick}>
@@ -175,7 +192,8 @@ const HotelCard = ({ hotel }) => {
             <h5 className="fw-bold text-danger">Login Required</h5>
           </div>
           <p className="text-muted mb-4">
-            Please login first to continue with hotel booking and enjoy exclusive deals!
+            Please login first to continue with hotel booking and enjoy
+            exclusive deals!
           </p>
           <div className="d-flex gap-2 justify-content-center">
             <Button
@@ -191,7 +209,6 @@ const HotelCard = ({ hotel }) => {
               size="sm"
               className="px-4 btn-red"
             >
-
               Login Now
             </Button>
           </div>

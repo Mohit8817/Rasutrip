@@ -1,6 +1,6 @@
 import React from "react";
 import { Card } from "react-bootstrap";
-import { useLocation } from 'react-router-dom';
+import { useLocation } from "react-router-dom";
 import "../../Style/Pagescss/BusResultPage.css";
 
 const BusFareSummary = ({
@@ -14,14 +14,17 @@ const BusFareSummary = ({
   showVendorCommission = true,
   totalPrice,
   couponDiscount = 0,
-  appliedCouponData = null
+  appliedCouponData = null,
 }) => {
   const location = useLocation();
 
   // Get data from location state (passed from BusDetailinfo)
   const state = location.state;
   console.log("BusFareSummary - Full state:", state);
-  console.log("BusFareSummary - Coupon data:", { couponDiscount, appliedCouponData });
+  console.log("BusFareSummary - Coupon data:", {
+    couponDiscount,
+    appliedCouponData,
+  });
 
   // Extract data from the state object that comes from BusDetailinfo
   const selectedSeats = state?.selectedSeats || [];
@@ -34,7 +37,7 @@ const BusFareSummary = ({
     busData,
     stateTotalPrice,
     fareBreakdown,
-    seatsCount: selectedSeats?.length
+    seatsCount: selectedSeats?.length,
   });
 
   // Initialize fare calculation object with all API fields
@@ -55,10 +58,10 @@ const BusFareSummary = ({
       igstAmount: 0,
       igstRate: 0,
       taxableAmount: 0,
-      total: 0
+      total: 0,
     },
     commissionPercentage: 0,
-    numberOfSeats: selectedSeats?.length || 0
+    numberOfSeats: selectedSeats?.length || 0,
   };
 
   // Method 1: Calculate from selected seats (most accurate for seat-based booking)
@@ -81,10 +84,10 @@ const BusFareSummary = ({
       sgstRate: 0,
       igst: 0,
       igstRate: 0,
-      taxableAmount: 0
+      taxableAmount: 0,
     };
 
-    selectedSeats.forEach(seat => {
+    selectedSeats.forEach((seat) => {
       // Get seat price - check multiple possible structures
       const seatPriceObj = seat?.Price || seat;
 
@@ -99,16 +102,19 @@ const BusFareSummary = ({
       totals.discount += Number(seatPriceObj?.Discount || 0);
 
       // Handle GST object structure with all fields
-      if (seatPriceObj?.GST && typeof seatPriceObj.GST === 'object') {
+      if (seatPriceObj?.GST && typeof seatPriceObj.GST === "object") {
         totals.cgst += Number(seatPriceObj.GST.CGSTAmount || 0);
         totals.sgst += Number(seatPriceObj.GST.SGSTAmount || 0);
         totals.igst += Number(seatPriceObj.GST.IGSTAmount || 0);
         totals.taxableAmount += Number(seatPriceObj.GST.TaxableAmount || 0);
 
         // Get rates from first seat (assuming all seats have same rate)
-        if (totals.cgstRate === 0) totals.cgstRate = Number(seatPriceObj.GST.CGSTRate || 0);
-        if (totals.sgstRate === 0) totals.sgstRate = Number(seatPriceObj.GST.SGSTRate || 0);
-        if (totals.igstRate === 0) totals.igstRate = Number(seatPriceObj.GST.IGSTRate || 0);
+        if (totals.cgstRate === 0)
+          totals.cgstRate = Number(seatPriceObj.GST.CGSTRate || 0);
+        if (totals.sgstRate === 0)
+          totals.sgstRate = Number(seatPriceObj.GST.SGSTRate || 0);
+        if (totals.igstRate === 0)
+          totals.igstRate = Number(seatPriceObj.GST.IGSTRate || 0);
       } else {
         // If GST is a simple number, add to IGST
         totals.igst += Number(seatPriceObj?.GST || 0);
@@ -132,15 +138,15 @@ const BusFareSummary = ({
       igstAmount: totals.igst,
       igstRate: totals.igstRate,
       taxableAmount: totals.taxableAmount,
-      total: totals.cgst + totals.sgst + totals.igst
+      total: totals.cgst + totals.sgst + totals.igst,
     };
 
     // Get dynamic commission percentage from bus data
     fareData.commissionPercentage = Number(
       busData?.vendorCommissionPercentage ||
-      busData?.originalBusPrice?.rasutripCommissionPercentage ||
-      state?.vendorCommissionPercentage ||
-      0
+        busData?.originalBusPrice?.rasutripCommissionPercentage ||
+        state?.vendorCommissionPercentage ||
+        0
     );
 
     console.log("Calculated from seats:", fareData);
@@ -149,7 +155,8 @@ const BusFareSummary = ({
   // Method 2: Use bus data if available (single bus pricing)
   else if (busData?.originalBusPrice || busData?.BusPrice || busData?.Price) {
     console.log("Using bus data:", busData);
-    const busPriceObj = busData.originalBusPrice || busData.BusPrice || busData.Price;
+    const busPriceObj =
+      busData.originalBusPrice || busData.BusPrice || busData.Price;
 
     // Extract all API pricing fields exactly as they come
     fareData.basePrice = Number(busPriceObj.BasePrice || 0);
@@ -162,7 +169,7 @@ const BusFareSummary = ({
     fareData.discount = Number(busPriceObj.Discount || 0);
 
     // Handle GST object structure with all fields
-    if (busPriceObj.GST && typeof busPriceObj.GST === 'object') {
+    if (busPriceObj.GST && typeof busPriceObj.GST === "object") {
       fareData.gst = {
         cgstAmount: Number(busPriceObj.GST.CGSTAmount || 0),
         cgstRate: Number(busPriceObj.GST.CGSTRate || 0),
@@ -171,9 +178,10 @@ const BusFareSummary = ({
         igstAmount: Number(busPriceObj.GST.IGSTAmount || 0),
         igstRate: Number(busPriceObj.GST.IGSTRate || 0),
         taxableAmount: Number(busPriceObj.GST.TaxableAmount || 0),
-        total: Number(busPriceObj.GST.CGSTAmount || 0) +
+        total:
+          Number(busPriceObj.GST.CGSTAmount || 0) +
           Number(busPriceObj.GST.SGSTAmount || 0) +
-          Number(busPriceObj.GST.IGSTAmount || 0)
+          Number(busPriceObj.GST.IGSTAmount || 0),
       };
     } else {
       fareData.gst = {
@@ -184,16 +192,16 @@ const BusFareSummary = ({
         igstAmount: Number(busPriceObj.GST || 0),
         igstRate: 0,
         taxableAmount: 0,
-        total: Number(busPriceObj.GST || 0)
+        total: Number(busPriceObj.GST || 0),
       };
     }
 
     // Get dynamic commission percentage from API
     fareData.commissionPercentage = Number(
       busPriceObj.rasutripCommissionPercentage ||
-      busData?.vendorCommissionPercentage ||
-      state?.vendorCommissionPercentage ||
-      0
+        busData?.vendorCommissionPercentage ||
+        state?.vendorCommissionPercentage ||
+        0
     );
   }
 
@@ -206,9 +214,9 @@ const BusFareSummary = ({
     // Get dynamic commission percentage
     fareData.commissionPercentage = Number(
       busData?.vendorCommissionPercentage ||
-      busData?.originalBusPrice?.rasutripCommissionPercentage ||
-      state?.vendorCommissionPercentage ||
-      0
+        busData?.originalBusPrice?.rasutripCommissionPercentage ||
+        state?.vendorCommissionPercentage ||
+        0
     );
   }
 
@@ -224,18 +232,19 @@ const BusFareSummary = ({
 
     // Use prop or default to 0 if no API data available
     fareData.commissionPercentage = Number(
-      state?.vendorCommissionPercentage ||
-      vendorCommissionPercentage ||
-      0
+      state?.vendorCommissionPercentage || vendorCommissionPercentage || 0
     );
   }
 
   // Calculate convenience fee (vendor commission) - only if enabled
-  const convenienceFee = showVendorCommission && fareData.commissionPercentage > 0 ?
-    (fareData.publishedPrice * fareData.commissionPercentage) / 100 : 0;
+  const convenienceFee =
+    showVendorCommission && fareData.commissionPercentage > 0
+      ? (fareData.publishedPrice * fareData.commissionPercentage) / 100
+      : 0;
 
   // Calculate subtotal (before convenience fee and coupon discount) - include all charges, subtract discounts and TDS
-  const subtotal = fareData.publishedPrice +
+  const subtotal =
+    fareData.publishedPrice +
     fareData.serviceCharges +
     fareData.tax +
     fareData.otherCharges +
@@ -256,7 +265,7 @@ const BusFareSummary = ({
     subtotal,
     couponDiscount,
     totalBeforeCoupon,
-    finalTotal
+    finalTotal,
   });
 
   // Don't show component if no price data
@@ -279,27 +288,39 @@ const BusFareSummary = ({
           Fare Summary
           {fareData.numberOfSeats > 0 && (
             <small className="ms-2 text-muted">
-              ({fareData.numberOfSeats} seat{fareData.numberOfSeats !== 1 ? 's' : ''})
+              ({fareData.numberOfSeats} seat
+              {fareData.numberOfSeats !== 1 ? "s" : ""})
             </small>
           )}
         </Card.Header>
         <Card.Body className="p-3">
-
           {/* Base Price - Always show if greater than 0 */}
           {fareData.basePrice > 0 && (
             <div className="fare-row">
-              <span>Base Price{fareData.numberOfSeats > 0 ? ` (${fareData.numberOfSeats} seats)` : ''}</span>
+              <span>
+                Base Price
+                {fareData.numberOfSeats > 0
+                  ? ` (${fareData.numberOfSeats} seats)`
+                  : ""}
+              </span>
               <span>₹ {fareData.basePrice.toFixed(2)}</span>
             </div>
           )}
 
           {/* Published Price - Main price from API - Show if different from base price or if base price is 0 */}
-          {fareData.publishedPrice > 0 && (fareData.publishedPrice !== fareData.basePrice || fareData.basePrice === 0) && (
-            <div className="fare-row">
-              <span>Bus Fare{fareData.numberOfSeats > 0 ? ` (${fareData.numberOfSeats} seats)` : ''}</span>
-              <span>₹ {fareData.publishedPrice.toFixed(2)}</span>
-            </div>
-          )}
+          {fareData.publishedPrice > 0 &&
+            (fareData.publishedPrice !== fareData.basePrice ||
+              fareData.basePrice === 0) && (
+              <div className="fare-row">
+                <span>
+                  Bus Fare
+                  {fareData.numberOfSeats > 0
+                    ? ` (${fareData.numberOfSeats} seats)`
+                    : ""}
+                </span>
+                <span>₹ {fareData.publishedPrice.toFixed(2)}</span>
+              </div>
+            )}
 
           {/* Service Charges - Always show if greater than 0 */}
           {fareData.serviceCharges > 0 && (
@@ -338,9 +359,14 @@ const BusFareSummary = ({
             <div className="fare-row">
               <span>
                 GST Total
-                {(fareData.gst.cgstRate > 0 || fareData.gst.sgstRate > 0 || fareData.gst.igstRate > 0) &&
-                  ` (${Math.max(fareData.gst.cgstRate, fareData.gst.sgstRate, fareData.gst.igstRate)}%)`
-                }
+                {(fareData.gst.cgstRate > 0 ||
+                  fareData.gst.sgstRate > 0 ||
+                  fareData.gst.igstRate > 0) &&
+                  ` (${Math.max(
+                    fareData.gst.cgstRate,
+                    fareData.gst.sgstRate,
+                    fareData.gst.igstRate
+                  )}%)`}
               </span>
               <span>₹ {fareData.gst.total.toFixed(2)}</span>
             </div>
@@ -363,7 +389,13 @@ const BusFareSummary = ({
 
           {fareData.gst.igstAmount > 0 && (
             <div className="fare-row text-muted small ms-3">
-              <span>• IGST ({fareData.gst.igstRate > 0 ? fareData.gst.igstRate + '%' : 'Applied'})</span>
+              <span>
+                • IGST (
+                {fareData.gst.igstRate > 0
+                  ? fareData.gst.igstRate + "%"
+                  : "Applied"}
+                )
+              </span>
               <span>₹ {fareData.gst.igstAmount.toFixed(2)}</span>
             </div>
           )}
@@ -397,7 +429,7 @@ const BusFareSummary = ({
           {/* Subtotal */}
           <div className="fare-row fw-bold">
             <span>Subtotal</span>
-            <span>₹ {subtotal.toFixed(2)}</span>
+            <span>₹{fareData.basePrice.toFixed(2)}</span>
           </div>
 
           {/* Convenience Fee - Always show if commission is configured and greater than 0 */}
@@ -423,7 +455,9 @@ const BusFareSummary = ({
               <div className="fare-row text-success">
                 <span>
                   Coupon Discount (-)
-                  <small className="text-muted d-block">{appliedCouponData.code}</small>
+                  <small className="text-muted d-block">
+                    {appliedCouponData.code}
+                  </small>
                 </span>
                 <span>- ₹ {couponDiscount.toFixed(2)}</span>
               </div>
@@ -434,9 +468,8 @@ const BusFareSummary = ({
           {/* Final Total */}
           <div className="fare-total">
             <span>Total Amount</span>
-            <span>₹ {finalTotal.toFixed(2)}</span>
+            <span>₹ {fareData.basePrice.toFixed(2)}</span>
           </div>
-
         </Card.Body>
       </Card>
     </div>
