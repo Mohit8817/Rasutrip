@@ -1,19 +1,19 @@
 // src/Components/Common/SearchButton.jsx
-import React, { useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { LocationContext } from '../Context/LocationContext';
-import { HotelSearchContext } from '../Context/HotelSearchContext';
-import '../../Style/FlightBooking.css';
+import React, { useContext } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { LocationContext } from "../Context/LocationContext";
+import { HotelSearchContext } from "../Context/HotelSearchContext";
+import "../../Style/FlightBooking.css";
 
-const SearchButton = ({ type, }) => {
+const SearchButton = ({ type }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { locationData } = useContext(LocationContext);
   const { hotelSearchData } = useContext(HotelSearchContext);
 
-  localStorage.removeItem('SearchedFlights');
-  localStorage.removeItem('selectedOnwardFlight');
-  localStorage.removeItem('selectedReturnFlight');
+  localStorage.removeItem("SearchedFlights");
+  localStorage.removeItem("selectedOnwardFlight");
+  localStorage.removeItem("selectedReturnFlight");
 
   const handleSearchClick = () => {
     const {
@@ -34,25 +34,25 @@ const SearchButton = ({ type, }) => {
       totalPrice,
     } = locationData;
     switch (type) {
-      case 'flight': {
+      case "flight": {
         const searchParams = new URLSearchParams();
 
-        let StorageTripType=null
-        if (!localStorage.getItem('tripType')) {
-          StorageTripType=tripType
-          localStorage.setItem('tripType', tripType);
-        }else{
-         StorageTripType= localStorage.getItem('tripType')
+        let StorageTripType = null;
+        if (!localStorage.getItem("tripType")) {
+          StorageTripType = tripType;
+          localStorage.setItem("tripType", tripType);
+        } else {
+          StorageTripType = localStorage.getItem("tripType");
         }
 
         let state = {};
-        if (locationData.tripType === 'multicity' && locationData.AirSegments) {
+        if (locationData.tripType === "multicity" && locationData.AirSegments) {
           state = {
             AirSegments: locationData.AirSegments,
             passengers: locationData.passengers,
             cabinClass: locationData.cabinClass,
             directflight,
-            tripType: 'multicity'
+            tripType: "multicity",
           };
         } else {
           state = {
@@ -62,21 +62,23 @@ const SearchButton = ({ type, }) => {
             toAirport,
             fromCode,
             toCode,
-            departDate: departDate || { PreferredTime: new Date().toISOString() },
+            departDate: departDate || {
+              PreferredTime: new Date().toISOString(),
+            },
             returnDate: returnDate || null,
             passengers,
             cabinClass,
             directflight,
-            tripType: StorageTripType || 'oneway'
+            tripType: StorageTripType || "oneway",
           };
         }
 
         // Helper function to handle navigation
         const goToResults = () => {
-          navigate('/flight-results', { state });
+          navigate("/flight-results", { state });
         };
 
-        if (location.pathname === '/flight-results') {
+        if (location.pathname === "/flight-results") {
           navigate(`/?${searchParams.toString()}`, { replace: true });
           setTimeout(goToResults, 100);
         } else {
@@ -85,22 +87,24 @@ const SearchButton = ({ type, }) => {
 
         break;
       }
-      case 'bus':
-        navigate('/bus-results', {
+      case "bus":
+        navigate("/bus-results", {
           state: {
             fromCity,
             toCity,
             fromCityId,
             toCityId,
             departDate: departDate || new Date().toISOString(),
-            totalPrice
-          }
+            totalPrice,
+          },
         });
         break;
 
-      case 'hotel': {
+      case "hotel": {
         const {
           city,
+          cityId, // ✅ Get the saved city_id
+
           checkIn,
           checkOut,
           guests,
@@ -108,25 +112,28 @@ const SearchButton = ({ type, }) => {
           nights,
           country, // ✅ Get country name
           countryCode, // ✅ Get country code
-          roomDetails = []
+          roomDetails = [],
         } = hotelSearchData || {};
 
-        console.log('🔍 Hotel Search Data:', hotelSearchData);
-        console.log('🏨 Room Details from Context:', roomDetails);
-        console.log('🌍 Selected Country:', country, 'Code:', countryCode);
+        console.log("🔍 Hotel Search Data:", hotelSearchData);
+        console.log("🏨 Room Details from Context:", roomDetails);
+        console.log("🌍 Selected Country:", country, "Code:", countryCode);
+        console.log("🆔 City ID:", cityId); // ✅ Debug
 
         if (city && checkIn && checkOut) {
-          const apiRoomDetails = roomDetails.map(room => ({
+          const apiRoomDetails = roomDetails.map((room) => ({
             Adult: room.adults,
             Child: room.children,
-            ChildAge: Array(room.children).fill(5)
+            ChildAge: Array(room.children).fill(5),
           }));
 
-          console.log('🚀 Sending to API:', apiRoomDetails);
+          console.log("🚀 Sending to API:", apiRoomDetails);
 
-          navigate('/hotel-results', {
+          navigate("/hotel-results", {
             state: {
               city: city.trim(),
+              cityId: cityId, // ✅ Pass the saved city_id
+
               checkIn,
               checkOut,
               guests: Number(guests),
@@ -137,18 +144,20 @@ const SearchButton = ({ type, }) => {
               roomDetails: apiRoomDetails,
               minRating: 4,
               maxRating: 5,
-              resultCount: null
-            }
+              resultCount: null,
+            },
           });
         } else {
-          console.warn('❌ Missing hotel search parameters:', hotelSearchData);
-          alert("Please fill in city, check-in, and check-out dates for hotel search.");
+          console.warn("❌ Missing hotel search parameters:", hotelSearchData);
+          alert(
+            "Please fill in city, check-in, and check-out dates for hotel search."
+          );
         }
         break;
       }
 
       default:
-        console.warn('Unknown search type:', type);
+        console.warn("Unknown search type:", type);
     }
   };
 

@@ -245,13 +245,18 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
     fareBreakdown.tds;
 
   // Add convenience fee
+  // Add convenience fee to get total before coupon
   const totalBeforeCoupon = subtotal + convenienceFee;
 
-  // Apply coupon discount to get final amount
-  const finalAmount = Math.max(
-    0,
-    totalBeforeCoupon - fareBreakdown.couponDiscount
-  ).toFixed(2);
+  // Apply coupon discount to get final total
+  const finalTotal = Math.max(0, totalBeforeCoupon - (couponDiscount || 0));
+  //   const totalBeforeCoupon = subtotal + convenienceFee;
+
+  //   // Apply coupon discount to get final amount
+  //   const finalAmount = Math.max(
+  //     0,
+  //     totalBeforeCoupon - fareBreakdown.couponDiscount
+  //   ).toFixed(2);
 
   // Helper function to calculate dynamic vendor commission
   const calculateDynamicVendorCommission = (bookingState) => {
@@ -1045,7 +1050,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
       }) || [];
 
     const validationData = {
-      amount: parseFloat(finalAmount),
+      amount: parseFloat(finalTotal),
       razorpay_order_id: paymentResponse.razorpay_order_id,
       razorpay_payment_id: paymentResponse.razorpay_payment_id,
       razorpay_signature: paymentResponse.razorpay_signature,
@@ -1159,7 +1164,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
 
       // Create payment order
       setLoadingStep("Creating payment order...");
-      const orderData = formatBusOrderData(state, finalAmount);
+      const orderData = formatBusOrderData(state, finalTotal);
       console.log("Creating payment order with data:", orderData);
 
       const orderResponse = await createBusPaymentOrder(orderData);
@@ -1204,9 +1209,9 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
       if (!orderAmount) {
         console.warn(
           "No amount in order response, using calculated amount:",
-          finalAmount
+          finalTotal
         );
-        orderAmount = parseFloat(finalAmount);
+        orderAmount = parseFloat(finalTotal);
       }
 
       console.log("Payment order created:", { orderId, orderAmount });
@@ -1316,7 +1321,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                 orderId: response.razorpay_order_id,
                 signature: response.razorpay_signature,
                 bookingDetails: state,
-                finalAmount,
+                finalTotal,
                 orderData: orderObject,
                 validationResult,
                 bookingResult,
@@ -1342,7 +1347,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
             displayRefundModal({
               paymentId: response.razorpay_payment_id,
               orderId: response.razorpay_order_id,
-              amount: finalAmount,
+              amount: finalTotal,
             });
           }
         } catch (err) {
@@ -1361,7 +1366,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
           displayRefundModal({
             paymentId: response.razorpay_payment_id,
             orderId: response.razorpay_order_id,
-            amount: finalAmount,
+            amount: finalTotal,
           });
         } finally {
           setLoading(false);
@@ -1573,7 +1578,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
       </Card>
 
       {/* ENHANCED Payment Summary with Detailed Breakdown and Coupon Discount */}
-      <Card className="mb-4 shadow-sm">
+      {/* <Card className="mb-4 shadow-sm">
         <Card.Header className="bg-white">
           <h6 className="fw-bold mb-0">
             Payment Summary
@@ -1587,7 +1592,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
         </Card.Header>
         <Card.Body>
           {/* Base Price - Show only if different from Published Price and greater than 0 */}
-          {fareBreakdown.basePrice > 0 &&
+      {/* {fareBreakdown.basePrice > 0 &&
             fareBreakdown.basePrice !== fareBreakdown.publishedPrice && (
               <Row className="mb-2">
                 <Col xs={8}>Base Price</Col>
@@ -1595,27 +1600,27 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
                   ₹{fareBreakdown.basePrice.toFixed(2)}
                 </Col>
               </Row>
-            )}
+            )} */}
 
-          {/* Published Price - Main price from API */}
-          {fareBreakdown.publishedPrice > 0 && (
+      {/* Published Price - Main price from API */}
+      {/* {fareBreakdown.publishedPrice > 0 && (
             <Row className="mb-2">
               <Col xs={8}>Base Price</Col>
               <Col xs={4} className="text-end">
                 ₹{fareBreakdown.publishedPrice.toFixed(2)}
               </Col>
             </Row>
-          )}
+          )} */}
 
-          {/* Final Total */}
-          <Row className="fw-bold fs-5">
-            <Col xs={8}>Total Amount</Col>
+      {/* Final Total */}
+      {/* <Row className="fw-bold fs-5"> */}
+      {/* <Col xs={8}>Total Amount</Col>
             <Col xs={4} className="text-end">
               ₹{fareBreakdown.publishedPrice.toFixed(2)}
             </Col>
           </Row>
         </Card.Body>
-      </Card>
+      </Card> */}
 
       {/* Enhanced Payment Button Section */}
       <Card className="shadow-sm">
@@ -1649,9 +1654,8 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
               disabled={!totalPrice || !!error || loading}
               onClick={handlePayment}
             >
-              {loading
-                ? "Processing..."
-                : `Pay Now ₹${fareBreakdown.publishedPrice.toFixed(2)}`}
+              {loading ? "Processing..." : `Pay Now ₹${finalTotal.toFixed(2)}`}
+              {/* //   `Pay Now `} */}
             </Button>
           </div>
         </Card.Body>
