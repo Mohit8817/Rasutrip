@@ -1095,7 +1095,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
 
   // Enhanced Razorpay options with better error handling
   const getRazorpayOptions = (orderId, orderAmount) => ({
-    key: process.env.REACT_APP_RAZORPAY_KEY_ID || "rzp_test_glwdvx2PlFDStN",
+    key: process.env.REACT_APP_RAZORPAY_KEY_ID || "rzp_live_RMb7SMI7mR2cCA",
     amount: orderAmount * 100,
     currency: "INR",
     order_id: orderId,
