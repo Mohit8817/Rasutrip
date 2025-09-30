@@ -286,6 +286,7 @@ body {
   width: 100%;
   max-width: 280px;
   text-align: left;
+
   padding: 10px 10px;
   cursor: pointer;
   border-radius: 12px;
@@ -554,7 +555,8 @@ body {
   width: 100%;
   max-width: 280px;
   text-align: left;
-  padding: 0;
+  margin-left: 15px;
+  padding: 15px;
   cursor: pointer;
   border-radius: 12px;
   background-color: #fff;
@@ -652,6 +654,7 @@ body {
   .passenger-class-wrapper,
   .dropdown-list {
     width: 100% !important;
+   margin-left: 0px;
   }
 
   .tripselector {
@@ -733,11 +736,15 @@ body {
   .passenger-class-box,
   .passenger-class-wrapper {
     width: 100% !important;
+    padding: 0px;
+    font-size: 10px;
+    margin-left: 0px;
   }
 
   .switch-icon {
     padding: 6px;
   }
+
 }
 
 

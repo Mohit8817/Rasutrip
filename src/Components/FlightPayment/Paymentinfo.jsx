@@ -1,43 +1,51 @@
 // RazorpayPayment.jsx
-import axios from 'axios';
-import { post } from '../APIS/FlightApi/FlightApi';
+import axios from "axios";
+import { post } from "../APIS/FlightApi/FlightApi";
 import { Card, Button, Row, Col, Badge, Spinner } from "react-bootstrap";
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 // import Button from 'react-bootstrap/Button';
-import Modal from 'react-bootstrap/Modal';
-import MyVerticallyCenteredModal from './paymentLoader';
-
+import Modal from "react-bootstrap/Modal";
+import MyVerticallyCenteredModal from "./paymentLoader";
 
 const RazorpayPayment = () => {
   const navigate = useNavigate();
-  const rasocommision = localStorage.getItem('rasocommision')
+  const rasocommision = localStorage.getItem("rasocommision");
   const location = useLocation();
-  const { passengerSelections = [], SSR, mergedPassengersData, ReturnSSR, isRoundTrip, ReturnData } = location.state || {};
+  const {
+    passengerSelections = [],
+    SSR,
+    mergedPassengersData,
+    ReturnSSR,
+    isRoundTrip,
+    ReturnData,
+  } = location.state || {};
 
-  const resFare = localStorage.getItem('fareSummery')
-  const SelectedFare = JSON.parse(resFare)
+  const resFare = localStorage.getItem("fareSummery");
+  const SelectedFare = JSON.parse(resFare);
   const [loading, setLoading] = useState(false);
   const [fare, setfare] = useState(SelectedFare);
   const [journeyType, setjourneyType] = useState(null);
   const [modalShow, setModalShow] = useState(false);
   const [IsBook, setIsBook] = useState(false);
 
-
   useEffect(() => {
-    const journeyType = localStorage.getItem('tripType');
-    setjourneyType(journeyType)
+    const journeyType = localStorage.getItem("tripType");
+    setjourneyType(journeyType);
 
-    if (journeyType == 'roundtrip') {
-      const resD = localStorage.getItem('fareSummery');
+    if (journeyType == "roundtrip") {
+      const resD = localStorage.getItem("fareSummery");
       if (resD) {
         try {
           const fareSummery = JSON.parse(resD);
           setfare(fareSummery);
         } catch (error) {
-          console.error("❌ Error parsing fareSummery from localStorage:", error);
+          console.error(
+            "❌ Error parsing fareSummery from localStorage:",
+            error
+          );
         }
       }
     }
@@ -45,57 +53,91 @@ const RazorpayPayment = () => {
   // const baseFare = journeyType=='roundtrip'? fare?.onward.Fare.PublishedPrice+fare?.return.Fare.PublishedPrice : fare?.PublishedPrice || 0;
   let totalReturn = 0;
   if (isRoundTrip) {
-    totalReturn = mergedPassengersData.reduce((sum, p) =>
-      sum +
-      (p.ReturnMeal?.reduce?.((t, x) => t + (x.Price || 0), 0) || 0) +
-      (p.ReturnSeat?.reduce?.((t, x) => t + (x.Price || 0), 0) || 0) +
-      (p.ReturnBaggage?.reduce?.((t, x) => t + (x.Price || 0), 0) || 0)
-      , 0);
+    totalReturn = mergedPassengersData.reduce(
+      (sum, p) =>
+        sum +
+        (p.ReturnMeal?.reduce?.((t, x) => t + (x.Price || 0), 0) || 0) +
+        (p.ReturnSeat?.reduce?.((t, x) => t + (x.Price || 0), 0) || 0) +
+        (p.ReturnBaggage?.reduce?.((t, x) => t + (x.Price || 0), 0) || 0),
+      0
+    );
   }
 
-  const baseFare = journeyType === 'roundtrip'
-    ? (fare?.onward?.Fare?.PublishedPrice && fare?.return?.Fare?.PublishedPrice
-      ? fare.onward.Fare.PublishedPrice + fare.return.Fare.PublishedPrice
-      : fare?.PublishedPrice || 0)
-    : fare?.PublishedPrice || 0;
+  const baseFare =
+    journeyType === "roundtrip"
+      ? fare?.onward?.Fare?.PublishedPrice && fare?.return?.Fare?.PublishedPrice
+        ? fare.onward.Fare.PublishedPrice + fare.return.Fare.PublishedPrice
+        : fare?.PublishedPrice || 0
+      : fare?.PublishedPrice || 0;
 
   const tax = baseFare * 0.18;
-  const serviceCharge = baseFare * rasocommision / 100;
-  const totalMeal = passengerSelections.reduce((acc, p) => acc + (p?.meal?.Price || 0), 0);
-  const totalBaggage = passengerSelections.reduce((acc, p) => acc + (p?.baggage?.Price || 0), 0);
-  const totalSeat = passengerSelections.reduce((acc, p) => acc + (p?.seat?.Price || 0), 0);
-  const finalAmount = (baseFare + totalMeal + totalBaggage + totalSeat + serviceCharge + totalReturn).toFixed(2);
-  const storedPassengers = localStorage.getItem('passengersData');
-  let passengersData = storedPassengers ? JSON.parse(storedPassengers) : []
+  const serviceCharge = (baseFare * rasocommision) / 100;
+  const totalMeal = passengerSelections.reduce(
+    (acc, p) => acc + (p?.meal?.Price || 0),
+    0
+  );
+  const totalBaggage = passengerSelections.reduce(
+    (acc, p) => acc + (p?.baggage?.Price || 0),
+    0
+  );
+  const totalSeat = passengerSelections.reduce(
+    (acc, p) => acc + (p?.seat?.Price || 0),
+    0
+  );
+  const finalAmount = (
+    baseFare +
+    totalMeal +
+    totalBaggage +
+    totalSeat +
+    serviceCharge +
+    totalReturn
+  ).toFixed(2);
+  const storedPassengers = localStorage.getItem("passengersData");
+  let passengersData = storedPassengers ? JSON.parse(storedPassengers) : [];
 
   const BookingConfermation = async () => {
     try {
-      const storedPassengers = localStorage.getItem('passengersData');
-      const resData = localStorage.getItem('selectedFlight');
+      const storedPassengers = localStorage.getItem("passengersData");
+      const resData = localStorage.getItem("selectedFlight");
 
-      let selectedFlight = JSON.parse(resData);  // ✅ Use let
+      let selectedFlight = JSON.parse(resData); // ✅ Use let
 
-      let passengersData = storedPassengers ? JSON.parse(storedPassengers) : [];  // ✅ Use let
-      const SearchTokenId = localStorage.getItem('searchToken');
+      let passengersData = storedPassengers ? JSON.parse(storedPassengers) : []; // ✅ Use let
+      const SearchTokenId = localStorage.getItem("searchToken");
       const mergedPassengers = passengersData.map((passenger, index) => {
         const selection = passengerSelections[index] || {};
         return {
           ...passenger,
-          Baggage: journeyType == 'roundtrip' ? passenger.Baggage : selection.baggage ? [selection.baggage] : [],
-          Meal: journeyType == 'roundtrip' ? passenger.Meal : selection.meal ? [selection.meal] : [],
-          Seat: journeyType == 'roundtrip' ? passenger.Seat : selection.seat ? [selection.seat] : [],
+          Baggage:
+            journeyType == "roundtrip"
+              ? passenger.Baggage
+              : selection.baggage
+              ? [selection.baggage]
+              : [],
+          Meal:
+            journeyType == "roundtrip"
+              ? passenger.Meal
+              : selection.meal
+              ? [selection.meal]
+              : [],
+          Seat:
+            journeyType == "roundtrip"
+              ? passenger.Seat
+              : selection.seat
+              ? [selection.seat]
+              : [],
         };
       });
-      const IP = localStorage.getItem('UserIp');
+      const IP = localStorage.getItem("UserIp");
       function formatDateToISOString(dateStr) {
         if (!dateStr) return null;
-        return new Date(dateStr).toISOString().split('.')[0]; // Removes milliseconds
+        return new Date(dateStr).toISOString().split(".")[0]; // Removes milliseconds
       }
 
       let data;
       let responseReturn;
 
-      passengersData = mergedPassengers.map(passenger => ({
+      passengersData = mergedPassengers.map((passenger) => ({
         ...passenger,
         DateOfBirth: formatDateToISOString(passenger.DateOfBirth),
         PassportExpiry: formatDateToISOString(passenger.PassportExpiry),
@@ -103,9 +145,9 @@ const RazorpayPayment = () => {
       }));
 
       const clean = (obj) => JSON.parse(JSON.stringify(obj));
-      console.log('passengersDatak', passengersData)
+      console.log("passengersDatak", passengersData);
 
-      let onwardPassengers = passengersData.map(passenger =>
+      let onwardPassengers = passengersData.map((passenger) =>
         clean({
           ...passenger,
           Baggage: passenger.Baggage,
@@ -113,18 +155,18 @@ const RazorpayPayment = () => {
           Seat: passenger.Seat,
           ReturnMeal: undefined,
           ReturnSeat: undefined,
-          ReturnBaggage: undefined
+          ReturnBaggage: undefined,
         })
       );
-      console.log('onwardPassengers', onwardPassengers)
+      console.log("onwardPassengers", onwardPassengers);
 
       let returnPassengers;
       if (
-        journeyType === 'roundtrip' &&
+        journeyType === "roundtrip" &&
         fare?.onward?.FareId &&
         fare?.return?.FareId
       ) {
-        returnPassengers = passengersData.map(passenger =>
+        returnPassengers = passengersData.map((passenger) =>
           clean({
             ...passenger,
             Baggage: passenger.ReturnBaggage,
@@ -132,50 +174,51 @@ const RazorpayPayment = () => {
             Seat: passenger.ReturnSeat,
             ReturnMeal: undefined,
             ReturnSeat: undefined,
-            ReturnBaggage: undefined
+            ReturnBaggage: undefined,
           })
         );
       }
 
-      console.log('returnPassengers', returnPassengers)
+      console.log("returnPassengers", returnPassengers);
 
       const payload = {
         UserIp: IP,
-        ResultIndex: journeyType === 'roundtrip'
-          ? (fare?.onward?.FareId || selectedFlight?.FareList[0]?.FareId || '')
-          : (selectedFlight?.FareList[0]?.FareId || ''),
+        ResultIndex:
+          journeyType === "roundtrip"
+            ? fare?.onward?.FareId || selectedFlight?.FareList[0]?.FareId || ""
+            : selectedFlight?.FareList[0]?.FareId || "",
 
         // ResultIndex: journeyType=='roundtrip'? fare.onward.FareId: selectedFlight?.FareList[0].FareId || '',
-        SearchTokenId: SearchTokenId || '',
+        SearchTokenId: SearchTokenId || "",
         CouponDiscount: SelectedFare?.CouponDiscount || 0,
         vendorCommission: serviceCharge,
-        Passengers: onwardPassengers
+        Passengers: onwardPassengers,
       };
-      const response = await post(payload, '/airservice/book');
+      const response = await post(payload, "/airservice/book");
 
       if (
-        journeyType === 'roundtrip' &&
+        journeyType === "roundtrip" &&
         fare?.onward?.FareId &&
         fare?.return?.FareId
       ) {
         const payload = {
           UserIp: IP,
-          ResultIndex: fare.return.FareId || selectedFlight?.FareList?.[0]?.FareId || '',
-          SearchTokenId: SearchTokenId || '',
+          ResultIndex:
+            fare.return.FareId || selectedFlight?.FareList?.[0]?.FareId || "",
+          SearchTokenId: SearchTokenId || "",
           CouponDiscount: SelectedFare?.CouponDiscount || 0,
           vendorCommission: serviceCharge,
-          Passengers: returnPassengers
+          Passengers: returnPassengers,
         };
 
-        responseReturn = await post(payload, '/airservice/book');
+        responseReturn = await post(payload, "/airservice/book");
         data = {
           onward: response,
-          return: responseReturn
+          return: responseReturn,
         };
-      }
-      else {
+      } else {
         data = {
-          onward: response
+          onward: response,
         };
       }
 
@@ -190,40 +233,48 @@ const RazorpayPayment = () => {
       //   const response = await post(payload, '/airservice/book');
       // }
 
-
-
       if (response?.Error?.ErrorCode === 0) {
         setModalShow(false);
         toast.success("Flight booked successfully ");
-        navigate('/booking/success', { state: { bookingId: response.bookingId, result: data } });
+        navigate("/booking/success", {
+          state: { bookingId: response.bookingId, result: data },
+        });
       } else {
         // setModalShow(false);
         //  setIsBook(true);
         //    setTimeout(() => {
-          
+
         // setModalShow(true);
         // alert(IsBook)
         // }, 1000);
-        console.error("❌ Booking Failed:", response?.Error?.ErrorMessage || "Unknown error");
+        console.error(
+          "❌ Booking Failed:",
+          response?.Error?.ErrorMessage || "Unknown error"
+        );
         toast.error(response?.error?.Error?.ErrorMessage || "Booking failed");
-
       }
-        setModalShow(false);
-
+      setModalShow(false);
     } catch (error) {
-      setModalShow(false)
+      setModalShow(false);
 
-      toast.error(error?.response?.data?.error?.Error?.ErrorMessage || "Something went wrong");
+      toast.error(
+        error?.response?.data?.error?.Error?.ErrorMessage ||
+          "Something went wrong"
+      );
     }
   };
 
-
-
-  const getBookingConfermation = async ({ paymentData, SelectedFare, order }) => {
+  const getBookingConfermation = async ({
+    paymentData,
+    SelectedFare,
+    order,
+  }) => {
     try {
-      const storedPassengers = localStorage.getItem('passengersData');
-      const passengersData = storedPassengers ? JSON.parse(storedPassengers) : [];
-      const SearchTokenId = localStorage.getItem('searchToken');
+      const storedPassengers = localStorage.getItem("passengersData");
+      const passengersData = storedPassengers
+        ? JSON.parse(storedPassengers)
+        : [];
+      const SearchTokenId = localStorage.getItem("searchToken");
 
       const payload = {
         amount: order.amount / 100,
@@ -232,23 +283,26 @@ const RazorpayPayment = () => {
         razorpay_signature: paymentData.razorpay_signature,
         bookingType: "FLIGHT",
         Flight: {
-          ResultIndex: journeyType === 'roundtrip'
-          ? (fare?.onward?.FareId || SelectedFare?.FareId || '')
-          : (SelectedFare?.FareId || ''),
-          SearchTokenId: SearchTokenId || '',
+          ResultIndex:
+            journeyType === "roundtrip"
+              ? fare?.onward?.FareId || SelectedFare?.FareId || ""
+              : SelectedFare?.FareId || "",
+          SearchTokenId: SearchTokenId || "",
           CouponDiscount: SelectedFare?.CouponDiscount || 0,
-          Passengers: passengersData // No need to attach SSR data again
-        }
+          Passengers: passengersData, // No need to attach SSR data again
+        },
       };
-      const response = await post(payload, '/airservice/validate');
-      await BookingConfermation()
+      const response = await post(payload, "/airservice/validate");
+      await BookingConfermation();
     } catch (error) {
-      setModalShow(false)
-      console.error("Booking Validation Failed:", error.response?.data || error.message);
+      setModalShow(false);
+      console.error(
+        "Booking Validation Failed:",
+        error.response?.data || error.message
+      );
       // throw error;
     }
   };
-
 
   const handlePayment = async () => {
     setLoading(true);
@@ -260,26 +314,35 @@ const RazorpayPayment = () => {
       const response = await post(data, "/airservice/create-order");
       const order = response.order;
       const options = {
-        key: "rzp_live_RMb7SMI7mR2cCA",
+        key: "rzp_test_glwdvx2PlFDStN",
         amount: order.amount * 100,
         currency: "INR",
         order_id: order.id,
         handler: function (response) {
-          toast.success('Payment Successful! ')
+          toast.success("Payment Successful! ");
           const paymentData = {
             razorpay_order_id: response.razorpay_order_id,
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_signature: response.razorpay_signature,
           };
-          if (!paymentData.razorpay_payment_id || !paymentData.razorpay_signature) {
+          if (
+            !paymentData.razorpay_payment_id ||
+            !paymentData.razorpay_signature
+          ) {
             toast.error("❌ Payment response is incomplete.");
             return;
           }
-          setModalShow(true)
-          getBookingConfermation({ paymentData, SSR, SelectedFare, passengerSelections, order })
+          setModalShow(true);
+          getBookingConfermation({
+            paymentData,
+            SSR,
+            SelectedFare,
+            passengerSelections,
+            order,
+          });
         },
         prefill: {
-          name: passengersData.FirstName + ' ' + passengersData.LastName,
+          name: passengersData.FirstName + " " + passengersData.LastName,
           email: passengersData.Email,
           contact: passengersData.ContactNo,
         },
@@ -290,14 +353,12 @@ const RazorpayPayment = () => {
         theme: {
           color: "#dc3545",
         },
-
-
       };
       const rzp1 = new window.Razorpay(options);
       rzp1.open();
     } catch (err) {
       console.error("Payment initiation failed", err);
-      toast.error(err?.response?.data?.error)
+      toast.error(err?.response?.data?.error);
     } finally {
       setLoading(false);
     }
@@ -305,10 +366,7 @@ const RazorpayPayment = () => {
 
   return (
     <div className="container mt-5">
-
-      <MyVerticallyCenteredModal IsBook={IsBook}
-        show={modalShow}
-      />
+      <MyVerticallyCenteredModal IsBook={IsBook} show={modalShow} />
       <Card className="shadow-sm border-0">
         <Card.Header className="bg-white">
           <h5 className="fw-bold mb-0">Confirm Payment</h5>
@@ -316,15 +374,23 @@ const RazorpayPayment = () => {
 
         <Card.Body>
           <Row className="mb-3">
-            <Col xs={6}><span className="text-muted">Booking Amount</span></Col>
-            <Col xs={6} className="text-end fw-semibold">₹ {finalAmount}</Col>
+            <Col xs={6}>
+              <span className="text-muted">Booking Amount</span>
+            </Col>
+            <Col xs={6} className="text-end fw-semibold">
+              ₹ {finalAmount}
+            </Col>
           </Row>
 
           <hr />
 
           <Row className="mb-2">
-            <Col xs={6}><span className="text-muted">Taxes & Charges</span></Col>
-            <Col xs={6} className="text-end">Included</Col>
+            <Col xs={6}>
+              <span className="text-muted">Taxes & Charges</span>
+            </Col>
+            <Col xs={6} className="text-end">
+              Included
+            </Col>
           </Row>
 
           <Row className="mt-3">
