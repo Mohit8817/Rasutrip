@@ -249,7 +249,9 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
   const totalBeforeCoupon = subtotal + convenienceFee;
 
   // Apply coupon discount to get final total
-  const finalTotal = Math.max(0, totalBeforeCoupon - (couponDiscount || 0));
+  //   const finalTotal = Math.max(0, totalBeforeCoupon - (couponDiscount || 0));
+  const finalTotal = (fareBreakdown.basePrice || 0) + (convenienceFee || 0);
+
   //   const totalBeforeCoupon = subtotal + convenienceFee;
 
   //   // Apply coupon discount to get final amount

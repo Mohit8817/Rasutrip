@@ -336,7 +336,9 @@ Please process my refund immediately. Thank you!`;
       paymentId:
         paymentData?.paymentId || paymentData?.razorpay_payment_id || "N/A",
       orderId: paymentData?.orderId || paymentData?.razorpay_order_id || "N/A",
-      amount: paymentData?.amount || roundedTotal || 0,
+      // amount: paymentData?.amount || roundedTotal || 0,
+      amount: paymentData?.amount || finalTotal || 0,
+
       errorMessage: paymentData?.errorMessage || reason || "",
       errorCode: paymentData?.errorCode || "",
       timestamp: new Date().toISOString(),
@@ -498,15 +500,20 @@ Please process my refund immediately. Thank you!`;
     };
   };
 
+  // const priceCalculation = calculateFinalPrice();
+  // const {
+  //   roundedTotal,
+  //   couponDiscount: finalCouponDiscount,
+  //   couponData: activeCoupon,
+  //   subtotalAfterHotelDiscount,
+  //   vendorCommissionAmount,
+  //   vendorCommissionPercentage,
+  // } = priceCalculation;
+
   const priceCalculation = calculateFinalPrice();
-  const {
-    roundedTotal,
-    couponDiscount: finalCouponDiscount,
-    couponData: activeCoupon,
-    subtotalAfterHotelDiscount,
-    vendorCommissionAmount,
-    vendorCommissionPercentage,
-  } = priceCalculation;
+  const { actualBaseFare, vendorCommissionAmount } = priceCalculation;
+
+  const finalTotal = (actualBaseFare || 0) + (vendorCommissionAmount || 0);
 
   // Custom Loading Popup Component
   const BookingLoadingModal = () => (
@@ -838,10 +845,10 @@ Please process my refund immediately. Thank you!`;
       GuestNationality: "IN",
       NoOfRooms: String(processedRooms.length),
       ClientReferenceNo: uniqueClientRef,
-      CouponDiscount: finalCouponDiscount,
+      // CouponDiscount: finalCouponDiscount,
       vendorCommission: vendorCommissionAmount,
       agentCommissionPercent: 0,
-      vendorCommissionPercentage: vendorCommissionPercentage,
+      // vendorCommissionPercentage: vendorCommissionPercentage,
       IsVoucherBooking: "true",
       HotelRoomsDetails: processedRooms,
       UserIp: String(bookingDetails.UserIp || "49.36.217.215"),
@@ -849,14 +856,14 @@ Please process my refund immediately. Thank you!`;
         bookingDetails.SearchTokenId ||
           "5e423a789321f6edcf0de63bc80b3342b5c318ed"
       ),
-      appliedCoupon: activeCoupon
-        ? {
-            code: activeCoupon.code || activeCoupon.couponCode,
-            discount: finalCouponDiscount,
-            originalDiscount: activeCoupon.discount || activeCoupon.value,
-            type: activeCoupon.discountType || activeCoupon.type,
-          }
-        : null,
+      // appliedCoupon: activeCoupon
+      // ? {
+      // code: activeCoupon.code || activeCoupon.couponCode,
+      // discount: finalCouponDiscount,
+      // originalDiscount: activeCoupon.discount || activeCoupon.value,
+      // type: activeCoupon.discountType || activeCoupon.type,
+      // }
+      // : null,
     };
 
     return finalPayload;
@@ -935,7 +942,9 @@ Please process my refund immediately. Thank you!`;
           {
             paymentId: response.razorpay_payment_id,
             orderId: response.razorpay_order_id,
-            amount: roundedTotal,
+            // amount: roundedTotal,
+            amount: finalTotal,
+
             errorMessage: errorMessage,
           },
           "Authentication token missing - unable to complete booking"
@@ -964,7 +973,9 @@ Please process my refund immediately. Thank you!`;
           {
             paymentId: response.razorpay_payment_id,
             orderId: response.razorpay_order_id,
-            amount: roundedTotal,
+            // amount: roundedTotal,
+            amount: finalTotal,
+
             errorMessage: errorMessage,
           },
           "Booking API returned no response"
@@ -1021,7 +1032,9 @@ Please process my refund immediately. Thank you!`;
           {
             paymentId: response.razorpay_payment_id,
             orderId: response.razorpay_order_id,
-            amount: roundedTotal,
+            // amount: roundedTotal,
+            amount: finalTotal,
+
             errorMessage: errorMessage,
             errorCode: errorCode,
           },
@@ -1102,7 +1115,9 @@ Please process my refund immediately. Thank you!`;
           {
             paymentId: response.razorpay_payment_id,
             orderId: response.razorpay_order_id,
-            amount: roundedTotal,
+            // amount: roundedTotal,
+            amount: finalTotal,
+
             errorMessage:
               bookingResponse?.message || "Booking validation failed",
           },
@@ -1171,7 +1186,9 @@ Please process my refund immediately. Thank you!`;
         navigate("/hotel/confirmation", {
           state: {
             booking: bookingResponse,
-            amount: roundedTotal,
+            // amount: roundedTotal,
+            amount: finalTotal,
+
             reviewData,
             hotelDetails: {
               name: formattedBookingData?.HotelName,
@@ -1195,8 +1212,8 @@ Please process my refund immediately. Thank you!`;
               searchTokenId: bookingResponse.SearchTokenId,
             },
             bookingResult: bookingResponse,
-            couponData: activeCoupon,
-            couponDiscount: finalCouponDiscount,
+            // couponData: activeCoupon,
+            // couponDiscount: finalCouponDiscount,
           },
         });
       }, 1500);
@@ -1208,7 +1225,9 @@ Please process my refund immediately. Thank you!`;
         {
           paymentId: response.razorpay_payment_id,
           orderId: response.razorpay_order_id,
-          amount: roundedTotal,
+          // amount: roundedTotal,
+          amount: finalTotal,
+
           errorMessage: getApiErrorMessage(bookingError),
         },
         `Exception during booking process: ${getApiErrorMessage(bookingError)}`
@@ -1304,7 +1323,9 @@ Please process my refund immediately. Thank you!`;
 
       // ENHANCED: Create order with comprehensive error handling
       try {
-        const orderResponse = await createHotelOrder(roundedTotal);
+        // const orderResponse = await createHotelOrder(roundedTotal);
+        const orderResponse = await createHotelOrder(finalTotal);
+
         const order = orderResponse?.order;
 
         if (!order?.id) {
@@ -1331,7 +1352,9 @@ Please process my refund immediately. Thank you!`;
               setBookingStage("Validating payment...");
 
               const validatePayload = {
-                amount: roundedTotal,
+                // amount: roundedTotal,
+                amount: finalTotal,
+
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
@@ -1361,7 +1384,9 @@ Please process my refund immediately. Thank you!`;
                     {
                       paymentId: response.razorpay_payment_id,
                       orderId: response.razorpay_order_id,
-                      amount: roundedTotal,
+                      // amount: roundedTotal,
+                      amount: finalTotal,
+
                       errorMessage:
                         validation?.message ||
                         validation?.error?.message ||
@@ -1386,7 +1411,9 @@ Please process my refund immediately. Thank you!`;
                   {
                     paymentId: response.razorpay_payment_id,
                     orderId: response.razorpay_order_id,
-                    amount: roundedTotal,
+                    // amount: roundedTotal,
+                    amount: finalTotal,
+
                     errorMessage: getApiErrorMessage(validationError),
                   },
                   `Payment validation API error: ${getApiErrorMessage(
@@ -1407,7 +1434,9 @@ Please process my refund immediately. Thank you!`;
                 {
                   paymentId: response.razorpay_payment_id,
                   orderId: response.razorpay_order_id,
-                  amount: roundedTotal,
+                  // amount: roundedTotal,
+                  amount: finalTotal,
+
                   errorMessage: getApiErrorMessage(handlerError),
                 },
                 `Payment handler error: ${getApiErrorMessage(handlerError)}`
@@ -1665,9 +1694,9 @@ Please process my refund immediately. Thank you!`;
                     </div>
                     <div className="col-md-4 text-end">
                       <div className="fs-5 fw-bold">
-                        ₹ {roundedTotal.toLocaleString()}
+                        ₹ {finalTotal.toFixed(2)}
                       </div>
-                      {finalCouponDiscount > 0 && (
+                      {/* {finalCouponDiscount > 0 && (
                         <div className="small text-success fw-bold">
                           Coupon Savings: ₹{finalCouponDiscount.toFixed(2)}
                         </div>
@@ -1676,7 +1705,7 @@ Please process my refund immediately. Thank you!`;
                         <div className="text-muted small text-decoration-line-through">
                           Original: ₹{subtotalAfterHotelDiscount.toFixed(2)}
                         </div>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </div>
@@ -1720,7 +1749,7 @@ Please process my refund immediately. Thank you!`;
 
               <Card.Footer className="bg-light">
                 <div className="text-end">
-                  <Button
+                  {/* <Button
                     className="px-5 py-2 btn-red"
                     onClick={handlePayment}
                     disabled={
@@ -1745,7 +1774,35 @@ Please process my refund immediately. Thank you!`;
                     ) : (
                       <>Pay ₹{roundedTotal.toLocaleString()}</>
                     )}
+                  </Button> */}
+                  <Button
+                    className="px-5 py-2 btn-red"
+                    onClick={handlePayment}
+                    disabled={
+                      finalTotal <= 0 ||
+                      loading ||
+                      bookingInProgress ||
+                      bookingProcessed
+                    }
+                  >
+                    {loading || bookingInProgress ? (
+                      <>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                        ></span>
+                        {bookingInProgress
+                          ? "Processing Booking..."
+                          : "Loading Payment..."}
+                      </>
+                    ) : bookingProcessed ? (
+                      <>Booking Processed</>
+                    ) : (
+                      <>Pay ₹{finalTotal.toFixed(2)}</>
+                    )}
                   </Button>
+
+                  {/* faizkhan */}
                 </div>
               </Card.Footer>
             </Card>

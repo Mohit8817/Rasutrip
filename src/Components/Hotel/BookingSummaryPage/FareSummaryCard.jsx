@@ -9,8 +9,22 @@ const FareSummaryCard = ({
   couponDiscount = 0,
 }) => {
   // Get data from blocked room response if available
-  const roomData = blockedRoomData?.[0] || {};
+  const [gstPercentage, setGstPercentage] = React.useState(0);
+
+  // const roomData = blockedRoomData?.[0] || {};
+  // const priceData = roomData?.Price || {};
+  const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
   const priceData = roomData?.Price || {};
+
+  React.useEffect(() => {
+    if (priceData?.GST) {
+      const totalGst =
+        (priceData.GST.CGSTRate || 0) +
+        (priceData.GST.SGSTRate || 0) +
+        (priceData.GST.IGSTRate || 0);
+      setGstPercentage(totalGst);
+    }
+  }, [priceData]);
 
   console.log("🏷️ FareSummary - blockedRoomData:", blockedRoomData);
   console.log("🏷️ FareSummary - priceData:", priceData);
@@ -31,29 +45,70 @@ const FareSummaryCard = ({
   const tds = priceData.TDS || 0;
 
   // GST data from blocked room response
-  const gstData = priceData.GST || {};
-  const cgstAmount = gstData.CGSTAmount || 0;
-  const sgstAmount = gstData.SGSTAmount || 0;
-  const igstAmount = gstData.IGSTAmount || 0;
-  const cgstRate = gstData.CGSTRate || 0;
-  const sgstRate = gstData.SGSTRate || 0;
-  const igstRate = gstData.IGSTRate || 0;
+  // const gstData = priceData.GST || {};
+  // const cgstAmount = gstData.CGSTAmount || 0;
+  // const sgstAmount = gstData.SGSTAmount || 0;
+  // const igstAmount = gstData.IGSTAmount || 0;
+  // const cgstRate = gstData.CGSTRate || 0;
+  // const sgstRate = gstData.SGSTRate || 0;
+  // const igstRate = gstData.IGSTRate || 0;
 
   // Use the published price from blocked room API as the main price
   const actualBaseFare = finalPublishedPrice;
 
   // Calculate vendor commission if not available from API
-  const vendorCommissionPercentage =
-    priceDetails?.vendorCommissionPercentage || 12;
+  // Get vendor commission percentage from priceDetails or fallback to 0
+  // ✅ Get vendor commission % safely
+  // const vendorCommissionPercentage = Number(
+  //   priceData.VendorCommissionPercentage ??
+  //     priceDetails?.vendorCommissionPercentage ??
+  //     0
+  // );
+
+  // // ✅ Only calculate if percentage > 0
+  // const vendorCommissionAmount =
+  //   vendorCommissionPercentage > 0
+  //     ? (actualBaseFare * vendorCommissionPercentage) / 100
+  //     : 0;
+
+  // console.log("📊 Vendor Commission %:", vendorCommissionPercentage);
+  // console.log("📊 Calculated Commission:", vendorCommissionAmount);
+
+  // console.log("📊 Calculated Commission:", vendorCommissionAmount);
+  // ✅ Correct key from API
+  const vendorCommissionPercentage = Number(
+    priceData.rasutripCommissionPercentage ??
+      priceDetails?.rasutripCommissionPercentage ??
+      priceDetails?.VendorCommissionPercentage ??
+      priceDetails?.vendorCommissionPercentage ??
+      0
+  );
+
+  // ✅ Calculate Commission
   const vendorCommissionAmount =
-    agentCommission || (actualBaseFare * vendorCommissionPercentage) / 100;
+    vendorCommissionPercentage > 0
+      ? (actualBaseFare * vendorCommissionPercentage) / 100
+      : 0;
+
+  console.log("Correct Commission %:", vendorCommissionPercentage);
+  console.log("Correct Commission Amount:", vendorCommissionAmount);
 
   // Calculate total GST
-  let totalGST = cgstAmount + sgstAmount + igstAmount;
-  if (totalGST === 0 && (cgstRate > 0 || sgstRate > 0 || igstRate > 0)) {
-    const gstBase = actualBaseFare + vendorCommissionAmount;
-    totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
-  }
+  // Read GST from API
+  // GST Base
+  // GST Base
+
+  // GST % for display
+  // console.log("GST from API:", priceData.GST);
+
+  // GST data from API (blockedRoomData -> priceData)
+
+  // ✅ Now GST will work
+  // const gstData = priceData?.GST || {};
+  // const gstPercentage =
+  //   (gstData.CGSTRate || 0) + (gstData.SGSTRate || 0) + (gstData.IGSTRate || 0);
+
+  console.log("✅ GST Percentage from API:", gstPercentage);
 
   // ✅ CORRECTED: New calculation logic matching the payment component
   // STEP 1: Calculate subtotal with all charges BEFORE any discounts
@@ -63,7 +118,7 @@ const FareSummaryCard = ({
     vendorCommissionAmount +
     finalServiceCharges +
     finalOtherCharges +
-    totalGST +
+    // totalGST +
     tds;
 
   // STEP 2: Apply hotel discount first (if any)
@@ -78,7 +133,11 @@ const FareSummaryCard = ({
 
   // Final customer amount
   const customerTotal = finalAmountAfterCoupon;
-  const roundedTotal = parseFloat(customerTotal.toFixed(2));
+  // const roundedTotal = parseFloat(customerTotal.toFixed(2));
+  // Final Total = Base Fare + Convenience Fee (Vendor Commission)
+  const roundedTotal = parseFloat(
+    (actualBaseFare + vendorCommissionAmount).toFixed(2)
+  );
 
   console.log("💰 CORRECTED FareSummary Price Breakdown:", {
     step1_subtotalBeforeDiscounts: subtotalBeforeDiscounts,
@@ -101,52 +160,29 @@ const FareSummaryCard = ({
             <span>₹ {finalRoomPrice.toLocaleString()}</span>
           </div>
         )} */}
+
         {/* Published Price (Main price for payment) */}
         <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
           <span>Base Fare</span>
-          <span>
-            {/* ₹ {actualBaseFare.toLocaleString()} */}₹{" "}
-            {Number(actualBaseFare).toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
+          <span>₹ {actualBaseFare.toLocaleString()}</span>
         </div>
+
         {/* Taxes */}
-        {/* {finalTax > 0 && (
+        {finalTax > 0 && (
           <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
             <span>Taxes</span>
             <span>₹ {finalTax.toFixed(2)}</span>
           </div>
-        )} */}
-        {/* Taxes */}
-        <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
-          <span>Taxes</span>
-          <span>
-            ₹{" "}
-            {Number(finalTax).toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-        </div>
-        {/* Service Charges */}
-        {/* {finalServiceCharges > 0 && (
+        )}
+
+        {/* Service Charges
+        {finalServiceCharges > 0 && (
           <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
             <span>Service Charges</span>
             <span>₹ {finalServiceCharges.toFixed(2)}</span>
           </div>
-        )} */}
-        <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
-          <span>Service Charges</span>
-          <span>
-            ₹{" "}
-            {Number(finalServiceCharges).toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
-        </div>
+        )}
+
         {/* Other Charges */}
         {/* {finalOtherCharges > 0 && (
           <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
@@ -154,38 +190,26 @@ const FareSummaryCard = ({
             <span>₹ {finalOtherCharges.toFixed(2)}</span>
           </div>
         )} */}
+
+        {/* Service Charges */}
+        <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
+          <span>Service Charges</span>
+          <span>₹ {finalServiceCharges.toFixed(2)}</span>
+        </div>
+
+        {/* Other Charges */}
         <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
           <span>Other Charges</span>
-          <span>
-            ₹{" "}
-            {Number(finalOtherCharges).toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
+          <span>₹ {finalOtherCharges.toFixed(2)}</span>
         </div>
+
         {/* Convenience Fee (Your Commission) */}
-        {/* {vendorCommissionAmount > 0 && (
-          <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
-            <span>Convenience Fee</span>
-            <span>₹ {vendorCommissionAmount.toFixed(2)}</span>
-          </div>
-        )} */}
+
         <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
           <span>Convenience Fee</span>
-          <span>
-            {/* ₹{" "}
-            {Number(vendorCommissionAmount).toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })} */}
-            ₹{" "}
-            {Number(vendorCommissionAmount).toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>
+          <span>₹ {vendorCommissionAmount.toFixed(2)}</span>
         </div>
+
         {/* GST */}
         {/* {totalGST > 0 && (
           <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
@@ -193,10 +217,13 @@ const FareSummaryCard = ({
             <span>₹ {totalGST.toFixed(2)}</span>
           </div>
         )} */}
-        {/* <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
-          <span>GST (+)</span>
-          <span>18%</span>
-        </div> */}
+        {/* GST */}
+        {gstPercentage > 0 && (
+          <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
+            <span>GST</span>
+            <span>{gstPercentage}%</span>
+          </div>
+        )}
 
         {/* TDS */}
         {/* {tds > 0 && (
@@ -205,11 +232,13 @@ const FareSummaryCard = ({
             <span>₹ {tds.toFixed(2)}</span>
           </div>
         )} */}
+
         {/* ✅ CORRECTED: Show subtotal before ANY discounts */}
         {/* <div className="d-flex justify-content-between border-bottom pb-2 mb-2 fw-bold">
           <span>Subtotal</span>
           <span>₹ {subtotalBeforeDiscounts.toFixed(2)}</span>
         </div> */}
+
         {/* Hotel Discount (if any) - Applied FIRST */}
         {finalDiscount > 0 && (
           <div className="d-flex justify-content-between border-bottom pb-2 mb-2 text-success">
@@ -217,6 +246,7 @@ const FareSummaryCard = ({
             <span>- ₹ {finalDiscount.toFixed(2)}</span>
           </div>
         )}
+
         {/* Show amount after hotel discount (before coupon) */}
         {finalDiscount > 0 && finalCouponDiscount > 0 && (
           <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
@@ -224,6 +254,7 @@ const FareSummaryCard = ({
             <span>₹ {subtotalAfterHotelDiscount.toFixed(2)}</span>
           </div>
         )}
+
         {/* ✅ CORRECTED: Coupon Discount - Applied LAST */}
         {finalCouponDiscount > 0 && (
           <div className="d-flex justify-content-between border-bottom pb-2 mb-2">
@@ -254,16 +285,13 @@ const FareSummaryCard = ({
             </span>
           </div>
         )}
+
         {/* ✅ CORRECTED: Final Total Payable Amount */}
         <div className="d-flex justify-content-between pt-3 mt-3 border-top">
           <span className="fs-5 fw-semibold">Total Payable</span>
           <div className="text-end">
             <span className="fs-5 fw-semibold">
-              {/* ₹ {roundedTotal.toLocaleString()}₹{" "} */}
-              {Number(actualBaseFare + vendorCommissionAmount).toLocaleString(
-                "en-IN",
-                { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-              )}
+              ₹ {roundedTotal.toLocaleString()}
             </span>
             {/* Show original price if any discount applied */}
             {(finalDiscount > 0 || finalCouponDiscount > 0) && (
