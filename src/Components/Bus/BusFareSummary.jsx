@@ -257,7 +257,8 @@ const BusFareSummary = ({
   const totalBeforeCoupon = subtotal + convenienceFee;
 
   // Apply coupon discount to get final total
-  const finalTotal = Math.max(0, totalBeforeCoupon - (couponDiscount || 0));
+  // const finalTotal = Math.max(0, totalBeforeCoupon - (couponDiscount || 0));
+  const finalTotal = (fareData.basePrice || 0) + (convenienceFee || 0);
 
   console.log("BusFareSummary - Final calculation:", {
     fareData,
