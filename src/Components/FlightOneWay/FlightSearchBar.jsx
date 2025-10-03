@@ -372,14 +372,14 @@ const FlightSearchBar = () => {
             </div>
           </Col>
 
-          <Col xs={6} className="d-flex align-items-end justify-content-end">
+          {/* <Col xs={6} className="d-flex align-items-end justify-content-end">
             <button
               onClick={Show}
               className="btn btn-primary btn-sm w-100 ModifyButton"
             >
               Modify
             </button>
-          </Col>
+          </Col> */}
         </Row>
       </div>
 
@@ -437,11 +437,11 @@ const FlightSearchBar = () => {
             </div>
           </Col>
 
-          <Col lg={1} className="text-end">
+          {/* <Col lg={1} className="text-end">
             <button onClick={Show} className="btn btn-primary ModifyButton">
               Modify
             </button>
-          </Col>
+          </Col> */}
         </Row>
       </div>
 

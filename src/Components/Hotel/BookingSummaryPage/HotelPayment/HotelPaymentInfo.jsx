@@ -420,13 +420,91 @@ Please process my refund immediately. Thank you!`;
     );
   };
 
+  // const calculateFinalPrice = () => {
+  //   const { couponData: activeCoupon, couponDiscount: activeCouponDiscount } =
+  //     getCouponData();
+  //   const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
+  //   const priceData = roomData?.Price || {};
+
+  //   const roomPrice = priceData.RoomPrice || 0;
+  //   const publishedPrice =
+  //     priceData.PublishedPrice || priceDetails?.baseFare || 0;
+  //   const tax = priceData.Tax || priceDetails?.tax || 0;
+  //   const discount = priceData.Discount || priceDetails?.discount || 0;
+  //   const serviceCharges =
+  //     priceData.ServiceCharges || priceDetails?.serviceCharges || 0;
+  //   const otherCharges =
+  //     priceData.OtherCharges || priceDetails?.otherCharges || 0;
+  //   const agentCommission = priceData.AgentCommission || 0;
+  //   const tds = priceData.TDS || 0;
+
+  //   const gstData = priceData.GST || {};
+  //   const cgstAmount = gstData.CGSTAmount || 0;
+  //   const sgstAmount = gstData.SGSTAmount || 0;
+  //   const igstAmount = gstData.IGSTAmount || 0;
+  //   const cgstRate = gstData.CGSTRate || 0;
+  //   const sgstRate = gstData.SGSTRate || 0;
+  //   const igstRate = gstData.IGSTRate || 0;
+
+  //   const actualBaseFare = publishedPrice;
+  //   const vendorCommissionPercentage =
+  //     priceDetails?.vendorCommissionPercentage || 12;
+  //   const vendorCommissionAmount =
+  //     agentCommission || (actualBaseFare * vendorCommissionPercentage) / 100;
+
+  //   let totalGST = cgstAmount + sgstAmount + igstAmount;
+  //   if (totalGST === 0 && (cgstRate > 0 || sgstRate > 0 || igstRate > 0)) {
+  //     const gstBase = actualBaseFare + vendorCommissionAmount;
+  //     totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
+  //   }
+
+  //   const subtotalBeforeDiscounts =
+  //     actualBaseFare +
+  //     tax +
+  //     serviceCharges +
+  //     otherCharges +
+  //     vendorCommissionAmount +
+  //     totalGST +
+  //     tds;
+  //   const subtotalAfterHotelDiscount = subtotalBeforeDiscounts - discount;
+  //   const couponDiscountAmount = activeCouponDiscount || 0;
+  //   const finalAmountAfterCoupon = Math.max(
+  //     0,
+  //     subtotalAfterHotelDiscount - couponDiscountAmount
+  //   );
+  //   const customerTotal = finalAmountAfterCoupon;
+
+  //   return {
+  //     roomPrice,
+  //     actualBaseFare,
+  //     tax,
+  //     serviceCharges,
+  //     otherCharges,
+  //     vendorCommissionAmount,
+  //     vendorCommissionPercentage,
+  //     agentCommission,
+  //     tds,
+  //     totalGST,
+  //     cgstAmount,
+  //     sgstAmount,
+  //     igstAmount,
+  //     cgstRate,
+  //     sgstRate,
+  //     igstRate,
+  //     discount,
+  //     couponDiscount: couponDiscountAmount,
+  //     couponData: activeCoupon,
+  //     subtotalBeforeDiscounts,
+  //     subtotalAfterHotelDiscount,
+  //     roundedTotal: parseFloat(customerTotal.toFixed(2)),
+  //   };
+  // };
   const calculateFinalPrice = () => {
     const { couponData: activeCoupon, couponDiscount: activeCouponDiscount } =
       getCouponData();
     const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
     const priceData = roomData?.Price || {};
 
-    const roomPrice = priceData.RoomPrice || 0;
     const publishedPrice =
       priceData.PublishedPrice || priceDetails?.baseFare || 0;
     const tax = priceData.Tax || priceDetails?.tax || 0;
@@ -435,28 +513,22 @@ Please process my refund immediately. Thank you!`;
       priceData.ServiceCharges || priceDetails?.serviceCharges || 0;
     const otherCharges =
       priceData.OtherCharges || priceDetails?.otherCharges || 0;
-    const agentCommission = priceData.AgentCommission || 0;
     const tds = priceData.TDS || 0;
 
+    const actualBaseFare = publishedPrice;
+
+    // ✅ Correct vendor commission: ONLY API value, fallback 0
+    const vendorCommissionPercentage = Number(
+      priceData.rasutripCommissionPercentage ?? 0
+    );
+
+    const vendorCommissionAmount = 50;
     const gstData = priceData.GST || {};
     const cgstAmount = gstData.CGSTAmount || 0;
     const sgstAmount = gstData.SGSTAmount || 0;
     const igstAmount = gstData.IGSTAmount || 0;
-    const cgstRate = gstData.CGSTRate || 0;
-    const sgstRate = gstData.SGSTRate || 0;
-    const igstRate = gstData.IGSTRate || 0;
 
-    const actualBaseFare = publishedPrice;
-    const vendorCommissionPercentage =
-      priceDetails?.vendorCommissionPercentage || 12;
-    const vendorCommissionAmount =
-      agentCommission || (actualBaseFare * vendorCommissionPercentage) / 100;
-
-    let totalGST = cgstAmount + sgstAmount + igstAmount;
-    if (totalGST === 0 && (cgstRate > 0 || sgstRate > 0 || igstRate > 0)) {
-      const gstBase = actualBaseFare + vendorCommissionAmount;
-      totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
-    }
+    const totalGST = cgstAmount + sgstAmount + igstAmount;
 
     const subtotalBeforeDiscounts =
       actualBaseFare +
@@ -466,37 +538,25 @@ Please process my refund immediately. Thank you!`;
       vendorCommissionAmount +
       totalGST +
       tds;
+
     const subtotalAfterHotelDiscount = subtotalBeforeDiscounts - discount;
     const couponDiscountAmount = activeCouponDiscount || 0;
     const finalAmountAfterCoupon = Math.max(
       0,
       subtotalAfterHotelDiscount - couponDiscountAmount
     );
-    const customerTotal = finalAmountAfterCoupon;
 
     return {
-      roomPrice,
       actualBaseFare,
-      tax,
-      serviceCharges,
-      otherCharges,
       vendorCommissionAmount,
       vendorCommissionPercentage,
-      agentCommission,
-      tds,
       totalGST,
-      cgstAmount,
-      sgstAmount,
-      igstAmount,
-      cgstRate,
-      sgstRate,
-      igstRate,
+      roundedTotal: parseFloat(finalAmountAfterCoupon.toFixed(2)),
       discount,
       couponDiscount: couponDiscountAmount,
       couponData: activeCoupon,
       subtotalBeforeDiscounts,
       subtotalAfterHotelDiscount,
-      roundedTotal: parseFloat(customerTotal.toFixed(2)),
     };
   };
 
@@ -1798,7 +1858,11 @@ Please process my refund immediately. Thank you!`;
                     ) : bookingProcessed ? (
                       <>Booking Processed</>
                     ) : (
-                      <>Pay ₹{finalTotal.toFixed(2)}</>
+                      <>
+                        Pay ₹
+                        {priceCalculation.actualBaseFare +
+                          priceCalculation.vendorCommissionAmount}
+                      </>
                     )}
                   </Button>
 
