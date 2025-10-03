@@ -40,7 +40,7 @@ const FareSummaryCard = ({
   const actualBaseFare = finalPublishedPrice;
 
   // Calculate vendor commission if not available from API
-  const vendorCommissionPercentage = priceDetails?.vendorCommissionPercentage || 12;
+  const vendorCommissionPercentage = priceDetails?.vendorCommissionPercentage || ''
   const vendorCommissionAmount = agentCommission || (actualBaseFare * vendorCommissionPercentage) / 100;
 
   // Calculate total GST
@@ -52,7 +52,8 @@ const FareSummaryCard = ({
 
   // ✅ CORRECTED: New calculation logic matching the payment component
   // STEP 1: Calculate subtotal with all charges BEFORE any discounts
-  const subtotalBeforeDiscounts = actualBaseFare + finalTax + vendorCommissionAmount + finalServiceCharges + finalOtherCharges + totalGST + tds;
+  // const subtotalBeforeDiscounts = actualBaseFare + finalServiceCharges + finalOtherCharges + totalGST + tds;
+  const subtotalBeforeDiscounts = actualBaseFare + finalServiceCharges ;
 
   // STEP 2: Apply hotel discount first (if any)  
   const subtotalAfterHotelDiscount = subtotalBeforeDiscounts - finalDiscount;

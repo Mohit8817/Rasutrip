@@ -368,7 +368,7 @@ Please process my refund immediately. Thank you!`;
     const igstRate = gstData.IGSTRate || 0;
 
     const actualBaseFare = publishedPrice;
-    const vendorCommissionPercentage = priceDetails?.vendorCommissionPercentage || 12;
+    const vendorCommissionPercentage = priceDetails?.vendorCommissionPercentage || '';
     const vendorCommissionAmount = agentCommission || (actualBaseFare * vendorCommissionPercentage) / 100;
 
     let totalGST = cgstAmount + sgstAmount + igstAmount;
@@ -377,7 +377,8 @@ Please process my refund immediately. Thank you!`;
       totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
     }
 
-    const subtotalBeforeDiscounts = actualBaseFare + tax + serviceCharges + otherCharges + vendorCommissionAmount + totalGST + tds;
+    // const subtotalBeforeDiscounts = actualBaseFare  + serviceCharges + otherCharges + totalGST + tds;
+    const subtotalBeforeDiscounts = actualBaseFare;
     const subtotalAfterHotelDiscount = subtotalBeforeDiscounts - discount;
     const couponDiscountAmount = activeCouponDiscount || 0;
     const finalAmountAfterCoupon = Math.max(0, subtotalAfterHotelDiscount - couponDiscountAmount);

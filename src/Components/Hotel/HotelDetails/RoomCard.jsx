@@ -181,7 +181,7 @@ const RoomCard = ({
         // ✅ Use the final block room response PublishedPrice as source of truth
         const finalPublishedPrice = blockRes?.Result?.[0]?.Price?.PublishedPrice || totalPublishedPrice;
         const vendorCommissionPercentage = blockRes?.Result?.[0]?.Price?.rasutripCommissionPercentage ||
-          hotel?.rasutripCommissionPercentage || 12; // Default 12%
+          hotel?.rasutripCommissionPercentage || ''; 
 
         // ✅ Calculate vendor commission amount
         const vendorCommissionAmount = (finalPublishedPrice * vendorCommissionPercentage) / 100;
