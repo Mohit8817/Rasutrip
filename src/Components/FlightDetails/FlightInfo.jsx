@@ -66,7 +66,7 @@ const FlightInfo = ({ FareData, fareRules, SelectedFare }) => {
         <div className="container">
             {loading ? (
                 <>
-                 {loading && <p className="text-center text-primary mt-4"><FlightLoader message="Searching For Fare Confermation" /></p>}
+                 {loading && <p className="text-center text-primary mt-4"><FlightLoader message="Searching For Fare Confirmation" /></p>}
                         {error && <p className="text-center text-danger mt-4">Error fetching fare rules.</p>}</>
             ):(
                 <> <Card className="mb-3 shadow-sm">

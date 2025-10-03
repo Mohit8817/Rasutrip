@@ -111,7 +111,7 @@ const FareTypeSelector = ({ onDataChange }) => {
     //     ))}
     //   </div>
     // </div>
-    <div className="fare-type-container p-2">
+    <div className="fare-type-container p-0">
       {/* Heading */}
       <div className="fw-bold small text-dark mb-2 text-start">
         Select A Fare Type:

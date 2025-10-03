@@ -5,16 +5,21 @@ import { Card, Row, Col, Button } from "react-bootstrap";
 import { FaMapMarkerAlt, FaCalendarAlt, FaBed, FaMoon } from "react-icons/fa";
 import hotelFallbackImage from "../../../../assest/hotel1.jpg";
 import { HotelSearchContext } from "../../../Context/HotelSearchContext";
+import FareSummaryCard from "../../BookingSummaryPage/FareSummaryCard";
 
 const HotelDetailInfo = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  // const { priceDetails, blockedRoomData } = location.state || {};
 
-  const { hotel, room, payload, priceDetails } = location.state || {}; // ✅ read priceDetails
+  const { hotel, room, payload, priceDetails, blockedRoomData } =
+    location.state || {}; // ✅ read priceDetails
   const { hotelSearchData } = useContext(HotelSearchContext);
 
   const handleContinue = () => {
-    const roomDetails = hotelSearchData?.roomDetails || [{ adults: 2, children: 0 }];
+    const roomDetails = hotelSearchData?.roomDetails || [
+      { adults: 2, children: 0 },
+    ];
 
     //  Total guests = sum of adults + children in each room
     const totalGuests = roomDetails.reduce((acc, room) => {
@@ -30,6 +35,7 @@ const HotelDetailInfo = () => {
           roomDetails,
         },
         room,
+        blockedRoomData,
         priceDetails,
         roomDetails,
         totalGuests,
@@ -37,7 +43,6 @@ const HotelDetailInfo = () => {
       },
     });
   };
-
 
   if (!hotel || !room) {
     return (
@@ -73,12 +78,13 @@ const HotelDetailInfo = () => {
               className="d-flex justify-content-center justify-content-md-end mt-2 mt-md-0"
             >
               {Array.from({ length: hotel.rating || 3 }).map((_, index) => (
-                <StarFill key={index} className="text-warning text-md md:fs-3" />
+                <StarFill
+                  key={index}
+                  className="text-warning text-md md:fs-3"
+                />
               ))}
             </Col>
           </Row>
-
-
 
           <hr />
 
@@ -98,7 +104,9 @@ const HotelDetailInfo = () => {
                 <Col xs={6} md={3} className="mb-3">
                   <FaCalendarAlt className="me-1" />
                   <strong> Check-in</strong>
-                  <div className="text-dark fw-semibold">{hotel.checkInDate}</div>
+                  <div className="text-dark fw-semibold">
+                    {hotel.checkInDate}
+                  </div>
                 </Col>
 
                 <Col xs={6} md={3} className="mb-3">
@@ -110,7 +118,9 @@ const HotelDetailInfo = () => {
                 <Col xs={6} md={3} className="mb-3">
                   <FaCalendarAlt className="me-1" />
                   <strong> Check-out</strong>
-                  <div className="text-dark fw-semibold">{hotel.checkOutDate}</div>
+                  <div className="text-dark fw-semibold">
+                    {hotel.checkOutDate}
+                  </div>
                 </Col>
 
                 <Col xs={6} md={3} className="mb-3">
@@ -134,7 +144,8 @@ const HotelDetailInfo = () => {
                 <Col xs={12} md={4} className="mb-3">
                   <span className="text-muted">No. of Guests</span>
                   <div className="fw-bold">
-                    {room.Adult || hotelSearchData?.guests || hotel.guests} Adult(s)
+                    {room.Adult || hotelSearchData?.guests || hotel.guests}{" "}
+                    Adult(s)
                   </div>
                 </Col>
 
@@ -146,7 +157,6 @@ const HotelDetailInfo = () => {
                 </Col>
               </Row>
             </Col>
-
           </Row>
         </Card.Body>
       </Card>
