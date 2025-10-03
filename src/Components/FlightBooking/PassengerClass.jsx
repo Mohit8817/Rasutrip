@@ -100,7 +100,8 @@ const PassengerClass = () => {
       <Card className="passenger-class-box" onClick={toggleDropdown}>
         <Card.Body>
           <div className="passenger-label">Travellers & Class</div>
-          <div className="fw-bold fs-5">
+          {/* <div className="fw-bold fs-5"> */}
+          <div className="fw-bold text-base sm:text-lg md:text-xl lg:text-xl">
             {totalPassengers} Passenger{totalPassengers !== 1 ? "s" : ""}
           </div>
           <div className="cabin-text">{selectedCabinLabel}</div>

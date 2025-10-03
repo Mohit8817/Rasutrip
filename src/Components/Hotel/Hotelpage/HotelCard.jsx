@@ -89,6 +89,7 @@ const HotelCard = ({ hotel }) => {
     window.location.href = "/login/customer";
   };
   const finalPrice = hotel.originalPriceData?.OfferedPrice ?? hotel.price;
+  const offeredPrice = hotel.originalPriceData?.OfferedPrice ?? hotel.price;
 
   const {
     image,
@@ -144,7 +145,7 @@ const HotelCard = ({ hotel }) => {
             <div className="d-none d-md-block">
               {/* <h5 className="fw-bold text-dark mb-1">₹ {price.toFixed(2)}</h5> */}
               <h5 className="fw-bold text-dark mb-1">
-                ₹ {finalPrice.toFixed(2)}
+                ₹ {offeredPrice.toFixed(2)}
               </h5>
 
               <div className="small text-muted">Per Night</div>

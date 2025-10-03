@@ -1,18 +1,21 @@
-import { useState, useEffect } from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
-import { useLocation } from 'react-router-dom';
-import './HotelResultsPage.css';
-import FilterSidebar from '../../Components/Hotel/Hotelpage/FilterSidebar';
-import SearchSummary from '../../Components/Hotel/Hotelpage/SearchSummary';
-import HotelList from '../../Components/Hotel/Hotelpage/HotelList';
-import HotelLoader from '../../Components/Hotel/HotelLoaderCard/HotelLoader';
-import { fetchHotels, fetchHotelCities } from '../../Components/APIS/HotelApi/HotelAPi';
+import { useState, useEffect } from "react";
+import { Container, Row, Col } from "react-bootstrap";
+import { useLocation } from "react-router-dom";
+import "./HotelResultsPage.css";
+import FilterSidebar from "../../Components/Hotel/Hotelpage/FilterSidebar";
+import SearchSummary from "../../Components/Hotel/Hotelpage/SearchSummary";
+import HotelList from "../../Components/Hotel/Hotelpage/HotelList";
+import HotelLoader from "../../Components/Hotel/HotelLoaderCard/HotelLoader";
+import {
+  fetchHotels,
+  fetchHotelCities,
+} from "../../Components/APIS/HotelApi/HotelAPi";
 
 const HotelResultsPage = () => {
   const [priceRange, setPriceRange] = useState([0, 20000]);
   const [actualPriceRange, setActualPriceRange] = useState([0, 20000]);
   const [starRatings, setStarRatings] = useState([]);
-  const [searchName, setSearchName] = useState('');
+  const [searchName, setSearchName] = useState("");
   const [hotelNames, setHotelNames] = useState([]); // This holds all hotel names for dropdown
 
   // Hotel data state (similar to bus page)
@@ -30,7 +33,9 @@ const HotelResultsPage = () => {
   const guests = Number(state?.guests || 1);
   const rooms = Number(state?.rooms || 1);
   const nights = Number(state?.nights || 1);
-  const roomDetails = state?.roomDetails || [{ Adult: guests, Child: 0, ChildAge: [] }];
+  const roomDetails = state?.roomDetails || [
+    { Adult: guests, Child: 0, ChildAge: [] },
+  ];
   const minRating = state?.minRating ?? 1;
   const maxRating = state?.maxRating ?? 5;
   const resultCount = state?.resultCount ?? 20;
@@ -43,26 +48,159 @@ const HotelResultsPage = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return isNaN(date) ? "" : date.toISOString().split("T")[0];
+  // const formatDate = (dateStr) => {
+  //   const date = new Date(dateStr);
+  //   return isNaN(date) ? "" : date.toISOString().split("T")[0];
+  // };
+  const parseDateToISO = (dateStr) => {
+    if (!dateStr) return "";
+    const parts = dateStr.split(" "); // ["30", "Sept", "2025"]
+    const day = parts[0].padStart(2, "0");
+    const monthMap = {
+      Jan: "01",
+      Feb: "02",
+      Mar: "03",
+      Apr: "04",
+      May: "05",
+      Jun: "06",
+      Jul: "07",
+      Aug: "08",
+      Sept: "09",
+      Oct: "10",
+      Nov: "11",
+      Dec: "12",
+    };
+    const month = monthMap[parts[1]];
+    const year = parts[2];
+    return `${year}-${month}-${day}`;
   };
 
   // Format date for display
   const formatDateForDisplay = (dateString) => {
-    if (!dateString) return '';
+    if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return date.toLocaleDateString("en-IN", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   // Fetch hotel data (moved from HotelList component)
+  // useEffect(() => {
+  //   const getHotelData = async () => {
+  //     if (!city || !checkIn || !checkOut) {
+  //       setIsLoading(false);
+  //       setError("Missing search parameters");
+  //       return;
+  //     }
+
+  //     setIsLoading(true);
+  //     setError(null);
+  //     setNoHotelsFound(false);
+
+  //     try {
+  //       console.log("Fetching hotels for:", city, checkIn, checkOut);
+
+  //       const cleanedCity = city?.split(",")[0]?.trim();
+  //       const cityList = await fetchHotelCities(cleanedCity);
+
+  //       const selectedCity = cityList.find(
+  //         (item) =>
+  //           item.destination &&
+  //           cleanedCity.toLowerCase() === item.destination.toLowerCase()
+  //       );
+
+  //       if (!selectedCity) {
+  //         setNoHotelsFound(true);
+  //         setIsLoading(false);
+  //         return;
+  //       }
+
+  //       const payload = {
+  //         CheckInDate: formatDate(checkIn),
+  //         CheckOutDate: formatDate(checkOut),
+  //         NoOfNights: nights || getNights(checkIn, checkOut),
+  //         CountryCode: "IN",
+  //         DestinationCityId: selectedCity.city_id,
+  //         ResultCount: resultCount,
+  //         GuestNationality: "IN",
+  //         NoOfRooms: rooms,
+  //         RoomGuests: roomDetails,
+  //         MaxRating: maxRating,
+  //         MinRating: minRating,
+  //         UserIp: "49.36.217.215",
+  //       };
+
+  //       const hotelResponse = await fetchHotels(payload);
+  //       const { SearchTokenId, Result = [] } = hotelResponse || {};
+
+  //       // Check if no hotels found
+  //       if (!Result || Result.length === 0) {
+  //         setNoHotelsFound(true);
+  //         setIsLoading(false);
+  //         return;
+  //       }
+
+  //       const formattedHotels = Result.map((item) => ({
+  //         id: item.HotelCode,
+  //         name: item.HotelName,
+  //         location: item.HotelAddress,
+  //         rating: item.StarRating,
+  //         price: item.Price?.PublishedPrice || 0,
+  //         tax: item.Price?.Tax || 0,
+  //         image: item.HotelPicture,
+  //         description: item.HotelDescription || "",
+  //         resultIndex: item.ResultIndex,
+  //         SearchTokenId,
+  //         rasutripCommissionPercentage:
+  //           item.Price?.rasutripCommissionPercentage || "",
+  //         originalPriceData: item.Price,
+  //       }));
+
+  //       setMasterHotelList(formattedHotels);
+
+  //       // Set price range
+  //       const prices = formattedHotels
+  //         .map((h) => h.price)
+  //         .filter((price) => price > 0);
+  //       if (prices.length > 0) {
+  //         const minPrice = Math.min(...prices);
+  //         const maxPrice = Math.max(...prices);
+  //         setActualPriceRange([minPrice, maxPrice]);
+  //         setPriceRange([minPrice, maxPrice]); // Initialize priceRange with actual range
+  //       }
+
+  //       // Set hotel names for dropdown
+  //       setHotelNames(formattedHotels.map((h) => h.name));
+  //     } catch (err) {
+  //       console.error("Hotel API Error:", err);
+  //       setError("Failed to fetch hotel data");
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+
+  //   getHotelData();
+  // }, [
+  //   city,
+  //   checkIn,
+  //   checkOut,
+  //   guests,
+  //   rooms,
+  //   nights,
+  //   roomDetails,
+  //   minRating,
+  //   maxRating,
+  //   resultCount,
+  // ]);
+
   useEffect(() => {
     const getHotelData = async () => {
+      // ✅ Now also get cityId from state
+      const cityId = state?.cityId;
+
       if (!city || !checkIn || !checkOut) {
         setIsLoading(false);
         setError("Missing search parameters");
@@ -75,41 +213,84 @@ const HotelResultsPage = () => {
 
       try {
         console.log("Fetching hotels for:", city, checkIn, checkOut);
+        console.log("Using cityId:", cityId);
 
-        const cleanedCity = city?.split(",")[0]?.trim();
-        const cityList = await fetchHotelCities(cleanedCity);
+        let destinationCityId;
 
-        const selectedCity = cityList.find(
-          (item) =>
-            item.destination &&
-            cleanedCity.toLowerCase() === item.destination.toLowerCase()
-        );
+        // ✅ If we have cityId from context, use it directly
+        if (cityId) {
+          destinationCityId = cityId;
+          console.log("✅ Using saved cityId:", destinationCityId);
+        } else {
+          // ✅ Fallback: search for city (old behavior)
+          console.log("⚠️ No cityId found, searching for city...");
+          const cleanedCity = city?.split(",")[0]?.trim();
+          const cityList = await fetchHotelCities(cleanedCity);
 
-        if (!selectedCity) {
-          setNoHotelsFound(true);
-          setIsLoading(false);
-          return;
+          const selectedCity = cityList.find(
+            (item) =>
+              item.destination &&
+              cleanedCity.toLowerCase() === item.destination.toLowerCase()
+          );
+
+          if (!selectedCity) {
+            setNoHotelsFound(true);
+            setIsLoading(false);
+            return;
+          }
+
+          // destinationCityId = selectedCity.city_id;
+          // let destinationCityId = state?.cityId;
+          if (!destinationCityId) {
+            console.warn("❌ cityId missing, fallback to first city from API");
+            const cleanedCity = city?.split(",")[0]?.trim();
+            const cityList = await fetchHotelCities(cleanedCity);
+            if (!cityList || cityList.length === 0) {
+              setNoHotelsFound(true);
+              return;
+            }
+            // destinationCityId = cityList[0].city_id; // fallback
+          }
         }
-
         const payload = {
-          CheckInDate: formatDate(checkIn),
-          CheckOutDate: formatDate(checkOut),
+          CheckInDate: parseDateToISO(checkIn),
+          CheckOutDate: parseDateToISO(checkOut),
           NoOfNights: nights || getNights(checkIn, checkOut),
-          CountryCode: "IN",
-          DestinationCityId: selectedCity.city_id,
+          CountryCode: state?.countryCode || "IN",
+          DestinationCityId: Number(destinationCityId), // ✅ Pass as number
           ResultCount: resultCount,
           GuestNationality: "IN",
           NoOfRooms: rooms,
-          RoomGuests: roomDetails,
+          RoomGuests: roomDetails.map((r) => ({
+            Adult: Number(r.Adult || r.adults || guests),
+            Child: Number(r.Child || r.children || 0),
+            ChildAge: r.ChildAge || Array(r.Child || 0).fill(5),
+          })),
           MaxRating: maxRating,
           MinRating: minRating,
           UserIp: "49.36.217.215",
         };
 
+        // const payload = {
+        //   CheckInDate: parseDateToISO(checkIn),
+        //   CheckOutDate: parseDateToISO(checkOut),
+        //   NoOfNights: nights || getNights(checkIn, checkOut),
+        //   CountryCode: state?.countryCode || "IN",
+        //   DestinationCityId: destinationCityId,
+        //   ResultCount: resultCount,
+        //   GuestNationality: "IN",
+        //   NoOfRooms: rooms,
+        //   RoomGuests: roomDetails,
+        //   MaxRating: maxRating,
+        //   MinRating: minRating,
+        //   UserIp: "49.36.217.215",
+        // };
+
+        console.log("📤 API Payload:", payload);
+
         const hotelResponse = await fetchHotels(payload);
         const { SearchTokenId, Result = [] } = hotelResponse || {};
 
-        // Check if no hotels found
         if (!Result || Result.length === 0) {
           setNoHotelsFound(true);
           setIsLoading(false);
@@ -127,24 +308,24 @@ const HotelResultsPage = () => {
           description: item.HotelDescription || "",
           resultIndex: item.ResultIndex,
           SearchTokenId,
-          rasutripCommissionPercentage: item.Price?.rasutripCommissionPercentage || "",
+          rasutripCommissionPercentage:
+            item.Price?.rasutripCommissionPercentage || "",
           originalPriceData: item.Price,
         }));
 
         setMasterHotelList(formattedHotels);
 
-        // Set price range
-        const prices = formattedHotels.map((h) => h.price).filter(price => price > 0);
+        const prices = formattedHotels
+          .map((h) => h.price)
+          .filter((price) => price > 0);
         if (prices.length > 0) {
           const minPrice = Math.min(...prices);
           const maxPrice = Math.max(...prices);
           setActualPriceRange([minPrice, maxPrice]);
-          setPriceRange([minPrice, maxPrice]); // Initialize priceRange with actual range
+          setPriceRange([minPrice, maxPrice]);
         }
 
-        // Set hotel names for dropdown
         setHotelNames(formattedHotels.map((h) => h.name));
-
       } catch (err) {
         console.error("Hotel API Error:", err);
         setError("Failed to fetch hotel data");
@@ -156,6 +337,7 @@ const HotelResultsPage = () => {
     getHotelData();
   }, [
     city,
+    state?.cityId, // ✅ Add cityId to dependencies
     checkIn,
     checkOut,
     guests,
@@ -196,16 +378,19 @@ const HotelResultsPage = () => {
               <i className="fas fa-hotel fa-4x text-muted mb-3"></i>
               <h4 className="text-muted">No Hotels Found</h4>
               <p className="text-muted">
-                Sorry, no hotels are available for your selected location and dates.
+                Sorry, no hotels are available for your selected location and
+                dates.
               </p>
               <p className="text-secondary">
                 City: <strong>{city}</strong>
               </p>
               <p className="text-secondary">
-                Check-in: <strong>{formatDateForDisplay(checkIn)}</strong> → Check-out: <strong>{formatDateForDisplay(checkOut)}</strong>
+                Check-in: <strong>{formatDateForDisplay(checkIn)}</strong> →
+                Check-out: <strong>{formatDateForDisplay(checkOut)}</strong>
               </p>
               <p className="text-secondary">
-                Guests: <strong>{guests}</strong> | Rooms: <strong>{rooms}</strong>
+                Guests: <strong>{guests}</strong> | Rooms:{" "}
+                <strong>{rooms}</strong>
               </p>
               <small className="text-muted mt-2">
                 Please try searching for a different location or dates.
@@ -220,7 +405,10 @@ const HotelResultsPage = () => {
   // Show error if any
   if (error) {
     return (
-      <Container fluid className="d-flex justify-content-center align-items-center min-vh-100">
+      <Container
+        fluid
+        className="d-flex justify-content-center align-items-center min-vh-100"
+      >
         <Row>
           <Col className="text-center">
             <h4>Error</h4>
@@ -232,16 +420,16 @@ const HotelResultsPage = () => {
   }
 
   return (
-    <Container className=''>
+    <Container className="">
       <Row>
         <Col>
           <SearchSummary />
         </Col>
       </Row>
 
-      <Row className='mt-4'>
+      <Row className="mt-4">
         {/* Sidebar */}
-        <Col lg={3} className="">
+        <Col lg={3} className="d-none d-lg-block">
           <FilterSidebar
             priceRange={priceRange}
             actualPriceRange={actualPriceRange}
@@ -250,7 +438,7 @@ const HotelResultsPage = () => {
             onRatingChange={setStarRatings}
             searchName={searchName}
             onSearchNameChange={setSearchName}
-            hotelNames={hotelNames} // pass hotel names for dropdown
+            hotelNames={hotelNames}
           />
         </Col>
 
@@ -263,9 +451,21 @@ const HotelResultsPage = () => {
             searchName={searchName}
           />
         </Col>
+
+        <Col xs={12} className="mt-3 d-block d-lg-none">
+          <FilterSidebar
+            priceRange={priceRange}
+            actualPriceRange={actualPriceRange}
+            onPriceChange={setPriceRange}
+            selectedRatings={starRatings}
+            onRatingChange={setStarRatings}
+            searchName={searchName}
+            onSearchNameChange={setSearchName}
+            hotelNames={hotelNames}
+          />
+        </Col>
       </Row>
     </Container>
-
   );
 };
 
