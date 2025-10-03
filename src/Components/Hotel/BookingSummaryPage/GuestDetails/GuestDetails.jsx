@@ -1,35 +1,37 @@
-import React from 'react'
-import HotelStep from '../HotelStep'
-import { Container, Row, Col } from 'react-bootstrap';
-import FareSummaryCard from '../FareSummaryCard';
-import HotelPromoCodeCard from '../HotelPromoCodeCard ';
-import GuestDetailsInfo from './GuestDetailsInfo';
-import { useLocation } from 'react-router-dom';
+import React from "react";
+import HotelStep from "../HotelStep";
+import { Container, Row, Col } from "react-bootstrap";
+import FareSummaryCard from "../FareSummaryCard";
+import HotelPromoCodeCard from "../HotelPromoCodeCard ";
+import GuestDetailsInfo from "./GuestDetailsInfo";
+import { useLocation } from "react-router-dom";
 
 const GuestDetails = () => {
+  const location = useLocation();
+  const { priceDetails, blockedRoomData } = location.state || {};
+  return (
+    <div>
+      <Container className="">
+        <Row>
+          <HotelStep activeIndex={1} />
+        </Row>
+        <Row>
+          <Col lg={9} className="p-0 m-0">
+            <GuestDetailsInfo />
+          </Col>
+          <Col lg={3} className="mt-4">
+            {/* <FareSummaryCard priceDetails={priceDetails} /> */}
+            <FareSummaryCard
+              priceDetails={priceDetails}
+              blockedRoomData={blockedRoomData}
+            />
 
-    const location = useLocation();
-    const { priceDetails } = location.state || {};
-    return (
-        <div>
+            {/* <HotelPromoCodeCard /> */}
+          </Col>
+        </Row>
+      </Container>
+    </div>
+  );
+};
 
-            <Container className=''>
-                <Row>
-                    <HotelStep activeIndex={1} />
-                </Row>
-                <Row>
-                    <Col lg={9} className='p-0 m-0'>
-                        <GuestDetailsInfo />
-                    </Col>
-                    <Col lg={3} className='mt-4'>
-
-                        <FareSummaryCard priceDetails={priceDetails} />
-                  
-                        {/* <HotelPromoCodeCard /> */}
-                    </Col>
-                </Row>
-            </Container></div>
-    )
-}
-
-export default GuestDetails
+export default GuestDetails;

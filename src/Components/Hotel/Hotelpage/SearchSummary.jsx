@@ -1,11 +1,11 @@
 import React, { useContext, useState } from "react";
 import { Container, Row, Col, Button, Modal } from "react-bootstrap";
 import { HotelSearchContext } from "../../Context/HotelSearchContext";
-import CitySelector from '../../HotelSearchForm/CitySelector';
-import DateSelector from '../../HotelSearchForm/DateSelector';
-import GuestRoomSelector from '../../HotelSearchForm/GuestRoomSelector';
-import CountrySelector from '../../HotelSearchForm/CountrySelector';
-import SearchButton from '../../Common/SearchButton';
+import CitySelector from "../../HotelSearchForm/CitySelector";
+import DateSelector from "../../HotelSearchForm/DateSelector";
+import GuestRoomSelector from "../../HotelSearchForm/GuestRoomSelector";
+import CountrySelector from "../../HotelSearchForm/CountrySelector";
+import SearchButton from "../../Common/SearchButton";
 
 const SearchSummary = () => {
   const { hotelSearchData } = useContext(HotelSearchContext);
@@ -16,8 +16,8 @@ const SearchSummary = () => {
     checkIn = "—",
     checkOut = "—",
     nights = "—",
-    guests = "—",             // Used in UI
-    rooms = "—",              // Used in UI
+    guests = "—", // Used in UI
+    rooms = "—", // Used in UI
     // adultsCount = 0,          // Used in payload only
     // childrenCount = 0,        // Used in payload only
     // roomDetails = [],         // Used in payload only
@@ -44,26 +44,31 @@ const SearchSummary = () => {
         <div className="d-block d-md-none">
           {/* First Line: Check-In date | Check-Out date */}
           <div className="text-center mb-1 text-sm">
-            <span className="fw-semibold">Check-In</span> <span className="text-muted">{checkIn}</span>
+            <span className="fw-semibold">Check-In</span>{" "}
+            <span className="text-muted">{checkIn}</span>
             <span className="mx-2">|</span>
-            <span className="fw-semibold">Check-Out</span> <span className="text-muted">{checkOut}</span>
+            <span className="fw-semibold">Check-Out</span>{" "}
+            <span className="text-muted">{checkOut}</span>
           </div>
 
           {/* Second Line: Nights number | Rooms & Guests */}
           <div className="text-center mb-2 text-sm">
-            <span className="fw-semibold">Nights</span> <span className="text-muted">{nights}</span>
+            <span className="fw-semibold">Nights</span>{" "}
+            <span className="text-muted">{nights}</span>
             <span className="mx-2">|</span>
-            <span className="fw-semibold">Rooms & Guests</span> <span className="text-muted">
-              {rooms} Room{rooms > 1 ? "s" : ""}, {guests} Guest{guests > 1 ? "s" : ""}
+            <span className="fw-semibold">Rooms & Guests</span>{" "}
+            <span className="text-muted">
+              {rooms} Room{rooms > 1 ? "s" : ""}, {guests} Guest
+              {guests > 1 ? "s" : ""}
             </span>
           </div>
 
           {/* Button */}
-          <div className="text-center">
+          {/* <div className="text-center">
             <Button className="btn-red w-full text-sm" onClick={handleModifyClick}>
               Modify Search
             </Button>
-          </div>
+          </div> */}
         </div>
 
         {/* Desktop Layout */}
@@ -86,15 +91,16 @@ const SearchSummary = () => {
           <Col md>
             <div className="fw-semibold">Rooms & Guests</div>
             <small className="text-muted">
-              {guests} Guest{guests > 1 ? "s" : ""}, {rooms} Room{rooms > 1 ? "s" : ""}
+              {guests} Guest{guests > 1 ? "s" : ""}, {rooms} Room
+              {rooms > 1 ? "s" : ""}
             </small>
           </Col>
 
-          <Col md="auto" className="text-end">
+          {/* <Col md="auto" className="text-end">
             <Button className="btn-red" onClick={handleModifyClick}>
               Modify Search
             </Button>
-          </Col>
+          </Col> */}
         </Row>
       </Container>
 
@@ -106,8 +112,8 @@ const SearchSummary = () => {
         centered
         dialogClassName="custom-hotel-modal-width"
         backdrop="static"
-        keyboard={true}>
-
+        keyboard={true}
+      >
         <Modal.Header closeButton className="border-bottom">
           <Modal.Title className="fw-bold">Modify Hotel Search</Modal.Title>
         </Modal.Header>
@@ -116,7 +122,9 @@ const SearchSummary = () => {
           <Container fluid>
             <Row className="mb-3">
               <Col>
-                <h6 className="fw-bold mb-3 text-start">Book Domestic and International Hotels</h6>
+                <h6 className="fw-bold mb-3 text-start">
+                  Book Domestic and International Hotels
+                </h6>
               </Col>
             </Row>
 
@@ -150,19 +158,19 @@ const SearchSummary = () => {
           max-width: 90vw;
           width: auto;
         }
-        
+
         @media (min-width: 1200px) {
           .custom-hotel-modal-width {
             max-width: 1300px;
           }
         }
-        
+
         @media (min-width: 992px) and (max-width: 1199px) {
           .custom-hotel-modal-width {
             max-width: 950px;
           }
         }
-        
+
         @media (max-width: 991px) {
           .custom-hotel-modal-width {
             max-width: 95vw;
