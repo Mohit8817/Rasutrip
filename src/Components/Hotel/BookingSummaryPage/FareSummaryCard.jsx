@@ -66,48 +66,48 @@ const FareSummaryCard = ({
         <div className="px-4">
 
           {/* Base Fare */}
-          <div className="d-flex justify-content-between align-items-center py-3 border-bottom">
-            <span style={{ color: '#555', fontSize: '15px' }}>Base Fare</span>
-            <span style={{ color: '#333', fontSize: '15px' }}>₹ {mainPrice.toFixed(2)}</span>
+          <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span >Base Fare</span>
+            <span >₹ {mainPrice.toFixed(2)}</span>
           </div>
 
           {/* Service Charges */}
-          <div className="d-flex justify-content-between align-items-center py-3 border-bottom">
-            <span style={{ color: '#555', fontSize: '15px' }}>Service Charges</span>
-            <span style={{ color: '#333', fontSize: '15px' }}>₹ {finalServiceCharges.toFixed(2)}</span>
+          <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span >Service Charges</span>
+            <span >₹ {finalServiceCharges.toFixed(2)}</span>
           </div>
 
           {/* Tax */}
-          <div className="d-flex justify-content-between align-items-center py-3 border-bottom">
-            <span style={{ color: '#555', fontSize: '15px' }}>Tax</span>
-            <span style={{ color: '#333', fontSize: '15px' }}>₹ {finalTax.toFixed(2)}</span>
+          <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span >Tax</span>
+            <span >₹ {finalTax.toFixed(2)}</span>
           </div>
 
           {/* Other Charges */}
-          <div className="d-flex justify-content-between align-items-center py-3 border-bottom">
-            <span style={{ color: '#555', fontSize: '15px' }}>Other Charges</span>
-            <span style={{ color: '#333', fontSize: '15px' }}>₹ {finalOtherCharges.toFixed(2)}</span>
+          <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span >Other Charges</span>
+            <span >₹ {finalOtherCharges.toFixed(2)}</span>
           </div>
 
 
 
           {/* GST */}
-          <div className="d-flex justify-content-between align-items-center py-3 border-bottom">
-            <span style={{ color: '#555', fontSize: '15px' }}>GST</span>
-            <span style={{ color: '#333', fontSize: '15px' }}>
+          <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span >GST</span>
+            <span >
               {igstRate > 0 ? `${igstRate}%` : '0%'}
             </span>
           </div>
 
           {/* Convenience Fee */}
-          <div className="d-flex justify-content-between align-items-center py-3 border-bottom">
-            <span style={{ color: '#555', fontSize: '15px' }}>Convenience Fee</span>
-            <span style={{ color: '#333', fontSize: '15px' }}>₹ {vendorCommissionAmount.toFixed(2)}</span>
+          <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span >Convenience Fee</span>
+            <span >₹ {vendorCommissionAmount.toFixed(2)}</span>
           </div>
 
           {/* Coupon Discount */}
           {couponDiscount > 0 && (
-            <div className="d-flex justify-content-between align-items-center py-3 border-bottom">
+            <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
               <div>
                 <span style={{ color: '#28a745', fontSize: '15px' }}>Coupon Discount (-)</span>
                 {appliedCoupon && (
