@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { Container, Row, Col, Button, Modal } from "react-bootstrap";
+import { Container, Row, Col, Modal } from "react-bootstrap";
 import { HotelSearchContext } from "../../Context/HotelSearchContext";
 import CitySelector from "../../HotelSearchForm/CitySelector";
 import DateSelector from "../../HotelSearchForm/DateSelector";
