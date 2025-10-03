@@ -344,7 +344,6 @@ Please process my refund immediately. Thank you!`;
       priceDetails?.publishedPrice ||
       priceDetails?.baseFare || 0;
   };
-
   const calculateFinalPrice = () => {
     const { couponData: activeCoupon, couponDiscount: activeCouponDiscount } = getCouponData();
     const roomData = blockedRoomData?.HotelRoomsDetails?.[0] || {};
@@ -367,26 +366,53 @@ Please process my refund immediately. Thank you!`;
     const sgstRate = gstData.SGSTRate || 0;
     const igstRate = gstData.IGSTRate || 0;
 
-    const actualBaseFare = publishedPrice;
-    const vendorCommissionPercentage = priceDetails?.vendorCommissionPercentage || '';
-    const vendorCommissionAmount = agentCommission || (actualBaseFare * vendorCommissionPercentage) / 100;
+    // ✅ MAIN PRICE: Published Price (same as FareSummaryCard)
+    const mainPrice = publishedPrice;
 
+    // ✅ VENDOR COMMISSION: Calculate from priceDetails or API
+    const vendorCommissionPercentage = priceDetails?.vendorCommissionPercentage || 0;
+    const vendorCommissionAmount = priceDetails?.vendorCommission ||
+      (agentCommission || ((mainPrice * vendorCommissionPercentage) / 100));
+
+    // Calculate total GST (for display only, NOT added to total)
     let totalGST = cgstAmount + sgstAmount + igstAmount;
-    if (totalGST === 0 && (cgstRate > 0 || sgstRate > 0 || igstRate > 0)) {
-      const gstBase = actualBaseFare + vendorCommissionAmount;
-      totalGST = (gstBase * (cgstRate + sgstRate + igstRate)) / 100;
-    }
 
-    // const subtotalBeforeDiscounts = actualBaseFare  + serviceCharges + otherCharges + totalGST + tds;
-    const subtotalBeforeDiscounts = actualBaseFare;
-    const subtotalAfterHotelDiscount = subtotalBeforeDiscounts - discount;
+    // ✅ CORRECTED CALCULATION - Same as FareSummaryCard:
+    // Step 1: Start with Published Price
+    let finalAmount = mainPrice;
+
+    // Step 2: Add ONLY Vendor Commission
+    finalAmount += vendorCommissionAmount;
+
+    // Step 3: Subtract Hotel Discount
+    finalAmount -= discount;
+
+    // Step 4: Subtract Coupon Discount
     const couponDiscountAmount = activeCouponDiscount || 0;
-    const finalAmountAfterCoupon = Math.max(0, subtotalAfterHotelDiscount - couponDiscountAmount);
-    const customerTotal = finalAmountAfterCoupon;
+    finalAmount -= couponDiscountAmount;
+
+    // Ensure no negative amount
+    finalAmount = Math.max(0, finalAmount);
+
+    console.log("💰 Payment Component - Price Calculation:", {
+      step1_publishedPrice: mainPrice,
+      step2_vendorCommission_ADDED: vendorCommissionAmount,
+      step2_subtotal: mainPrice + vendorCommissionAmount,
+      step3_hotelDiscount_SUBTRACTED: discount,
+      step4_couponDiscount_SUBTRACTED: couponDiscountAmount,
+      finalAmount: finalAmount,
+
+      // Display only items (NOT added to total)
+      displayOnly_tax: tax,
+      displayOnly_serviceCharges: serviceCharges,
+      displayOnly_otherCharges: otherCharges,
+      displayOnly_GST: totalGST,
+      displayOnly_TDS: tds
+    });
 
     return {
       roomPrice,
-      actualBaseFare,
+      actualBaseFare: mainPrice,
       tax,
       serviceCharges,
       otherCharges,
@@ -404,9 +430,9 @@ Please process my refund immediately. Thank you!`;
       discount,
       couponDiscount: couponDiscountAmount,
       couponData: activeCoupon,
-      subtotalBeforeDiscounts,
-      subtotalAfterHotelDiscount,
-      roundedTotal: parseFloat(customerTotal.toFixed(2))
+      subtotalBeforeDiscounts: mainPrice, // Only Published Price
+      subtotalAfterHotelDiscount: (mainPrice + vendorCommissionAmount) - discount,
+      roundedTotal: parseFloat(finalAmount.toFixed(2))
     };
   };
 
