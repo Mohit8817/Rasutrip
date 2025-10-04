@@ -1,4 +1,4 @@
-import { Container, Row, Col, Spinner } from "react-bootstrap";
+import { Container, Row, Col } from "react-bootstrap";
 import { useState, useEffect, useContext } from "react";
 import { useLocation } from "react-router-dom";
 import BusSearchSummary from "../../Components/Bus/BusPage/BusSearchSummary";
@@ -160,8 +160,8 @@ const BusResultPage = () => {
               otherCharges: item.BusPrice?.OtherCharges || 0,
               gst: item.BusPrice?.GST
                 ? item.BusPrice.GST.CGSTAmount +
-                  item.BusPrice.GST.SGSTAmount +
-                  item.BusPrice.GST.IGSTAmount
+                item.BusPrice.GST.SGSTAmount +
+                item.BusPrice.GST.IGSTAmount
                 : 0,
             },
 
