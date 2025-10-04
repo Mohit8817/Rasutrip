@@ -10,7 +10,6 @@ import {
   fetchHotels,
   fetchHotelCities,
 } from "../../Components/APIS/HotelApi/HotelAPi";
-import { User } from "lucide-react";
 
 const HotelResultsPage = () => {
   const [priceRange, setPriceRange] = useState([0, 20000]);
