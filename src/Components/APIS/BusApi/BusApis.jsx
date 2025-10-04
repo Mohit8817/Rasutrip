@@ -71,7 +71,7 @@ export const fetchBusCities = async (cityName) => {
 export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, UserIp = null) => {
   try {
     let finalUserIp = UserIp;
-    
+
     if (!finalUserIp) {
       console.log("🔄 UserIp not provided, fetching dynamically...");
       finalUserIp = await getUserIP();
@@ -85,7 +85,7 @@ export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, Us
       DateOfJourney,
       OriginId,
       DestinationId,
-      UserIp: finalUserIp, 
+      UserIp: finalUserIp,
     };
 
     console.log("📤 Sending bus search payload:", payload);
@@ -142,7 +142,7 @@ export const fetchSeatLayout = async ({
 }) => {
   try {
     let finalUserIp = UserIp;
-    
+
     if (!finalUserIp) {
       console.log("🔄 UserIp not provided for seat layout, fetching dynamically...");
       finalUserIp = await getUserIP();
@@ -185,7 +185,7 @@ export const fetchBoardingDroppingPoints = async ({
 }) => {
   try {
     let finalUserIp = UserIp;
-    
+
     if (!finalUserIp) {
       console.log("🔄 UserIp not provided for boarding/dropping points, fetching dynamically...");
       finalUserIp = await getUserIP();
@@ -234,7 +234,7 @@ export const blockSeats = async ({
 }) => {
   try {
     let finalUserIp = UserIp;
-    
+
     if (!finalUserIp) {
       console.log("🔄 UserIp not provided for block seat, fetching dynamically...");
       finalUserIp = await getUserIP();
@@ -513,7 +513,7 @@ export const downloadBusInvoice = async (invoiceData) => {
     console.log('📧 Sending bus invoice to email with payload:', invoiceData);
 
     let finalUserIp = invoiceData.UserIp;
-    
+
     if (!finalUserIp) {
       console.log("🔄 UserIp not provided for invoice, fetching dynamically...");
       finalUserIp = await getUserIP();
