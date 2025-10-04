@@ -19,9 +19,9 @@ const Location = () => {
       setLocationData((prev) => ({
         ...prev,
         fromCity: "Bangalore",
-        fromCityId: 8463,
+        fromCityId: 6395,
         toCity: "Hyderabad",
-        toCityId: 9573,
+        toCityId: 7485,
         bookingType: "bus",
       }));
     }

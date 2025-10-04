@@ -6,7 +6,7 @@ import Location from "../../Busbooking/Location";
 import TravelDate from "../../Busbooking/TravelDate";
 import SearchButton from "../../Common/SearchButton";
 
-const BusSearchSummary = () => {
+const BusSearchSummary = ({ showFilter, setShowFilter }) => {
   const { state } = useLocation();
   const { locationData } = useContext(LocationContext);
   const [showModifyModal, setShowModifyModal] = useState(false);
@@ -77,9 +77,30 @@ const BusSearchSummary = () => {
             </Button>
           </Col> */}
 
-          <Col xs="auto" md={3} className="col-12 mt-3 d-block d-lg-none">
-            <Button variant="danger" className="btn-red">
-              Filter
+          {/* <Col
+            xs="auto"
+            md={3}
+            className="col-12 mt-3 d-block d-lg-none text-md-end text-center mt-2 mt-md-0"
+          >
+            <Button
+              variant="danger"
+              className="btn-red"
+              onClick={() => setShowFilter(!showFilter)}
+            >
+              {showFilter ? "Close Filter" : "Filter"}
+            </Button>
+          </Col> */}
+          <Col
+            xs="auto"
+            md={3}
+            className="d-block d-lg-none text-md-end text-center mt-2 mt-md-0"
+          >
+            <Button
+              variant="danger"
+              className="btn-red"
+              onClick={() => setShowFilter(!showFilter)}
+            >
+              {showFilter ? "Close Filter" : "Filter"}
             </Button>
           </Col>
         </Row>

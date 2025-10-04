@@ -7,10 +7,13 @@ import BusDetailsList from "../../Components/Bus/BusPage/BusDetailsList";
 import { fetchBusResults } from "../../Components/APIS/BusApi/BusApis";
 import { LocationContext } from "../../Components/Context/LocationContext";
 import Busloader from "../../Components/Bus/Busloader/Busloader";
+// import BusSearchSummary from "../../Components/Bus/BusPage/BusSearchSummary";
 
 const USER_IP_FALLBACK = "122.161.64.143";
 
 const BusResultPage = () => {
+  const [showFilter, setShowFilter] = useState(false);
+
   const [priceRange, setPriceRange] = useState([0, 10000]);
   const [actualPriceRange, setActualPriceRange] = useState([0, 10000]);
 
@@ -286,7 +289,10 @@ const BusResultPage = () => {
       <div className="row">
         {/* Top section */}
         <div className="col-12">
-          <BusSearchSummary />
+          <BusSearchSummary
+            showFilter={showFilter}
+            setShowFilter={setShowFilter}
+          />
         </div>
       </div>
       {/* <div className="row">
@@ -318,17 +324,7 @@ const BusResultPage = () => {
             availableBusTypes={availableBusTypes}
           />
         </div>
-
-        {/* Bus details list */}
-        <div className="col-lg-9 mt-2">
-          <BusDetailsList
-            masterBusList={masterBusList}
-            priceRange={priceRange}
-            selectedOperators={selectedOperators}
-            selectedBusTypes={selectedBusTypes}
-          />
-        </div>
-        <div className="col-12 mt-3 d-block d-lg-none">
+        {/* <div className="col-12 mt-3 d-block d-lg-none">
           <BusSidebarFilter
             priceRange={priceRange}
             onPriceChange={setPriceRange}
@@ -340,7 +336,53 @@ const BusResultPage = () => {
             availableOperators={availableOperators}
             availableBusTypes={availableBusTypes}
           />
+        </div> */}
+        {/* <Col xs="auto" md={3} className="col-12 mt-3 d-block d-lg-none">
+          <BusSearchSummary
+            showFilter={showFilter}
+            setShowFilter={setShowFilter}
+          />
+        </Col> */}
+
+        {/* Mobile Filter Toggle */}
+        {showFilter && (
+          <div className="col-12 mt-3 d-block d-lg-none">
+            <BusSidebarFilter
+              priceRange={priceRange}
+              onPriceChange={setPriceRange}
+              actualPriceRange={actualPriceRange}
+              selectedOperators={selectedOperators}
+              setSelectedOperators={setSelectedOperators}
+              selectedBusTypes={selectedBusTypes}
+              setSelectedBusTypes={setSelectedBusTypes}
+              availableOperators={availableOperators}
+              availableBusTypes={availableBusTypes}
+            />
+          </div>
+        )}
+
+        {/* Bus details list */}
+        <div className="col-lg-9 mt-2">
+          <BusDetailsList
+            masterBusList={masterBusList}
+            priceRange={priceRange}
+            selectedOperators={selectedOperators}
+            selectedBusTypes={selectedBusTypes}
+          />
         </div>
+        {/* <div className="col-12 mt-3 d-block d-lg-none">
+          <BusSidebarFilter
+            priceRange={priceRange}
+            onPriceChange={setPriceRange}
+            actualPriceRange={actualPriceRange}
+            selectedOperators={selectedOperators}
+            setSelectedOperators={setSelectedOperators}
+            selectedBusTypes={selectedBusTypes}
+            setSelectedBusTypes={setSelectedBusTypes}
+            availableOperators={availableOperators}
+            availableBusTypes={availableBusTypes}
+          />
+        </div> */}
       </div>
     </div>
   );

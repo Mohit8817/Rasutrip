@@ -1,4 +1,4 @@
-.flight-card {
+/* .flight-card {
   transition: box-shadow 0.3s ease;
   cursor: default;
 }
@@ -10,4 +10,296 @@
 .text-12 { font-size: 13px; }
 .text-14 { font-size: 14px; }
 .text-8 { font-size: 8px; }
+ */
 
+ /* Base styles for flight card */
+.flight-card {
+  position: relative;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  /* Main trip row - stack vertically on mobile */
+  .flight-card .d-flex.align-items-center.py-3 {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 15px;
+  }
+
+  /* Airline info section */
+  .flight-card .d-flex.align-items-center[style*="width: 200px"] {
+    width: 100% !important;
+  }
+
+  /* Time sections */
+  .flight-card .text-center[style*="width: 100px"] {
+    width: 100% !important;
+    text-align: left !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Duration section with plane icon */
+  .flight-card .text-center.flex-grow-1 {
+    width: 100% !important;
+  }
+
+  /* Bottom section - stack book button and price */
+  .flight-card .d-flex.justify-content-between.align-items-center.pt-3 {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start !important;
+  }
+
+  .flight-card .d-flex.align-items-center.text-muted.small {
+    flex-wrap: wrap;
+    font-size: 12px !important;
+  }
+
+  /* Price and book section */
+  .flight-card .d-flex.align-items-center:has(.text-end) {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px;
+  }
+
+  .flight-card .text-end.me-3 {
+    text-align: left !important;
+    margin-right: 0 !important;
+  }
+
+  .flight-card .d-flex.flex-column:has(button) {
+    width: 100%;
+  }
+
+  .flight-card .d-flex.flex-column:has(button) button {
+    width: 100%;
+  }
+
+  .flight-card .d-flex.gap-2 {
+    width: 100%;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .flight-card .d-flex.gap-2 button {
+    width: 100% !important;
+  }
+
+  /* Tabs navigation */
+  .flight-card .nav.nav-tabs {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .flight-card .nav-item {
+    flex: 1 1 45%;
+    min-width: 120px;
+  }
+
+  .flight-card .nav-link {
+    font-size: 13px !important;
+    padding: 8px 10px !important;
+    text-align: center;
+  }
+
+  /* Flight details expandable section */
+  .flight-card .d-flex.justify-content-between.align-items-center.mb-3 {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px;
+  }
+
+  .flight-card .d-flex.justify-content-between.align-items-center.mb-3 button {
+    align-self: flex-end;
+  }
+
+  /* Flight details segment cards */
+  .flight-card .d-flex.align-items-center.mb-3.p-3 {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 15px;
+  }
+
+  .flight-card .d-flex.align-items-center.mb-3.p-3 > div[style*="width: 120px"] {
+    width: 100% !important;
+  }
+
+  .flight-card .d-flex.justify-content-between.align-items-center {
+    flex-direction: column !important;
+    gap: 20px;
+  }
+
+  /* Origin/Destination details in flight details */
+  .flight-card .d-flex.justify-content-between.align-items-center > .text-center {
+    width: 100% !important;
+    text-align: left !important;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+  }
+
+  /* Tables - make scrollable and responsive */
+  .flight-card table {
+    font-size: 13px;
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .flight-card .table-responsive {
+    overflow-x: auto;
+  }
+
+  .flight-card table thead,
+  .flight-card table tbody,
+  .flight-card table tfoot {
+    display: table;
+    width: 100%;
+  }
+
+  .flight-card table td,
+  .flight-card table th {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  /* Fare Details - Stack on mobile */
+  .flight-card table thead th:first-child {
+    width: 40%;
+  }
+
+  .flight-card table thead th:nth-child(2) {
+    width: 30%;
+  }
+
+  .flight-card table thead th:last-child {
+    width: 30%;
+  }
+
+  .flight-card table tbody td {
+    vertical-align: middle;
+  }
+
+  /* Fare breakdown table - make total prominent */
+  .flight-card tfoot tr {
+    font-size: 18px !important;
+    background-color: #fff3cd;
+    font-weight: bold;
+  }
+
+  .flight-card tfoot td {
+    padding: 12px 8px !important;
+  }
+
+  /* Fare Details heading */
+  .flight-card h6.mb-3 {
+    font-size: 15px;
+    margin-bottom: 15px !important;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .flight-card .d-flex.align-items-center[style*="width: 200px"] {
+    width: 150px !important;
+  }
+
+  .flight-card .text-center[style*="width: 100px"] {
+    width: 90px !important;
+  }
+
+  .flight-card .small,
+  .flight-card .text-muted {
+    font-size: 11px !important;
+  }
+
+  .flight-card .nav-link {
+    padding: 10px 15px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+  .flight-card {
+    padding: 15px 10px !important;
+  }
+
+  .flight-card .fw-bold.fs-4 {
+    font-size: 1.3rem !important;
+  }
+
+  .flight-card .badge {
+    font-size: 10px !important;
+    padding: 3px 6px;
+  }
+
+  .flight-card img[width="24"] {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .flight-card h6 {
+    font-size: 14px;
+  }
+
+  .flight-card .nav-item {
+    flex: 1 1 100%;
+  }
+
+  /* Fare Details - Extra small screens */
+  .flight-card table {
+    font-size: 11px !important;
+  }
+
+  .flight-card table td,
+  .flight-card table th {
+    padding: 8px 4px !important;
+  }
+
+  .flight-card table thead th:first-child {
+    width: 35%;
+  }
+
+  .flight-card table thead th:nth-child(2) {
+    width: 32%;
+  }
+
+  .flight-card table thead th:last-child {
+    width: 33%;
+  }
+
+  .flight-card tfoot tr {
+    font-size: 15px !important;
+  }
+
+  .flight-card tfoot td {
+    padding: 10px 4px !important;
+  }
+
+  /* Make fare details more compact */
+  .flight-card h6.mb-3 {
+    font-size: 13px !important;
+  }
+}
+
+/* Landscape mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .flight-card .d-flex.align-items-center.py-3 {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+  }
+
+  .flight-card .d-flex.align-items-center[style*="width: 200px"] {
+    width: 40% !important;
+  }
+
+  .flight-card .text-center[style*="width: 100px"] {
+    width: 25% !important;
+  }
+}

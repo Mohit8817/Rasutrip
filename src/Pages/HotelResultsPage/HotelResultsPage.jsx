@@ -5,6 +5,7 @@ import "./HotelResultsPage.css";
 import FilterSidebar from "../../Components/Hotel/Hotelpage/FilterSidebar";
 import SearchSummary from "../../Components/Hotel/Hotelpage/SearchSummary";
 import HotelList from "../../Components/Hotel/Hotelpage/HotelList";
+
 import HotelLoader from "../../Components/Hotel/HotelLoaderCard/HotelLoader";
 import {
   fetchHotels,
@@ -16,6 +17,8 @@ const HotelResultsPage = () => {
   const [actualPriceRange, setActualPriceRange] = useState([0, 20000]);
   const [starRatings, setStarRatings] = useState([]);
   const [searchName, setSearchName] = useState("");
+  const [showFilter, setShowFilter] = useState(false);
+
   const [hotelNames, setHotelNames] = useState([]); // This holds all hotel names for dropdown
 
   // Hotel data state (similar to bus page)
@@ -423,7 +426,11 @@ const HotelResultsPage = () => {
     <Container className="">
       <Row>
         <Col>
-          <SearchSummary />
+          {/* <SearchSummary /> */}
+          <SearchSummary
+            showFilter={showFilter}
+            toggleFilter={() => setShowFilter(!showFilter)}
+          />
         </Col>
       </Row>
 
@@ -442,17 +449,7 @@ const HotelResultsPage = () => {
           />
         </Col>
 
-        {/* Hotel List */}
-        <Col lg={9}>
-          <HotelList
-            masterHotelList={masterHotelList} // Pass master hotel list like bus page
-            priceRange={priceRange}
-            selectedRatings={starRatings}
-            searchName={searchName}
-          />
-        </Col>
-
-        <Col xs={12} className="mt-3 d-block d-lg-none">
+        {/* <Col xs={12} className="mt-3 d-block d-lg-none">
           <FilterSidebar
             priceRange={priceRange}
             actualPriceRange={actualPriceRange}
@@ -463,7 +460,44 @@ const HotelResultsPage = () => {
             onSearchNameChange={setSearchName}
             hotelNames={hotelNames}
           />
+        </Col> */}
+        {showFilter && (
+          <Col xs={12} className="mt-3 d-block d-lg-none">
+            <FilterSidebar
+              priceRange={priceRange}
+              actualPriceRange={actualPriceRange}
+              onPriceChange={setPriceRange}
+              selectedRatings={starRatings}
+              onRatingChange={setStarRatings}
+              searchName={searchName}
+              onSearchNameChange={setSearchName}
+              hotelNames={hotelNames}
+            />
+          </Col>
+        )}
+
+        {/* Hotel List */}
+        <Col lg={9}>
+          <HotelList
+            masterHotelList={masterHotelList} // Pass master hotel list like bus page
+            priceRange={priceRange}
+            selectedRatings={starRatings}
+            searchName={searchName}
+          />
         </Col>
+
+        {/* <Col xs={12} className="mt-3 d-block d-lg-none">
+          <FilterSidebar
+            priceRange={priceRange}
+            actualPriceRange={actualPriceRange}
+            onPriceChange={setPriceRange}
+            selectedRatings={starRatings}
+            onRatingChange={setStarRatings}
+            searchName={searchName}
+            onSearchNameChange={setSearchName}
+            hotelNames={hotelNames}
+          />
+        </Col> */}
       </Row>
     </Container>
   );
