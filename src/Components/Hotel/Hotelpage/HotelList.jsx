@@ -30,7 +30,11 @@ const HotelList = ({
 
       return inPriceRange && inRatingRange && matchesName;
     });
-
+    console.log("=== HOTEL FILTERING DEBUG ===");
+    console.log("Price Range:", priceRange);
+    console.log("Selected Ratings:", selectedRatings);
+    console.log("Search Name:", searchName);
+    console.log("Total Hotels:", masterHotelList.length);
     setFilteredHotels(filtered);
   }, [priceRange, selectedRatings, searchName, masterHotelList]);
 

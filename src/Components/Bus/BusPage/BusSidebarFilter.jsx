@@ -14,10 +14,14 @@ const BusSidebarFilter = ({
   setSelectedBusTypes,
 }) => {
   // Handle single range change (only controls minimum price for now)
+  // const handlePriceChange = (e) => {
+  //   const newMin = parseFloat(e.target.value);
+  //   // Keep max price as actualPriceRange[1] or allow user to set it
+  //   onPriceChange([newMin, actualPriceRange[1]]);
+  // };
   const handlePriceChange = (e) => {
-    const newMin = parseFloat(e.target.value);
-    // Keep max price as actualPriceRange[1] or allow user to set it
-    onPriceChange([newMin, actualPriceRange[1]]);
+    const newMax = parseFloat(e.target.value);
+    onPriceChange([actualPriceRange[0], newMax]); // ✅ Max price change hoga
   };
 
   // Alternative: Handle range with input fields for precise control
@@ -43,7 +47,9 @@ const BusSidebarFilter = ({
 
   const handleBusTypeChange = (type) => {
     setSelectedBusTypes((prev) =>
-      prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
+      prev.includes(type)
+        ? prev.filter((item) => item !== type)
+        : [...prev, type]
     );
   };
 
@@ -59,7 +65,11 @@ const BusSidebarFilter = ({
         <div className="fw-bold">
           <i className="bi bi-funnel-fill me-2" /> Filter Results
         </div>
-        <Button variant="link" className="p-0 text-decoration-none text-dark" onClick={handleReset}>
+        <Button
+          variant="link"
+          className="p-0 text-decoration-none text-dark"
+          onClick={handleReset}
+        >
           Reset All
         </Button>
       </div>
@@ -67,17 +77,28 @@ const BusSidebarFilter = ({
       {/* Price Filter */}
       <div className="mb-4">
         <div className="filter-label mb-2">Price Range (INR)</div>
-        
- 
 
         {/* Single Range Slider for Min Price */}
         <div className="mb-2">
-          <label className="form-label small">Minimum Price: ₹{Math.round(priceRange[0])}</label>
-          <Form.Range
+          {/* <label className="form-label small">
+            Minimum Price: ₹{Math.round(priceRange[0])}
+          </label> */}
+          <label className="form-label small">
+            Maximum Price: ₹{Math.round(priceRange[1])}
+          </label>
+
+          {/* <Form.Range
             min={actualPriceRange[0]}
             max={priceRange[1]} // Max can't exceed current max selection
             step="10"
             value={priceRange[0]}
+            onChange={handlePriceChange}
+          /> */}
+          <Form.Range
+            min={actualPriceRange[0]}
+            max={actualPriceRange[1]}
+            step="10"
+            value={priceRange[1]} // ✅ Max value show karo
             onChange={handlePriceChange}
           />
         </div>

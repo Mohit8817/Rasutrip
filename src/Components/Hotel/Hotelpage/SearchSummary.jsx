@@ -7,9 +7,10 @@ import GuestRoomSelector from "../../HotelSearchForm/GuestRoomSelector";
 import CountrySelector from "../../HotelSearchForm/CountrySelector";
 import SearchButton from "../../Common/SearchButton";
 
-const SearchSummary = () => {
+const SearchSummary = ({ showFilter, toggleFilter }) => {
   const { hotelSearchData } = useContext(HotelSearchContext);
   const [showModifyModal, setShowModifyModal] = useState(false);
+  // const [showFilter, setShowFilter] = useState(false);
 
   const {
     city = "—",
@@ -65,10 +66,20 @@ const SearchSummary = () => {
 
           {/* Button */}
           {/* <div className="text-center">
-            <Button className="btn-red w-full text-sm" onClick={handleModifyClick}>
+            <Button
+              className="btn-red w-full text-sm"
+              onClick={handleModifyClick}
+            >
               Modify Search
             </Button>
           </div> */}
+
+          <Button
+            className="btn-red w-full text-sm mt-2"
+            onClick={toggleFilter} // parent se props ke through
+          >
+            {showFilter ? "Close Filter" : "Filter"}
+          </Button>
         </div>
 
         {/* Desktop Layout */}
@@ -101,6 +112,12 @@ const SearchSummary = () => {
               Modify Search
             </Button>
           </Col> */}
+
+          <Col md="auto" className="text-end mt-2 d-block d-lg-none">
+            <Button className="btn-red w-full text-sm" onClick={toggleFilter}>
+              {showFilter ? "Close Filter" : "Filter"}
+            </Button>
+          </Col>
         </Row>
       </Container>
 
