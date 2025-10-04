@@ -13,9 +13,13 @@ const FilterSidebar = ({
 }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // const handlePriceChange = (e) => {
+  //   const newMin = parseFloat(e.target.value);
+  //   onPriceChange([newMin, priceRange[1]]);
+  // };
   const handlePriceChange = (e) => {
-    const newMin = parseFloat(e.target.value);
-    onPriceChange([newMin, priceRange[1]]);
+    const newMax = parseFloat(e.target.value);
+    onPriceChange([actualPriceRange[0], newMax]); // ✅ Max price change hoga
   };
 
   const handleRatingToggle = (star) => {
@@ -64,17 +68,29 @@ const FilterSidebar = ({
       {/* Price Filter */}
       <div className="mb-4">
         <div className="filter_label">Price</div>
-        <input
+        {/* <input
           type="range"
           min={actualPriceRange[0]}
           max={actualPriceRange[1]}
           value={priceRange[0]}
           onChange={handlePriceChange}
           className="form-range"
+        /> */}
+        <input
+          type="range"
+          min={actualPriceRange[0]}
+          max={actualPriceRange[1]}
+          value={priceRange[1]} // ✅ Max value show karo
+          onChange={handlePriceChange}
+          className="form-range"
         />
-        <div className="d-flex justify-content-between">
+        {/* <div className="d-flex justify-content-between">
           <span>₹{priceRange[0]}</span>
           <span>₹{priceRange[1]}</span>
+        </div> */}
+        <div className="d-flex justify-content-between">
+          <span>₹{actualPriceRange[0]}</span>
+          <span>Up to ₹{Math.round(priceRange[1])}</span>
         </div>
       </div>
 

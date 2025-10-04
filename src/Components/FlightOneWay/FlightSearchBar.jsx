@@ -264,7 +264,7 @@ import "../../Style/Pagescss/FlightResultsPage.css";
 import Slider from "../hero/Slider";
 import { Link, useNavigate } from "react-router-dom";
 
-const FlightSearchBar = () => {
+const FlightSearchBar = ({ toggleMobileFilter }) => {
   const { locationData } = useContext(LocationContext);
   const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -380,6 +380,14 @@ const FlightSearchBar = () => {
               Modify
             </button>
           </Col> */}
+          <Col xs={6} className="d-flex align-items-end justify-content-end">
+            <button
+              className="btn btn-primary btn-sm w-100 ModifyButton"
+              onClick={toggleMobileFilter}
+            >
+              Filter
+            </button>
+          </Col>
         </Row>
       </div>
 

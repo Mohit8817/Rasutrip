@@ -39,18 +39,31 @@ const getSidebarFilters = (allFlights) => {
   };
 };
 
+// const FlightSidebar = ({
+//   filters = [],
+//   setFilters = [],
+//   roundTripFlights = null,
+// }) => {
 const FlightSidebar = ({
   filters = [],
   setFilters = [],
   roundTripFlights = null,
+  showMobileFilter = false,
+  toggleMobileFilter = () => {},
 }) => {
   const res = localStorage.getItem("SearchedFlights");
   const allFlight = roundTripFlights ? roundTripFlights : JSON.parse(res);
   const filters1 = getSidebarFilters(allFlight);
-  const [price, setPrice] = useState(filters1?.minPrice || 1000);
+  // const [price, setPrice] = useState(filters1?.minPrice || 1000);
+  // useEffect(() => {
+  //   if (filters?.priceRange) {
+  //     setPrice(filters.priceRange[0]);
+  //   }
+  // }, [filters.priceRange]);
+  const [price, setPrice] = useState(filters1?.maxPrice || 100000);
   useEffect(() => {
     if (filters?.priceRange) {
-      setPrice(filters.priceRange[0]);
+      setPrice(filters.priceRange[1]); // ✅ Max price track karo
     }
   }, [filters.priceRange]);
 
@@ -121,148 +134,319 @@ const FlightSidebar = ({
     }));
   };
 
+  // const handlePriceChange = (e) => {
+  //   const value = parseFloat(e.target.value);
+  //   setPrice(value);
+
+  //   setFilters((prev) => ({
+  //     ...prev,
+  //     priceRange: [value, prev?.priceRange?.[1] || filters1?.maxPrice],
+  //   }));
+  // };
   const handlePriceChange = (e) => {
     const value = parseFloat(e.target.value);
     setPrice(value);
 
     setFilters((prev) => ({
       ...prev,
-      priceRange: [value, prev?.priceRange?.[1] || filters1?.maxPrice],
+      priceRange: [filters1?.minPrice, value],
     }));
   };
-
   return (
-    <Card
-      className="p-3 filter-sidebar"
-      style={
-        {
-          // "position": "sticky",
-          // "top": "104px",
-          // "overflow-y": "hidden"
-        }
-      }
-    >
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <div className="fw-bold">
-          <i className="bi bi-funnel-fill me-2" /> Filter Results
-        </div>
-        <Button
-          variant="link"
-          className="p-0 text-decoration-none reset-link"
-          onClick={() =>
-            setFilters({
-              priceRange: [filters1.minPrice, filters1.maxPrice], // Updated based on your API response
-              refundable: null,
-              stops: [],
-              departureTime: null,
-              arrivalTime: null,
-              airlines: [],
-            })
-          }
-        >
-          Reset All
-        </Button>
-      </div>
-
-      {/* Price Filter */}
-      <div className="mb-4">
-        <div className="filter_label">Price</div>
-        <input
-          type="range"
-          className="form-range"
-          min={filters1?.minPrice || 1000}
-          max={filters1?.maxPrice || 100000}
-          value={price}
-          onChange={handlePriceChange}
-        />
-
-        <div className="d-flex justify-content-between">
-          <div className="filter_label">
-            ₹
-            {price === 0
-              ? filters1.minPrice && isFinite(filters1.minPrice)
-                ? filters1.minPrice
-                : 1000
-              : price}
+    // <Card
+    //   className="p-3 filter-sidebar"
+    //   style={
+    //     {
+    //       // "position": "sticky",
+    //       // "top": "104px",
+    //       // "overflow-y": "hidden"
+    //     }
+    //   }
+    // >
+    <>
+      <Card className="p-3 filter-sidebar d-none d-lg-block" style={{}}>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div className="fw-bold">
+            <i className="bi bi-funnel-fill me-2" /> Filter Results
           </div>
-          <div className="filter_label">
-            ₹
-            {filters1.maxPrice && isFinite(filters1.maxPrice)
-              ? filters1.maxPrice
-              : 10000}
+          <Button
+            variant="link"
+            className="p-0 text-decoration-none reset-link"
+            onClick={() =>
+              setFilters({
+                priceRange: [filters1.minPrice, filters1.maxPrice], // Updated based on your API response
+                refundable: null,
+                stops: [],
+                departureTime: null,
+                arrivalTime: null,
+                airlines: [],
+              })
+            }
+          >
+            Reset All
+          </Button>
+        </div>
+
+        {/* Price Filter */}
+        <div className="mb-4">
+          <div className="filter_label">Price</div>
+          <input
+            type="range"
+            className="form-range"
+            min={filters1?.minPrice || 1000}
+            max={filters1?.maxPrice || 100000}
+            value={price}
+            onChange={handlePriceChange}
+          />
+
+          {/* <div className="d-flex justify-content-between">
+            <div className="filter_label">
+              ₹
+              {price === 0
+                ? filters1.minPrice && isFinite(filters1.minPrice)
+                  ? filters1.minPrice
+                  : 1000
+                : price}
+            </div>
+            <div className="filter_label">
+              ₹
+              {filters1.maxPrice && isFinite(filters1.maxPrice)
+                ? filters1.maxPrice
+                : 10000}
+            </div>
+          </div> */}
+          <div className="d-flex justify-content-between">
+            <div className="filter_label">₹{filters1?.minPrice || 1000}</div>
+            <div className="filter_label">Up to ₹{Math.round(price)}</div>
           </div>
         </div>
-      </div>
 
-      {/* Fare Type */}
-      <div className="mb-4">
-        <div className="filter_label">Fare Type</div>
-        <Form.Check
-          type="radio"
-          label="All"
-          value=""
-          name="refundable"
-          onChange={handleRefundableChange}
-          checked={filters?.refundable === ""}
-        />
-        <Form.Check
-          type="radio"
-          label="Refundable"
-          value="refundable"
-          name="refundable"
-          onChange={handleRefundableChange}
-          checked={filters?.refundable === "refundable"}
-        />
-        <Form.Check
-          type="radio"
-          label="Non Refundable"
-          value="non-refundable"
-          name="refundable"
-          onChange={handleRefundableChange}
-          checked={filters?.refundable === "non-refundable"}
-        />
-      </div>
-
-      {/* Stop Filter */}
-      <div className="mb-4">
-        <div className="filter_label">Stop</div>
-        {Array.from({ length: filters1?.maxStops + 1 }, (_, i) => (
+        {/* Fare Type */}
+        <div className="mb-4">
+          <div className="filter_label">Fare Type</div>
           <Form.Check
-            key={i}
-            label={i === 0 ? "Non Stop" : `${i} Stop`}
-            value={i}
-            onChange={handleStopChange}
-            checked={filters?.stops?.includes(i.toString())}
+            type="radio"
+            label="All"
+            value=""
+            name="refundable"
+            onChange={handleRefundableChange}
+            checked={filters?.refundable === ""}
           />
-        ))}
-      </div>
-
-      {/* Departure Times */}
-      <div className="mb-4">
-        <div className="filter_label">Departure Times</div>
-        {renderTimeButtons(filters?.departureTime, "departureTime")}
-      </div>
-
-      {/* Arrival Times */}
-      <div className="mb-4">
-        <div className="filter_label">Arrival Times</div>
-        {renderTimeButtons(filters?.arrivalTime, "arrivalTime")}
-      </div>
-
-      {/* Airlines */}
-      <div className="mb-2">
-        <div className="filter_label">Airlines</div>
-        {filters1.airlines.map((airline) => (
           <Form.Check
-            key={airline}
-            label={airline}
-            value={airline}
-            onChange={handleAirlineChange}
-            checked={filters?.airlines?.includes(airline)}
+            type="radio"
+            label="Refundable"
+            value="refundable"
+            name="refundable"
+            onChange={handleRefundableChange}
+            checked={filters?.refundable === "refundable"}
           />
-        ))}
-      </div>
-    </Card>
+          <Form.Check
+            type="radio"
+            label="Non Refundable"
+            value="non-refundable"
+            name="refundable"
+            onChange={handleRefundableChange}
+            checked={filters?.refundable === "non-refundable"}
+          />
+        </div>
+
+        {/* Stop Filter */}
+        <div className="mb-4">
+          <div className="filter_label">Stop</div>
+          {Array.from({ length: filters1?.maxStops + 1 }, (_, i) => (
+            <Form.Check
+              key={i}
+              label={i === 0 ? "Non Stop" : `${i} Stop`}
+              value={i}
+              onChange={handleStopChange}
+              checked={filters?.stops?.includes(i.toString())}
+            />
+          ))}
+        </div>
+
+        {/* Departure Times */}
+        <div className="mb-4">
+          <div className="filter_label">Departure Times</div>
+          {renderTimeButtons(filters?.departureTime, "departureTime")}
+        </div>
+
+        {/* Arrival Times */}
+        <div className="mb-4">
+          <div className="filter_label">Arrival Times</div>
+          {renderTimeButtons(filters?.arrivalTime, "arrivalTime")}
+        </div>
+
+        {/* Airlines */}
+        <div className="mb-2">
+          <div className="filter_label">Airlines</div>
+          {filters1.airlines.map((airline) => (
+            <Form.Check
+              key={airline}
+              label={airline}
+              value={airline}
+              onChange={handleAirlineChange}
+              checked={filters?.airlines?.includes(airline)}
+            />
+          ))}
+        </div>
+      </Card>
+
+      {/* Mobile Version - Shows as modal when filter button clicked */}
+      {showMobileFilter && (
+        <div className="mobile-filter-overlay d-lg-none">
+          <div
+            className="mobile-filter-backdrop"
+            onClick={toggleMobileFilter}
+          ></div>
+          <div className="mobile-filter-content">
+            <div className="mobile-filter-header">
+              <h5 className="mb-0">
+                <i className="bi bi-funnel-fill me-2" /> Filters
+              </h5>
+              <button
+                className="btn-close"
+                onClick={toggleMobileFilter}
+                aria-label="Close"
+              ></button>
+            </div>
+
+            <div className="mobile-filter-body">
+              <Card className="p-3 filter-sidebar border-0">
+                {/* Yaha pe same content copy karo jo desktop version me hai */}
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div className="fw-bold">
+                    <i className="bi bi-funnel-fill me-2" /> Filter Results
+                  </div>
+                  <Button
+                    variant="link"
+                    className="p-0 text-decoration-none reset-link"
+                    onClick={() =>
+                      setFilters({
+                        priceRange: [filters1.minPrice, filters1.maxPrice],
+                        refundable: null,
+                        stops: [],
+                        departureTime: null,
+                        arrivalTime: null,
+                        airlines: [],
+                      })
+                    }
+                  >
+                    Reset All
+                  </Button>
+                </div>
+
+                {/* Price Filter */}
+                <div className="mb-4">
+                  <div className="filter_label">Price</div>
+                  <input
+                    type="range"
+                    className="form-range"
+                    min={filters1?.minPrice || 1000}
+                    max={filters1?.maxPrice || 100000}
+                    value={price}
+                    onChange={handlePriceChange}
+                  />
+                  <div className="d-flex justify-content-between">
+                    <div className="filter_label">
+                      ₹
+                      {price === 0
+                        ? filters1.minPrice && isFinite(filters1.minPrice)
+                          ? filters1.minPrice
+                          : 1000
+                        : price}
+                    </div>
+                    <div className="filter_label">
+                      ₹
+                      {filters1.maxPrice && isFinite(filters1.maxPrice)
+                        ? filters1.maxPrice
+                        : 10000}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fare Type */}
+                <div className="mb-4">
+                  <div className="filter_label">Fare Type</div>
+                  <Form.Check
+                    type="radio"
+                    label="All"
+                    value=""
+                    name="refundable"
+                    onChange={handleRefundableChange}
+                    checked={filters?.refundable === ""}
+                  />
+                  <Form.Check
+                    type="radio"
+                    label="Refundable"
+                    value="refundable"
+                    name="refundable"
+                    onChange={handleRefundableChange}
+                    checked={filters?.refundable === "refundable"}
+                  />
+                  <Form.Check
+                    type="radio"
+                    label="Non Refundable"
+                    value="non-refundable"
+                    name="refundable"
+                    onChange={handleRefundableChange}
+                    checked={filters?.refundable === "non-refundable"}
+                  />
+                </div>
+
+                {/* Stop Filter */}
+                <div className="mb-4">
+                  <div className="filter_label">Stop</div>
+                  {Array.from({ length: filters1?.maxStops + 1 }, (_, i) => (
+                    <Form.Check
+                      key={i}
+                      label={i === 0 ? "Non Stop" : `${i} Stop`}
+                      value={i}
+                      onChange={handleStopChange}
+                      checked={filters?.stops?.includes(i.toString())}
+                    />
+                  ))}
+                </div>
+
+                {/* Departure Times */}
+                <div className="mb-4">
+                  <div className="filter_label">Departure Times</div>
+                  {renderTimeButtons(filters?.departureTime, "departureTime")}
+                </div>
+
+                {/* Arrival Times */}
+                <div className="mb-4">
+                  <div className="filter_label">Arrival Times</div>
+                  {renderTimeButtons(filters?.arrivalTime, "arrivalTime")}
+                </div>
+
+                {/* Airlines */}
+                <div className="mb-2">
+                  <div className="filter_label">Airlines</div>
+                  {filters1.airlines.map((airline) => (
+                    <Form.Check
+                      key={airline}
+                      label={airline}
+                      value={airline}
+                      onChange={handleAirlineChange}
+                      checked={filters?.airlines?.includes(airline)}
+                    />
+                  ))}
+                </div>
+              </Card>
+            </div>
+
+            <div className="mobile-filter-footer p-2">
+              <button
+                className="w-full bg-red-700 text-white py-2 px-4 rounded hover:bg-red-700 transition-colors"
+                onClick={toggleMobileFilter}
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
