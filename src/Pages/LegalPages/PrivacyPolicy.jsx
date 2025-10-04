@@ -44,14 +44,6 @@ const PrivacyPolicy = () => {
                     </ul>
 
                     <h4 className="text-lg font-semibold mt-4 mb-2 text-gray-800">
-                        Location Information
-                    </h4>
-                    <p className="text-gray-700 mb-4">
-                        To provide booking services (pickup & destination), we may collect
-                        your device location if you allow access.
-                    </p>
-
-                    <h4 className="text-lg font-semibold mt-4 mb-2 text-gray-800">
                         Usage Information
                     </h4>
                     <p className="text-gray-700 mb-4">
@@ -70,13 +62,12 @@ const PrivacyPolicy = () => {
                         Our mobile app may request limited permissions for proper functioning:
                     </p>
                     <ul className="list-disc pl-6 mb-4 text-gray-700">
-                        <li><strong>Location:</strong> To show nearby travel options and accurate pickups.</li>
                         <li><strong>Camera / Photo Picker:</strong> Only when you update your profile picture. We use the Android system photo picker and do not require broad gallery access.</li>
                         <li><strong>Internet:</strong> For booking services and app features.</li>
                     </ul>
                     <p className="text-sm text-gray-600 italic mb-4">
                         Note: We do not access photos, videos, or files in the background. 
-                        Any photo access is one-time and initiated only by you.
+                        Any photo access is one-time and initiated only by you while updating your profile.
                     </p>
 
                     <h3 className="text-2xl font-bold mt-8 mb-4 text-gray-800">
@@ -105,7 +96,7 @@ const PrivacyPolicy = () => {
                     <h3 className="text-2xl font-bold mt-8 mb-4 text-gray-800">Your Choices</h3>
                     <ul className="list-disc pl-6 mb-4 text-gray-700">
                         <li>You may update or delete your profile anytime</li>
-                        <li>You can deny location or camera permission through device settings</li>
+                        <li>You can deny camera permission through device settings</li>
                         <li>You can request deletion of your account by contacting us</li>
                     </ul>
 
