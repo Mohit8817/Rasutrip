@@ -269,8 +269,8 @@ const HotelResultsPage = () => {
             Child: Number(r.Child || r.children || 0),
             ChildAge: r.ChildAge || Array(r.Child || 0).fill(5),
           })),
-          MaxRating: maxRating,
-          MinRating: minRating,
+          MaxRating: 5,
+          MinRating: 1,
           UserIp: "49.36.217.215",
         };
 

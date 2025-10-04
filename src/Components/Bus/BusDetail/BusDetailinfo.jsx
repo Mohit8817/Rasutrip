@@ -51,9 +51,9 @@ const BusDetailinfo = () => {
     // Prepare the complete block seat payload structure
     const prepareBlockSeatPayload = () => {
         return {
-            UserIp: userIp || "122.161.64.143",
-            SearchTokenId: searchTokenId || "e703c52750f2a93d7bb5cc838f7074e225d63112",
-            ResultIndex: resultIndex || "TB-1",
+            UserIp: userIp || '',
+            SearchTokenId: searchTokenId || '',
+            ResultIndex: resultIndex || '',
             BoardingPointId: boarding?.CityPointId || boarding?.Id || 1,
             DroppingPointId: dropping?.CityPointId || dropping?.Id || 1,
             OriginId: originId || "",
@@ -120,9 +120,9 @@ const BusDetailinfo = () => {
                 completeBlockSeatPayload,
 
                 // Individual API parameters for easy access
-                userIp: userIp || "122.161.64.143",
-                searchTokenId: searchTokenId || "e703c52750f2a93d7bb5cc838f7074e225d63112",
-                resultIndex: resultIndex || "TB-1",
+                userIp: userIp || '',
+                searchTokenId: searchTokenId || '',
+                resultIndex: resultIndex || '',
                 originId: originId || "",
                 destinationId: destinationId || "",
 
