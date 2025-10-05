@@ -1,4 +1,4 @@
-// src/APIS/BusApi/BusApis.js
+
 import axios from "axios";
 import baseURL from "../../../Services/Config";
 import {
@@ -36,8 +36,24 @@ const createAuthHeaders = () => {
     ...(token && { 'Authorization': `Bearer ${token}` })
   };
 };
+
 // ─────────────────────────────────────────────────────────────
-// 📍 Fetch cities for autocomplete/search
+//  Get User IP Address Dynamically
+// ─────────────────────────────────────────────────────────────
+export const getUserIP = async () => {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    console.log('✅ Fetched User IP:', data.ip);
+    return data.ip;
+  } catch (error) {
+    console.error('❌ Failed to get IP:', error);
+    return ''; // Return empty string as fallback
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// Fetch cities for autocomplete/search
 // ─────────────────────────────────────────────────────────────
 export const fetchBusCities = async (cityName) => {
   try {
@@ -50,16 +66,34 @@ export const fetchBusCities = async (cityName) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// 🚌 Fetch bus search results with vendor commission processing
+// Fetch bus search results with vendor commission processing
 // ─────────────────────────────────────────────────────────────
-export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, UserIp) => {
+export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, UserIp = null) => {
   try {
-    const response = await axios.post(BusServices.searchResults, {
+    let finalUserIp = UserIp;
+
+    if (!finalUserIp) {
+      console.log("🔄 UserIp not provided, fetching dynamically...");
+      finalUserIp = await getUserIP();
+      console.log("✅ Dynamic IP fetched:", finalUserIp);
+    } else {
+      console.log("✅ Using provided IP:", finalUserIp);
+    }
+
+    // API payload with dynamic IP
+    const payload = {
       DateOfJourney,
       OriginId,
       DestinationId,
-      UserIp,
-    });
+      UserIp: finalUserIp,
+    };
+
+    console.log("📤 Sending bus search payload:", payload);
+
+
+    // const response = await axios.post(BusServices.q, payload);
+
+    const response = await axios.post(BusServices.searchResults, payload);
 
     // Process the response to include vendor commission calculations
     if (response.data?.Result) {
@@ -97,20 +131,28 @@ export const fetchBusResults = async (DateOfJourney, OriginId, DestinationId, Us
 };
 
 // ─────────────────────────────────────────────────────────────
-// 💺 Fetch bus seat layout for a selected bus
+//  Fetch bus seat layout with dynamic IP
 // ─────────────────────────────────────────────────────────────
 export const fetchSeatLayout = async ({
   SearchTokenId,
   ResultIndex,
-  UserIp,
+  UserIp = null,
   OriginId,
   DestinationId,
 }) => {
   try {
+    let finalUserIp = UserIp;
+
+    if (!finalUserIp) {
+      console.log("🔄 UserIp not provided for seat layout, fetching dynamically...");
+      finalUserIp = await getUserIP();
+      console.log("✅ Dynamic IP fetched:", finalUserIp);
+    }
+
     console.log("📡 Calling Seat Layout API with:", {
       SearchTokenId,
       ResultIndex,
-      UserIp,
+      UserIp: finalUserIp,
       OriginId,
       DestinationId,
     });
@@ -118,7 +160,7 @@ export const fetchSeatLayout = async ({
     const response = await axios.post(BusServices.seatLayout, {
       SearchTokenId,
       ResultIndex,
-      UserIp,
+      UserIp: finalUserIp,
       OriginId,
       DestinationId,
     });
@@ -132,18 +174,26 @@ export const fetchSeatLayout = async ({
 };
 
 // ─────────────────────────────────────────────────────────────
-// 🚌 Fetch Boarding / Dropping points
+// Fetch Boarding / Dropping points with dynamic IP
 // ─────────────────────────────────────────────────────────────
 export const fetchBoardingDroppingPoints = async ({
-  UserIp,
+  UserIp = null,
   SearchTokenId,
   ResultIndex,
   OriginId,
   DestinationId,
 }) => {
   try {
+    let finalUserIp = UserIp;
+
+    if (!finalUserIp) {
+      console.log("🔄 UserIp not provided for boarding/dropping points, fetching dynamically...");
+      finalUserIp = await getUserIP();
+      console.log("✅ Dynamic IP fetched:", finalUserIp);
+    }
+
     const payload = {
-      UserIp,
+      UserIp: finalUserIp,
       SearchTokenId,
       ResultIndex,
     };
@@ -169,22 +219,30 @@ export const fetchBoardingDroppingPoints = async ({
 };
 
 // ─────────────────────────────────────────────────────────────
-// 🔒 Block Seat API with vendor commission processing
+// Block Seat API with dynamic IP and vendor commission
 // ─────────────────────────────────────────────────────────────
 export const blockSeats = async ({
-  UserIp,
+  UserIp = null,
   SearchTokenId,
   ResultIndex,
   BoardingPointId,
   DroppingPointId,
   OriginId,
   DestinationId,
-  Passenger, // Array of passenger objects with seat information
-  originalCommissionPercentage = 0 // Pass this from the original search result
+  Passenger,
+  originalCommissionPercentage = 0
 }) => {
   try {
+    let finalUserIp = UserIp;
+
+    if (!finalUserIp) {
+      console.log("🔄 UserIp not provided for block seat, fetching dynamically...");
+      finalUserIp = await getUserIP();
+      console.log("✅ Dynamic IP fetched:", finalUserIp);
+    }
+
     const payload = {
-      UserIp,
+      UserIp: finalUserIp,
       SearchTokenId,
       ResultIndex,
       BoardingPointId,
@@ -220,9 +278,8 @@ export const blockSeats = async ({
   }
 };
 
-
 // ───────────────────────────────────────────────
-// 📍 Get special offers (coupon list)
+//  Get special offers (coupon list)
 // ───────────────────────────────────────────────
 export const fetchSpecialOffers = async () => {
   try {
@@ -254,11 +311,11 @@ export const fetchSpecialOffers = async () => {
 };
 
 // ───────────────────────────────────────────────
-// 🎟 Apply coupon with enhanced debugging and multiple payload formats
+//  Apply coupon with enhanced debugging
 // ───────────────────────────────────────────────
 export const applyBusCoupon = async (couponCode, totalAmountWithCommission) => {
   try {
-    console.log("🎫 Input parameters:", { couponCode, totalAmountWithCommission });
+    console.log(" Input parameters:", { couponCode, totalAmountWithCommission });
 
     // Enhanced validation
     if (!couponCode || typeof couponCode !== 'string' || couponCode.trim() === '') {
@@ -275,28 +332,12 @@ export const applyBusCoupon = async (couponCode, totalAmountWithCommission) => {
     const cleanCouponCode = couponCode.trim().toUpperCase();
     const cleanAmount = Number(totalAmountWithCommission);
 
-    // Try multiple payload formats as different APIs might expect different parameter names
+    // Try multiple payload formats
     const payloadOptions = [
-      // Format 1: Standard format
-      {
-        couponCode: cleanCouponCode,
-        amount: cleanAmount,
-      },
-      // Format 2: Alternative naming
-      {
-        code: cleanCouponCode,
-        totalAmount: cleanAmount,
-      },
-      // Format 3: Another common format
-      {
-        coupon_code: cleanCouponCode,
-        total_price: cleanAmount,
-      },
-      // Format 4: Simple format
-      {
-        couponCode: cleanCouponCode,
-        totalPrice: cleanAmount,
-      }
+      { couponCode: cleanCouponCode, amount: cleanAmount },
+      { code: cleanCouponCode, totalAmount: cleanAmount },
+      { coupon_code: cleanCouponCode, total_price: cleanAmount },
+      { couponCode: cleanCouponCode, totalPrice: cleanAmount }
     ];
 
     let lastError = null;
@@ -307,32 +348,21 @@ export const applyBusCoupon = async (couponCode, totalAmountWithCommission) => {
 
       try {
         console.log(`🔄 Attempt ${i + 1} - Trying payload format:`, payload);
-        console.log("🌐 API endpoint:", BusServices.applyCoupon);
 
         const headers = createAuthHeaders();
-        console.log("🔑 Headers:", headers);
-
-        const response = await axios.post(
-          BusServices.applyCoupon,
-          payload,
-          {
-            headers: headers,
-            timeout: 15000,
-          }
-        );
+        const response = await axios.post(BusServices.applyCoupon, payload, {
+          headers: headers,
+          timeout: 15000,
+        });
 
         console.log(`✅ Success with payload format ${i + 1}:`, response.data);
 
-        // Handle different success response structures
         if (response.data) {
-          // If API returns success: false, try next format
           if (response.data.success === false) {
             console.warn(`⚠️ Format ${i + 1} returned success: false:`, response.data.message);
             lastError = new Error(response.data.message || 'Coupon application failed');
-            continue; // Try next format
+            continue;
           }
-
-          // Success! Return the data
           return response.data;
         }
 
@@ -347,17 +377,14 @@ export const applyBusCoupon = async (couponCode, totalAmountWithCommission) => {
 
         lastError = formatError;
 
-        // If this is not the last attempt, continue to next format
         if (i < payloadOptions.length - 1) {
           continue;
         }
 
-        // If this is the last attempt, throw the error
         throw formatError;
       }
     }
 
-    // If we get here, all formats failed
     throw lastError || new Error('All payload formats failed');
 
   } catch (err) {
@@ -368,19 +395,14 @@ export const applyBusCoupon = async (couponCode, totalAmountWithCommission) => {
       url: BusServices.applyCoupon
     });
 
-    // Enhanced error handling
     if (err.response) {
       const errorData = err.response.data;
       let errorMessage = 'Failed to apply coupon';
 
       if (errorData) {
-        errorMessage = errorData.message ||
-          errorData.error ||
-          errorData.msg ||
-          `Server error: ${err.response.status}`;
+        errorMessage = errorData.message || errorData.error || errorData.msg || `Server error: ${err.response.status}`;
       }
 
-      // Create a more informative error object
       const error = new Error(errorMessage);
       error.status = err.response.status;
       error.data = errorData;
@@ -394,36 +416,24 @@ export const applyBusCoupon = async (couponCode, totalAmountWithCommission) => {
   }
 };
 
-
-
-
-
-
-
 // _____________________________________________________
-// ✅ Create bus Razorpay order with commission-inclusive amount
+//  Create bus Razorpay order
 // _____________________________________________________
 export const createBusOrder = async (orderData) => {
   try {
     console.log('📦 Creating bus order with data:', orderData);
 
     const headers = createAuthHeaders();
-
-    // Extract amount from orderData or use it directly if it's just amount
     const amount = typeof orderData === 'object' ? orderData.amount : orderData;
 
     const payload = {
-      amount: amount, // This should already include vendor commission
+      amount: amount,
       currency: 'INR',
       booking_type: 'bus',
       ...(typeof orderData === 'object' && orderData)
     };
 
-    const response = await axios.post(
-      BusServices.createOrder,
-      payload,
-      { headers }
-    );
+    const response = await axios.post(BusServices.createOrder, payload, { headers });
 
     console.log('✅ createBusOrder Success:', response.data);
     return response.data;
@@ -434,14 +444,14 @@ export const createBusOrder = async (orderData) => {
 };
 
 // ________________________________________________
-// ✅ Create bus payment order (alias for createBusOrder)
+//  Create bus payment order (alias)
 // ________________________________________________
 export const createBusPaymentOrder = async (orderData) => {
   return createBusOrder(orderData);
 };
 
 // ________________________________________________
-// ✅ Validate bus payment with vendor commission details
+//  Validate bus payment
 // ________________________________________________
 export const validateBusPayment = async (paymentData) => {
   try {
@@ -449,9 +459,8 @@ export const validateBusPayment = async (paymentData) => {
 
     const headers = createAuthHeaders();
 
-    // Construct payload exactly as per your Postman structure
     const payload = {
-      amount: paymentData.amount, // This should include vendor commission
+      amount: paymentData.amount,
       razorpay_order_id: paymentData.razorpay_order_id,
       razorpay_payment_id: paymentData.razorpay_payment_id,
       razorpay_signature: paymentData.razorpay_signature,
@@ -463,7 +472,6 @@ export const validateBusPayment = async (paymentData) => {
         SearchTokenId: paymentData.Bus.SearchTokenId,
         CouponDiscount: paymentData.Bus.CouponDiscount || 0,
         Passenger: paymentData.Bus.Passenger,
-        // Add vendor commission details if available
         VendorCommissionAmount: paymentData.Bus.VendorCommissionAmount || 0,
         VendorCommissionPercentage: paymentData.Bus.VendorCommissionPercentage || 0
       }
@@ -471,11 +479,7 @@ export const validateBusPayment = async (paymentData) => {
 
     console.log('📤 Sending validate payment payload:', payload);
 
-    const response = await axios.post(
-      BusServices.validatePayment,
-      payload,
-      { headers }
-    );
+    const response = await axios.post(BusServices.validatePayment, payload, { headers });
 
     console.log('✅ validateBusPayment Success:', response.data);
     return response.data;
@@ -486,19 +490,14 @@ export const validateBusPayment = async (paymentData) => {
 };
 
 // ________________________________________________
-// ✅ Book bus api with commission details
+//  Book bus api
 // ________________________________________________
 export const bookBus = async (bookingData) => {
   try {
     console.log('📝 Booking bus with payload:', bookingData);
 
     const headers = createAuthHeaders();
-
-    const response = await axios.post(
-      BusServices.bookBus,
-      bookingData,
-      { headers }
-    );
+    const response = await axios.post(BusServices.bookBus, bookingData, { headers });
 
     console.log('✅ bookBus Success:', response.data);
     return response.data;
@@ -508,16 +507,23 @@ export const bookBus = async (bookingData) => {
   }
 };
 
-// ✅ Download Invoice API - Sends invoice to user's email
+//  Download Invoice API with dynamic IP
 export const downloadBusInvoice = async (invoiceData) => {
   try {
     console.log('📧 Sending bus invoice to email with payload:', invoiceData);
 
+    let finalUserIp = invoiceData.UserIp;
+
+    if (!finalUserIp) {
+      console.log("🔄 UserIp not provided for invoice, fetching dynamically...");
+      finalUserIp = await getUserIP();
+      console.log("✅ Dynamic IP fetched:", finalUserIp);
+    }
+
     const headers = createAuthHeaders();
 
-    // Construct payload as per your Postman structure
     const payload = {
-      UserIp: invoiceData.UserIp || "122.161.64.143",
+      UserIp: finalUserIp,
       SearchTokenId: invoiceData.SearchTokenId,
       BookingId: invoiceData.BookingId,
       receiverEmail: invoiceData.receiverEmail
@@ -525,11 +531,7 @@ export const downloadBusInvoice = async (invoiceData) => {
 
     console.log('📤 Sending invoice email payload:', payload);
 
-    const response = await axios.post(
-      BusServices.downloadInvoice,
-      payload,
-      { headers }
-    );
+    const response = await axios.post(BusServices.downloadInvoice, payload, { headers });
 
     console.log('✅ downloadBusInvoice Success:', response.data);
     return response.data;
@@ -540,15 +542,9 @@ export const downloadBusInvoice = async (invoiceData) => {
 };
 
 // ______________________________________________________
-// 🔧 Helper functions for vendor commission calculations
-// ______________________________________________________
+//  functions for vendor commission calculations
+// _____________________________________________________
 
-/**
- * Calculate total booking amount including vendor commission
- * @param {object} blockSeatResponse - Response from block seat API
- * @param {number} commissionPercentage - Vendor commission percentage
- * @returns {object} - Total amount breakdown
- */
 export const calculateBookingTotal = (blockSeatResponse, commissionPercentage = 0) => {
   if (!blockSeatResponse?.Result?.Passenger) {
     return { totalAmount: 0, commissionAmount: 0 };
@@ -570,16 +566,10 @@ export const calculateBookingTotal = (blockSeatResponse, commissionPercentage = 
   };
 };
 
-/**
- * Prepare payment data with vendor commission included
- * @param {object} paymentInfo - Basic payment information
- * @param {object} fareBreakdown - Fare breakdown including commission
- * @returns {object} - Payment data ready for validation API
- */
 export const preparePaymentDataWithCommission = (paymentInfo, fareBreakdown) => {
   return {
     ...paymentInfo,
-    amount: fareBreakdown.totalAmount, // Include commission in payment amount
+    amount: fareBreakdown.totalAmount,
     Bus: {
       ...paymentInfo.Bus,
       VendorCommissionAmount: fareBreakdown.vendorCommissionAmount,

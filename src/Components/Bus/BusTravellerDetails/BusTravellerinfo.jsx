@@ -423,7 +423,7 @@ const BusTravellerinfo = () => {
             };
 
             // Set defaults for missing values
-            requiredFields.UserIp = requiredFields.UserIp || "122.161.64.143";
+            requiredFields.UserIp = requiredFields.UserIp || '';
             requiredFields.BoardingPointId = requiredFields.BoardingPointId || '';
             requiredFields.DroppingPointId = requiredFields.DroppingPointId || '';
             requiredFields.OriginId = requiredFields.OriginId || '';

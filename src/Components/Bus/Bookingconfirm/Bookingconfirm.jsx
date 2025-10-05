@@ -114,7 +114,7 @@ const BookingConfirm = ({ booking }) => {
       }
 
       const invoicePayload = {
-        UserIp: "122.161.64.143",
+        UserIp: '',
         SearchTokenId:
           bookingDetails?.searchTokenId ||
           bookingDetails?.bus?.SearchTokenId ||

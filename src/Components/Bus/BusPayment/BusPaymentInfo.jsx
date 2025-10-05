@@ -546,7 +546,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
       calculateDynamicVendorCommission(bookingState);
 
     const bookingData = {
-      UserIp: "122.161.64.143",
+      UserIp: '',
       SearchTokenId:
         bookingState.searchTokenId || bookingState.bus?.SearchTokenId || "",
       ResultIndex:
@@ -735,7 +735,7 @@ const BusPaymentInfo = ({ couponDiscount = 0, appliedCouponData = null }) => {
       }
 
       const invoiceData = {
-        UserIp: "122.161.64.143",
+        UserIp: '',
         SearchTokenId: searchTokenId || "",
         BookingId: String(bookingId),
         receiverEmail: userEmail,

@@ -4,12 +4,10 @@ import { useLocation } from "react-router-dom";
 import BusSearchSummary from "../../Components/Bus/BusPage/BusSearchSummary";
 import BusSidebarFilter from "../../Components/Bus/BusPage/BusSidebarFilter";
 import BusDetailsList from "../../Components/Bus/BusPage/BusDetailsList";
-import { fetchBusResults } from "../../Components/APIS/BusApi/BusApis";
+import { fetchBusResults, getUserIP } from "../../Components/APIS/BusApi/BusApis";
 import { LocationContext } from "../../Components/Context/LocationContext";
 import Busloader from "../../Components/Bus/Busloader/Busloader";
-// import BusSearchSummary from "../../Components/Bus/BusPage/BusSearchSummary";
 
-const USER_IP_FALLBACK = "122.161.64.143";
 
 const BusResultPage = () => {
   const [showFilter, setShowFilter] = useState(false);
@@ -29,6 +27,9 @@ const BusResultPage = () => {
   const [error, setError] = useState(null);
   const [noBusesFound, setNoBusesFound] = useState(false);
 
+  // ✅ NEW: State for dynamic IP
+  const [userIP, setUserIP] = useState(null);
+
   const { state } = useLocation();
   const { locationData } = useContext(LocationContext);
 
@@ -37,13 +38,29 @@ const BusResultPage = () => {
   const to = state?.toCity ?? null;
   const OriginId = state?.fromCityId;
   const DestinationId = state?.toCityId;
-  const UserIp = USER_IP_FALLBACK;
+
 
   // Use date from LocationContext (updated by calendar) instead of navigation state
   const formattedDate = locationData?.departDate ?? state?.departDate ?? null;
   const DateOfJourney = formattedDate
     ? new Date(formattedDate).toISOString().split("T")[0]
     : null;
+
+  // ✅ NEW: Fetch user IP on component mount
+  useEffect(() => {
+    const fetchUserIP = async () => {
+      try {
+        const ip = await getUserIP();
+        setUserIP(ip);
+        console.log("✅ User IP fetched in component:", ip);
+      } catch (error) {
+        console.error("❌ Failed to fetch user IP:", error);
+        setUserIP(null); // Set null, API will handle it
+      }
+    };
+
+    fetchUserIP();
+  }, []);
 
   // Duration calculation helper
   const getDuration = (start, end) => {
@@ -87,12 +104,14 @@ const BusResultPage = () => {
 
       try {
         console.log("Fetching buses for date:", DateOfJourney);
+        console.log("Using User IP:", userIP || "will be fetched dynamically");
 
+        // ✅ CHANGED: Pass userIP (can be null, API will handle it)
         const apiResult = await fetchBusResults(
           DateOfJourney,
           OriginId,
           DestinationId,
-          UserIp
+          userIP  
         );
 
         // Check if Result exists and has items
@@ -101,8 +120,6 @@ const BusResultPage = () => {
           setIsLoading(false);
           return;
         }
-
-        // Updated portion of BusResultPage.js - around line 90-130
 
         const mapped = apiResult.Result.map((item) => {
           const dep = new Date(item.DepartureTime);
@@ -174,7 +191,7 @@ const BusResultPage = () => {
             SearchTokenId: apiResult.SearchTokenId,
             OriginId,
             DestinationId,
-            UserIp,
+            UserIp: userIP,  // ✅ Use dynamic IP here too
             BoardingPointsDetails: item.BoardingPointsDetails || [],
             DroppingPointsDetails: item.DroppingPointsDetails || [],
 
@@ -208,7 +225,7 @@ const BusResultPage = () => {
     };
 
     getBusData();
-  }, [DateOfJourney, DestinationId, OriginId, from, to]);
+  }, [DateOfJourney, DestinationId, OriginId, from, to, userIP]); // ✅ Added userIP to dependencies
 
   // Format date for display
   const formatDateForDisplay = (dateString) => {
@@ -295,20 +312,6 @@ const BusResultPage = () => {
           />
         </div>
       </div>
-      {/* <div className="row">
-        <div className="col-lg-3 mt-2">
-          <BusSidebarFilter
-            priceRange={priceRange}
-            onPriceChange={setPriceRange}
-            actualPriceRange={actualPriceRange}
-            selectedOperators={selectedOperators}
-            setSelectedOperators={setSelectedOperators}
-            selectedBusTypes={selectedBusTypes}
-            setSelectedBusTypes={setSelectedBusTypes}
-            availableOperators={availableOperators}
-            availableBusTypes={availableBusTypes}
-          />
-        </div> */}
       <div className="row">
         {/* ✅ Desktop Sidebar Only */}
         <div className="col-lg-3 mt-2 d-none d-lg-block">
@@ -324,25 +327,6 @@ const BusResultPage = () => {
             availableBusTypes={availableBusTypes}
           />
         </div>
-        {/* <div className="col-12 mt-3 d-block d-lg-none">
-          <BusSidebarFilter
-            priceRange={priceRange}
-            onPriceChange={setPriceRange}
-            actualPriceRange={actualPriceRange}
-            selectedOperators={selectedOperators}
-            setSelectedOperators={setSelectedOperators}
-            selectedBusTypes={selectedBusTypes}
-            setSelectedBusTypes={setSelectedBusTypes}
-            availableOperators={availableOperators}
-            availableBusTypes={availableBusTypes}
-          />
-        </div> */}
-        {/* <Col xs="auto" md={3} className="col-12 mt-3 d-block d-lg-none">
-          <BusSearchSummary
-            showFilter={showFilter}
-            setShowFilter={setShowFilter}
-          />
-        </Col> */}
 
         {/* Mobile Filter Toggle */}
         {showFilter && (
@@ -370,19 +354,6 @@ const BusResultPage = () => {
             selectedBusTypes={selectedBusTypes}
           />
         </div>
-        {/* <div className="col-12 mt-3 d-block d-lg-none">
-          <BusSidebarFilter
-            priceRange={priceRange}
-            onPriceChange={setPriceRange}
-            actualPriceRange={actualPriceRange}
-            selectedOperators={selectedOperators}
-            setSelectedOperators={setSelectedOperators}
-            selectedBusTypes={selectedBusTypes}
-            setSelectedBusTypes={setSelectedBusTypes}
-            availableOperators={availableOperators}
-            availableBusTypes={availableBusTypes}
-          />
-        </div> */}
       </div>
     </div>
   );
