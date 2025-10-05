@@ -6,7 +6,10 @@ import API from '../utils/axiosInstance';
 export const signupOrLogin = (data) => API.post('/user/signup-login', data);
 
 // OTP Verification
-export const verifyOtp = (data) => API.post('/user/verify-otp', data);
+export const verifyOtp = async (data) => {
+  const response = await API.post('/user/verify-otp', data);
+  return response; // Make sure this returns the full response
+};
 
 // Set MPIN
 export const createMPIN = (data) => API.post('/user/create-mpin', data);

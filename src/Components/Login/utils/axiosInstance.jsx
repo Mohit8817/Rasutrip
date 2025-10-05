@@ -1,4 +1,4 @@
-// src/utils/axiosInstance.js - Enhanced for Agent Token Support
+// src/utils/axiosInstance.js - Fixed Request Interceptor
 import axios from "axios";
 import { getToken, removeToken, isAuthenticated } from "./tokenUtils";
 
@@ -10,26 +10,35 @@ const API = axios.create({
   }
 });
 
-// 🎯 Enhanced Request Interceptor with Agent-Specific Token Handling
+// 🎯 Enhanced Request Interceptor with Signup Token Support
 API.interceptors.request.use(
   (config) => {
     try {
       console.log('📤 API Request:', config.method?.toUpperCase(), config.url);
 
-      // Get token using enhanced detection
+      // 🔥 CRITICAL FIX: Check for temporary signup token FIRST
+      const tempToken = localStorage.getItem('tempAuthToken');
+
+      if (tempToken && config.url?.includes('/complete-signup')) {
+        console.log('🔑 Using temporary signup token for complete-signup');
+        config.headers.Authorization = `Bearer ${tempToken}`;
+        config.headers['X-Signup-Request'] = 'true';
+        config.headers['X-User-Type'] = 'customer';
+        return config;
+      }
+
+      // Get regular token using enhanced detection
       const { token, userType, hasToken, userData } = getToken();
 
       if (hasToken && token) {
-        // 🔧 CRITICAL: Set Authorization header
         config.headers.Authorization = `Bearer ${token}`;
 
-        // 🎯 Enhanced headers for agent requests
+        // Enhanced headers for agent requests
         if (userType === 'agent') {
           config.headers['X-User-Type'] = 'agent';
           config.headers['X-Agent-Request'] = 'true';
           config.headers['X-Account-Type'] = 'agent';
 
-          // Add agent-specific headers if available
           if (userData.agentId) {
             config.headers['X-Agent-ID'] = userData.agentId;
           }
@@ -39,7 +48,6 @@ API.interceptors.request.use(
 
           console.log(`📤 AGENT Request with token:`, config.url);
           console.log('🔑 Agent token preview:', token.substring(0, 25) + '...');
-          console.log('👤 Agent ID:', userData.agentId || 'N/A');
         } else if (userType === 'customer') {
           config.headers['X-User-Type'] = 'customer';
           config.headers['X-Customer-Request'] = 'true';
@@ -48,14 +56,13 @@ API.interceptors.request.use(
           console.log('🔑 Customer token preview:', token.substring(0, 25) + '...');
         }
 
-        // 🔧 Additional compatibility headers
         config.headers['X-Login-Type'] = userType;
         config.headers['X-Mobile'] = userData.mobile || '';
 
       } else {
         console.log('📤 Request without token:', config.url);
 
-        // Check if this should be a protected endpoint
+        // Check if this is a protected endpoint
         const protectedPatterns = ['/booking', '/my-bookings', '/cancel', '/agent/', '/user/'];
         const isProtectedEndpoint = protectedPatterns.some(pattern =>
           config.url?.includes(pattern)
@@ -64,7 +71,7 @@ API.interceptors.request.use(
         if (isProtectedEndpoint) {
           console.warn('⚠️ Protected endpoint called without token:', config.url);
 
-          // Try to get token from localStorage directly as fallback
+          // Try fallback token from localStorage
           const fallbackToken = localStorage.getItem('agent_token') ||
             localStorage.getItem('token') ||
             localStorage.getItem('authToken');
@@ -73,7 +80,6 @@ API.interceptors.request.use(
             console.log('🔄 Using fallback token from localStorage');
             config.headers.Authorization = `Bearer ${fallbackToken}`;
 
-            // Determine user type from localStorage
             const fallbackUserType = localStorage.getItem('userType') ||
               localStorage.getItem('user_type') ||
               (localStorage.getItem('isAgent') === 'true' ? 'agent' : 'customer');
@@ -83,12 +89,10 @@ API.interceptors.request.use(
               config.headers['X-Agent-Request'] = 'true';
             }
           }
-        } else if (config.url?.includes('login') || config.url?.includes('signup') || config.url?.includes('otp')) {
-          console.log('✅ Public endpoint - no token required');
         }
       }
 
-      // 🎯 Special handling for agent booking endpoints
+      // Special handling for agent booking endpoints
       if (config.url?.includes('/agent/bus-bookings') ||
         (config.url?.includes('/booking') && userType === 'agent')) {
 
@@ -96,19 +100,15 @@ API.interceptors.request.use(
         config.headers['X-Booking-Request'] = 'true';
         config.headers['X-Agent-Booking'] = 'true';
 
-        // Ensure we have agent token for booking
         if (!token && userType === 'agent') {
           const agentToken = localStorage.getItem('agent_token') || localStorage.getItem('agentToken');
           if (agentToken) {
             console.log('🔄 Using direct agent token for booking');
             config.headers.Authorization = `Bearer ${agentToken}`;
-          } else {
-            console.error('❌ No agent token available for booking request');
           }
         }
       }
 
-      // Add request timestamp for debugging
       config.metadata = {
         startTime: new Date(),
         userType: userType,
@@ -119,7 +119,7 @@ API.interceptors.request.use(
 
     } catch (error) {
       console.error('❌ Request Interceptor Error:', error);
-      return config; // Return config anyway to not break the request
+      return config;
     }
   },
   (error) => {
@@ -128,7 +128,7 @@ API.interceptors.request.use(
   }
 );
 
-// 🎯 Enhanced Response Interceptor with Agent-Specific Error Handling
+// Response Interceptor remains the same
 API.interceptors.response.use(
   (response) => {
     const duration = response.config.metadata?.startTime
@@ -145,20 +145,6 @@ API.interceptors.response.use(
       `Duration: ${duration}ms`
     );
 
-    // Enhanced logging for agent responses
-    if (userType === 'agent' && (
-      response.config.url?.includes('booking') ||
-      response.config.url?.includes('search') ||
-      response.config.url?.includes('agent')
-    )) {
-      console.log('📊 Agent Response Data:', {
-        url: response.config.url,
-        status: response.status,
-        dataKeys: response.data ? Object.keys(response.data) : [],
-        hasData: !!response.data
-      });
-    }
-
     return response;
   },
   (error) => {
@@ -173,29 +159,23 @@ API.interceptors.response.use(
       data: error.response?.data
     });
 
-    // 🚨 Enhanced error handling for agents
     switch (status) {
       case 401:
         console.warn('🚨 Unauthorized (401)! Token may be expired or invalid');
 
+        // Clear temporary token if it failed
+        if (url?.includes('/complete-signup')) {
+          console.log('🗑️ Clearing invalid temporary token');
+          localStorage.removeItem('tempAuthToken');
+        }
+
         if (userType === 'agent') {
           console.error('🚨 Agent authentication failed!');
-          console.error('🔍 Current agent token status:');
-
-          // Debug agent token status
-          const agentToken = localStorage.getItem('agent_token');
-          const tokenFromUtils = getToken('agent');
-
-          console.log('Agent token from localStorage:', agentToken ? agentToken.substring(0, 20) + '...' : 'None');
-          console.log('Agent token from utils:', tokenFromUtils.hasToken ? tokenFromUtils.token.substring(0, 20) + '...' : 'None');
-
-          // Clear agent tokens specifically
           removeToken('agent');
           localStorage.removeItem('agent_token');
           localStorage.removeItem('agentToken');
           localStorage.removeItem('isAgent');
 
-          // Redirect to agent login
           if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
             console.log('🔄 Redirecting to agent login...');
             setTimeout(() => {
@@ -208,50 +188,21 @@ API.interceptors.response.use(
         break;
 
       case 400:
-        // 🎯 Special handling for agent booking errors
-        if (userType === 'agent' && url?.includes('booking')) {
-          console.error('🎫 Agent booking error (400):', error.response?.data);
-
-          if (error.response?.data?.error?.ErrorMessage?.includes('search token')) {
-            console.error('🔍 Search Token Error for Agent');
-            console.error('💡 Agent may need to perform search before booking');
-            console.error('💡 Check if agent search flow is different from customer');
-          }
-
-          if (error.response?.data?.error?.ErrorMessage?.includes('Invalid token')) {
-            console.error('🔍 Invalid Token Error for Agent Booking');
-            console.error('💡 Agent token may be expired or incorrect');
-          }
-        }
-
         console.warn('⚠️ Bad Request (400):', error.response?.data);
         break;
 
       case 403:
-        if (userType === 'agent') {
-          console.warn('🚫 Forbidden (403)! Agent may not have required permissions');
-          console.warn('💡 Check if agent account has booking permissions');
-        } else {
-          console.warn('🚫 Forbidden (403)! User may not have required permissions');
-        }
+        console.warn('🚫 Forbidden (403)! User may not have required permissions');
         break;
 
       case 404:
-        if (userType === 'agent' && url?.includes('/agent/')) {
-          console.warn('🔍 Agent endpoint not found (404):', url);
-          console.warn('💡 Check if agent-specific endpoint exists');
-        } else {
-          console.warn('🔍 Not Found (404)! Endpoint may not exist:', url);
-        }
+        console.warn('🔍 Not Found (404)! Endpoint may not exist:', url);
         break;
 
       case 500:
       case 502:
       case 503:
         console.error('🔥 Server Error:', status, 'URL:', url);
-        if (userType === 'agent') {
-          console.error('🔥 Server error during agent operation');
-        }
         break;
 
       default:
@@ -262,33 +213,26 @@ API.interceptors.response.use(
   }
 );
 
-// 🔧 Handle unauthorized access with user type awareness
 const handleUnauthorized = () => {
   console.log('🔧 Handling unauthorized access...');
 
   try {
-    // Get current user type before clearing
     const { userType } = getToken();
+    removeToken();
 
-    // Clear all tokens using your token management system
-    removeToken(); // This clears all token types
-
-    // Also clear any additional keys that might exist
     localStorage.removeItem('searchToken');
     localStorage.removeItem('sessionId');
     localStorage.removeItem('agent_token');
     localStorage.removeItem('agentToken');
     localStorage.removeItem('isAgent');
+    localStorage.removeItem('tempAuthToken'); // Clear temp token too
 
     console.log(`🗑️ Cleared ${userType || 'unknown'} session due to 401`);
 
-    // Redirect to appropriate login page based on current path
     if (typeof window !== 'undefined') {
       const currentPath = window.location.pathname;
 
-      // Don't redirect if already on login page
       if (!currentPath.includes('/login')) {
-        // Determine redirect based on user type or current path
         if (currentPath.includes('/agent') || userType === 'agent') {
           console.log('🔄 Redirecting to agent login...');
           window.location.href = '/login/agent';
@@ -302,7 +246,6 @@ const handleUnauthorized = () => {
     console.error('❌ Error handling unauthorized access:', error);
   }
 };
-
 // 🎯 Enhanced helper function for authenticated requests with user type detection
 export const makeAuthenticatedRequest = async (requestConfig) => {
   const { token, userType, hasToken } = getToken();
