@@ -1,6 +1,6 @@
 // src/components/auth/CustomerLogin.js
 import React, { useState, useContext } from 'react';
-import { useNavigate ,useLocation} from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/bootstrap.css';
@@ -9,6 +9,7 @@ import loginImage from '../../assest/loginimg.jpg';
 import {
   signupOrLogin,
   verifyOtp,
+  completeSignup,
   createMPIN,
   loginWithMPIN,
   sendForgotMPINOtp,
@@ -28,20 +29,15 @@ const saveUserName = (mobile, name) => {
     const cleanMobile = mobile.replace(/\D/g, '');
     const cleanName = name.trim();
 
-    // Get existing user names
     const userNames = JSON.parse(localStorage.getItem('userNames') || '{}');
 
-    // Save with multiple key formats for better retrieval
     userNames[cleanMobile] = cleanName;
     userNames[`+91${cleanMobile}`] = cleanName;
-    userNames[mobile] = cleanName; // Original format
+    userNames[mobile] = cleanName;
 
     localStorage.setItem('userNames', JSON.stringify(userNames));
-
-    // Also save as individual key for faster access
     localStorage.setItem(`userName_${cleanMobile}`, cleanName);
 
-    // Save user profile data
     const userProfile = {
       mobile: cleanMobile,
       name: cleanName,
@@ -71,7 +67,6 @@ const getUserName = (mobile) => {
 
     const cleanMobile = mobile.replace(/\D/g, '');
 
-    // Method 1: Try to get from user profile
     try {
       const userProfile = localStorage.getItem(`userProfile_${cleanMobile}`);
       if (userProfile) {
@@ -85,17 +80,13 @@ const getUserName = (mobile) => {
       console.warn('⚠️ Error parsing user profile');
     }
 
-    // Method 2: Direct key lookup
     const directName = localStorage.getItem(`userName_${cleanMobile}`);
     if (directName && directName !== 'User') {
       console.log('📖 Retrieved name via direct key:', directName);
       return directName;
     }
 
-    // Method 3: From userNames object
     const userNames = JSON.parse(localStorage.getItem('userNames') || '{}');
-
-    // Try different mobile formats
     const possibleKeys = [
       cleanMobile,
       `+91${cleanMobile}`,
@@ -110,7 +101,6 @@ const getUserName = (mobile) => {
       }
     }
 
-    // Method 4: Check currentUser data
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
     if (currentUser.mobile === cleanMobile && currentUser.name && currentUser.name !== 'User') {
       console.log('📖 Retrieved name from currentUser:', currentUser.name);
@@ -125,7 +115,6 @@ const getUserName = (mobile) => {
   }
 };
 
-// Get complete user profile from localStorage
 const getUserProfile = (mobile) => {
   try {
     const cleanMobile = mobile.replace(/\D/g, '');
@@ -137,7 +126,6 @@ const getUserProfile = (mobile) => {
       return profile;
     }
 
-    // If no profile found, try to construct from saved name
     const savedName = getUserName(mobile);
     if (savedName) {
       const profile = {
@@ -148,7 +136,6 @@ const getUserProfile = (mobile) => {
         fullName: savedName
       };
 
-      // Save this constructed profile for future use
       localStorage.setItem(`userProfile_${cleanMobile}`, JSON.stringify(profile));
       return profile;
     }
@@ -160,32 +147,20 @@ const getUserProfile = (mobile) => {
   }
 };
 
-// Enhanced function to get name from multiple sources with priority
 const getNameFromMultipleSources = (mobile, backendUser = {}) => {
   const cleanMobile = mobile.replace(/\D/g, '');
 
   console.log('🔍 Determining name from multiple sources for:', cleanMobile);
   console.log('🔍 Backend user data:', backendUser);
 
-  // Priority order for name determination:
-  // 1. Locally saved user profile (highest priority)
-  // 2. Backend name (if not generic)
-  // 3. Backend fullName (if not generic)  
-  // 4. Backend firstName + lastName combination
-  // 5. Locally saved name (fallback)
-  // 6. Fallback to 'User'
-
-  // Check locally saved profile first (this should have the signup name)
   const localProfile = getUserProfile(cleanMobile);
   if (localProfile && localProfile.name && localProfile.name !== 'User') {
     console.log('✅ Using locally saved profile name:', localProfile.name);
     return localProfile.name;
   }
 
-  // Check backend data
   if (backendUser.name && backendUser.name !== 'User' && backendUser.name.trim().length > 0) {
     console.log('✅ Using backend name:', backendUser.name);
-    // Also save this name locally for future use
     saveUserName(cleanMobile, backendUser.name);
     return backendUser.name.trim();
   }
@@ -203,7 +178,6 @@ const getNameFromMultipleSources = (mobile, backendUser = {}) => {
     return fullName;
   }
 
-  // Fallback to locally saved name
   const localName = getUserName(cleanMobile);
   if (localName) {
     console.log('✅ Using fallback locally saved name:', localName);
@@ -219,14 +193,17 @@ const CustomerLogin = () => {
   const [step, setStep] = useState('login');
   const [mobile, setMobile] = useState('');
   const [name, setName] = useState('');
+  const [referralCode, setReferralCode] = useState('');
+  const [referrerId, setReferrerId] = useState('');
   const [otp, setOtp] = useState('');
   const [mpin, setMpin] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [tempToken, setTempToken] = useState(''); // Store temporary token from OTP verification
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Enhanced signup function with better name handling
+  // Enhanced signup function
   const handleSignup = async () => {
     setError('');
     setMessage('');
@@ -239,7 +216,6 @@ const CustomerLogin = () => {
       return setError('Name is required');
     }
 
-    // Validate name (minimum 2 characters, only letters and spaces)
     if (name.trim().length < 2) {
       return setError('Name must be at least 2 characters long');
     }
@@ -252,7 +228,6 @@ const CustomerLogin = () => {
       const cleanMobile = mobile.replace(/\D/g, '');
       const cleanName = name.trim();
 
-      // Save name locally immediately and thoroughly
       const saved = saveUserName(cleanMobile, cleanName);
 
       if (!saved) {
@@ -264,14 +239,13 @@ const CustomerLogin = () => {
         name: cleanName
       });
 
-      // Pass name to the signup API
       await signupOrLogin({
         mobile: cleanMobile,
         name: cleanName
       });
 
-      setStep('verifyAndMpin');
-      setMessage(`OTP sent to ${cleanMobile}. Please verify to complete signup.`);
+      setStep('verifyOtp');
+      setMessage(`OTP sent to ${cleanMobile}. Please verify to continue.`);
 
     } catch (err) {
       console.error('❌ Signup Error:', err);
@@ -279,13 +253,116 @@ const CustomerLogin = () => {
     }
   };
 
-  // Enhanced verification with proper name handling
-  const handleVerifyAndSetMpin = async () => {
+  // Handle OTP Verification - Get token from response
+  const handleVerifyOtp = async () => {
     setError('');
     setMessage('');
 
-    if (!otp || !mpin) {
-      return setError('Enter both OTP and MPIN');
+    if (!otp) {
+      return setError('Please enter OTP');
+    }
+
+    if (!/^\d{6}$/.test(otp)) {
+      return setError('OTP must be exactly 6 digits');
+    }
+
+    try {
+      const cleanMobile = mobile.replace(/\D/g, '');
+      
+      console.log('🔄 Step 1: Verifying OTP for:', cleanMobile);
+      const otpResponse = await verifyOtp({ mobile: cleanMobile, otp });
+
+      console.log('✅ OTP Response:', otpResponse?.data);
+
+      // Check if we get a token from OTP verification
+      const token = otpResponse?.data?.token || otpResponse?.data?.data?.token;
+      
+      if (token) {
+        console.log('🔑 Received token from OTP verification');
+        setTempToken(token); // Store token temporarily
+        
+        // Save token temporarily in localStorage for the completeSignup API
+        localStorage.setItem('tempAuthToken', token);
+      }
+
+      setMessage('OTP verified! Please complete your signup.');
+      setStep('completeSignup');
+
+    } catch (err) {
+      console.error('❌ OTP Verification Error:', err);
+      setError(err.response?.data?.message || 'OTP verification failed');
+    }
+  };
+
+  // Handle Complete Signup - Now authenticated with token
+  const handleCompleteSignup = async () => {
+    setError('');
+    setMessage('');
+
+    try {
+      const cleanMobile = mobile.replace(/\D/g, '');
+      const cleanName = name.trim();
+
+      console.log('🔄 Step 2: Calling Complete Signup API');
+      
+      // Prepare data for complete signup API
+      const signupData = {
+        name: cleanName
+      };
+
+      // Add optional fields only if provided
+      if (referralCode.trim()) {
+        signupData.referralCode = referralCode.trim();
+      }
+
+      if (referrerId.trim()) {
+        signupData.referrerId = referrerId.trim();
+      }
+
+      console.log('📤 Complete Signup Data:', signupData);
+
+      // Call the complete signup API (now authenticated)
+      const completeSignupResponse = await completeSignup(signupData);
+      
+      console.log('✅ Complete Signup Response:', completeSignupResponse?.data);
+
+      // Save name again after complete signup
+      saveUserName(cleanMobile, cleanName);
+
+      setMessage('Signup completed! Now set your MPIN.');
+      
+      // Move to MPIN creation step
+      setStep('createMpin');
+
+    } catch (err) {
+      console.error('❌ Complete Signup Error:', err);
+      
+      // If complete signup fails, we can still proceed to MPIN creation
+      console.warn('⚠️ Complete signup failed, but continuing to MPIN creation');
+      setMessage('Continuing to MPIN setup...');
+      
+      // Still move to MPIN step even if complete signup fails
+      setTimeout(() => {
+        setError('');
+        setStep('createMpin');
+      }, 1500);
+    }
+  };
+
+  // Skip Complete Signup and go directly to MPIN creation
+  const handleSkipCompleteSignup = () => {
+    setError('');
+    setMessage('Skipping referral. Creating your account...');
+    setStep('createMpin');
+  };
+
+  // Handle MPIN Creation
+  const handleCreateMpin = async () => {
+    setError('');
+    setMessage('');
+
+    if (!mpin) {
+      return setError('Please enter MPIN');
     }
 
     if (!/^\d{4}$/.test(mpin)) {
@@ -296,21 +373,14 @@ const CustomerLogin = () => {
       const cleanMobile = mobile.replace(/\D/g, '');
       const cleanName = name.trim();
 
-      console.log('🔄 Step 1: Verifying OTP for:', cleanMobile);
-      await verifyOtp({ mobile: cleanMobile, otp });
-
-      console.log('🔄 Step 2: Creating MPIN with name:', cleanName);
-      // Ensure name is passed to createMPIN
+      console.log('🔄 Step 3: Creating MPIN');
       await createMPIN({
         mobile: cleanMobile,
         newMPIN: mpin,
         name: cleanName
       });
 
-      // Save name again after MPIN creation (ensure it's persistent)
-      saveUserName(cleanMobile, cleanName);
-
-      console.log('🔄 Step 3: Logging in with MPIN');
+      console.log('🔄 Step 4: Logging in with MPIN');
       const response = await loginWithMPIN({
         mobile: cleanMobile,
         mPIN: mpin
@@ -318,9 +388,12 @@ const CustomerLogin = () => {
 
       console.log('✅ Login Response:', response?.data);
 
+      // Clear temporary token
+      localStorage.removeItem('tempAuthToken');
+      setTempToken('');
+
       const token = response?.data?.token;
       if (token) {
-        // Create comprehensive user data with name priority - FIXED: No duplicate keys
         const userData = {
           mobile: cleanMobile,
           name: cleanName,
@@ -332,9 +405,9 @@ const CustomerLogin = () => {
           userType: 'customer',
           registrationDate: new Date().toISOString(),
           signupCompleted: true,
-          // Spread backend user data but override name fields
+          referralCode: referralCode || undefined,
+          referrerId: referrerId || undefined,
           ...response?.data?.user,
-          // Override with our signup name (this ensures our name takes priority)
           name: cleanName,
           firstName: cleanName.split(' ')[0],
           fullName: cleanName,
@@ -347,10 +420,7 @@ const CustomerLogin = () => {
 
         if (tokenSaved) {
           console.log('✅ Customer signup token saved successfully');
-
-          // Also ensure the name is saved in our custom storage
           saveUserName(cleanMobile, cleanName);
-
           login(userData);
 
           setMessage(`Welcome ${cleanName}! Registration successful!`);
@@ -363,12 +433,16 @@ const CustomerLogin = () => {
       }
 
     } catch (err) {
-      console.error('❌ Verify and MPIN Error:', err);
-      setError(err.response?.data?.message || 'Verification or MPIN setup failed');
+      console.error('❌ MPIN Creation Error:', err);
+      setError(err.response?.data?.message || 'MPIN setup failed');
+      
+      // Clear temporary token on error
+      localStorage.removeItem('tempAuthToken');
+      setTempToken('');
     }
   };
 
-  // ENHANCED MPIN LOGIN - Main fix for your issue - FIXED: No duplicate keys
+  // MPIN LOGIN
   const handleLoginWithMPIN = async () => {
     setError('');
     setMessage('');
@@ -395,16 +469,9 @@ const CustomerLogin = () => {
         const token = response?.data?.token;
         if (token) {
           const backendUser = response?.data?.user || {};
-
-          // Use enhanced name determination function with priority to local storage
           const finalName = getNameFromMultipleSources(cleanMobile, backendUser);
-
-          console.log('🎯 Final determined name for login:', finalName);
-
-          // Get existing user profile data
           const existingProfile = getUserProfile(cleanMobile);
 
-          // Create comprehensive user data with priority to existing profile - FIXED: No duplicate keys
           const userData = {
             mobile: cleanMobile,
             name: finalName,
@@ -416,11 +483,8 @@ const CustomerLogin = () => {
             userType: 'customer',
             lastLoginTime: new Date().toISOString(),
             isReturningUser: !!existingProfile,
-            // Spread existing profile first
             ...existingProfile,
-            // Then spread backend data
             ...backendUser,
-            // Finally override with our determined name values (this ensures name priority)
             name: finalName,
             firstName: finalName.split(' ')[0],
             fullName: finalName,
@@ -429,7 +493,6 @@ const CustomerLogin = () => {
 
           console.log('💾 Saving login user data:', userData);
 
-          // Save updated name locally for future use
           if (finalName !== 'User') {
             saveUserName(cleanMobile, finalName);
           }
@@ -438,14 +501,12 @@ const CustomerLogin = () => {
 
           if (tokenSaved) {
             console.log('✅ Customer login token saved successfully');
-
             login(userData);
 
             const userName = userData.firstName || userData.name || 'User';
             const greeting = existingProfile ? 'Welcome back' : 'Welcome';
             setMessage(`${greeting}, ${userName}! Login successful!`);
-              setTimeout(() => navigate(-1), 1500);
-            // setTimeout(() => navigate('/'), 1500);
+            setTimeout(() => navigate(-1), 1500);
           } else {
             console.warn('⚠️ Token saving failed');
             setError('Failed to save session. Please try again.');
@@ -462,14 +523,12 @@ const CustomerLogin = () => {
     }
   };
 
-  // Check if user exists when mobile is entered
   const checkExistingUser = (mobileNumber) => {
     const cleanMobile = mobileNumber.replace(/\D/g, '');
     const existingName = getUserName(cleanMobile);
 
     if (existingName && existingName !== 'User') {
       console.log('👤 Existing user found:', existingName);
-      // Could show a message like "Welcome back, John!"
     }
   };
 
@@ -492,7 +551,6 @@ const CustomerLogin = () => {
     }
   };
 
-  // Enhanced forgot password with better name preservation - FIXED: No duplicate keys
   const handleForgotVerify = async () => {
     setError('');
     setMessage('');
@@ -523,12 +581,9 @@ const CustomerLogin = () => {
       const token = response?.data?.token;
       if (token) {
         const backendUser = response?.data?.user || {};
-
-        // Use enhanced name determination function
         const finalName = getNameFromMultipleSources(cleanMobile, backendUser);
         const existingProfile = getUserProfile(cleanMobile);
 
-        // FIXED: No duplicate keys
         const userData = {
           mobile: cleanMobile,
           name: finalName,
@@ -538,18 +593,14 @@ const CustomerLogin = () => {
           displayName: finalName,
           userType: 'customer',
           lastLoginTime: new Date().toISOString(),
-          // Spread existing profile first
           ...existingProfile,
-          // Then spread backend data
           ...backendUser,
-          // Finally override with determined name values
           name: finalName,
           firstName: finalName.split(' ')[0],
           fullName: finalName,
           displayName: finalName
         };
 
-        // Save updated name locally
         if (finalName !== 'User') {
           saveUserName(cleanMobile, finalName);
         }
@@ -558,7 +609,6 @@ const CustomerLogin = () => {
 
         if (tokenSaved) {
           console.log('✅ Customer forgot password token saved successfully');
-
           login(userData);
 
           const userName = userData.firstName || userData.name || 'User';
@@ -603,7 +653,9 @@ const CustomerLogin = () => {
           <h2 className="login-title mb-3 text-center fs-4 fs-md-2">
             {step === 'login' && 'Login with MPIN'}
             {step === 'signup' && 'Create Your Account'}
-            {step === 'verifyAndMpin' && 'Complete Registration'}
+            {step === 'verifyOtp' && 'Verify OTP'}
+            {step === 'completeSignup' && 'Complete Your Signup'}
+            {step === 'createMpin' && 'Set Your MPIN'}
             {step === 'forgot' && 'Reset MPIN'}
           </h2>
 
@@ -611,7 +663,7 @@ const CustomerLogin = () => {
           {message && <Alert variant="success" className="mb-3">{message}</Alert>}
 
           <Form>
-            {/* Enhanced Name field with validation */}
+            {/* Name field - Only in signup step */}
             {step === 'signup' && (
               <Form.Group className="mb-3">
                 <Form.Label className="text-light">
@@ -622,7 +674,6 @@ const CustomerLogin = () => {
                   placeholder="Enter your full name"
                   value={name}
                   onChange={(e) => {
-                    // Allow only letters and spaces
                     const value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                     setName(value);
                   }}
@@ -633,7 +684,7 @@ const CustomerLogin = () => {
               </Form.Group>
             )}
 
-            {/* Mobile Number field with existing user check */}
+            {/* Mobile Number field */}
             {['login', 'signup', 'forgot'].includes(step) && (
               <Form.Group className="mb-3">
                 <Form.Label className="text-light">
@@ -644,7 +695,6 @@ const CustomerLogin = () => {
                   value={mobile}
                   onChange={(phone) => {
                     setMobile(phone);
-                    // Check for existing user when in login mode
                     if (step === 'login') {
                       checkExistingUser(phone);
                     }
@@ -656,32 +706,8 @@ const CustomerLogin = () => {
               </Form.Group>
             )}
 
-            {/* MPIN field */}
-            {['login', 'verifyAndMpin', 'forgot'].includes(step) && (
-              <Form.Group className="mb-3">
-                <Form.Label className="text-light">
-                  {step === 'verifyAndMpin' ? 'Create 4-digit MPIN' :
-                    step === 'forgot' ? 'New MPIN' : 'MPIN'}
-                  <span className="text-danger"> *</span>
-                </Form.Label>
-                <Form.Control
-                  type="password"
-                  placeholder="Enter 4-digit MPIN"
-                  value={mpin}
-                  onChange={(e) => setMpin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  maxLength={4}
-                  className="form-control"
-                />
-                {step === 'verifyAndMpin' && (
-                  <Form.Text className="text-muted small">
-                    Choose a secure 4-digit MPIN for future logins
-                  </Form.Text>
-                )}
-              </Form.Group>
-            )}
-
-            {/* OTP field */}
-            {['verifyAndMpin', 'forgot'].includes(step) && (
+            {/* OTP field - for verifyOtp and forgot steps */}
+            {['verifyOtp', 'forgot'].includes(step) && (
               <Form.Group className="mb-3">
                 <Form.Label className="text-light">
                   OTP <span className="text-danger">*</span>
@@ -700,7 +726,70 @@ const CustomerLogin = () => {
               </Form.Group>
             )}
 
-            {/* Step-wise Enhanced Buttons */}
+            {/* Referral Code - Optional, only in completeSignup step */}
+            {step === 'completeSignup' && (
+              <>
+                <Form.Group className="mb-3">
+                  <Form.Label className="text-light">
+                    Referral Code <span className="text-muted">(Optional)</span>
+                  </Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter referral code (if any)"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    maxLength={20}
+                    className="form-control"
+                  />
+                  <Form.Text className="text-light small">
+                    Have a referral code? Enter it here for benefits
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="text-light">
+                    Referrer ID <span className="text-muted">(Optional)</span>
+                  </Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter referrer ID (if any)"
+                    value={referrerId}
+                    onChange={(e) => setReferrerId(e.target.value)}
+                    maxLength={50}
+                    className="form-control"
+                  />
+                  <Form.Text className="text-light small">
+                    Enter the ID of the person who referred you
+                  </Form.Text>
+                </Form.Group>
+              </>
+            )}
+
+            {/* MPIN field - for login, createMpin, and forgot steps */}
+            {['login', 'createMpin', 'forgot'].includes(step) && (
+              <Form.Group className="mb-3">
+                <Form.Label className="text-light">
+                  {step === 'createMpin' ? 'Create 4-digit MPIN' :
+                    step === 'forgot' ? 'New MPIN' : 'MPIN'}
+                  <span className="text-danger"> *</span>
+                </Form.Label>
+                <Form.Control
+                  type="password"
+                  placeholder="Enter 4-digit MPIN"
+                  value={mpin}
+                  onChange={(e) => setMpin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  maxLength={4}
+                  className="form-control"
+                />
+                {step === 'createMpin' && (
+                  <Form.Text className="text-muted small">
+                    Choose a secure 4-digit MPIN for future logins
+                  </Form.Text>
+                )}
+              </Form.Group>
+            )}
+
+            {/* Step-wise Buttons */}
             {step === 'login' && (
               <>
                 <div className="d-flex flex-column flex-sm-row justify-content-between mb-3 gap-2">
@@ -740,7 +829,7 @@ const CustomerLogin = () => {
                   className="w-100 login-btn mb-2"
                   disabled={!name.trim() || !mobile}
                 >
-                  Create Account & Send OTP
+                  Send OTP
                 </Button>
                 <Button
                   variant="link"
@@ -757,14 +846,14 @@ const CustomerLogin = () => {
               </>
             )}
 
-            {step === 'verifyAndMpin' && (
+            {step === 'verifyOtp' && (
               <>
                 <Button
-                  onClick={handleVerifyAndSetMpin}
+                  onClick={handleVerifyOtp}
                   className="w-100 login-btn mb-2"
-                  disabled={!otp || !mpin || mpin.length !== 4}
+                  disabled={!otp || otp.length !== 6}
                 >
-                  Complete Registration
+                  Verify OTP
                 </Button>
                 <Button
                   variant="link"
@@ -774,10 +863,51 @@ const CustomerLogin = () => {
                     setMessage('');
                     setError('');
                     setOtp('');
+                  }}
+                >
+                  Back to Signup
+                </Button>
+              </>
+            )}
+
+            {step === 'completeSignup' && (
+              <>
+                <Button
+                  onClick={handleCompleteSignup}
+                  className="w-100 login-btn mb-2"
+                >
+                  {referralCode || referrerId ? 'Apply Referral & Continue' : 'Continue'}
+                </Button>
+                <Button
+                  variant="link"
+                  className="w-100 text-light text-center"
+                  onClick={handleSkipCompleteSignup}
+                >
+                  Skip Referral & Continue
+                </Button>
+              </>
+            )}
+
+            {step === 'createMpin' && (
+              <>
+                <Button
+                  onClick={handleCreateMpin}
+                  className="w-100 login-btn mb-2"
+                  disabled={!mpin || mpin.length !== 4}
+                >
+                  Complete Registration
+                </Button>
+                <Button
+                  variant="link"
+                  className="w-100 text-light text-center"
+                  onClick={() => {
+                    setStep('completeSignup');
+                    setMessage('');
+                    setError('');
                     setMpin('');
                   }}
                 >
-                  Back to Details
+                  Back
                 </Button>
               </>
             )}
