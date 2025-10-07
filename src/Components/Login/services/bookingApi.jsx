@@ -92,12 +92,12 @@ const getAuthHeaders = (userType = null) => {
     currentUserType === "agent"
       ? ["agent_token", "agentToken", "agent_auth_token", "token", "authToken"] // Agent token priority
       : [
-          "token",
-          "authToken",
-          "customer_token",
-          "customerToken",
-          "accessToken",
-        ]; // Customer token priority
+        "token",
+        "authToken",
+        "customer_token",
+        "customerToken",
+        "accessToken",
+      ]; // Customer token priority
 
   for (const key of tokenKeys) {
     const value = localStorage.getItem(key) || sessionStorage.getItem(key);
@@ -230,7 +230,7 @@ const makeAuthenticatedRequest = async (
       console.error("❌ Request setup error:", error.message);
       throw new Error(
         error.message ||
-          "An unexpected error occurred while making the request."
+        "An unexpected error occurred while making the request."
       );
     }
   }
@@ -422,8 +422,7 @@ export const fetchMultipleRealTimeStatus = async (
   }
 
   console.log(
-    `✅ Completed bus real-time status fetch for ${
-      Object.keys(results).length
+    `✅ Completed bus real-time status fetch for ${Object.keys(results).length
     } bookings`
   );
   return results;
@@ -793,8 +792,7 @@ export const fetchMultipleHotelRealTimeStatus = async (
   }
 
   console.log(
-    `✅ Completed hotel real-time status fetch for ${
-      Object.keys(results).length
+    `✅ Completed hotel real-time status fetch for ${Object.keys(results).length
     } bookings`
   );
   return results;
@@ -848,8 +846,8 @@ export const fetchUpcomingHotelBookings = async (
         // Update pagination info
         totalPages = Math.min(
           response.totalPages ||
-            response.total_pages ||
-            Math.ceil((response.total || 0) / (response.limit || pageSize)),
+          response.total_pages ||
+          Math.ceil((response.total || 0) / (response.limit || pageSize)),
           maxPages
         );
 
@@ -935,8 +933,8 @@ export const fetchAllHotelBookings = async (userType = null, options = {}) => {
         // Extract pagination info from response
         totalPages = Math.min(
           response.totalPages ||
-            response.total_pages ||
-            Math.ceil((response.total || 0) / (response.limit || pageSize)),
+          response.total_pages ||
+          Math.ceil((response.total || 0) / (response.limit || pageSize)),
           maxPages
         );
         const hasMorePages =
@@ -1090,8 +1088,7 @@ const fetchAllPagesData = async (endpoint, userType, options = {}) => {
         currentPage++;
 
         console.log(
-          `📊 Page ${currentPage - 1}: Got ${
-            pageData.length
+          `📊 Page ${currentPage - 1}: Got ${pageData.length
           } bookings, Total so far: ${allData.length}`
         );
 
@@ -1106,8 +1103,7 @@ const fetchAllPagesData = async (endpoint, userType, options = {}) => {
     } while (currentPage <= totalPages);
 
     console.log(
-      `✅ Pagination complete: Fetched ${allData.length} total bookings from ${
-        currentPage - 1
+      `✅ Pagination complete: Fetched ${allData.length} total bookings from ${currentPage - 1
       } pages`
     );
 
@@ -1618,9 +1614,8 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
           errorMessage =
             data?.message ||
             "Invalid request data. Please check booking details.";
-          errorDetails = `Bad Request (400): ${
-            data?.error || "Invalid booking parameters"
-          }`;
+          errorDetails = `Bad Request (400): ${data?.error || "Invalid booking parameters"
+            }`;
           break;
         case 401:
           errorMessage = "Authentication failed. Please login again.";
@@ -1666,8 +1661,8 @@ export const fetchFlightRealTimeStatus = async (booking, userType = null) => {
         errorType: error.response
           ? "API_ERROR"
           : error.request
-          ? "NETWORK_ERROR"
-          : "REQUEST_ERROR",
+            ? "NETWORK_ERROR"
+            : "REQUEST_ERROR",
         httpStatus: error.response?.status,
         endpoint: FlightBookingServices.realTimeStatus,
         bookingData: {
