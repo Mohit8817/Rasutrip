@@ -11,7 +11,7 @@ const SvgSeatIcon = ({
   isSelected = false,
   isBooked = false,
   isLadies = false,
-  width = 35,
+  width = 40,
   height = 25
 }) => (
   <svg
@@ -36,7 +36,7 @@ const SvgSleeperIcon = ({
   isSelected = false,
   isBooked = false,
   isLadies = false,
-  width = 55,
+  width = 70,
   height = 28
 }) => (
   <svg
@@ -64,8 +64,8 @@ const SvgUpperBerthIcon = ({
   isSelected = false,
   isBooked = false,
   isLadies = false,
-  width = 50,
-  height = 28
+  width = 80,
+  height = 28 
 }) => (
   <svg
     width={width}
@@ -283,7 +283,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
           <i className={`fas ${berthName === 'Upper' ? 'fa-bed' : 'fa-chair'} me-2`}></i>
           {berthName} Berth
         </h6>
-        <div className="seat-grid border rounded p-2" style={{ backgroundColor: '#f8f9fa' }}>
+        <div className="seat-grid border rounded" style={{ backgroundColor: '#f8f9fa' }}>
           {rows.map(rowNo => (
             <div key={rowNo} className="seat-row d-flex justify-content-center align-items-center mb-1">
               <div className="d-flex">
@@ -291,7 +291,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
                   <React.Fragment key={seat.SeatName}>
                     {renderSeat(seat)}
                     {index === 1 && berthSeats[rowNo].length > 4 && (
-                      <div style={{ width: '10px', borderRight: '2px dashed #dee2e6', margin: '0 2px' }}></div>
+                      <div></div>
                     )}
                   </React.Fragment>
                 ))}
@@ -319,7 +319,7 @@ const BusSeatSelect = ({ show, onHide, bus }) => {
       <div className="seat-layout-container">
         <div className="row h-100">
           <div className="col-md-9 h-100">
-            <div className="position-relative border rounded p-2 shadow-sm" style={{ overflow: 'auto', minHeight: 'auto', maxHeight: 'auto' }}>
+            <div className="position-relative border rounded p-1 shadow-sm" style={{ overflow: 'auto', minHeight: 'auto', maxHeight: 'auto' }}>
               <div style={{ minWidth: '600px', width: '100%' }}>
                 {organizedSeats.upper && <div className="berth-section text-dark">{renderBerthLayout(organizedSeats.upper, "Upper")}</div>}
                 {organizedSeats.lower && <div className="berth-section text-dark">{renderBerthLayout(organizedSeats.lower, "Lower")}</div>}
