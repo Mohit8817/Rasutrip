@@ -2,22 +2,26 @@ import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, Row, Col, Button, Modal } from "react-bootstrap";
 import { HotelSearchContext } from "../../Context/HotelSearchContext";
-import { AuthContext } from "../../Context/AuthContext"; // Add this import
+import { AuthContext } from "../../Context/AuthContext";
+import { getUserIP } from "../../APIS/HotelApi/HotelAPi"; 
 
 const HotelCard = ({ hotel }) => {
   const navigate = useNavigate();
   const { hotelSearchData } = useContext(HotelSearchContext);
-  const { isLoggedIn } = useContext(AuthContext); // Add this line
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false); // Add this state
+  const { isLoggedIn } = useContext(AuthContext);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   if (!hotel) return null;
 
-  const handleBookClick = () => {
+  const handleBookClick = async () => {
     // Check if user is logged in first
     if (!isLoggedIn) {
       setShowLoginPrompt(true);
       return;
     }
+
+    // ✅ Get dynamic user IP
+    const userIP = await getUserIP();
 
     // Original booking logic - only executes if user is logged in
     const {
@@ -34,7 +38,6 @@ const HotelCard = ({ hotel }) => {
       DestinationCityId,
       CountryCode = "IN",
       ResultCount = null,
-      UserIp = "49.36.217.215",
     } = hotelSearchData || {};
 
     // Fallback if nights not present
@@ -54,7 +57,7 @@ const HotelCard = ({ hotel }) => {
       SearchTokenId: hotel.SearchTokenId,
     };
 
-    // Pass full payload with search + hotel info
+    // ✅ Pass full payload with search + hotel info + DYNAMIC IP
     navigate(`/HotelDetailsPage/${hotel.id}`, {
       state: {
         hotel: hotelPayload,
@@ -72,7 +75,7 @@ const HotelCard = ({ hotel }) => {
           DestinationCityId,
           CountryCode,
           ResultCount,
-          UserIp,
+          UserIp: userIP || ' ', 
         },
       },
     });
@@ -88,6 +91,7 @@ const HotelCard = ({ hotel }) => {
     setShowLoginPrompt(false);
     window.location.href = "/login/customer";
   };
+  
   const finalPrice = hotel.originalPriceData?.OfferedPrice ?? hotel.price;
   const offeredPrice = hotel.originalPriceData?.OfferedPrice ?? hotel.price;
 
@@ -101,6 +105,7 @@ const HotelCard = ({ hotel }) => {
     tax = 0,
   } = hotel;
   console.log(hotel);
+  
   return (
     <>
       <Card className="mb-3 p-3 shadow-sm rounded-3 hotel-card-box">
@@ -143,11 +148,9 @@ const HotelCard = ({ hotel }) => {
           >
             {/* Desktop Layout - Column (Original) */}
             <div className="d-none d-md-block">
-              {/* <h5 className="fw-bold text-dark mb-1">₹ {price.toFixed(2)}</h5> */}
               <h5 className="fw-bold text-dark mb-1">
                 ₹ {offeredPrice.toFixed(2)}
               </h5>
-
               <div className="small text-muted">Per Night</div>
               <div className="small text-muted">
                 + ₹ {tax.toFixed(2)} taxes & fees
@@ -162,11 +165,9 @@ const HotelCard = ({ hotel }) => {
             {/* Mobile Layout - Row */}
             <div className="d-md-none d-flex justify-content-between align-items-center">
               <div>
-                {/* <h5 className="fw-bold text-dark mb-0">₹ {price.toFixed(2)}</h5> */}
                 <h5 className="fw-bold text-dark mb-0">
                   ₹ {finalPrice.toFixed(2)}
                 </h5>
-
                 <div className="small text-muted">
                   Per Night + ₹ {tax.toFixed(2)} tax
                 </div>
