@@ -675,9 +675,9 @@ Please process my refund immediately. Thank you!`;
     const uniqueClientRef = generateUniqueClientReference();
 
     const finalPayload = {
-      ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || 67}`),
+      ResultIndex: String(bookingDetails.ResultIndex || `CRS_${bookingDetails.HotelCode || ''}`),
       HotelCode: String(bookingDetails.HotelCode || 67),
-      HotelName: String(bookingDetails.HotelName || "ALILA DIWA"),
+      HotelName: String(bookingDetails.HotelName || ""),
       GuestNationality: "IN",
       NoOfRooms: String(processedRooms.length),
       ClientReferenceNo: uniqueClientRef,
@@ -687,8 +687,8 @@ Please process my refund immediately. Thank you!`;
       vendorCommissionPercentage: vendorCommissionPercentage,
       IsVoucherBooking: "true",
       HotelRoomsDetails: processedRooms,
-      UserIp: String(bookingDetails.UserIp || "49.36.217.215"),
-      SearchTokenId: String(bookingDetails.SearchTokenId || "5e423a789321f6edcf0de63bc80b3342b5c318ed"),
+      UserIp: String(bookingDetails.UserIp || ""),
+      SearchTokenId: String(bookingDetails.SearchTokenId || ""),
       appliedCoupon: activeCoupon ? {
         code: activeCoupon.code || activeCoupon.couponCode,
         discount: finalCouponDiscount,
@@ -911,7 +911,7 @@ Please process my refund immediately. Thank you!`;
           console.log('Sending invoice to email:', leadPassengerEmail);
 
           const invoicePayload = {
-            UserIp: bookingResponse.UserIp || formattedBookingData.UserIp || "49.36.217.215",
+            UserIp: bookingResponse.UserIp || formattedBookingData.UserIp || '',
             BookingId: hasBookingId,
             SearchTokenId: bookingResponse.SearchTokenId || formattedBookingData.SearchTokenId,
             receiverEmail: leadPassengerEmail

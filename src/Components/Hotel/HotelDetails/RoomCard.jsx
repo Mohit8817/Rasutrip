@@ -152,7 +152,7 @@ const RoomCard = ({
 
     // Enhanced block payload with multiple rooms support
     const blockPayload = {
-      UserIp: payload.UserIp || "49.36.217.215",
+      UserIp: payload.UserIp || "",
       HotelCode: payload.HotelCode,
       ResultIndex: payload.ResultIndex,
       SearchTokenId: payload.SearchTokenId,

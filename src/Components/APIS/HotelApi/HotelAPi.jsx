@@ -69,7 +69,7 @@ export const fetchHotels = async (payload) => {
   try {
     // Get dynamic user IP
     const userIP = await getUserIP();
-    
+
     // ✅ FIXED: Use UserIp (lowercase 'p') to match backend expectation
     const updatedPayload = {
       ...payload,
@@ -78,7 +78,7 @@ export const fetchHotels = async (payload) => {
 
     console.log('🔄 Searching hotels with dynamic IP:', userIP);
     console.log('📤 Full payload:', JSON.stringify(updatedPayload, null, 2));
-    
+
     const res = await axios.post(HotelServices.searchHotels, updatedPayload);
     return res.data;
   } catch (err) {
@@ -91,7 +91,7 @@ export const fetchHotels = async (payload) => {
 export const fetchHotelInfo = async (payload) => {
   try {
     const userIP = await getUserIP();
-    
+
     const updatedPayload = {
       ...payload,
       UserIp: userIP || '0.0.0.0'  // ✅ FIXED: lowercase 'p'
@@ -109,7 +109,7 @@ export const fetchHotelInfo = async (payload) => {
 export const fetchRoomInfo = async (payload) => {
   try {
     const userIP = await getUserIP();
-    
+
     const updatedPayload = {
       ...payload,
       UserIp: userIP || '0.0.0.0'  // ✅ FIXED: lowercase 'p'
@@ -127,7 +127,7 @@ export const fetchRoomInfo = async (payload) => {
 export const blockRoom = async (payload) => {
   try {
     const userIP = await getUserIP();
-    
+
     const updatedPayload = {
       ...payload,
       UserIp: userIP || '0.0.0.0'  // ✅ FIXED: lowercase 'p'
